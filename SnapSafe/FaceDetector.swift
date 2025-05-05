@@ -21,7 +21,7 @@ class FaceDetector {
         do {
             try handler.perform([request])
             
-            guard let observations = request.results as? [VNFaceObservation] else {
+            guard let observations = request.results else {
                 completion([])
                 return
             }

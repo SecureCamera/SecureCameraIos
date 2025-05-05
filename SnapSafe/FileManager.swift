@@ -7,67 +7,166 @@
 
 import Foundation
 
-//class SecureFileManager {
-//    private let fileManager = FileManager.default
-//    
-//    // Get a secure directory that's not backed up to iCloud
-//    private func getSecureDirectory() throws -> URL {
-//        guard let documentsDirectory = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first else {
-//            throw NSError(domain: "com.securecamera", code: -1, userInfo: nil)
-//        }
-//        
-//        let secureDirectory = documentsDirectory.appendingPathComponent("SecurePhotos", isDirectory: true)
-//        
-//        if !fileManager.fileExists(atPath: secureDirectory.path) {
-//            try fileManager.createDirectory(at: secureDirectory, withIntermediateDirectories: true, attributes: nil)
-//            
-//            // Set the "do not backup" attribute
-//            var resourceValues = URLResourceValues()
-//            resourceValues.isExcludedFromBackup = true
-//            var secureDirectoryWithAttributes = secureDirectory
-//            try secureDirectoryWithAttributes.setResourceValues(resourceValues)
-//        }
-//        
-//        return secureDirectory
-//    }
-//    
-//    func saveEncryptedPhoto(_ encryptedData: Data, withMetadata metadata: [String: Any]) throws {
-//        let secureDirectory = try getSecureDirectory()
-//        let filename = UUID().uuidString
-//        let fileURL = secureDirectory.appendingPathComponent("\(filename).secphoto")
-//        
-//        // Save encrypted photo with file protection
-//        try encryptedData.write(to: fileURL, options: .completeFileProtection)
-//        
-//        // Save metadata separately
-//        let metadataURL = secureDirectory.appendingPathComponent("\(filename).metadata")
-//        let metadataData = try JSONSerialization.data(withJSONObject: metadata, options: [])
-//        try metadataData.write(to: metadataURL, options: .completeFileProtection)
-//    }
-//    
-//    func loadEncryptedPhoto(filename: String) throws -> (encryptedData: Data, metadata: [String: Any]) {
-//        let secureDirectory = try getSecureDirectory()
-//        let fileURL = secureDirectory.appendingPathComponent("\(filename).secphoto")
-//        let metadataURL = secureDirectory.appendingPathComponent("\(filename).metadata")
-//        
-//        // Load encrypted photo
-//        let encryptedData = try Data(contentsOf: fileURL)
-//        
-//        // Load metadata
-//        let metadataData = try Data(contentsOf: metadataURL)
-//        guard let metadata = try JSONSerialization.jsonObject(with: metadataData, options: []) as? [String: Any] else {
-//            throw NSError(domain: "com.securecamera", code: -2, userInfo: nil)
-//        }
-//        
-//        return (encryptedData, metadata)
-//    }
-//    
-//    func deleteAllPhotos() throws {
-//        let secureDirectory = try getSecureDirectory()
-//        let contents = try fileManager.contentsOfDirectory(at: secureDirectory, includingPropertiesForKeys: nil)
-//        
-//        for fileURL in contents {
-//            try fileManager.removeItem(at: fileURL)
-//        }
-//    }
-//}
+class SecureFileManager {
+    private let fileManager = FileManager.default
+    
+    // Get a secure directory that's not backed up to iCloud
+    private func getSecureDirectory() throws -> URL {
+        guard let documentsDirectory = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first else {
+            throw NSError(domain: "com.securecamera", code: -1, userInfo: nil)
+        }
+        
+        let secureDirectory = documentsDirectory.appendingPathComponent("SecurePhotos", isDirectory: true)
+        
+        if !fileManager.fileExists(atPath: secureDirectory.path) {
+            try fileManager.createDirectory(at: secureDirectory, withIntermediateDirectories: true, attributes: nil)
+            
+            // Set the "do not backup" attribute
+            var resourceValues = URLResourceValues()
+            resourceValues.isExcludedFromBackup = true
+            var secureDirectoryWithAttributes = secureDirectory
+            try secureDirectoryWithAttributes.setResourceValues(resourceValues)
+        }
+        
+        return secureDirectory
+    }
+    
+    // Basic version - saves photo without encryption for now
+    func savePhoto(_ photoData: Data, withMetadata metadata: [String: Any] = [:]) throws -> String {
+        let secureDirectory = try getSecureDirectory()
+        let filename = UUID().uuidString
+        let fileURL = secureDirectory.appendingPathComponent("\(filename).photo")
+        
+        // Save photo 
+        try photoData.write(to: fileURL)
+        
+        // Filter metadata to only include JSON-serializable types
+        let serializedMetadata = cleanMetadataForSerialization(metadata)
+        
+        // Save metadata separately if we have any valid metadata
+        if !serializedMetadata.isEmpty {
+            let metadataURL = secureDirectory.appendingPathComponent("\(filename).metadata")
+            let metadataData = try JSONSerialization.data(withJSONObject: serializedMetadata, options: [])
+            try metadataData.write(to: metadataURL)
+        }
+        
+        return filename
+    }
+    
+    // Process metadata to make it JSON serializable
+    private func cleanMetadataForSerialization(_ metadata: [String: Any]) -> [String: Any] {
+        var cleanedMetadata: [String: Any] = [:]
+        
+        for (key, value) in metadata {
+            if let valueDict = value as? [String: Any] {
+                // Recursively clean nested dictionaries
+                let cleanedValue = cleanMetadataForSerialization(valueDict)
+                if !cleanedValue.isEmpty {
+                    cleanedMetadata[key] = cleanedValue
+                }
+            } else if let valueArray = value as? [Any] {
+                // Handle arrays by filtering each element
+                var cleanedArray: [Any] = []
+                for item in valueArray {
+                    if JSONSerialization.isValidJSONObject([item]) || 
+                       item is String || item is Int || item is Double || item is Bool || item is NSNull {
+                        cleanedArray.append(item)
+                    } else if let itemDict = item as? [String: Any] {
+                        let cleanedItem = cleanMetadataForSerialization(itemDict)
+                        if !cleanedItem.isEmpty {
+                            cleanedArray.append(cleanedItem)
+                        }
+                    }
+                }
+                if !cleanedArray.isEmpty {
+                    cleanedMetadata[key] = cleanedArray
+                }
+            } else if value is String || value is Int || value is Double || value is Bool || value is NSNull {
+                // Basic JSON-compatible types
+                cleanedMetadata[key] = value
+            }
+            // Skip any other types (like NSData, NSDate, etc.) that aren't JSON serializable
+        }
+        
+        return cleanedMetadata
+    }
+    
+    // Load all photos with their filenames
+    func loadAllPhotos() throws -> [(filename: String, data: Data, metadata: [String: Any])] {
+        let secureDirectory = try getSecureDirectory()
+        let contents = try fileManager.contentsOfDirectory(at: secureDirectory, includingPropertiesForKeys: nil)
+        
+        var photos: [(filename: String, data: Data, metadata: [String: Any])] = []
+        
+        for fileURL in contents {
+            if fileURL.pathExtension == "photo" {
+                let filename = fileURL.deletingPathExtension().lastPathComponent
+                
+                // Load photo data
+                let photoData = try Data(contentsOf: fileURL)
+                
+                // Try to load metadata if it exists
+                let metadataURL = secureDirectory.appendingPathComponent("\(filename).metadata")
+                var metadata: [String: Any] = [:]
+                
+                if fileManager.fileExists(atPath: metadataURL.path) {
+                    let metadataData = try Data(contentsOf: metadataURL)
+                    if let loadedMetadata = try JSONSerialization.jsonObject(with: metadataData, options: []) as? [String: Any] {
+                        metadata = loadedMetadata
+                    }
+                }
+                
+                photos.append((filename: filename, data: photoData, metadata: metadata))
+            }
+        }
+        
+        return photos
+    }
+    
+    // Load specific photo by filename
+    func loadPhoto(filename: String) throws -> (data: Data, metadata: [String: Any]) {
+        let secureDirectory = try getSecureDirectory()
+        let fileURL = secureDirectory.appendingPathComponent("\(filename).photo")
+        let metadataURL = secureDirectory.appendingPathComponent("\(filename).metadata")
+        
+        // Load photo
+        let photoData = try Data(contentsOf: fileURL)
+        
+        // Load metadata if it exists
+        var metadata: [String: Any] = [:]
+        if fileManager.fileExists(atPath: metadataURL.path) {
+            let metadataData = try Data(contentsOf: metadataURL)
+            if let loadedMetadata = try JSONSerialization.jsonObject(with: metadataData, options: []) as? [String: Any] {
+                metadata = loadedMetadata
+            }
+        }
+        
+        return (photoData, metadata)
+    }
+    
+    // Delete a specific photo by filename
+    func deletePhoto(filename: String) throws {
+        let secureDirectory = try getSecureDirectory()
+        let photoURL = secureDirectory.appendingPathComponent("\(filename).photo")
+        let metadataURL = secureDirectory.appendingPathComponent("\(filename).metadata")
+        
+        // Delete the photo file
+        if fileManager.fileExists(atPath: photoURL.path) {
+            try fileManager.removeItem(at: photoURL)
+        }
+        
+        // Delete the metadata file if it exists
+        if fileManager.fileExists(atPath: metadataURL.path) {
+            try fileManager.removeItem(at: metadataURL)
+        }
+    }
+    
+    func deleteAllPhotos() throws {
+        let secureDirectory = try getSecureDirectory()
+        let contents = try fileManager.contentsOfDirectory(at: secureDirectory, includingPropertiesForKeys: nil)
+        
+        for fileURL in contents {
+            try fileManager.removeItem(at: fileURL)
+        }
+    }
+}

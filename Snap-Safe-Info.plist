@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>INIntentsRestrictedWhileLocked</key>
+	<array>
+		<string>NSCameraUsageDescription</string>
+	</array>
+	<key>INIntentsSupported</key>
+	<array>
+		<string>NSCameraUsageDescription</string>
+	</array>
+	<key></key>
+	<string></string>
+	<key>NSCameraUsageDescription</key>
+	<string>This app needs camera access so you can take photos that are encrypted and stored locally.</string>
+</dict>
+</plist>
