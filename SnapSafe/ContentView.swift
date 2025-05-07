@@ -194,10 +194,29 @@ extension CameraModel: AVCapturePhotoCaptureDelegate {
 
         // Update UI with the captured image
         if let image = UIImage(data: imageData) {
+            // Fix orientation for preview
+            let correctedImage = fixImageOrientation(image)
+            
             DispatchQueue.main.async {
-                self.recentImage = image
+                self.recentImage = correctedImage
             }
         }
+    }
+    
+    // Fix image orientation issues
+    private func fixImageOrientation(_ image: UIImage) -> UIImage {
+        // If the orientation is already correct, return the image as is
+        if image.imageOrientation == .up {
+            return image
+        }
+        
+        // Create a new image with correct orientation
+        UIGraphicsBeginImageContextWithOptions(image.size, false, image.scale)
+        image.draw(in: CGRect(origin: .zero, size: image.size))
+        let normalizedImage = UIGraphicsGetImageFromCurrentImageContext()!
+        UIGraphicsEndImageContext()
+        
+        return normalizedImage
     }
 
     private func savePhoto(_ imageData: Data) {
@@ -207,6 +226,13 @@ extension CameraModel: AVCapturePhotoCaptureDelegate {
         if let source = CGImageSourceCreateWithData(imageData as CFData, nil) {
             if let imageMetadata = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [String: Any] {
                 metadata = imageMetadata
+                
+                // Ensure orientation is preserved correctly in metadata
+                // This is important for re-opening the image with correct orientation
+                if var tiffDict = metadata[kCGImagePropertyTIFFDictionary as String] as? [String: Any] {
+                    tiffDict[kCGImagePropertyTIFFOrientation as String] = 1 // Force "up" orientation
+                    metadata[kCGImagePropertyTIFFDictionary as String] = tiffDict
+                }
             }
         }
 
@@ -543,6 +569,22 @@ struct SecureGalleryView: View {
         showDeleteConfirmation = true
     }
     
+    // Utility function to fix image orientation
+    private func fixImageOrientation(_ image: UIImage) -> UIImage {
+        // If the orientation is already correct, return the image as is
+        if image.imageOrientation == .up {
+            return image
+        }
+        
+        // Create a new CGContext with proper orientation
+        UIGraphicsBeginImageContextWithOptions(image.size, false, image.scale)
+        image.draw(in: CGRect(origin: .zero, size: image.size))
+        let normalizedImage = UIGraphicsGetImageFromCurrentImageContext()!
+        UIGraphicsEndImageContext()
+        
+        return normalizedImage
+    }
+    
     private func loadPhotos() {
         do {
             let photoData = try secureFileManager.loadAllPhotos()
@@ -550,15 +592,26 @@ struct SecureGalleryView: View {
             // Convert loaded photos to SecurePhoto objects
             self.photos = photoData.map { (filename, data, metadata) in
                 // Create a full image from the data
-                let fullImage = UIImage(data: data) ?? UIImage()
-                
-                // Use the same image for thumbnail for simplicity
-                return SecurePhoto(
-                    filename: filename,
-                    thumbnail: fullImage,
-                    fullImage: fullImage,
-                    metadata: metadata
-                )
+                if let image = UIImage(data: data) {
+                    // Fix the orientation
+                    let correctedImage = fixImageOrientation(image)
+                    
+                    // Use the same image for thumbnail for simplicity
+                    return SecurePhoto(
+                        filename: filename,
+                        thumbnail: correctedImage,
+                        fullImage: correctedImage,
+                        metadata: metadata
+                    )
+                } else {
+                    // Fallback to a placeholder if image can't be created
+                    return SecurePhoto(
+                        filename: filename,
+                        thumbnail: UIImage(),
+                        fullImage: UIImage(),
+                        metadata: metadata
+                    )
+                }
             }
         } catch {
             print("Error loading photos: \(error.localizedDescription)")
@@ -614,38 +667,68 @@ struct PhotoDetailView: View {
     let showFaceDetection: Bool
     var onDelete: ((SecurePhoto) -> Void)? = nil
     @State private var showDeleteConfirmation = false
+    @State private var imageRotation: Double = 0
     @Environment(\.dismiss) private var dismiss
     private let secureFileManager = SecureFileManager()
 
     var body: some View {
-        VStack {
-            Image(uiImage: photo.fullImage)
-                .resizable()
-                .aspectRatio(contentMode: .fit)
+        GeometryReader { geometry in
+            VStack {
+                // Photo display with proper orientation handling
+                ZStack {
+                    // Background color
+                    Color.black.opacity(0.2)
+                    
+                    // Image display
+                    Image(uiImage: photo.fullImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .rotationEffect(.degrees(imageRotation))
+                }
+                .frame(maxWidth: .infinity, maxHeight: geometry.size.height * 0.7)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
                 .padding()
-
-            HStack {
-                if showFaceDetection {
-                    Button("Detect and Blur Faces") {
-                        // Face detection logic would go here
-                    }
-                    .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
-                }
-
-                Button(action: {
-                    showDeleteConfirmation = true
-                }) {
-                    Label("Delete", systemImage: "trash")
-                        .foregroundColor(.white)
+                
+                // Action buttons
+                HStack {
+                    if showFaceDetection {
+                        Button("Detect and Blur Faces") {
+                            // Face detection logic would go here
+                        }
                         .padding()
-                        .background(Color.red)
+                        .background(Color.blue)
+                        .foregroundColor(.white)
                         .cornerRadius(10)
+                    }
+                    
+                    Button(action: {
+                        showDeleteConfirmation = true
+                    }) {
+                        Label("Delete", systemImage: "trash")
+                            .foregroundColor(.white)
+                            .padding()
+                            .background(Color.red)
+                            .cornerRadius(10)
+                    }
                 }
+                .padding()
+                
+                // Optional rotation controls
+                HStack(spacing: 20) {
+                    Button(action: { rotateImage(direction: -90) }) {
+                        Image(systemName: "rotate.left")
+                            .font(.title)
+                            .foregroundColor(.blue)
+                    }
+                    
+                    Button(action: { rotateImage(direction: 90) }) {
+                        Image(systemName: "rotate.right")
+                            .font(.title)
+                            .foregroundColor(.blue)
+                    }
+                }
+                .padding(.bottom)
             }
-            .padding()
         }
         .navigationBarTitle("Photo Detail", displayMode: .inline)
         .toolbar {
@@ -670,6 +753,18 @@ struct PhotoDetailView: View {
         }
     }
 
+    // Manually rotate image if needed
+    private func rotateImage(direction: Double) {
+        imageRotation += direction
+        
+        // Normalize to 0-360 range
+        if imageRotation >= 360 {
+            imageRotation -= 360
+        } else if imageRotation < 0 {
+            imageRotation += 360
+        }
+    }
+    
     private func deletePhoto() {
         do {
             try secureFileManager.deletePhoto(filename: photo.filename)
