@@ -41,14 +41,16 @@ class SecureFileManager {
         try photoData.write(to: fileURL)
         
         // Filter metadata to only include JSON-serializable types
-        let serializedMetadata = cleanMetadataForSerialization(metadata)
+        var serializedMetadata = cleanMetadataForSerialization(metadata)
         
-        // Save metadata separately if we have any valid metadata
-        if !serializedMetadata.isEmpty {
-            let metadataURL = secureDirectory.appendingPathComponent("\(filename).metadata")
-            let metadataData = try JSONSerialization.data(withJSONObject: serializedMetadata, options: [])
-            try metadataData.write(to: metadataURL)
-        }
+        // Add creation date to metadata for sorting
+        let now = Date()
+        serializedMetadata["creationDate"] = now.timeIntervalSince1970
+        
+        // Save metadata separately
+        let metadataURL = secureDirectory.appendingPathComponent("\(filename).metadata")
+        let metadataData = try JSONSerialization.data(withJSONObject: serializedMetadata, options: [])
+        try metadataData.write(to: metadataURL)
         
         return filename
     }

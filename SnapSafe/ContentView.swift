@@ -502,11 +502,22 @@ struct SecureGalleryView: View {
                 }
             }
             .sheet(item: $selectedPhoto) { photo in
-                PhotoDetailView(
-                    photo: photo,
-                    showFaceDetection: showFaceDetection,
-                    onDelete: { _ in loadPhotos() }
-                )
+                // Find the index of the selected photo in the photos array
+                if let initialIndex = photos.firstIndex(where: { $0.id == photo.id }) {
+                    PhotoDetailView(
+                        allPhotos: photos,
+                        initialIndex: initialIndex,
+                        showFaceDetection: showFaceDetection,
+                        onDelete: { _ in loadPhotos() }
+                    )
+                } else {
+                    // Fallback if photo not found in array
+                    PhotoDetailView(
+                        photo: photo,
+                        showFaceDetection: showFaceDetection,
+                        onDelete: { _ in loadPhotos() }
+                    )
+                }
             }
             .alert(isPresented: $showDeleteConfirmation) {
                 deleteConfirmationAlert
@@ -590,7 +601,7 @@ struct SecureGalleryView: View {
             let photoData = try secureFileManager.loadAllPhotos()
             
             // Convert loaded photos to SecurePhoto objects
-            self.photos = photoData.map { (filename, data, metadata) in
+            var loadedPhotos = photoData.map { (filename, data, metadata) in
                 // Create a full image from the data
                 if let image = UIImage(data: data) {
                     // Fix the orientation
@@ -613,6 +624,18 @@ struct SecureGalleryView: View {
                     )
                 }
             }
+            
+            // Sort photos by creation date (oldest at top, newest at bottom)
+            loadedPhotos.sort { photo1, photo2 in
+                // Get creation dates from metadata
+                let date1 = photo1.metadata["creationDate"] as? Double ?? 0
+                let date2 = photo2.metadata["creationDate"] as? Double ?? 0
+                
+                // Sort by date (ascending - oldest first)
+                return date1 < date2
+            }
+            
+            self.photos = loadedPhotos
         } catch {
             print("Error loading photos: \(error.localizedDescription)")
         }
@@ -662,30 +685,135 @@ struct SecurePhoto: Identifiable, Equatable {
     }
 }
 
+// Photo detail view that supports swiping between photos
 struct PhotoDetailView: View {
-    let photo: SecurePhoto
+    // For single photo case (fallback)
+    var photo: SecurePhoto? = nil
+    
+    // For multiple photos case
+    @State private var allPhotos: [SecurePhoto] = []
+    var initialIndex: Int = 0
+    
     let showFaceDetection: Bool
     var onDelete: ((SecurePhoto) -> Void)? = nil
+    
+    @State private var currentIndex: Int = 0
     @State private var showDeleteConfirmation = false
     @State private var imageRotation: Double = 0
+    @State private var offset: CGFloat = 0
+    @State private var isSwiping: Bool = false
+    
     @Environment(\.dismiss) private var dismiss
     private let secureFileManager = SecureFileManager()
+    
+    // Initialize the current index in init
+    init(photo: SecurePhoto, showFaceDetection: Bool, onDelete: ((SecurePhoto) -> Void)? = nil) {
+        self.photo = photo
+        self.showFaceDetection = showFaceDetection
+        self.onDelete = onDelete
+    }
+    
+    init(allPhotos: [SecurePhoto], initialIndex: Int, showFaceDetection: Bool, onDelete: ((SecurePhoto) -> Void)? = nil) {
+        self._allPhotos = State(initialValue: allPhotos)
+        self.initialIndex = initialIndex
+        self._currentIndex = State(initialValue: initialIndex)
+        self.showFaceDetection = showFaceDetection
+        self.onDelete = onDelete
+    }
+    
+    // Get the current photo to display
+    private var currentPhoto: SecurePhoto {
+        if !allPhotos.isEmpty {
+            return allPhotos[currentIndex]
+        } else if let photo = photo {
+            return photo
+        } else {
+            // Should never happen but just in case
+            return SecurePhoto(filename: "", thumbnail: UIImage(), fullImage: UIImage(), metadata: [:])
+        }
+    }
+    
+    // Check if navigation is possible
+    private var canGoToPrevious: Bool {
+        !allPhotos.isEmpty && currentIndex > 0
+    }
+    
+    private var canGoToNext: Bool {
+        !allPhotos.isEmpty && currentIndex < allPhotos.count - 1
+    }
 
     var body: some View {
         GeometryReader { geometry in
             VStack {
+                // Navigation and photo counter
+                if !allPhotos.isEmpty {
+                    HStack {
+                        Button(action: { navigateToPrevious() }) {
+                            Image(systemName: "chevron.left")
+                                .font(.title2)
+                                .foregroundColor(canGoToPrevious ? .blue : .gray)
+                        }
+                        .disabled(!canGoToPrevious)
+                        
+                        Spacer()
+                        
+                        Text("\(currentIndex + 1) of \(allPhotos.count)")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        
+                        Spacer()
+                        
+                        Button(action: { navigateToNext() }) {
+                            Image(systemName: "chevron.right")
+                                .font(.title2)
+                                .foregroundColor(canGoToNext ? .blue : .gray)
+                        }
+                        .disabled(!canGoToNext)
+                    }
+                    .padding(.horizontal)
+                    .padding(.top, 10)
+                }
+                
                 // Photo display with proper orientation handling
                 ZStack {
                     // Background color
                     Color.black.opacity(0.2)
                     
                     // Image display
-                    Image(uiImage: photo.fullImage)
+                    Image(uiImage: currentPhoto.fullImage)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .rotationEffect(.degrees(imageRotation))
+                        .offset(x: offset)
+                        .gesture(
+                            DragGesture()
+                                .onChanged { gesture in
+                                    // Only enable horizontal swipes if we have multiple photos
+                                    if !allPhotos.isEmpty {
+                                        isSwiping = true
+                                        offset = gesture.translation.width
+                                    }
+                                }
+                                .onEnded { gesture in
+                                    // Determine if the swipe is significant enough to change photos
+                                    // Threshold is 1/4 of screen width
+                                    let threshold: CGFloat = geometry.size.width / 4
+                                    
+                                    if offset > threshold && canGoToPrevious {
+                                        navigateToPrevious()
+                                    } else if offset < -threshold && canGoToNext {
+                                        navigateToNext()
+                                    }
+                                    
+                                    // Reset the offset with animation
+                                    withAnimation {
+                                        offset = 0
+                                        isSwiping = false
+                                    }
+                                }
+                        )
                 }
-                .frame(maxWidth: .infinity, maxHeight: geometry.size.height * 0.7)
+                .frame(maxWidth: .infinity, maxHeight: geometry.size.height * 0.6)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
                 .padding()
                 
@@ -711,9 +839,9 @@ struct PhotoDetailView: View {
                             .cornerRadius(10)
                     }
                 }
-                .padding()
+                .padding(.horizontal)
                 
-                // Optional rotation controls
+                // Rotation controls
                 HStack(spacing: 20) {
                     Button(action: { rotateImage(direction: -90) }) {
                         Image(systemName: "rotate.left")
@@ -727,7 +855,7 @@ struct PhotoDetailView: View {
                             .foregroundColor(.blue)
                     }
                 }
-                .padding(.bottom)
+                .padding(.vertical)
             }
         }
         .navigationBarTitle("Photo Detail", displayMode: .inline)
@@ -752,6 +880,27 @@ struct PhotoDetailView: View {
             )
         }
     }
+    
+    // Navigation functions
+    private func navigateToPrevious() {
+        if canGoToPrevious {
+            withAnimation {
+                currentIndex -= 1
+                // Reset rotation when changing photos
+                imageRotation = 0
+            }
+        }
+    }
+    
+    private func navigateToNext() {
+        if canGoToNext {
+            withAnimation {
+                currentIndex += 1
+                // Reset rotation when changing photos
+                imageRotation = 0
+            }
+        }
+    }
 
     // Manually rotate image if needed
     private func rotateImage(direction: Double) {
@@ -767,14 +916,39 @@ struct PhotoDetailView: View {
     
     private func deletePhoto() {
         do {
-            try secureFileManager.deletePhoto(filename: photo.filename)
+            // Get the photo to delete
+            let photoToDelete = currentPhoto
+            
+            try secureFileManager.deletePhoto(filename: photoToDelete.filename)
 
             // Notify the parent view about the deletion
             if let onDelete = onDelete {
-                onDelete(photo)
+                onDelete(photoToDelete)
             }
-
-            dismiss() // Close the detail view after deletion
+            
+            // If we're displaying multiple photos, we can navigate to next/previous
+            // instead of dismissing if there are still photos to display
+            if !allPhotos.isEmpty && allPhotos.count > 1 {
+                // Remove the deleted photo from our local array
+                var updatedPhotos = allPhotos
+                updatedPhotos.remove(at: currentIndex)
+                
+                if updatedPhotos.isEmpty {
+                    // If no photos left, dismiss the view
+                    dismiss()
+                } else {
+                    // Adjust the current index if necessary
+                    if currentIndex >= updatedPhotos.count {
+                        currentIndex = updatedPhotos.count - 1
+                    }
+                    
+                    // Update our photos array
+                    allPhotos = updatedPhotos
+                }
+            } else {
+                // Single photo case, just dismiss
+                dismiss()
+            }
         } catch {
             print("Error deleting photo: \(error.localizedDescription)")
         }
