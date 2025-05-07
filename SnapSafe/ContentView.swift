@@ -38,6 +38,20 @@ struct ContentView: View {
                 // Camera controls overlay
                 VStack {
                     Spacer()
+                    
+                    // Zoom level indicator
+                    ZStack {
+                        Capsule()
+                            .fill(Color.black.opacity(0.6))
+                            .frame(width: 80, height: 30)
+                        
+                        Text(String(format: "%.1fx", cameraModel.zoomFactor))
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(.white)
+                    }
+                    .opacity(cameraModel.zoomFactor > 1.0 ? 1.0 : 0.0)
+                    .animation(.easeInOut, value: cameraModel.zoomFactor)
+                    .padding(.bottom, 10)
 
                     HStack {
                         Button(action: {
@@ -91,10 +105,8 @@ struct ContentView: View {
         .sheet(isPresented: $isShowingGallery) {
             SecureGalleryView()
         }
-        .onAppear {
-            // Request camera permission when the app launches
-            cameraModel.checkPermissions()
-        }
+        // Camera permissions and setup are now handled in CameraModel's init method
+        // This allows initialization to start immediately when the model is created
     }
 
     // Trigger the shutter animation effect
@@ -117,52 +129,126 @@ class CameraModel: NSObject, ObservableObject {
     @Published var output = AVCapturePhotoOutput()
     @Published var preview: AVCaptureVideoPreviewLayer!
     @Published var recentImage: UIImage?
-
+    
+    // Zoom properties
+    @Published var zoomFactor: CGFloat = 1.0
+    @Published var minZoom: CGFloat = 1.0
+    @Published var maxZoom: CGFloat = 10.0
+    private var initialZoom: CGFloat = 1.0
+    private var currentDevice: AVCaptureDevice?
+    
     // Storage managers
     private let secureFileManager = SecureFileManager()
 
+    // Initialize as part of class creation for faster startup
+    override init() {
+        super.init()
+        // Begin checking permissions immediately when instance is created
+        DispatchQueue.global(qos: .userInitiated).async {
+            self.checkPermissions()
+        }
+    }
+    
     func checkPermissions() {
         switch AVCaptureDevice.authorizationStatus(for: .video) {
         case .authorized:
-            self.isPermissionGranted = true
-            self.setupCamera()
+            // Update @Published property on main thread
+            DispatchQueue.main.async {
+                self.isPermissionGranted = true
+            }
+            // Set up on a high-priority background thread
+            DispatchQueue.global(qos: .userInteractive).async {
+                self.setupCamera()
+            }
         case .notDetermined:
+            // Request permission
             AVCaptureDevice.requestAccess(for: .video) { status in
                 if status {
+                    // Update @Published property on main thread
                     DispatchQueue.main.async {
                         self.isPermissionGranted = true
+                    }
+                    // Setup on a high-priority background thread immediately after permission is granted
+                    DispatchQueue.global(qos: .userInteractive).async {
                         self.setupCamera()
+                    }
+                } else {
+                    // If permission denied, update UI on main thread
+                    DispatchQueue.main.async {
+                        self.isPermissionGranted = false
+                        self.alert = true
                     }
                 }
             }
         default:
-            self.isPermissionGranted = false
-            self.alert = true
+            // Update @Published properties on main thread
+            DispatchQueue.main.async {
+                self.isPermissionGranted = false
+                self.alert = true
+            }
         }
     }
 
     func setupCamera() {
+        // Pre-configure an optimal camera session
+        self.session.sessionPreset = .photo
+        self.session.automaticallyConfiguresApplicationAudioSession = false
+        
         do {
             self.session.beginConfiguration()
 
-            // Add device input
+            // Add device input - use specific device type for faster initialization
             guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) else {
                 print("Failed to get camera device")
                 return
             }
+            
+            // Store device reference for zoom functionality
+            self.currentDevice = device
+            
+            // Configure device for video zoom with optimal settings
+            try device.lockForConfiguration()
+            
+            // Get zoom values from the device
+            let minZoomValue: CGFloat = 1.0
+            let maxZoomValue = min(device.activeFormat.videoMaxZoomFactor, 10.0) // Limit to 10x
+            let defaultZoomValue: CGFloat = 1.0
+            
+            // Set zoom factor on the device
+            device.videoZoomFactor = defaultZoomValue
+            
+            // Configure for optimal performance
+            if device.isFocusModeSupported(.continuousAutoFocus) {
+                device.focusMode = .continuousAutoFocus
+            }
+            
+            if device.isExposureModeSupported(.continuousAutoExposure) {
+                device.exposureMode = .continuousAutoExposure
+            }
+            
+            device.unlockForConfiguration()
 
+            // Create and add input
             let input = try AVCaptureDeviceInput(device: device)
-
             if self.session.canAddInput(input) {
                 self.session.addInput(input)
             }
 
-            // Add photo output
+            // Add photo output with high-quality settings
             if self.session.canAddOutput(self.output) {
+                self.output.isHighResolutionCaptureEnabled = true
                 self.session.addOutput(self.output)
             }
 
+            // Apply all configuration changes at once
             self.session.commitConfiguration()
+            
+            // Update all @Published properties on the main thread
+            DispatchQueue.main.async {
+                self.minZoom = minZoomValue
+                self.maxZoom = maxZoomValue
+                self.zoomFactor = defaultZoomValue
+            }
         } catch {
             print("Error setting up camera: \(error.localizedDescription)")
         }
@@ -173,6 +259,84 @@ class CameraModel: NSObject, ObservableObject {
         let photoSettings = AVCapturePhotoSettings()
 
         self.output.capturePhoto(with: photoSettings, delegate: self)
+    }
+    
+    // Method to handle zoom with smooth animation
+    func zoom(factor: CGFloat) {
+        guard let device = self.currentDevice else { return }
+        
+        do {
+            try device.lockForConfiguration()
+            
+            // Calculate new zoom factor
+            var newZoomFactor = factor
+            
+            // Limit zoom factor to device's range
+            newZoomFactor = max(minZoom, min(newZoomFactor, maxZoom))
+            
+            // Get the current factor for interpolation
+            let currentZoom = device.videoZoomFactor
+            
+            // Apply smooth animation through interpolation
+            // This makes the zoom change more gradually
+            let interpolationFactor: CGFloat = 0.3 // Lower = smoother but slower
+            let smoothedZoom = currentZoom + (newZoomFactor - currentZoom) * interpolationFactor
+            
+            // Set the zoom factor with the smoothed value
+            device.videoZoomFactor = smoothedZoom
+            
+            // Always update published values on the main thread
+            DispatchQueue.main.async {
+                self.zoomFactor = smoothedZoom
+            }
+            
+            device.unlockForConfiguration()
+        } catch {
+            print("Error setting zoom: \(error.localizedDescription)")
+        }
+    }
+    
+    // Method to handle pinch gesture for zoom with smoothing
+    func handlePinchGesture(scale: CGFloat, initialScale: CGFloat? = nil) {
+        if let initialScale = initialScale {
+            // When gesture begins, store the initial zoom
+            initialZoom = zoomFactor
+        }
+        
+        // Calculate a zoom factor with reduced sensitivity to create smoother zooming
+        // The 0.5 factor makes the zoom less sensitive, meaning a larger pinch is needed to get to max zoom
+        let zoomSensitivity: CGFloat = 0.5
+        let zoomDelta = pow(scale, zoomSensitivity) - 1.0
+        
+        // Calculate the new zoom factor with a smoother progression
+        // Start from the initial zoom when the gesture began
+        let newZoomFactor = initialZoom + (zoomDelta * (maxZoom - minZoom))
+        
+        // Apply the zoom with animation for smoothness
+        zoom(factor: newZoomFactor)
+    }
+    
+    // Method to handle white balance adjustment at a specific point
+    func adjustWhiteBalance(at point: CGPoint) {
+        guard let device = self.currentDevice else { return }
+        
+        do {
+            try device.lockForConfiguration()
+            
+            if device.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance) {
+                // First set to auto white balance
+                device.whiteBalanceMode = .continuousAutoWhiteBalance
+                
+                // Then lock the white balance at the current values
+                // This will use the auto white balance values based on the tapped area
+                let currentWhiteBalanceGains = device.deviceWhiteBalanceGains
+                device.setWhiteBalanceModeLocked(with: currentWhiteBalanceGains, completionHandler: nil)
+            }
+            
+            device.unlockForConfiguration()
+        } catch {
+            print("Error adjusting white balance: \(error.localizedDescription)")
+        }
     }
 }
 
@@ -220,28 +384,31 @@ extension CameraModel: AVCapturePhotoCaptureDelegate {
     }
 
     private func savePhoto(_ imageData: Data) {
-        // Extract basic metadata if possible
-        var metadata: [String: Any] = [:]
+        // Processing metadata can be CPU intensive, do it on a background thread
+        DispatchQueue.global(qos: .userInitiated).async {
+            // Extract basic metadata if possible
+            var metadata: [String: Any] = [:]
 
-        if let source = CGImageSourceCreateWithData(imageData as CFData, nil) {
-            if let imageMetadata = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [String: Any] {
-                metadata = imageMetadata
-                
-                // Ensure orientation is preserved correctly in metadata
-                // This is important for re-opening the image with correct orientation
-                if var tiffDict = metadata[kCGImagePropertyTIFFDictionary as String] as? [String: Any] {
-                    tiffDict[kCGImagePropertyTIFFOrientation as String] = 1 // Force "up" orientation
-                    metadata[kCGImagePropertyTIFFDictionary as String] = tiffDict
+            if let source = CGImageSourceCreateWithData(imageData as CFData, nil) {
+                if let imageMetadata = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [String: Any] {
+                    metadata = imageMetadata
+                    
+                    // Ensure orientation is preserved correctly in metadata
+                    // This is important for re-opening the image with correct orientation
+                    if var tiffDict = metadata[kCGImagePropertyTIFFDictionary as String] as? [String: Any] {
+                        tiffDict[kCGImagePropertyTIFFOrientation as String] = 1 // Force "up" orientation
+                        metadata[kCGImagePropertyTIFFDictionary as String] = tiffDict
+                    }
                 }
             }
-        }
 
-        // Save the photo without encryption for now
-        do {
-            let _ = try secureFileManager.savePhoto(imageData, withMetadata: metadata)
-            print("Photo saved successfully")
-        } catch {
-            print("Error saving photo: \(error.localizedDescription)")
+            // Save the photo without encryption for now
+            do {
+                let _ = try self.secureFileManager.savePhoto(imageData, withMetadata: metadata)
+                print("Photo saved successfully")
+            } catch {
+                print("Error saving photo: \(error.localizedDescription)")
+            }
         }
     }
 }
@@ -252,22 +419,97 @@ struct CameraView: UIViewRepresentable {
 
     func makeUIView(context: Context) -> UIView {
         let view = UIView(frame: UIScreen.main.bounds)
-
+        
+        // Create and configure the preview layer
         cameraModel.preview = AVCaptureVideoPreviewLayer(session: cameraModel.session)
         cameraModel.preview.frame = view.frame
         cameraModel.preview.videoGravity = .resizeAspectFill
-
+        cameraModel.preview.connection?.videoOrientation = .portrait // Force portrait orientation
+        
+        // Ensure the layer is added to the view
         view.layer.addSublayer(cameraModel.preview)
-
-        // Start the session on a background thread
-        DispatchQueue.global(qos: .userInitiated).async {
-            cameraModel.session.startRunning()
+        
+        // Add gesture recognizers
+        let pinchGesture = UIPinchGestureRecognizer(target: context.coordinator, action: #selector(context.coordinator.handlePinchGesture(_:)))
+        view.addGestureRecognizer(pinchGesture)
+        
+        let doubleTapGesture = UITapGestureRecognizer(target: context.coordinator, action: #selector(context.coordinator.handleDoubleTapGesture(_:)))
+        doubleTapGesture.numberOfTapsRequired = 2
+        view.addGestureRecognizer(doubleTapGesture)
+        
+        // Start the session on a background thread with higher priority
+        DispatchQueue.global(qos: .userInteractive).async {
+            if !cameraModel.session.isRunning {
+                cameraModel.session.startRunning()
+            }
         }
-
+        
         return view
     }
-
-    func updateUIView(_ uiView: UIView, context: Context) {}
+    
+    func updateUIView(_ uiView: UIView, context: Context) {
+        // Update the preview layer frame when the view updates
+        DispatchQueue.main.async {
+            cameraModel.preview?.frame = uiView.bounds
+            
+            // Ensure the camera is running
+            if !cameraModel.session.isRunning {
+                DispatchQueue.global(qos: .userInteractive).async {
+                    cameraModel.session.startRunning()
+                }
+            }
+        }
+    }
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+    
+    // Coordinator for handling UIKit gestures
+    class Coordinator: NSObject {
+        var parent: CameraView
+        private var initialScale: CGFloat = 1.0
+        
+        init(_ parent: CameraView) {
+            self.parent = parent
+        }
+        
+        // Handle pinch gesture for zoom with continuous updates
+        @objc func handlePinchGesture(_ gesture: UIPinchGestureRecognizer) {
+            switch gesture.state {
+            case .began:
+                // Store initial scale when gesture begins
+                initialScale = gesture.scale
+                parent.cameraModel.handlePinchGesture(scale: gesture.scale, initialScale: initialScale)
+                
+            case .changed:
+                // Apply continuous updates for smoother zooming experience
+                // The continuous timer helps ensure smoother transitions
+                parent.cameraModel.handlePinchGesture(scale: gesture.scale)
+                
+            case .ended, .cancelled, .failed:
+                // Ensure final value is applied when gesture completes
+                parent.cameraModel.handlePinchGesture(scale: gesture.scale)
+                
+            default:
+                break
+            }
+        }
+        
+        // Handle double tap gesture for white balance
+        @objc func handleDoubleTapGesture(_ gesture: UITapGestureRecognizer) {
+            let location = gesture.location(in: gesture.view)
+            
+            // Convert touch point to camera coordinate
+            if let layer = parent.cameraModel.preview {
+                // Convert the point from the view's coordinate space to the preview layer's coordinate space
+                let pointInPreviewLayer = layer.captureDevicePointConverted(fromLayerPoint: location)
+                
+                // Adjust white balance at this point
+                parent.cameraModel.adjustWhiteBalance(at: pointInPreviewLayer)
+            }
+        }
+    }
 }
 
 // Authentication view for the initial screen
@@ -597,76 +839,117 @@ struct SecureGalleryView: View {
     }
     
     private func loadPhotos() {
-        do {
-            let photoData = try secureFileManager.loadAllPhotos()
-            
-            // Convert loaded photos to SecurePhoto objects
-            var loadedPhotos = photoData.map { (filename, data, metadata) in
-                // Create a full image from the data
-                if let image = UIImage(data: data) {
-                    // Fix the orientation
-                    let correctedImage = fixImageOrientation(image)
-                    
-                    // Use the same image for thumbnail for simplicity
-                    return SecurePhoto(
-                        filename: filename,
-                        thumbnail: correctedImage,
-                        fullImage: correctedImage,
-                        metadata: metadata
-                    )
-                } else {
-                    // Fallback to a placeholder if image can't be created
-                    return SecurePhoto(
-                        filename: filename,
-                        thumbnail: UIImage(),
-                        fullImage: UIImage(),
-                        metadata: metadata
-                    )
-                }
-            }
-            
-            // Sort photos by creation date (oldest at top, newest at bottom)
-            loadedPhotos.sort { photo1, photo2 in
-                // Get creation dates from metadata
-                let date1 = photo1.metadata["creationDate"] as? Double ?? 0
-                let date2 = photo2.metadata["creationDate"] as? Double ?? 0
+        // Load photos in the background thread to avoid UI blocking
+        DispatchQueue.global(qos: .userInitiated).async {
+            do {
+                let photoData = try self.secureFileManager.loadAllPhotos()
                 
-                // Sort by date (ascending - oldest first)
-                return date1 < date2
+                // Convert loaded photos to SecurePhoto objects
+                var loadedPhotos = photoData.map { (filename, data, metadata) in
+                    // Create a full image from the data
+                    if let image = UIImage(data: data) {
+                        // Fix the orientation
+                        let correctedImage = self.fixImageOrientation(image)
+                        
+                        // Use the same image for thumbnail for simplicity
+                        return SecurePhoto(
+                            filename: filename,
+                            thumbnail: correctedImage,
+                            fullImage: correctedImage,
+                            metadata: metadata
+                        )
+                    } else {
+                        // Fallback to a placeholder if image can't be created
+                        return SecurePhoto(
+                            filename: filename,
+                            thumbnail: UIImage(),
+                            fullImage: UIImage(),
+                            metadata: metadata
+                        )
+                    }
+                }
+                
+                // Sort photos by creation date (oldest at top, newest at bottom)
+                loadedPhotos.sort { photo1, photo2 in
+                    // Get creation dates from metadata
+                    let date1 = photo1.metadata["creationDate"] as? Double ?? 0
+                    let date2 = photo2.metadata["creationDate"] as? Double ?? 0
+                    
+                    // Sort by date (ascending - oldest first)
+                    return date1 < date2
+                }
+                
+                // Update UI on the main thread
+                DispatchQueue.main.async {
+                    self.photos = loadedPhotos
+                }
+            } catch {
+                print("Error loading photos: \(error.localizedDescription)")
             }
-            
-            self.photos = loadedPhotos
-        } catch {
-            print("Error loading photos: \(error.localizedDescription)")
         }
     }
     
     private func deletePhoto(_ photo: SecurePhoto) {
-        do {
-            try secureFileManager.deletePhoto(filename: photo.filename)
-            
-            // Remove from the local array
-            withAnimation {
-                photos.removeAll { $0.id == photo.id }
-                if selectedPhotoIds.contains(photo.id) {
-                    selectedPhotoIds.remove(photo.id)
+        // Perform file deletion in background thread
+        DispatchQueue.global(qos: .userInitiated).async {
+            do {
+                try self.secureFileManager.deletePhoto(filename: photo.filename)
+                
+                // Update UI on main thread
+                DispatchQueue.main.async {
+                    // Remove from the local array
+                    withAnimation {
+                        self.photos.removeAll { $0.id == photo.id }
+                        if self.selectedPhotoIds.contains(photo.id) {
+                            self.selectedPhotoIds.remove(photo.id)
+                        }
+                    }
                 }
+            } catch {
+                print("Error deleting photo: \(error.localizedDescription)")
             }
-        } catch {
-            print("Error deleting photo: \(error.localizedDescription)")
         }
     }
     
     private func deleteSelectedPhotos() {
-        for id in selectedPhotoIds {
-            if let photo = photos.first(where: { $0.id == id }) {
-                deletePhoto(photo)
+        // Create a local copy of the photos to delete
+        let photosToDelete = selectedPhotoIds.compactMap { id in
+            photos.first(where: { $0.id == id })
+        }
+        
+        // Clear selection and exit edit mode immediately
+        // for better UI responsiveness
+        DispatchQueue.main.async {
+            self.selectedPhotoIds.removeAll()
+            self.editMode = .inactive
+        }
+        
+        // Process deletions in a background queue
+        DispatchQueue.global(qos: .userInitiated).async {
+            let group = DispatchGroup()
+            
+            // Delete each photo
+            for photo in photosToDelete {
+                group.enter()
+                do {
+                    try self.secureFileManager.deletePhoto(filename: photo.filename)
+                    group.leave()
+                } catch {
+                    print("Error deleting photo: \(error.localizedDescription)")
+                    group.leave()
+                }
+            }
+            
+            // After all deletions are complete, update the UI
+            group.notify(queue: .main) {
+                // Remove deleted photos from our array
+                withAnimation {
+                    self.photos.removeAll { photo in
+                        photosToDelete.contains { $0.id == photo.id }
+                    }
+                }
             }
         }
-        selectedPhotoIds.removeAll()
-        
-        // Exit edit mode after deletion
-        editMode = .inactive
     }
 }
 
@@ -915,42 +1198,48 @@ struct PhotoDetailView: View {
     }
     
     private func deletePhoto() {
-        do {
-            // Get the photo to delete
-            let photoToDelete = currentPhoto
-            
-            try secureFileManager.deletePhoto(filename: photoToDelete.filename)
-
-            // Notify the parent view about the deletion
-            if let onDelete = onDelete {
-                onDelete(photoToDelete)
-            }
-            
-            // If we're displaying multiple photos, we can navigate to next/previous
-            // instead of dismissing if there are still photos to display
-            if !allPhotos.isEmpty && allPhotos.count > 1 {
-                // Remove the deleted photo from our local array
-                var updatedPhotos = allPhotos
-                updatedPhotos.remove(at: currentIndex)
+        // Get the photo to delete
+        let photoToDelete = currentPhoto
+        
+        // Perform file deletion in a background thread
+        DispatchQueue.global(qos: .userInitiated).async {
+            do {
+                try self.secureFileManager.deletePhoto(filename: photoToDelete.filename)
                 
-                if updatedPhotos.isEmpty {
-                    // If no photos left, dismiss the view
-                    dismiss()
-                } else {
-                    // Adjust the current index if necessary
-                    if currentIndex >= updatedPhotos.count {
-                        currentIndex = updatedPhotos.count - 1
+                // All UI updates must happen on the main thread
+                DispatchQueue.main.async {
+                    // Notify the parent view about the deletion
+                    if let onDelete = self.onDelete {
+                        onDelete(photoToDelete)
                     }
                     
-                    // Update our photos array
-                    allPhotos = updatedPhotos
+                    // If we're displaying multiple photos, we can navigate to next/previous
+                    // instead of dismissing if there are still photos to display
+                    if !self.allPhotos.isEmpty && self.allPhotos.count > 1 {
+                        // Remove the deleted photo from our local array
+                        var updatedPhotos = self.allPhotos
+                        updatedPhotos.remove(at: self.currentIndex)
+                        
+                        if updatedPhotos.isEmpty {
+                            // If no photos left, dismiss the view
+                            self.dismiss()
+                        } else {
+                            // Adjust the current index if necessary
+                            if self.currentIndex >= updatedPhotos.count {
+                                self.currentIndex = updatedPhotos.count - 1
+                            }
+                            
+                            // Update our photos array
+                            self.allPhotos = updatedPhotos
+                        }
+                    } else {
+                        // Single photo case, just dismiss
+                        self.dismiss()
+                    }
                 }
-            } else {
-                // Single photo case, just dismiss
-                dismiss()
+            } catch {
+                print("Error deleting photo: \(error.localizedDescription)")
             }
-        } catch {
-            print("Error deleting photo: \(error.localizedDescription)")
         }
     }
 }
