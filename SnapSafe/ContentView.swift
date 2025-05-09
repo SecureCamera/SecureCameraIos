@@ -38,13 +38,13 @@ struct ContentView: View {
                 // Camera controls overlay
                 VStack {
                     Spacer()
-                    
+
                     // Zoom level indicator
                     ZStack {
                         Capsule()
                             .fill(Color.black.opacity(0.6))
                             .frame(width: 80, height: 30)
-                        
+
                         Text(String(format: "%.1fx", cameraModel.zoomFactor))
                             .font(.system(size: 14, weight: .bold))
                             .foregroundColor(.white)
@@ -129,14 +129,14 @@ class CameraModel: NSObject, ObservableObject {
     @Published var output = AVCapturePhotoOutput()
     @Published var preview: AVCaptureVideoPreviewLayer!
     @Published var recentImage: UIImage?
-    
+
     // Zoom properties
     @Published var zoomFactor: CGFloat = 1.0
     @Published var minZoom: CGFloat = 1.0
     @Published var maxZoom: CGFloat = 10.0
     private var initialZoom: CGFloat = 1.0
     private var currentDevice: AVCaptureDevice?
-    
+
     // Storage managers
     private let secureFileManager = SecureFileManager()
 
@@ -148,7 +148,7 @@ class CameraModel: NSObject, ObservableObject {
             self.checkPermissions()
         }
     }
-    
+
     func checkPermissions() {
         switch AVCaptureDevice.authorizationStatus(for: .video) {
         case .authorized:
@@ -193,7 +193,7 @@ class CameraModel: NSObject, ObservableObject {
         // Pre-configure an optimal camera session
         self.session.sessionPreset = .photo
         self.session.automaticallyConfiguresApplicationAudioSession = false
-        
+
         do {
             self.session.beginConfiguration()
 
@@ -202,30 +202,30 @@ class CameraModel: NSObject, ObservableObject {
                 print("Failed to get camera device")
                 return
             }
-            
+
             // Store device reference for zoom functionality
             self.currentDevice = device
-            
+
             // Configure device for video zoom with optimal settings
             try device.lockForConfiguration()
-            
+
             // Get zoom values from the device
             let minZoomValue: CGFloat = 1.0
             let maxZoomValue = min(device.activeFormat.videoMaxZoomFactor, 10.0) // Limit to 10x
             let defaultZoomValue: CGFloat = 1.0
-            
+
             // Set zoom factor on the device
             device.videoZoomFactor = defaultZoomValue
-            
+
             // Configure for optimal performance
             if device.isFocusModeSupported(.continuousAutoFocus) {
                 device.focusMode = .continuousAutoFocus
             }
-            
+
             if device.isExposureModeSupported(.continuousAutoExposure) {
                 device.exposureMode = .continuousAutoExposure
             }
-            
+
             device.unlockForConfiguration()
 
             // Create and add input
@@ -242,7 +242,7 @@ class CameraModel: NSObject, ObservableObject {
 
             // Apply all configuration changes at once
             self.session.commitConfiguration()
-            
+
             // Update all @Published properties on the main thread
             DispatchQueue.main.async {
                 self.minZoom = minZoomValue
@@ -260,79 +260,79 @@ class CameraModel: NSObject, ObservableObject {
 
         self.output.capturePhoto(with: photoSettings, delegate: self)
     }
-    
+
     // Method to handle zoom with smooth animation
     func zoom(factor: CGFloat) {
         guard let device = self.currentDevice else { return }
-        
+
         do {
             try device.lockForConfiguration()
-            
+
             // Calculate new zoom factor
             var newZoomFactor = factor
-            
+
             // Limit zoom factor to device's range
             newZoomFactor = max(minZoom, min(newZoomFactor, maxZoom))
-            
+
             // Get the current factor for interpolation
             let currentZoom = device.videoZoomFactor
-            
+
             // Apply smooth animation through interpolation
             // This makes the zoom change more gradually
             let interpolationFactor: CGFloat = 0.3 // Lower = smoother but slower
             let smoothedZoom = currentZoom + (newZoomFactor - currentZoom) * interpolationFactor
-            
+
             // Set the zoom factor with the smoothed value
             device.videoZoomFactor = smoothedZoom
-            
+
             // Always update published values on the main thread
             DispatchQueue.main.async {
                 self.zoomFactor = smoothedZoom
             }
-            
+
             device.unlockForConfiguration()
         } catch {
             print("Error setting zoom: \(error.localizedDescription)")
         }
     }
-    
+
     // Method to handle pinch gesture for zoom with smoothing
     func handlePinchGesture(scale: CGFloat, initialScale: CGFloat? = nil) {
         if let initialScale = initialScale {
             // When gesture begins, store the initial zoom
             initialZoom = zoomFactor
         }
-        
+
         // Calculate a zoom factor with reduced sensitivity to create smoother zooming
         // The 0.5 factor makes the zoom less sensitive, meaning a larger pinch is needed to get to max zoom
         let zoomSensitivity: CGFloat = 0.5
         let zoomDelta = pow(scale, zoomSensitivity) - 1.0
-        
+
         // Calculate the new zoom factor with a smoother progression
         // Start from the initial zoom when the gesture began
         let newZoomFactor = initialZoom + (zoomDelta * (maxZoom - minZoom))
-        
+
         // Apply the zoom with animation for smoothness
         zoom(factor: newZoomFactor)
     }
-    
+
     // Method to handle white balance adjustment at a specific point
     func adjustWhiteBalance(at point: CGPoint) {
         guard let device = self.currentDevice else { return }
-        
+
         do {
             try device.lockForConfiguration()
-            
+
             if device.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance) {
                 // First set to auto white balance
                 device.whiteBalanceMode = .continuousAutoWhiteBalance
-                
+
                 // Then lock the white balance at the current values
                 // This will use the auto white balance values based on the tapped area
                 let currentWhiteBalanceGains = device.deviceWhiteBalanceGains
                 device.setWhiteBalanceModeLocked(with: currentWhiteBalanceGains, completionHandler: nil)
             }
-            
+
             device.unlockForConfiguration()
         } catch {
             print("Error adjusting white balance: \(error.localizedDescription)")
@@ -360,26 +360,26 @@ extension CameraModel: AVCapturePhotoCaptureDelegate {
         if let image = UIImage(data: imageData) {
             // Fix orientation for preview
             let correctedImage = fixImageOrientation(image)
-            
+
             DispatchQueue.main.async {
                 self.recentImage = correctedImage
             }
         }
     }
-    
+
     // Fix image orientation issues
     private func fixImageOrientation(_ image: UIImage) -> UIImage {
         // If the orientation is already correct, return the image as is
         if image.imageOrientation == .up {
             return image
         }
-        
+
         // Create a new image with correct orientation
         UIGraphicsBeginImageContextWithOptions(image.size, false, image.scale)
         image.draw(in: CGRect(origin: .zero, size: image.size))
         let normalizedImage = UIGraphicsGetImageFromCurrentImageContext()!
         UIGraphicsEndImageContext()
-        
+
         return normalizedImage
     }
 
@@ -392,7 +392,7 @@ extension CameraModel: AVCapturePhotoCaptureDelegate {
             if let source = CGImageSourceCreateWithData(imageData as CFData, nil) {
                 if let imageMetadata = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [String: Any] {
                     metadata = imageMetadata
-                    
+
                     // Ensure orientation is preserved correctly in metadata
                     // This is important for re-opening the image with correct orientation
                     if var tiffDict = metadata[kCGImagePropertyTIFFDictionary as String] as? [String: Any] {
@@ -419,39 +419,39 @@ struct CameraView: UIViewRepresentable {
 
     func makeUIView(context: Context) -> UIView {
         let view = UIView(frame: UIScreen.main.bounds)
-        
+
         // Create and configure the preview layer
         cameraModel.preview = AVCaptureVideoPreviewLayer(session: cameraModel.session)
         cameraModel.preview.frame = view.frame
         cameraModel.preview.videoGravity = .resizeAspectFill
         cameraModel.preview.connection?.videoOrientation = .portrait // Force portrait orientation
-        
+
         // Ensure the layer is added to the view
         view.layer.addSublayer(cameraModel.preview)
-        
+
         // Add gesture recognizers
         let pinchGesture = UIPinchGestureRecognizer(target: context.coordinator, action: #selector(context.coordinator.handlePinchGesture(_:)))
         view.addGestureRecognizer(pinchGesture)
-        
+
         let doubleTapGesture = UITapGestureRecognizer(target: context.coordinator, action: #selector(context.coordinator.handleDoubleTapGesture(_:)))
         doubleTapGesture.numberOfTapsRequired = 2
         view.addGestureRecognizer(doubleTapGesture)
-        
+
         // Start the session on a background thread with higher priority
         DispatchQueue.global(qos: .userInteractive).async {
             if !cameraModel.session.isRunning {
                 cameraModel.session.startRunning()
             }
         }
-        
+
         return view
     }
-    
+
     func updateUIView(_ uiView: UIView, context: Context) {
         // Update the preview layer frame when the view updates
         DispatchQueue.main.async {
             cameraModel.preview?.frame = uiView.bounds
-            
+
             // Ensure the camera is running
             if !cameraModel.session.isRunning {
                 DispatchQueue.global(qos: .userInteractive).async {
@@ -460,20 +460,20 @@ struct CameraView: UIViewRepresentable {
             }
         }
     }
-    
+
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
     }
-    
+
     // Coordinator for handling UIKit gestures
     class Coordinator: NSObject {
         var parent: CameraView
         private var initialScale: CGFloat = 1.0
-        
+
         init(_ parent: CameraView) {
             self.parent = parent
         }
-        
+
         // Handle pinch gesture for zoom with continuous updates
         @objc func handlePinchGesture(_ gesture: UIPinchGestureRecognizer) {
             switch gesture.state {
@@ -481,30 +481,31 @@ struct CameraView: UIViewRepresentable {
                 // Store initial scale when gesture begins
                 initialScale = gesture.scale
                 parent.cameraModel.handlePinchGesture(scale: gesture.scale, initialScale: initialScale)
-                
+
             case .changed:
                 // Apply continuous updates for smoother zooming experience
                 // The continuous timer helps ensure smoother transitions
                 parent.cameraModel.handlePinchGesture(scale: gesture.scale)
-                
+
             case .ended, .cancelled, .failed:
                 // Ensure final value is applied when gesture completes
                 parent.cameraModel.handlePinchGesture(scale: gesture.scale)
-                
+
             default:
                 break
             }
         }
-        
+
         // Handle double tap gesture for white balance
         @objc func handleDoubleTapGesture(_ gesture: UITapGestureRecognizer) {
             let location = gesture.location(in: gesture.view)
-            
+            // print that we tapped the screen twice
+            print("Double tap detected at \(location)")
             // Convert touch point to camera coordinate
             if let layer = parent.cameraModel.preview {
                 // Convert the point from the view's coordinate space to the preview layer's coordinate space
                 let pointInPreviewLayer = layer.captureDevicePointConverted(fromLayerPoint: location)
-                
+
                 // Adjust white balance at this point
                 parent.cameraModel.adjustWhiteBalance(at: pointInPreviewLayer)
             }
@@ -621,7 +622,7 @@ struct PhotoCell: View {
     let isEditing: Bool
     let onTap: () -> Void
     let onDelete: () -> Void
-    
+
     var body: some View {
         ZStack(alignment: .topTrailing) {
             // Photo image
@@ -635,7 +636,7 @@ struct PhotoCell: View {
                     RoundedRectangle(cornerRadius: 10)
                         .stroke(isSelected ? Color.blue : Color.clear, lineWidth: 3)
                 )
-            
+
             // Delete button in edit mode
             if isEditing {
                 Button(action: onDelete) {
@@ -653,13 +654,13 @@ struct PhotoCell: View {
 // Empty state view when no photos exist
 struct EmptyGalleryView: View {
     let onDismiss: () -> Void
-    
+
     var body: some View {
         VStack {
             Text("No photos yet")
                 .font(.title)
                 .foregroundColor(.secondary)
-            
+
             Button("Go Back and Take Photos", action: onDismiss)
                 .padding()
                 .background(Color.blue)
@@ -676,12 +677,12 @@ struct GalleryToolbar: ToolbarContent {
     @Binding var showDeleteConfirmation: Bool
     let hasSelection: Bool
     let onRefresh: () -> Void
-    
+
     var body: some ToolbarContent {
         ToolbarItem(placement: .navigationBarLeading) {
             EditButton()
         }
-        
+
         ToolbarItem(placement: .navigationBarTrailing) {
             if editMode.isEditing && hasSelection {
                 Button(action: { showDeleteConfirmation = true }) {
@@ -701,22 +702,22 @@ struct GalleryToolbar: ToolbarContent {
 struct SecureGalleryView: View {
     @State private var photos: [SecurePhoto] = []
     @State private var selectedPhoto: SecurePhoto?
-    @State private var showFaceDetection = false
+    @State private var showFaceDetection = true  // Enable face detection by default
     @State private var editMode: EditMode = .inactive
     @State private var selectedPhotoIds = Set<UUID>()
     @State private var showDeleteConfirmation = false
     private let secureFileManager = SecureFileManager()
     @Environment(\.dismiss) private var dismiss
-    
+
     // Computed properties to simplify the view
     private var isEditing: Bool {
         editMode.isEditing
     }
-    
+
     private var hasSelection: Bool {
         !selectedPhotoIds.isEmpty
     }
-    
+
     var body: some View {
         NavigationView {
             Group {
@@ -728,9 +729,20 @@ struct SecureGalleryView: View {
             }
             .navigationTitle("Secure Gallery")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar { 
+            .toolbar {
+                // Face detection toggle button
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Toggle(isOn: $showFaceDetection) {
+                        Image(systemName: "face.dashed")
+                    }
+                    .toggleStyle(SwitchToggleStyle(tint: .blue))
+                    .padding(.trailing, 8)
+                    .labelsHidden()
+                }
+
+                // Standard gallery toolbar
                 GalleryToolbar(
-                    editMode: $editMode, 
+                    editMode: $editMode,
                     showDeleteConfirmation: $showDeleteConfirmation,
                     hasSelection: hasSelection,
                     onRefresh: loadPhotos
@@ -766,7 +778,7 @@ struct SecureGalleryView: View {
             }
         }
     }
-    
+
     // Photo grid subview
     private var photosGridView: some View {
         ScrollView {
@@ -788,7 +800,7 @@ struct SecureGalleryView: View {
             .padding()
         }
     }
-    
+
     // Delete confirmation alert
     private var deleteConfirmationAlert: Alert {
         Alert(
@@ -798,9 +810,9 @@ struct SecureGalleryView: View {
             secondaryButton: .cancel()
         )
     }
-    
+
     // MARK: - Action methods
-    
+
     private func handlePhotoTap(_ photo: SecurePhoto) {
         if isEditing {
             togglePhotoSelection(photo)
@@ -808,7 +820,7 @@ struct SecureGalleryView: View {
             selectedPhoto = photo
         }
     }
-    
+
     private func togglePhotoSelection(_ photo: SecurePhoto) {
         if selectedPhotoIds.contains(photo.id) {
             selectedPhotoIds.remove(photo.id)
@@ -816,41 +828,41 @@ struct SecureGalleryView: View {
             selectedPhotoIds.insert(photo.id)
         }
     }
-    
+
     private func prepareToDeleteSinglePhoto(_ photo: SecurePhoto) {
         selectedPhotoIds = [photo.id]
         showDeleteConfirmation = true
     }
-    
+
     // Utility function to fix image orientation
     private func fixImageOrientation(_ image: UIImage) -> UIImage {
         // If the orientation is already correct, return the image as is
         if image.imageOrientation == .up {
             return image
         }
-        
+
         // Create a new CGContext with proper orientation
         UIGraphicsBeginImageContextWithOptions(image.size, false, image.scale)
         image.draw(in: CGRect(origin: .zero, size: image.size))
         let normalizedImage = UIGraphicsGetImageFromCurrentImageContext()!
         UIGraphicsEndImageContext()
-        
+
         return normalizedImage
     }
-    
+
     private func loadPhotos() {
         // Load photos in the background thread to avoid UI blocking
         DispatchQueue.global(qos: .userInitiated).async {
             do {
                 let photoData = try self.secureFileManager.loadAllPhotos()
-                
+
                 // Convert loaded photos to SecurePhoto objects
                 var loadedPhotos = photoData.map { (filename, data, metadata) in
                     // Create a full image from the data
                     if let image = UIImage(data: data) {
                         // Fix the orientation
                         let correctedImage = self.fixImageOrientation(image)
-                        
+
                         // Use the same image for thumbnail for simplicity
                         return SecurePhoto(
                             filename: filename,
@@ -868,17 +880,17 @@ struct SecureGalleryView: View {
                         )
                     }
                 }
-                
+
                 // Sort photos by creation date (oldest at top, newest at bottom)
                 loadedPhotos.sort { photo1, photo2 in
                     // Get creation dates from metadata
                     let date1 = photo1.metadata["creationDate"] as? Double ?? 0
                     let date2 = photo2.metadata["creationDate"] as? Double ?? 0
-                    
+
                     // Sort by date (ascending - oldest first)
                     return date1 < date2
                 }
-                
+
                 // Update UI on the main thread
                 DispatchQueue.main.async {
                     self.photos = loadedPhotos
@@ -888,13 +900,13 @@ struct SecureGalleryView: View {
             }
         }
     }
-    
+
     private func deletePhoto(_ photo: SecurePhoto) {
         // Perform file deletion in background thread
         DispatchQueue.global(qos: .userInitiated).async {
             do {
                 try self.secureFileManager.deletePhoto(filename: photo.filename)
-                
+
                 // Update UI on main thread
                 DispatchQueue.main.async {
                     // Remove from the local array
@@ -910,24 +922,24 @@ struct SecureGalleryView: View {
             }
         }
     }
-    
+
     private func deleteSelectedPhotos() {
         // Create a local copy of the photos to delete
         let photosToDelete = selectedPhotoIds.compactMap { id in
             photos.first(where: { $0.id == id })
         }
-        
+
         // Clear selection and exit edit mode immediately
         // for better UI responsiveness
         DispatchQueue.main.async {
             self.selectedPhotoIds.removeAll()
             self.editMode = .inactive
         }
-        
+
         // Process deletions in a background queue
         DispatchQueue.global(qos: .userInitiated).async {
             let group = DispatchGroup()
-            
+
             // Delete each photo
             for photo in photosToDelete {
                 group.enter()
@@ -939,7 +951,7 @@ struct SecureGalleryView: View {
                     group.leave()
                 }
             }
-            
+
             // After all deletions are complete, update the UI
             group.notify(queue: .main) {
                 // Remove deleted photos from our array
@@ -960,7 +972,7 @@ struct SecurePhoto: Identifiable, Equatable {
     let thumbnail: UIImage
     let fullImage: UIImage
     let metadata: [String: Any]
-    
+
     // Implement Equatable
     static func == (lhs: SecurePhoto, rhs: SecurePhoto) -> Bool {
         // Compare by id and filename
@@ -972,30 +984,41 @@ struct SecurePhoto: Identifiable, Equatable {
 struct PhotoDetailView: View {
     // For single photo case (fallback)
     var photo: SecurePhoto? = nil
-    
+
     // For multiple photos case
     @State private var allPhotos: [SecurePhoto] = []
     var initialIndex: Int = 0
-    
+
     let showFaceDetection: Bool
     var onDelete: ((SecurePhoto) -> Void)? = nil
-    
+
     @State private var currentIndex: Int = 0
     @State private var showDeleteConfirmation = false
     @State private var imageRotation: Double = 0
     @State private var offset: CGFloat = 0
     @State private var isSwiping: Bool = false
-    
+
+    // Face detection states
+    @State private var isFaceDetectionActive = false
+    @State private var detectedFaces: [DetectedFace] = []
+    @State private var processingFaces = false
+    @State private var modifiedImage: UIImage?
+    @State private var showBlurConfirmation = false
+
+    // Used to measure the displayed image size
+    @State private var imageFrameSize: CGSize = .zero
+
+    private let faceDetector = FaceDetector()
     @Environment(\.dismiss) private var dismiss
     private let secureFileManager = SecureFileManager()
-    
+
     // Initialize the current index in init
     init(photo: SecurePhoto, showFaceDetection: Bool, onDelete: ((SecurePhoto) -> Void)? = nil) {
         self.photo = photo
         self.showFaceDetection = showFaceDetection
         self.onDelete = onDelete
     }
-    
+
     init(allPhotos: [SecurePhoto], initialIndex: Int, showFaceDetection: Bool, onDelete: ((SecurePhoto) -> Void)? = nil) {
         self._allPhotos = State(initialValue: allPhotos)
         self.initialIndex = initialIndex
@@ -1003,7 +1026,7 @@ struct PhotoDetailView: View {
         self.showFaceDetection = showFaceDetection
         self.onDelete = onDelete
     }
-    
+
     // Get the current photo to display
     private var currentPhoto: SecurePhoto {
         if !allPhotos.isEmpty {
@@ -1015,14 +1038,28 @@ struct PhotoDetailView: View {
             return SecurePhoto(filename: "", thumbnail: UIImage(), fullImage: UIImage(), metadata: [:])
         }
     }
-    
+
+    // Get the image to display (original or modified)
+    private var displayedImage: UIImage {
+        if isFaceDetectionActive, let modified = modifiedImage {
+            return modified
+        } else {
+            return currentPhoto.fullImage
+        }
+    }
+
     // Check if navigation is possible
     private var canGoToPrevious: Bool {
         !allPhotos.isEmpty && currentIndex > 0
     }
-    
+
     private var canGoToNext: Bool {
         !allPhotos.isEmpty && currentIndex < allPhotos.count - 1
+    }
+
+    // Check if any faces are selected for blurring
+    private var hasFacesSelected: Bool {
+        detectedFaces.contains { $0.isSelected }
     }
 
     var body: some View {
@@ -1036,62 +1073,101 @@ struct PhotoDetailView: View {
                                 .font(.title2)
                                 .foregroundColor(canGoToPrevious ? .blue : .gray)
                         }
-                        .disabled(!canGoToPrevious)
-                        
+                        .disabled(!canGoToPrevious || isFaceDetectionActive)
+
                         Spacer()
-                        
+
                         Text("\(currentIndex + 1) of \(allPhotos.count)")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
-                        
+
                         Spacer()
-                        
+
                         Button(action: { navigateToNext() }) {
                             Image(systemName: "chevron.right")
                                 .font(.title2)
                                 .foregroundColor(canGoToNext ? .blue : .gray)
                         }
-                        .disabled(!canGoToNext)
+                        .disabled(!canGoToNext || isFaceDetectionActive)
                     }
                     .padding(.horizontal)
                     .padding(.top, 10)
                 }
-                
+
                 // Photo display with proper orientation handling
                 ZStack {
                     // Background color
                     Color.black.opacity(0.2)
-                    
+
                     // Image display
-                    Image(uiImage: currentPhoto.fullImage)
+                    Image(uiImage: displayedImage)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .rotationEffect(.degrees(imageRotation))
                         .offset(x: offset)
+                        .overlay(
+                            GeometryReader { imageGeometry in
+                                Color.clear
+                                    .preference(key: SizePreferenceKey.self, value: imageGeometry.size)
+                                    .onPreferenceChange(SizePreferenceKey.self) { size in
+                                        self.imageFrameSize = size
+                                    }
+
+                                // Face detection overlay
+                                if isFaceDetectionActive {
+                                    ZStack {
+                                        // Overlay each detected face with a red rectangle
+                                        ForEach(detectedFaces) { face in
+                                            let scaledRect = face.scaledRect(
+                                                originalSize: currentPhoto.fullImage.size,
+                                                displaySize: imageFrameSize
+                                            )
+
+                                            Rectangle()
+                                                .stroke(face.isSelected ? Color.green : Color.red, lineWidth: 3)
+                                                .frame(
+                                                    width: scaledRect.width,
+                                                    height: scaledRect.height
+                                                )
+                                                .position(
+                                                    x: scaledRect.midX,
+                                                    y: scaledRect.midY
+                                                )
+                                                .onTapGesture {
+                                                    toggleFaceSelection(face)
+                                                }
+                                        }
+                                    }
+                                }
+                            }
+                        )
                         .gesture(
                             DragGesture()
                                 .onChanged { gesture in
-                                    // Only enable horizontal swipes if we have multiple photos
-                                    if !allPhotos.isEmpty {
+                                    // Only enable horizontal swipes if we have multiple photos and face detection is inactive
+                                    if !allPhotos.isEmpty && !isFaceDetectionActive {
                                         isSwiping = true
                                         offset = gesture.translation.width
                                     }
                                 }
                                 .onEnded { gesture in
-                                    // Determine if the swipe is significant enough to change photos
-                                    // Threshold is 1/4 of screen width
-                                    let threshold: CGFloat = geometry.size.width / 4
-                                    
-                                    if offset > threshold && canGoToPrevious {
-                                        navigateToPrevious()
-                                    } else if offset < -threshold && canGoToNext {
-                                        navigateToNext()
-                                    }
-                                    
-                                    // Reset the offset with animation
-                                    withAnimation {
-                                        offset = 0
-                                        isSwiping = false
+                                    // Only process swipe if face detection is inactive
+                                    if !isFaceDetectionActive {
+                                        // Determine if the swipe is significant enough to change photos
+                                        // Threshold is 1/4 of screen width
+                                        let threshold: CGFloat = geometry.size.width / 4
+
+                                        if offset > threshold && canGoToPrevious {
+                                            navigateToPrevious()
+                                        } else if offset < -threshold && canGoToNext {
+                                            navigateToNext()
+                                        }
+
+                                        // Reset the offset with animation
+                                        withAnimation {
+                                            offset = 0
+                                            isSwiping = false
+                                        }
                                     }
                                 }
                         )
@@ -1099,56 +1175,120 @@ struct PhotoDetailView: View {
                 .frame(maxWidth: .infinity, maxHeight: geometry.size.height * 0.6)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
                 .padding()
-                
-                // Action buttons
-                HStack {
-                    if showFaceDetection {
-                        Button("Detect and Blur Faces") {
-                            // Face detection logic would go here
-                        }
-                        .padding()
-                        .background(Color.blue)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
-                    }
-                    
-                    Button(action: {
-                        showDeleteConfirmation = true
-                    }) {
-                        Label("Delete", systemImage: "trash")
-                            .foregroundColor(.white)
+
+                // Action buttons and status
+                VStack {
+                    // Processing indicator
+                    if processingFaces {
+                        ProgressView("Detecting faces...")
                             .padding()
-                            .background(Color.red)
-                            .cornerRadius(10)
+                    }
+
+                    // Action buttons for face detection
+                    if isFaceDetectionActive {
+                        HStack {
+                            Button(action: {
+                                // Exit face detection mode, reset state
+                                withAnimation {
+                                    isFaceDetectionActive = false
+                                    detectedFaces = []
+                                    modifiedImage = nil
+                                }
+                            }) {
+                                Label("Cancel", systemImage: "xmark")
+                                    .foregroundColor(.white)
+                                    .padding()
+                                    .background(Color.gray)
+                                    .cornerRadius(10)
+                            }
+
+                            Spacer()
+
+                            Button(action: {
+                                showBlurConfirmation = true
+                            }) {
+                                Label("Blur Faces", systemImage: "eye.slash")
+                                    .foregroundColor(.white)
+                                    .padding()
+                                    .background(hasFacesSelected ? Color.blue : Color.gray)
+                                    .cornerRadius(10)
+                            }
+                            .disabled(!hasFacesSelected)
+                        }
+                        .padding(.horizontal)
+
+                        Text("Tap on faces to select them for blurring")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .padding(.bottom, 5)
+
+                        if detectedFaces.isEmpty {
+                            Text("No faces detected")
+                                .font(.callout)
+                                .foregroundColor(.secondary)
+                                .padding(.bottom, 5)
+                        } else {
+                            Text("\(detectedFaces.count) faces detected, \(detectedFaces.filter { $0.isSelected }.count) selected")
+                                .font(.callout)
+                                .foregroundColor(.secondary)
+                                .padding(.bottom, 5)
+                        }
+                    } else {
+                        // Regular action buttons
+                        HStack {
+                            if showFaceDetection {
+                                Button(action: detectFaces) {
+                                    Label("Detect Faces", systemImage: "face.dashed")
+                                        .foregroundColor(.white)
+                                        .padding()
+                                        .background(Color.blue)
+                                        .cornerRadius(10)
+                                }
+                            }
+
+                            Spacer()
+
+                            Button(action: {
+                                showDeleteConfirmation = true
+                            }) {
+                                Label("Delete", systemImage: "trash")
+                                    .foregroundColor(.white)
+                                    .padding()
+                                    .background(Color.red)
+                                    .cornerRadius(10)
+                            }
+                        }
+                        .padding(.horizontal)
+
+                        // Rotation controls
+                        HStack(spacing: 20) {
+                            Button(action: { rotateImage(direction: -90) }) {
+                                Image(systemName: "rotate.left")
+                                    .font(.title)
+                                    .foregroundColor(.blue)
+                            }
+
+                            Button(action: { rotateImage(direction: 90) }) {
+                                Image(systemName: "rotate.right")
+                                    .font(.title)
+                                    .foregroundColor(.blue)
+                            }
+                        }
+                        .padding(.vertical)
                     }
                 }
-                .padding(.horizontal)
-                
-                // Rotation controls
-                HStack(spacing: 20) {
-                    Button(action: { rotateImage(direction: -90) }) {
-                        Image(systemName: "rotate.left")
-                            .font(.title)
-                            .foregroundColor(.blue)
-                    }
-                    
-                    Button(action: { rotateImage(direction: 90) }) {
-                        Image(systemName: "rotate.right")
-                            .font(.title)
-                            .foregroundColor(.blue)
-                    }
-                }
-                .padding(.vertical)
             }
         }
         .navigationBarTitle("Photo Detail", displayMode: .inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button(action: {
-                    showDeleteConfirmation = true
-                }) {
-                    Image(systemName: "trash")
-                        .foregroundColor(.red)
+                if !isFaceDetectionActive {
+                    Button(action: {
+                        showDeleteConfirmation = true
+                    }) {
+                        Image(systemName: "trash")
+                            .foregroundColor(.red)
+                    }
                 }
             }
         }
@@ -1162,8 +1302,83 @@ struct PhotoDetailView: View {
                 secondaryButton: .cancel()
             )
         }
+        .alert(isPresented: $showBlurConfirmation) {
+            Alert(
+                title: Text("Blur Selected Faces"),
+                message: Text("Are you sure you want to blur the selected faces? This will permanently modify the photo."),
+                primaryButton: .destructive(Text("Blur Faces")) {
+                    applyFaceBlurring()
+                },
+                secondaryButton: .cancel()
+            )
+        }
     }
-    
+
+    // Face detection methods
+    private func detectFaces() {
+        withAnimation {
+            isFaceDetectionActive = true
+            processingFaces = true
+        }
+
+        // Clear any previous results
+        detectedFaces = []
+        modifiedImage = nil
+
+        // Run face detection on a background thread
+        DispatchQueue.global(qos: .userInitiated).async {
+            faceDetector.detectFaces(in: currentPhoto.fullImage) { faces in
+                // Update UI on main thread
+                DispatchQueue.main.async {
+                    withAnimation {
+                        self.detectedFaces = faces
+                        self.processingFaces = false
+                    }
+                }
+            }
+        }
+    }
+
+    private func toggleFaceSelection(_ face: DetectedFace) {
+        // Find and toggle the selected face
+        if let index = detectedFaces.firstIndex(where: { $0.id == face.id }) {
+            var updatedFaces = detectedFaces
+            updatedFaces[index].isSelected.toggle()
+            detectedFaces = updatedFaces
+        }
+    }
+
+    private func applyFaceBlurring() {
+        // Apply blurring on a background thread
+        DispatchQueue.global(qos: .userInitiated).async {
+            if let blurredImage = faceDetector.blurFaces(in: currentPhoto.fullImage, faces: detectedFaces) {
+                // Save the blurred image to the file system
+                let imageData = blurredImage.jpegData(compressionQuality: 0.9) ?? Data()
+
+                do {
+                    try secureFileManager.savePhoto(imageData, withMetadata: currentPhoto.metadata)
+
+                    // Update UI on main thread
+                    DispatchQueue.main.async {
+                        withAnimation {
+                            self.modifiedImage = blurredImage
+
+                            // Exit face detection mode after a short delay
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                                withAnimation {
+                                    self.isFaceDetectionActive = false
+                                    self.detectedFaces = []
+                                }
+                            }
+                        }
+                    }
+                } catch {
+                    print("Error saving blurred photo: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
+
     // Navigation functions
     private func navigateToPrevious() {
         if canGoToPrevious {
@@ -1171,16 +1386,24 @@ struct PhotoDetailView: View {
                 currentIndex -= 1
                 // Reset rotation when changing photos
                 imageRotation = 0
+                // Clear face detection state
+                isFaceDetectionActive = false
+                detectedFaces = []
+                modifiedImage = nil
             }
         }
     }
-    
+
     private func navigateToNext() {
         if canGoToNext {
             withAnimation {
                 currentIndex += 1
                 // Reset rotation when changing photos
                 imageRotation = 0
+                // Clear face detection state
+                isFaceDetectionActive = false
+                detectedFaces = []
+                modifiedImage = nil
             }
         }
     }
@@ -1188,7 +1411,7 @@ struct PhotoDetailView: View {
     // Manually rotate image if needed
     private func rotateImage(direction: Double) {
         imageRotation += direction
-        
+
         // Normalize to 0-360 range
         if imageRotation >= 360 {
             imageRotation -= 360
@@ -1196,30 +1419,30 @@ struct PhotoDetailView: View {
             imageRotation += 360
         }
     }
-    
+
     private func deletePhoto() {
         // Get the photo to delete
         let photoToDelete = currentPhoto
-        
+
         // Perform file deletion in a background thread
         DispatchQueue.global(qos: .userInitiated).async {
             do {
                 try self.secureFileManager.deletePhoto(filename: photoToDelete.filename)
-                
+
                 // All UI updates must happen on the main thread
                 DispatchQueue.main.async {
                     // Notify the parent view about the deletion
                     if let onDelete = self.onDelete {
                         onDelete(photoToDelete)
                     }
-                    
+
                     // If we're displaying multiple photos, we can navigate to next/previous
                     // instead of dismissing if there are still photos to display
                     if !self.allPhotos.isEmpty && self.allPhotos.count > 1 {
                         // Remove the deleted photo from our local array
                         var updatedPhotos = self.allPhotos
                         updatedPhotos.remove(at: self.currentIndex)
-                        
+
                         if updatedPhotos.isEmpty {
                             // If no photos left, dismiss the view
                             self.dismiss()
@@ -1228,7 +1451,7 @@ struct PhotoDetailView: View {
                             if self.currentIndex >= updatedPhotos.count {
                                 self.currentIndex = updatedPhotos.count - 1
                             }
-                            
+
                             // Update our photos array
                             self.allPhotos = updatedPhotos
                         }
@@ -1243,6 +1466,15 @@ struct PhotoDetailView: View {
         }
     }
 }
+
+// Preference key to get the size of the image view
+struct SizePreferenceKey: PreferenceKey {
+    static var defaultValue: CGSize = .zero
+    static func reduce(value: inout CGSize, nextValue: () -> CGSize) {
+        value = nextValue()
+    }
+}
+//}
 
 // Extend ContentView for previews
 //struct ContentView_Previews: PreviewProvider {
