@@ -424,7 +424,7 @@ struct CameraView: UIViewRepresentable {
         cameraModel.preview = AVCaptureVideoPreviewLayer(session: cameraModel.session)
         cameraModel.preview.frame = view.frame
         cameraModel.preview.videoGravity = .resizeAspectFill
-        cameraModel.preview.connection?.videoOrientation = .portrait // Force portrait orientation
+        cameraModel.preview.connection?.videoRotationAngle = 90 // Force portrait orientation
 
         // Ensure the layer is added to the view
         view.layer.addSublayer(cameraModel.preview)
