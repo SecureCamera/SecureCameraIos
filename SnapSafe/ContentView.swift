@@ -23,7 +23,7 @@ struct ContentView: View {
                 // Authentication screen
                 AuthenticationView(isAuthenticated: $isAuthenticated)
             } else {
-                // Camera view
+                // Camera view - now contains both the camera preview and focus indicator
                 CameraView(cameraModel: cameraModel)
                     .edgesIgnoringSafeArea(.all)
 
@@ -136,6 +136,16 @@ class CameraModel: NSObject, ObservableObject {
     @Published var maxZoom: CGFloat = 10.0
     private var initialZoom: CGFloat = 1.0
     private var currentDevice: AVCaptureDevice?
+    
+    // View size for coordinate mapping
+    var viewSize: CGSize = .zero
+    
+    // Focus indicator properties
+    @Published var focusIndicatorPoint: CGPoint? = nil
+    @Published var showingFocusIndicator = false
+    
+    // Timer to reset to auto-focus mode after tap-to-focus
+    private var focusResetTimer: Timer?
 
     // Storage managers
     private let secureFileManager = SecureFileManager()
@@ -206,7 +216,7 @@ class CameraModel: NSObject, ObservableObject {
             // Store device reference for zoom functionality
             self.currentDevice = device
 
-            // Configure device for video zoom with optimal settings
+            // Configure device for video zoom and focus with optimal settings
             try device.lockForConfiguration()
 
             // Get zoom values from the device
@@ -217,14 +227,39 @@ class CameraModel: NSObject, ObservableObject {
             // Set zoom factor on the device
             device.videoZoomFactor = defaultZoomValue
 
-            // Configure for optimal performance
+            // Configure continuous auto-focus for optimal performance
             if device.isFocusModeSupported(.continuousAutoFocus) {
                 device.focusMode = .continuousAutoFocus
+                
+                // Enable smooth auto-focus for better transitions
+                device.isSmoothAutoFocusEnabled = true
+                
+                // Set auto-focus range restriction for better general focusing
+                // .none allows the camera to focus on any distance
+                if device.isAutoFocusRangeRestrictionSupported {
+                    device.autoFocusRangeRestriction = .none
+                }
+                
+                print("📸 Enabled continuous auto-focus with smooth transitions")
             }
 
+            // Enable continuous auto-exposure
             if device.isExposureModeSupported(.continuousAutoExposure) {
                 device.exposureMode = .continuousAutoExposure
+                print("📸 Enabled continuous auto-exposure")
             }
+            
+            // Enable continuous auto white balance
+            if device.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance) {
+                device.whiteBalanceMode = .continuousAutoWhiteBalance
+                print("📸 Enabled continuous auto white balance")
+            }
+            
+            // Set minimum and maximum focus distance if available
+//            if #available(iOS 15.0, *), device.isLockingFocusWithCustomLensPositionSupported {
+                // These settings help with depth of field optimization
+                //print("📸 Focus distance range: \(device.minimumFocusDistance) to \(device.maximumFocusDistance)")
+//            }
 
             device.unlockForConfiguration()
 
@@ -236,8 +271,21 @@ class CameraModel: NSObject, ObservableObject {
 
             // Add photo output with high-quality settings
             if self.session.canAddOutput(self.output) {
-                self.output.isHighResolutionCaptureEnabled = true
+                // First add the output to the session
                 self.session.addOutput(self.output)
+                
+                // Now that the output is connected to the session, configure it
+                if #available(iOS 16.0, *) {
+                    // Only try to set maxPhotoDimensions after the output is connected
+                    // to the session, as required by the API
+                    if let maxDimensions = device.activeFormat.supportedMaxPhotoDimensions.last {
+                        print("Setting max photo dimensions to \(maxDimensions.width)x\(maxDimensions.height)")
+                        self.output.maxPhotoDimensions = maxDimensions
+                    }
+                } else {
+                    // Fall back to deprecated API for earlier iOS versions
+                    self.output.isHighResolutionCaptureEnabled = true
+                }
             }
 
             // Apply all configuration changes at once
@@ -249,8 +297,51 @@ class CameraModel: NSObject, ObservableObject {
                 self.maxZoom = maxZoomValue
                 self.zoomFactor = defaultZoomValue
             }
+            
+            // Start a periodic task to check and adjust focus if needed
+            self.startPeriodicFocusCheck()
+            
         } catch {
             print("Error setting up camera: \(error.localizedDescription)")
+        }
+    }
+    
+    // Timer for periodic auto-focus check
+    private var focusCheckTimer: Timer?
+    
+    // Start a periodic check to ensure focus is optimized
+    private func startPeriodicFocusCheck() {
+        // Cancel any existing timer
+        focusCheckTimer?.invalidate()
+        
+        // Create a new timer that runs every 3 seconds
+        focusCheckTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { [weak self] _ in
+            self?.checkAndOptimizeFocus()
+        }
+    }
+    
+    // Check focus conditions and optimize if needed
+    private func checkAndOptimizeFocus() {
+        guard let device = self.currentDevice else { return }
+        
+        // Only run if we're not in a user-defined focus mode
+        if device.focusMode != .locked {
+            // We could add scene analysis logic here to determine optimal focus
+            // For now, we'll just ensure we're in continuous auto-focus mode
+            
+            do {
+                try device.lockForConfiguration()
+                
+                // Make sure auto-focus is still active
+                if device.focusMode != .continuousAutoFocus && device.isFocusModeSupported(.continuousAutoFocus) {
+                    device.focusMode = .continuousAutoFocus
+                    print("📸 Re-enabled continuous auto-focus")
+                }
+                
+                device.unlockForConfiguration()
+            } catch {
+                print("Error in focus check: \(error.localizedDescription)")
+            }
         }
     }
 
@@ -316,27 +407,152 @@ class CameraModel: NSObject, ObservableObject {
         zoom(factor: newZoomFactor)
     }
 
-    // Method to handle white balance adjustment at a specific point
-    func adjustWhiteBalance(at point: CGPoint) {
+    // Method to handle white balance and focus adjustment at a specific point
+    func adjustCameraSettings(at point: CGPoint, lockWhiteBalance: Bool = false) {
         guard let device = self.currentDevice else { return }
 
+        // Log original coordinates
+        print("🎯 Request to focus at device coordinates: \(point.x), \(point.y), lockWhiteBalance: \(lockWhiteBalance)")
+        
+        // Cancel any existing focus reset timer
+        focusResetTimer?.invalidate()
+        
         do {
             try device.lockForConfiguration()
+            
+            // Set focus point and mode
+            if device.isFocusPointOfInterestSupported && device.isFocusModeSupported(.autoFocus) {
+                device.focusPointOfInterest = point
+                device.focusMode = .autoFocus
+                print("📸 Set focus point to \(point.x), \(point.y)")
+                
+                // Enable smooth auto-focus to help with depth of field transitions
+                if device.isSmoothAutoFocusSupported {
+                    device.isSmoothAutoFocusEnabled = true
+                }
+            }
+            
+            // Set exposure point and mode
+            if device.isExposurePointOfInterestSupported && device.isExposureModeSupported(.autoExpose) {
+                device.exposurePointOfInterest = point
+                device.exposureMode = .continuousAutoExposure
+                print("📸 Set exposure point to \(point.x), \(point.y)")
+            }
 
+            // Handle white balance differently based on whether we're locking it or not
             if device.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance) {
-                // First set to auto white balance
-                device.whiteBalanceMode = .continuousAutoWhiteBalance
-
-                // Then lock the white balance at the current values
-                // This will use the auto white balance values based on the tapped area
-                let currentWhiteBalanceGains = device.deviceWhiteBalanceGains
-                device.setWhiteBalanceModeLocked(with: currentWhiteBalanceGains, completionHandler: nil)
+                if lockWhiteBalance {
+                    // For double-tap: First set to auto white balance to get the right values
+                    device.whiteBalanceMode = .continuousAutoWhiteBalance
+                    
+                    // Then immediately lock it at current value
+                    let currentWhiteBalanceGains = device.deviceWhiteBalanceGains
+                    device.setWhiteBalanceModeLocked(with: currentWhiteBalanceGains, completionHandler: nil)
+                    print("📸 Locked white balance at \(point.x), \(point.y)")
+                } else {
+                    // For single-tap: Just use auto white balance
+                    device.whiteBalanceMode = .continuousAutoWhiteBalance
+                    print("📸 Set white balance to auto at \(point.x), \(point.y)")
+                }
             }
 
             device.unlockForConfiguration()
+            
+            // Schedule return to continuous auto focus after delay
+            // Use a shorter delay (3s) for normal focus, longer (8s) for locked white balance
+            let resetDelay = lockWhiteBalance ? 8.0 : 3.0
+            focusResetTimer = Timer.scheduledTimer(withTimeInterval: resetDelay, repeats: false) { [weak self] _ in
+                self?.resetToAutoFocus()
+            }
+            
+            // Visual feedback with correctly positioned indicator
+            // We must convert the point for UI display since it's in device coordinates (0-1)
+            showFocusIndicator(at: point)
+            
         } catch {
-            print("Error adjusting white balance: \(error.localizedDescription)")
+            print("Error adjusting camera settings: \(error.localizedDescription)")
         }
+    }
+    
+    // Reset to continuous auto-focus after tap-to-focus
+    private func resetToAutoFocus() {
+        guard let device = self.currentDevice else { return }
+        
+        do {
+            try device.lockForConfiguration()
+            
+            // Return to continuous auto-focus
+            if device.isFocusModeSupported(.continuousAutoFocus) {
+                device.focusMode = .continuousAutoFocus
+                print("📸 Reset to continuous auto-focus")
+            }
+            
+            // Return to continuous auto-exposure
+            if device.isExposureModeSupported(.continuousAutoExposure) {
+                device.exposureMode = .continuousAutoExposure
+            }
+            
+            // Return to continuous auto white balance
+            if device.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance) {
+                device.whiteBalanceMode = .continuousAutoWhiteBalance
+            }
+            
+            device.unlockForConfiguration()
+        } catch {
+            print("Error resetting focus: \(error.localizedDescription)")
+        }
+    }
+    
+    // Show the visual focus indicator at the specified point in the UI
+    private func showFocusIndicator(at devicePoint: CGPoint) {
+        // Convert the device point (0-1) to view coordinates for the overlay
+        let viewPoint = convertToViewCoordinates(devicePoint: devicePoint)
+        
+        // Log the coordinates for debugging
+        print("🎯 Device point: \(devicePoint.x), \(devicePoint.y)")
+        print("🎯 View point: \(viewPoint.x), \(viewPoint.y)")
+        
+        // Make sure we're updating UI on the main thread
+        DispatchQueue.main.async {
+            // Update focus point in UI coordinates
+            self.focusIndicatorPoint = viewPoint
+            
+            // Show the indicator
+            self.showingFocusIndicator = true
+            
+            // Hide the indicator after a delay
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                // Smoothly animate out
+                withAnimation(.easeOut(duration: 0.3)) {
+                    self.showingFocusIndicator = false
+                }
+            }
+        }
+    }
+    
+    // Convert normalized device coordinates (0-1) to view coordinates
+    private func convertToViewCoordinates(devicePoint: CGPoint) -> CGPoint {
+        // The device coordinates are in the range 0-1
+        // We need to scale them to our view size
+        
+        // When the video is rotated 90 degrees clockwise (portrait mode):
+        // - The devicePoint.x (0-1, left-right) becomes the y-axis in view (bottom-top)
+        // - The devicePoint.y (0-1, top-bottom) becomes the x-axis in view (left-right)
+        
+        // First, log the incoming coordinates and view size for debugging
+        print("📏 Converting device point \(devicePoint.x), \(devicePoint.y) to view size \(viewSize.width)x\(viewSize.height)")
+        
+        // FIXED CONVERSION:
+        // For a 90-degree clockwise rotation (which we have):
+        // - x = y * width  (device y → view x)
+        // - y = (1-x) * height (inverted device x → view y)
+        let viewX = devicePoint.y * viewSize.width
+        let viewY = (1 - devicePoint.x) * viewSize.height
+        
+        let result = CGPoint(x: viewX, y: viewY)
+        print("📏 Converted to view coordinates: \(result.x), \(result.y)")
+        
+        return result
     }
 }
 
@@ -414,21 +630,107 @@ extension CameraModel: AVCapturePhotoCaptureDelegate {
 }
 
 // SwiftUI wrapper for the camera preview
-struct CameraView: UIViewRepresentable {
+struct CameraView: View {
     @ObservedObject var cameraModel: CameraModel
+    
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack {
+                // Camera preview represented by UIViewRepresentable
+                CameraPreviewView(cameraModel: cameraModel, viewSize: geometry.size)
+                    .edgesIgnoringSafeArea(.all)
+                
+                // Focus indicator overlay with proper coordinates
+                if cameraModel.showingFocusIndicator, let point = cameraModel.focusIndicatorPoint {
+                    FocusIndicatorView()
+                        .position(x: point.x, y: point.y)
+                        .transition(.scale.combined(with: .opacity))
+                        .animation(.easeInOut(duration: 0.2), value: cameraModel.showingFocusIndicator)
+                }
+                
+                // Debug rectangle to show view bounds
+                // Uncomment this to debug coordinate spaces
+                // Rectangle()
+                //     .stroke(Color.green, lineWidth: 2)
+                //     .opacity(0.5)
+            }
+            .onAppear {
+                print("📏 Camera view size: \(geometry.size.width)x\(geometry.size.height)")
+            }
+        }
+    }
+}
+
+// Focus square indicator
+struct FocusIndicatorView: View {
+    // Animation state
+    @State private var isAnimating = false
+    
+    var body: some View {
+        ZStack {
+            // Outer square with animation
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(Color.yellow, lineWidth: 2)
+                .frame(width: isAnimating ? 70 : 80, height: isAnimating ? 70 : 80)
+                .animation(Animation.easeInOut(duration: 0.5).repeatForever(autoreverses: true), value: isAnimating)
+            
+            // Inner square
+            RoundedRectangle(cornerRadius: 6)
+                .stroke(Color.white, lineWidth: 1.5)
+                .frame(width: 50, height: 50)
+            
+            // Center crosshair
+            ZStack {
+                // Horizontal line
+                Rectangle()
+                    .fill(Color.yellow)
+                    .frame(width: 20, height: 1)
+                
+                // Vertical line
+                Rectangle()
+                    .fill(Color.yellow)
+                    .frame(width: 1, height: 20)
+            }
+        }
+        .shadow(color: Color.black.opacity(0.5), radius: 2, x: 1, y: 1)
+        .onAppear {
+            isAnimating = true
+        }
+    }
+}
+
+// UIViewRepresentable for camera preview
+struct CameraPreviewView: UIViewRepresentable {
+    @ObservedObject var cameraModel: CameraModel
+    var viewSize: CGSize // Store the parent view's size for coordinate conversion
+    
+    // Store the view reference to help with coordinate mapping
+    class CameraPreviewHolder {
+        weak var view: UIView?
+    }
+    
+    // Shared holder to maintain a reference to the view
+    private let viewHolder = CameraPreviewHolder()
 
     func makeUIView(context: Context) -> UIView {
-        let view = UIView(frame: UIScreen.main.bounds)
-
+        // Create a view with the exact size passed from parent
+        let view = UIView(frame: CGRect(origin: .zero, size: viewSize))
+        print("📐 Creating camera preview with size: \(viewSize.width)x\(viewSize.height)")
+        
+        // Store the view reference
+        viewHolder.view = view
+        
         // Create and configure the preview layer
-        cameraModel.preview = AVCaptureVideoPreviewLayer(session: cameraModel.session)
-        cameraModel.preview.frame = view.frame
-        cameraModel.preview.videoGravity = .resizeAspectFill
-        cameraModel.preview.connection?.videoRotationAngle = 90 // Force portrait orientation
+        let previewLayer = AVCaptureVideoPreviewLayer()
+        previewLayer.session = cameraModel.session
+        previewLayer.frame = view.bounds
+        previewLayer.videoGravity = .resizeAspectFill
+        previewLayer.connection?.videoRotationAngle = 90 // Force portrait orientation
+        cameraModel.preview = previewLayer
 
         // Ensure the layer is added to the view
-        view.layer.addSublayer(cameraModel.preview)
-
+        view.layer.addSublayer(previewLayer)
+        
         // Add gesture recognizers
         let pinchGesture = UIPinchGestureRecognizer(target: context.coordinator, action: #selector(context.coordinator.handlePinchGesture(_:)))
         view.addGestureRecognizer(pinchGesture)
@@ -437,12 +739,23 @@ struct CameraView: UIViewRepresentable {
         doubleTapGesture.numberOfTapsRequired = 2
         view.addGestureRecognizer(doubleTapGesture)
 
+        // Add single tap gesture for quick focus
+        let singleTapGesture = UITapGestureRecognizer(target: context.coordinator, action: #selector(context.coordinator.handleSingleTapGesture(_:)))
+        singleTapGesture.requiresExclusiveTouchType = true
+        
+        // Ensure single tap doesn't conflict with double tap
+        singleTapGesture.require(toFail: doubleTapGesture)
+        view.addGestureRecognizer(singleTapGesture)
+
         // Start the session on a background thread with higher priority
         DispatchQueue.global(qos: .userInteractive).async {
             if !cameraModel.session.isRunning {
                 cameraModel.session.startRunning()
             }
         }
+        
+        // Store exact view dimensions in the model for coordinate mapping
+        cameraModel.viewSize = viewSize
 
         return view
     }
@@ -450,7 +763,13 @@ struct CameraView: UIViewRepresentable {
     func updateUIView(_ uiView: UIView, context: Context) {
         // Update the preview layer frame when the view updates
         DispatchQueue.main.async {
+            // Update frame with the latest size
+            uiView.frame = CGRect(origin: .zero, size: viewSize)
             cameraModel.preview?.frame = uiView.bounds
+            
+            // Update the size in the model
+            cameraModel.viewSize = viewSize
+            print("📐 Updated camera preview to size: \(viewSize.width)x\(viewSize.height)")
 
             // Ensure the camera is running
             if !cameraModel.session.isRunning {
@@ -467,10 +786,10 @@ struct CameraView: UIViewRepresentable {
 
     // Coordinator for handling UIKit gestures
     class Coordinator: NSObject {
-        var parent: CameraView
+        var parent: CameraPreviewView
         private var initialScale: CGFloat = 1.0
 
-        init(_ parent: CameraView) {
+        init(_ parent: CameraPreviewView) {
             self.parent = parent
         }
 
@@ -496,18 +815,41 @@ struct CameraView: UIViewRepresentable {
             }
         }
 
-        // Handle double tap gesture for white balance
+        // Handle double tap gesture for focus and white balance
         @objc func handleDoubleTapGesture(_ gesture: UITapGestureRecognizer) {
-            let location = gesture.location(in: gesture.view)
-            // print that we tapped the screen twice
-            print("Double tap detected at \(location)")
+            guard let view = gesture.view else { return }
+            let location = gesture.location(in: view)
+            print("👆 Double tap detected at \(location.x), \(location.y)")
+            
             // Convert touch point to camera coordinate
             if let layer = parent.cameraModel.preview {
                 // Convert the point from the view's coordinate space to the preview layer's coordinate space
                 let pointInPreviewLayer = layer.captureDevicePointConverted(fromLayerPoint: location)
-
-                // Adjust white balance at this point
-                parent.cameraModel.adjustWhiteBalance(at: pointInPreviewLayer)
+                print("👆 Converted to camera coordinates: \(pointInPreviewLayer.x), \(pointInPreviewLayer.y)")
+                
+                // We need to convert pointInPreviewLayer to focus indicator point
+                // This is now handled in the CameraModel's adjustCameraSettings method
+                
+                // Lock both focus and white balance
+                // We set locked=true to indicate we want to lock white balance too
+                parent.cameraModel.adjustCameraSettings(at: pointInPreviewLayer, lockWhiteBalance: true)
+            }
+        }
+        
+        // Handle single tap gesture for quick focus
+        @objc func handleSingleTapGesture(_ gesture: UITapGestureRecognizer) {
+            guard let view = gesture.view else { return }
+            let location = gesture.location(in: view)
+            print("👆 Single tap detected at \(location.x), \(location.y)")
+            
+            // Convert touch point to camera coordinate
+            if let layer = parent.cameraModel.preview {
+                // Convert the point from the view's coordinate space to the preview layer's coordinate space
+                let pointInPreviewLayer = layer.captureDevicePointConverted(fromLayerPoint: location)
+                print("👆 Converted to camera coordinates: \(pointInPreviewLayer.x), \(pointInPreviewLayer.y)")
+                
+                // Adjust focus and exposure but not white balance
+                parent.cameraModel.adjustCameraSettings(at: pointInPreviewLayer, lockWhiteBalance: false)
             }
         }
     }
@@ -661,12 +1003,12 @@ struct EmptyGalleryView: View {
                 .font(.title)
                 .foregroundColor(.secondary)
 
-            Button("Go Back and Take Photos", action: onDismiss)
-                .padding()
-                .background(Color.blue)
-                .foregroundColor(.white)
-                .cornerRadius(10)
-                .padding(.top, 20)
+//            Button("Go Back and Take Photos", action: onDismiss)
+//                .padding()
+//                .background(Color.blue)
+//                .foregroundColor(.white)
+//                .cornerRadius(10)
+//                .padding(.top, 20)
         }
     }
 }
