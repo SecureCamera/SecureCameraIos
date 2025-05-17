@@ -298,7 +298,7 @@ class CameraModel: NSObject, ObservableObject {
 
     // Method to handle pinch gesture for zoom with smoothing
     func handlePinchGesture(scale: CGFloat, initialScale: CGFloat? = nil) {
-        if let initialScale = initialScale {
+        if initialScale != nil {
             // When gesture begins, store the initial zoom
             initialZoom = zoomFactor
         }
@@ -750,7 +750,7 @@ struct SecureGalleryView: View {
             }
             .environment(\.editMode, $editMode)
             .onAppear(perform: loadPhotos)
-            .onChange(of: selectedPhoto) { newValue in
+            .onChange(of: selectedPhoto) { _, newValue in
                 if newValue == nil {
                     loadPhotos()
                 }

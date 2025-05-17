@@ -67,7 +67,7 @@ class SecureCameraController: UIViewController, AVCapturePhotoCaptureDelegate {
    private func processAndSecurePhoto(_ photoData: Data) {
        // Extract EXIF data before encryption
        if let image = UIImage(data: photoData),
-          let cgImage = image.cgImage,
+          let _ = image.cgImage,
           let metadata = extractMetadata(from: photoData) {
 
            // Process EXIF data (location, timestamps, etc.)
@@ -98,10 +98,10 @@ class SecureCameraController: UIViewController, AVCapturePhotoCaptureDelegate {
     }
 
     private func processEXIFData(_ metadata: [String: Any]) -> [String: Any] {
-        var processedMetadata = metadata
+        let processedMetadata = metadata
 
         // Extract GPS data if available
-        if let gpsInfo = metadata[kCGImagePropertyGPSDictionary as String] as? [String: Any] {
+        if metadata[kCGImagePropertyGPSDictionary as String] is [String: Any] {
             // Process GPS data as needed
             // Store separate from image for security
         }
