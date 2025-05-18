@@ -984,216 +984,7 @@ struct AuthenticationView: View {
 }
 
 // Settings view with sharing, location, and security sections
-struct SettingsView: View {
-    // Sharing options
-    @State private var sanitizeFileName = true
-    @State private var sanitizeMetadata = true
-    
-    // Privacy and detection options
-    @AppStorage("showFaceDetection") private var showFaceDetection = true
-    
-    // Security settings
-    @State private var biometricEnabled = false
-    @State private var sessionTimeout = 5 // minutes
-    @State private var appPIN = ""
-    @State private var poisonPIN = ""
-    @State private var showResetConfirmation = false
-    
-    // Location permissions
-    @State private var locationPermissionStatus = "Not Determined"
-    
-    // Dependency injections (commented until implementations are ready)
-    // private let authManager = AuthenticationManager()
-    // private let locationManager = CLLocationManager()
 
-    var body: some View {
-        NavigationView {
-            List {
-                // SHARING SECTION
-                Section(header: Text("Sharing Options")) {
-                    Toggle("Sanitize File Name", isOn: $sanitizeFileName)
-                        .onChange(of: sanitizeFileName) { _, newValue in
-                            print("Sanitize file name: \(newValue)")
-                            // TODO: Update user preferences
-                        }
-                    
-                    Toggle("Sanitize Metadata", isOn: $sanitizeMetadata)
-                        .onChange(of: sanitizeMetadata) { _, newValue in
-                            print("Sanitize metadata: \(newValue)")
-                            // TODO: Update user preferences
-                        }
-                        
-                    Text("When enabled, personal information will be removed from photos before sharing")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .padding(.top, 4)
-                }
-                
-                // PRIVACY & DETECTION SECTION
-                Section(header: Text("Privacy & Detection")) {
-                    Toggle("Face Detection", isOn: $showFaceDetection)
-                        .onChange(of: showFaceDetection) { _, newValue in
-                            print("Face detection: \(newValue)")
-                        }
-                    
-                    Text("When enabled, faces can be detected in photos for privacy protection")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .padding(.top, 4)
-                }
-                
-                // LOCATION SECTION
-                Section(header: Text("Location")) {
-                    HStack {
-                        Text("Permission Status")
-                        Spacer()
-                        Text(locationPermissionStatus)
-                            .foregroundColor(locationStatusColor)
-                    }
-                    
-                    Button("Check Location Permission") {
-                        checkLocationPermission()
-                    }
-                    
-                    Text("Location data can be embedded in photos when permission is granted")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .padding(.top, 4)
-                }
-                
-                // SECURITY SECTION
-                Section(header: Text("Security")) {
-                    HStack {
-                        Text("Status")
-                        Spacer()
-                        Text("Secure")
-                            .foregroundColor(.green)
-                    }
-                    
-                    Picker("Session Timeout", selection: $sessionTimeout) {
-                        Text("1 minute").tag(1)
-                        Text("5 minutes").tag(5)
-                        Text("15 minutes").tag(15)
-                        Text("30 minutes").tag(30)
-                        Text("Never").tag(0)
-                    }
-                    .onChange(of: sessionTimeout) { _, newValue in
-                        print("Session timeout changed to \(newValue) minutes")
-                        // TODO: Update user preferences
-                    }
-                    
-                    Toggle("Biometric Authentication", isOn: $biometricEnabled)
-                        .onChange(of: biometricEnabled) { _, newValue in
-                            print("Biometric auth: \(newValue)")
-                            // TODO: Update auth manager
-                            // authManager.isBiometricEnabled = newValue
-                        }
-                }
-                
-                // APP PIN SECTION
-                Section(header: Text("App PIN"), footer: Text("Set an app-specific PIN for additional security")) {
-                    SecureField("Set App PIN", text: $appPIN)
-                        .keyboardType(.numberPad)
-                        .autocorrectionDisabled(true)
-                        .textContentType(.oneTimeCode) // Prevents keychain suggestions
-                    
-                    Button("Save App PIN") {
-                        if !appPIN.isEmpty {
-                            print("Setting app PIN")
-                            // authManager.setAppPIN(appPIN)
-                            appPIN = ""
-                        }
-                    }
-                    .disabled(appPIN.isEmpty)
-                }
-                
-                // EMERGENCY ERASURE SECTION (POISON PILL)
-                Section(header: Text("Emergency Erasure"), footer: Text("If this PIN is entered, all photos will be immediately deleted")) {
-                    SecureField("Set Emergency PIN", text: $poisonPIN)
-                        .keyboardType(.numberPad)
-                        .autocorrectionDisabled(true)
-                        .textContentType(.oneTimeCode) // Prevents keychain suggestions
-                    
-                    Button("Save Emergency PIN") {
-                        if !poisonPIN.isEmpty {
-                            print("Setting poison PIN")
-                            // authManager.setPoisonPIN(poisonPIN)
-                            poisonPIN = ""
-                        }
-                    }
-                    .foregroundColor(.red)
-                    .disabled(poisonPIN.isEmpty)
-                }
-                
-                // SECURITY RESET SECTION
-                Section {
-                    Button("Reset All Security Settings") {
-                        showResetConfirmation = true
-                    }
-                    .foregroundColor(.red)
-                    
-                } footer: {
-                    Text("Resets all security settings to default values. Does not delete photos.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-            }
-            .navigationTitle("Settings")
-            .navigationBarTitleDisplayMode(.inline)
-            .onAppear {
-                checkLocationPermission()
-            }
-            .alert(isPresented: $showResetConfirmation) {
-                Alert(
-                    title: Text("Reset Security Settings"),
-                    message: Text("Are you sure you want to reset all security settings to default? This action cannot be undone."),
-                    primaryButton: .destructive(Text("Reset")) {
-                        resetSecuritySettings()
-                    },
-                    secondaryButton: .cancel()
-                )
-            }
-        }
-    }
-    
-    // MARK: - Helper Properties
-    
-    private var locationStatusColor: Color {
-        switch locationPermissionStatus {
-        case "Authorized":
-            return .green
-        case "Denied", "Restricted":
-            return .red
-        default:
-            return .orange
-        }
-    }
-    
-    // MARK: - Helper Methods
-    
-    private func checkLocationPermission() {
-        // In a real implementation, this would use CLLocationManager
-        // For now we'll simulate the permission check
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            // Simulate different permission states for demo purposes
-            let statuses = ["Not Determined", "Authorized", "Denied", "Restricted"]
-            self.locationPermissionStatus = statuses[Int.random(in: 0..<statuses.count)]
-        }
-    }
-    
-    private func resetSecuritySettings() {
-        // Reset all security settings to default values
-        biometricEnabled = false
-        sessionTimeout = 5
-        appPIN = ""
-        poisonPIN = ""
-        
-        // In a real implementation:
-        // authManager.resetSecuritySettings()
-        print("Security settings have been reset")
-    }
-}
 
 // Photo cell view for gallery items
 struct PhotoCell: View {
@@ -1336,12 +1127,33 @@ struct SecureGalleryView: View {
     @State private var isImporting: Bool = false
     @State private var importProgress: Float = 0
     
+    // Decoy selection mode
+    @State private var isSelectingDecoys: Bool = false
+    @State private var maxDecoys: Int = 5
+    @State private var showDecoyLimitWarning: Bool = false
+    @State private var showDecoyConfirmation: Bool = false
+    
     private let secureFileManager = SecureFileManager()
     @Environment(\.dismiss) private var dismiss
+    
+    // Initializers
+    init() {
+        // Default initializer
+    }
+    
+    // Initializer for decoy selection mode
+    init(selectingDecoys: Bool) {
+        _isSelectingDecoys = State(initialValue: selectingDecoys)
+    }
 
     // Computed properties to simplify the view
     private var hasSelection: Bool {
         !selectedPhotoIds.isEmpty
+    }
+    
+    // Computed property to get current decoy photo count
+    private var currentDecoyCount: Int {
+        photos.filter { $0.isDecoy }.count
     }
     
     // Get an array of selected photos for sharing
@@ -1384,86 +1196,147 @@ struct SecureGalleryView: View {
                     )
                 }
             }
-            .navigationTitle("Secure Gallery")
+            .navigationTitle(isSelectingDecoys ? "Select Decoy Photos" : "Secure Gallery")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                // Only show import button when not in selection mode
-                if !isSelecting {
-                    // Import button
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        
-                        PhotosPicker(selection: $pickerItems, matching: .images, photoLibrary: .shared()) {
-                            Image(systemName: "square.and.arrow.down")
-                                .font(.system(size: 16))
+                // Left side button differs based on mode
+                ToolbarItem(placement: .navigationBarLeading) {
+                    if isSelectingDecoys {
+                        // Cancel button for decoy selection mode
+                        Button("Cancel") {
+                            // Exit decoy selection mode and return to settings
+                            isSelectingDecoys = false
+                            isSelecting = false
+                            selectedPhotoIds.removeAll()
+                            dismiss()
                         }
-                        .onChange(of: pickerItems) { _, newItems in
-                            // Process selected images from picker
-                            Task {
-                                var hadSuccessfulImport = false
-                                
-                                // Show import progress to user
-                                let importCount = newItems.count
-                                if importCount > 0 {
-                                    // Update UI to show import is happening
-                                    await MainActor.run {
-                                        isImporting = true
-                                        importProgress = 0
-                                    }
+                        .foregroundColor(.red)
+                    } else if isSelecting {
+                        // Cancel button for normal selection mode
+                        Button("Cancel") {
+                            isSelecting = false
+                            selectedPhotoIds.removeAll()
+                        }
+                        .foregroundColor(.red)
+                    } else {
+                        // Select button for normal mode
+                        Button("Select") {
+                            isSelecting = true
+                        }
+                        .foregroundColor(.blue)
+                    }
+                }
+                
+                // Right side actions
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    HStack(spacing: 16) {
+                        // Show Save button when in decoy selection mode
+                        if isSelectingDecoys {
+                            // Save button for decoy selection
+                            Button("Save") {
+                                if selectedPhotoIds.count > maxDecoys {
+                                    // Show warning if too many decoys selected
+                                    showDecoyLimitWarning = true
+                                } else {
+                                    // Show confirmation before saving
+                                    showDecoyConfirmation = true
+                                }
+                            }
+                            .foregroundColor(.blue)
+                            .disabled(selectedPhotoIds.isEmpty)
+                            
+                            // Count label showing selected/max
+                            Text("\(selectedPhotoIds.count)/\(maxDecoys)")
+                                .font(.caption)
+                                .foregroundColor(selectedPhotoIds.count > maxDecoys ? .red : .secondary)
+                                .frame(minWidth: 40)
+                        }
+                        // Show import button when not in selection mode
+                        else if !isSelecting {
+                            // Import button
+                            PhotosPicker(selection: $pickerItems, matching: .images, photoLibrary: .shared()) {
+                                Image(systemName: "square.and.arrow.down")
+                                    .font(.system(size: 16))
+                            }
+                            .onChange(of: pickerItems) { _, newItems in
+                                // Process selected images from picker
+                                Task {
+                                    var hadSuccessfulImport = false
                                     
-                                    print("Importing \(importCount) photos...")
-                                    
-                                    // Process each selected item with progress tracking
-                                    for (index, item) in newItems.enumerated() {
-                                        // Update progress
-                                        let currentProgress = Float(index) / Float(importCount)
+                                    // Show import progress to user
+                                    let importCount = newItems.count
+                                    if importCount > 0 {
+                                        // Update UI to show import is happening
                                         await MainActor.run {
-                                            importProgress = currentProgress
+                                            isImporting = true
+                                            importProgress = 0
                                         }
                                         
-                                        // Load and process the image
-                                        if let data = try? await item.loadTransferable(type: Data.self) {
-                                            // Process this image
-                                            await processImportedImageData(data)
-                                            hadSuccessfulImport = true
+                                        print("Importing \(importCount) photos...")
+                                        
+                                        // Process each selected item with progress tracking
+                                        for (index, item) in newItems.enumerated() {
+                                            // Update progress
+                                            let currentProgress = Float(index) / Float(importCount)
+                                            await MainActor.run {
+                                                importProgress = currentProgress
+                                            }
+                                            
+                                            // Load and process the image
+                                            if let data = try? await item.loadTransferable(type: Data.self) {
+                                                // Process this image
+                                                await processImportedImageData(data)
+                                                hadSuccessfulImport = true
+                                            }
+                                        }
+                                        
+                                        // Show 100% progress briefly before hiding
+                                        await MainActor.run {
+                                            importProgress = 1.0
+                                        }
+                                        
+                                        // Small delay to show completion
+                                        try? await Task.sleep(nanoseconds: 300_000_000) // 0.3 seconds
+                                    }
+                                    
+                                    // After importing all items, reset the picker selection and refresh gallery
+                                    await MainActor.run {
+                                        // Reset picked items
+                                        pickerItems = []
+                                        
+                                        // Hide progress indicator
+                                        isImporting = false
+                                        
+                                        // Reload the gallery if we imported images
+                                        if hadSuccessfulImport {
+                                            loadPhotos()
                                         }
                                     }
-                                    
-                                    // Show 100% progress briefly before hiding
-                                    await MainActor.run {
-                                        importProgress = 1.0
-                                    }
-                                    
-                                    // Small delay to show completion
-                                    try? await Task.sleep(nanoseconds: 300_000_000) // 0.3 seconds
                                 }
-                                
-                                // After importing all items, reset the picker selection and refresh gallery
-                                await MainActor.run {
-                                    // Reset picked items
-                                    pickerItems = []
-                                    
-                                    // Hide progress indicator
-                                    isImporting = false
-                                    
-                                    // Reload the gallery if we imported images
-                                    if hadSuccessfulImport {
-                                        loadPhotos()
-                                    }
-                                }
+                            }
+                            
+                            // Refresh button
+                            Button(action: loadPhotos) {
+                                Image(systemName: "arrow.clockwise")
+                                    .foregroundColor(.blue)
+                            }
+                        }
+                        // When in normal selection mode and items are selected
+                        else if hasSelection && !isSelectingDecoys {
+                            // Delete button
+                            Button(action: { showDeleteConfirmation = true }) {
+                                Image(systemName: "trash")
+                                    .foregroundColor(.red)
+                            }
+                            
+                            // Share button
+                            Button(action: shareSelectedPhotos) {
+                                Image(systemName: "square.and.arrow.up")
+                                    .foregroundColor(.blue)
                             }
                         }
                     }
                 }
-                
-                // Gallery toolbar with selection mode
-                GalleryToolbar(
-                    isSelecting: $isSelecting,
-                    showDeleteConfirmation: $showDeleteConfirmation,
-                    selectedPhotoIds: $selectedPhotoIds,
-                    hasSelection: hasSelection,
-                    onRefresh: loadPhotos,
-                    onShare: shareSelectedPhotos
-                )
             }
             .onAppear(perform: loadPhotos)
             .onChange(of: selectedPhoto) { _, newValue in
@@ -1524,6 +1397,12 @@ struct SecureGalleryView: View {
             }
             .alert(isPresented: $showDeleteConfirmation) {
                 deleteConfirmationAlert
+            }
+            .alert(isPresented: $showDecoyLimitWarning) {
+                decoyLimitWarningAlert
+            }
+            .alert(isPresented: $showDecoyConfirmation) {
+                decoyConfirmationAlert
             }
         }
     }
@@ -1624,6 +1503,11 @@ struct SecureGalleryView: View {
         if selectedPhotoIds.contains(photo.id) {
             selectedPhotoIds.remove(photo.id)
         } else {
+            // If we're selecting decoys and already at the limit, don't allow more selections
+            if isSelectingDecoys && selectedPhotoIds.count >= maxDecoys {
+                showDecoyLimitWarning = true
+                return
+            }
             selectedPhotoIds.insert(photo.id)
         }
     }
@@ -1664,6 +1548,8 @@ struct SecureGalleryView: View {
                         fileURL: fileURL
                     )
                 }
+                
+                // We'll update on main thread after sorting
 
                 // Sort photos by creation date (oldest at top, newest at bottom)
                 loadedPhotos.sort { photo1, photo2 in
@@ -1682,6 +1568,19 @@ struct SecureGalleryView: View {
                     
                     // Update the photos array
                     self.photos = loadedPhotos
+                    
+                    // If in decoy selection mode, pre-select existing decoy photos
+                    if self.isSelectingDecoys {
+                        // Find and select all photos that are already marked as decoys
+                        for photo in loadedPhotos {
+                            if photo.isDecoy {
+                                self.selectedPhotoIds.insert(photo.id)
+                            }
+                        }
+                        
+                        // Enable selection mode
+                        self.isSelecting = true
+                    }
                     
                     // Register these photos with the memory manager
                     MemoryManager.shared.registerPhotos(loadedPhotos)
@@ -1756,6 +1655,52 @@ struct SecureGalleryView: View {
     }
     
     // Share selected photos
+    // Save selected photos as decoys
+    private func saveDecoySelections() {
+        // First, un-mark any previously tagged decoys that aren't currently selected
+        for photo in photos {
+            let isCurrentlySelected = selectedPhotoIds.contains(photo.id)
+            
+            // If it's currently a decoy but not selected, unmark it
+            if photo.isDecoy && !isCurrentlySelected {
+                photo.setDecoyStatus(false)
+            }
+            // If it's selected but not a decoy, mark it
+            else if isCurrentlySelected && !photo.isDecoy {
+                photo.setDecoyStatus(true)
+            }
+        }
+        
+        // Reset selection and exit decoy mode
+        isSelectingDecoys = false
+        isSelecting = false
+        selectedPhotoIds.removeAll()
+        
+        // Return to settings
+        dismiss()
+    }
+    
+    // Computed property for decoy limit warning alert
+    private var decoyLimitWarningAlert: Alert {
+        Alert(
+            title: Text("Too Many Decoys"),
+            message: Text("You can select a maximum of \(maxDecoys) decoy photos. Please deselect some photos before saving."),
+            dismissButton: .default(Text("OK"))
+        )
+    }
+    
+    // Computed property for decoy confirmation alert
+    private var decoyConfirmationAlert: Alert {
+        Alert(
+            title: Text("Save Decoy Selection"),
+            message: Text("Are you sure you want to save these \(selectedPhotoIds.count) photos as decoys? These will be shown when the emergency PIN is entered."),
+            primaryButton: .default(Text("Save")) {
+                saveDecoySelections()
+            },
+            secondaryButton: .cancel()
+        )
+    }
+    
     private func shareSelectedPhotos() {
         // Get all the selected photos
         let images = selectedPhotos
@@ -1800,7 +1745,7 @@ struct SecureGalleryView: View {
 class SecurePhoto: Identifiable, Equatable {
     let id = UUID()
     let filename: String
-    let metadata: [String: Any]
+    var metadata: [String: Any]
     let fileURL: URL
     
     // Memory tracking
@@ -1810,6 +1755,30 @@ class SecurePhoto: Identifiable, Equatable {
     // Use lazy loading for images to reduce memory usage
     private var _thumbnail: UIImage?
     private var _fullImage: UIImage?
+    
+    // Computed property to check if this photo is marked as a decoy
+    var isDecoy: Bool {
+        return metadata["isDecoy"] as? Bool ?? false
+    }
+    
+    // Function to mark/unmark as decoy
+    func setDecoyStatus(_ isDecoy: Bool) {
+        metadata["isDecoy"] = isDecoy
+        
+        // Save updated metadata back to disk
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self = self else { return }
+            do {
+                let secureFileManager = SecureFileManager()
+                let metadataURL = try secureFileManager.getSecureDirectory().appendingPathComponent("\(filename).metadata")
+                let metadataData = try JSONSerialization.data(withJSONObject: metadata, options: [])
+                try metadataData.write(to: metadataURL)
+                print("Updated decoy status for photo: \(filename)")
+            } catch {
+                print("Error updating decoy status: \(error.localizedDescription)")
+            }
+        }
+    }
     
     // Thumbnail is loaded on demand and cached
     var thumbnail: UIImage {

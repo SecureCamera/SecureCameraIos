@@ -12,7 +12,7 @@ class SecureFileManager {
     private let fileManager = FileManager.default
     
     // Get a secure directory that's not backed up to iCloud
-    private func getSecureDirectory() throws -> URL {
+    func getSecureDirectory() throws -> URL {
         guard let documentsDirectory = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first else {
             throw NSError(domain: "com.securecamera", code: -1, userInfo: nil)
         }
