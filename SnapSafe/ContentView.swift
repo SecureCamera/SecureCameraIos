@@ -1624,6 +1624,8 @@ struct PhotoDetailView: View {
     @State private var processingFaces = false
     @State private var modifiedImage: UIImage?
     @State private var showBlurConfirmation = false
+    @State private var selectedMaskMode: MaskMode = .blur
+    @State private var showMaskOptions = false
 
     // Used to measure the displayed image size
     @State private var imageFrameSize: CGSize = .zero
@@ -1631,6 +1633,46 @@ struct PhotoDetailView: View {
     private let faceDetector = FaceDetector()
     @Environment(\.dismiss) private var dismiss
     private let secureFileManager = SecureFileManager()
+    
+    // Computed properties for mask action text
+    private var maskActionTitle: String {
+        switch selectedMaskMode {
+        case .blur:
+            return "Blur Selected Faces"
+        case .pixelate:
+            return "Pixelate Selected Faces"
+        case .blackout:
+            return "Blackout Selected Faces"
+        case .noise:
+            return "Apply Noise to Selected Faces"
+        }
+    }
+    
+    private var maskActionVerb: String {
+        switch selectedMaskMode {
+        case .blur:
+            return "blur"
+        case .pixelate:
+            return "pixelate"
+        case .blackout:
+            return "blackout"
+        case .noise:
+            return "apply noise to"
+        }
+    }
+    
+    private var maskButtonLabel: String {
+        switch selectedMaskMode {
+        case .blur:
+            return "Blur Faces"
+        case .pixelate:
+            return "Pixelate Faces"
+        case .blackout:
+            return "Blackout Faces"
+        case .noise:
+            return "Apply Noise"
+        }
+    }
 
     // Initialize the current index in init
     init(photo: SecurePhoto, showFaceDetection: Bool, onDelete: ((SecurePhoto) -> Void)? = nil) {
@@ -1825,15 +1867,40 @@ struct PhotoDetailView: View {
                             Spacer()
 
                             Button(action: {
-                                showBlurConfirmation = true
+                                showMaskOptions = true
                             }) {
-                                Label("Blur Faces", systemImage: "eye.slash")
+                                Label("Mask Faces", systemImage: "eye.slash")
                                     .foregroundColor(.white)
                                     .padding()
                                     .background(hasFacesSelected ? Color.blue : Color.gray)
                                     .cornerRadius(10)
                             }
                             .disabled(!hasFacesSelected)
+                            .actionSheet(isPresented: $showMaskOptions) {
+                                ActionSheet(
+                                    title: Text("Select Mask Type"),
+                                    message: Text("Choose how to mask the selected faces"),
+                                    buttons: [
+                                        .default(Text("Blur")) {
+                                            selectedMaskMode = .blur
+                                            showBlurConfirmation = true
+                                        },
+                                        .default(Text("Pixelate")) {
+                                            selectedMaskMode = .pixelate
+                                            showBlurConfirmation = true
+                                        },
+                                        .default(Text("Blackout")) {
+                                            selectedMaskMode = .blackout
+                                            showBlurConfirmation = true
+                                        },
+                                        .default(Text("Noise")) {
+                                            selectedMaskMode = .noise
+                                            showBlurConfirmation = true
+                                        },
+                                        .cancel()
+                                    ]
+                                )
+                            }
                         }
                         .padding(.horizontal)
 
@@ -1924,10 +1991,10 @@ struct PhotoDetailView: View {
         }
         .alert(isPresented: $showBlurConfirmation) {
             Alert(
-                title: Text("Blur Selected Faces"),
-                message: Text("Are you sure you want to blur the selected faces? This will permanently modify the photo."),
-                primaryButton: .destructive(Text("Blur Faces")) {
-                    applyFaceBlurring()
+                title: Text(maskActionTitle),
+                message: Text("Are you sure you want to \(maskActionVerb) the selected faces? This will permanently modify the photo."),
+                primaryButton: .destructive(Text(maskButtonLabel)) {
+                    applyFaceMasking()
                 },
                 secondaryButton: .cancel()
             )
@@ -1968,21 +2035,28 @@ struct PhotoDetailView: View {
         }
     }
 
-    private func applyFaceBlurring() {
-        // Apply blurring on a background thread
+    private func applyFaceMasking() {
+        // Show a loading indicator while processing
+        withAnimation {
+            processingFaces = true
+        }
+        
+        // Apply masking on a background thread
         DispatchQueue.global(qos: .userInitiated).async {
-            if let blurredImage = faceDetector.blurFaces(in: currentPhoto.fullImage, faces: detectedFaces) {
-                // Save the blurred image to the file system
-                let imageData = blurredImage.jpegData(compressionQuality: 0.9) ?? Data()
-
+            // Use the new maskFaces method with the selected mask mode
+            if let maskedImage = faceDetector.maskFaces(in: currentPhoto.fullImage, faces: detectedFaces, modes: [selectedMaskMode]) {
+                // Save the masked image to the file system
+                let imageData = maskedImage.jpegData(compressionQuality: 0.9) ?? Data()
+                
                 do {
                     try secureFileManager.savePhoto(imageData, withMetadata: currentPhoto.metadata)
-
+                    
                     // Update UI on main thread
                     DispatchQueue.main.async {
                         withAnimation {
-                            self.modifiedImage = blurredImage
-
+                            self.modifiedImage = maskedImage
+                            self.processingFaces = false
+                            
                             // Exit face detection mode after a short delay
                             DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
                                 withAnimation {
@@ -1993,8 +2067,16 @@ struct PhotoDetailView: View {
                         }
                     }
                 } catch {
-                    print("Error saving blurred photo: \(error.localizedDescription)")
+                    DispatchQueue.main.async {
+                        self.processingFaces = false
+                    }
+                    print("Error saving masked photo: \(error.localizedDescription)")
                 }
+            } else {
+                DispatchQueue.main.async {
+                    self.processingFaces = false
+                }
+                print("Error creating masked image")
             }
         }
     }
