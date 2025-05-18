@@ -1706,6 +1706,13 @@ struct PhotoDetailView: View {
     @State private var offset: CGFloat = 0
     @State private var isSwiping: Bool = false
     
+    // Zoom and pan states
+    @State private var currentScale: CGFloat = 1.0
+    @State private var dragOffset: CGSize = .zero
+    @State private var lastScale: CGFloat = 1.0
+    @State private var isZoomed: Bool = false
+    @State private var lastDragPosition: CGSize = .zero // Keep track of last position
+    
     // Face detection states
     @State private var isFaceDetectionActive = false
     @State private var detectedFaces: [DetectedFace] = []
@@ -1829,9 +1836,26 @@ struct PhotoDetailView: View {
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                             .padding(.top, 8)
+                            .opacity(isZoomed ? 0.5 : 1.0) // Fade when zoomed
                     }
                     
                     Spacer()
+                    
+                    // Zoom level indicator (only show when actively zooming)
+                    if isZoomed {
+                        ZStack {
+                            Capsule()
+                                .fill(Color.black.opacity(0.7))
+                                .frame(width: 70, height: 30)
+                            
+                            Text(String(format: "%.1fx", currentScale))
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(.white)
+                        }
+                        .opacity(currentScale != 1.0 ? 1.0 : 0.0)
+                        .animation(.easeInOut(duration: 0.2), value: currentScale)
+                        .padding(.bottom, 10)
+                    }
                     
                     // Centered image display
                     ZStack {
@@ -1840,7 +1864,10 @@ struct PhotoDetailView: View {
                             .resizable()
                             .aspectRatio(contentMode: .fit)
                             .rotationEffect(.degrees(imageRotation))
-                            .offset(x: offset)
+                            .scaleEffect(currentScale)
+                            .offset(x: offset + dragOffset.width, y: dragOffset.height)
+                            .animation(.interactiveSpring(), value: offset) // Smooth animation for offset
+                            .animation(nil, value: dragOffset) // No animation for drag to prevent jumping
                             .overlay(
                                 GeometryReader { imageGeometry in
                                     Color.clear
@@ -1877,20 +1904,69 @@ struct PhotoDetailView: View {
                                     }
                                 }
                             )
+                            // Apply multiple gestures with a gesture modifier
                             .gesture(
+                                // Magnification (pinch) gesture for zoom in/out
+                                MagnificationGesture()
+                                    .onChanged { value in
+                                        let delta = value / lastScale
+                                        lastScale = value
+                                        
+                                        // Apply zoom with a smoothing factor
+                                        let newScale = currentScale * delta
+                                        // Limit the scale to reasonable bounds
+                                        currentScale = min(max(newScale, 0.5), 6.0)
+                                        
+                                        // Update zoomed state for UI adjustments
+                                        isZoomed = currentScale > 1.1
+                                    }
+                                    .onEnded { value in
+                                        // Reset lastScale for next gesture
+                                        lastScale = 1.0
+                                        
+                                        // Check if we should return to the gallery
+                                        if currentScale < 0.6 && !isFaceDetectionActive {
+                                            // User has pinched out enough to dismiss
+                                            dismiss()
+                                        } else if currentScale < 1.0 {
+                                            // Reset to normal scale using our helper method
+                                            resetZoomAndPan()
+                                        }
+                                    }
+                            )
+                            // Add a drag gesture only when zoomed
+                            .simultaneousGesture(
                                 DragGesture()
                                     .onChanged { gesture in
-                                        // Only enable horizontal swipes if we have multiple photos and face detection is inactive
-                                        if !allPhotos.isEmpty && !isFaceDetectionActive {
+                                        if isZoomed {
+                                            // When zoomed, add the new translation to the last drag position
+                                            // This creates a cumulative drag effect
+                                            self.dragOffset = CGSize(
+                                                width: lastDragPosition.width + gesture.translation.width,
+                                                height: lastDragPosition.height + gesture.translation.height
+                                            )
+                                        } else if !allPhotos.isEmpty && !isFaceDetectionActive {
+                                            // Handle photo navigation swipe when not zoomed
                                             isSwiping = true
                                             offset = gesture.translation.width
                                         }
                                     }
                                     .onEnded { gesture in
-                                        // Only process swipe if face detection is inactive
-                                        if !isFaceDetectionActive {
-                                            // Determine if the swipe is significant enough to change photos
-                                            // Threshold is 1/4 of screen width
+                                        if isZoomed {
+                                            // Calculate the final position including constraints
+                                            let maxDragDistance = imageFrameSize.width * currentScale / 2
+                                            let constrainedOffset = CGSize(
+                                                width: max(-maxDragDistance, min(maxDragDistance, dragOffset.width)),
+                                                height: max(-maxDragDistance, min(maxDragDistance, dragOffset.height))
+                                            )
+                                            
+                                            // Update dragOffset with the constrained value
+                                            self.dragOffset = constrainedOffset
+                                            
+                                            // Save this position as the new reference point for the next drag
+                                            self.lastDragPosition = constrainedOffset
+                                        } else if !isFaceDetectionActive {
+                                            // When not zoomed, handle photo navigation
                                             let threshold: CGFloat = geometry.size.width / 4
                                             
                                             if offset > threshold && canGoToPrevious {
@@ -1907,6 +1983,19 @@ struct PhotoDetailView: View {
                                         }
                                     }
                             )
+                            // Add a double tap gesture to toggle zoom
+                            .onTapGesture(count: 2) {
+                                if currentScale > 1.0 {
+                                    // Reset zoom if zoomed in
+                                    resetZoomAndPan()
+                                } else {
+                                    // Zoom in if not zoomed
+                                    withAnimation(.spring()) {
+                                        currentScale = 2.5
+                                        isZoomed = true
+                                    }
+                                }
+                            }
                     }
                     .frame(maxWidth: .infinity, maxHeight: geometry.size.height * 0.7)
                     
@@ -1968,7 +2057,7 @@ struct PhotoDetailView: View {
                         }
                         .padding(.bottom, 10)
                     } else {
-                        // Bottom toolbar with action buttons
+                        // Bottom toolbar with action buttons - hide when zoomed
                         HStack(spacing: 30) {
                             // Info button
                             Button(action: {
@@ -2024,6 +2113,8 @@ struct PhotoDetailView: View {
                         .background(Color.white.opacity(0.8))
                         .cornerRadius(12)
                         .padding(.bottom, 20)
+                        .opacity(isZoomed ? 0 : 1) // Hide controls when zoomed
+                        .animation(.easeInOut(duration: 0.2), value: isZoomed)
                     }
                 }
             }
@@ -2051,6 +2142,31 @@ struct PhotoDetailView: View {
             }
             .sheet(isPresented: $showImageInfo) {
                 ImageInfoView(photo: currentPhoto)
+            }
+            .actionSheet(isPresented: $showMaskOptions) {
+                ActionSheet(
+                    title: Text("Select Mask Type"),
+                    message: Text("Choose how to mask the selected faces"),
+                    buttons: [
+                        .default(Text("Blur")) {
+                            selectedMaskMode = .blur
+                            showBlurConfirmation = true
+                        },
+                        .default(Text("Pixelate")) {
+                            selectedMaskMode = .pixelate
+                            showBlurConfirmation = true
+                        },
+                        .default(Text("Blackout")) {
+                            selectedMaskMode = .blackout
+                            showBlurConfirmation = true
+                        },
+                        .default(Text("Noise")) {
+                            selectedMaskMode = .noise
+                            showBlurConfirmation = true
+                        },
+                        .cancel()
+                    ]
+                )
             }
         }
     }
@@ -2142,6 +2258,8 @@ struct PhotoDetailView: View {
                 currentIndex -= 1
                 // Reset rotation when changing photos
                 imageRotation = 0
+                // Reset zoom and pan
+                resetZoomAndPan()
                 // Clear face detection state
                 isFaceDetectionActive = false
                 detectedFaces = []
@@ -2156,6 +2274,8 @@ struct PhotoDetailView: View {
                 currentIndex += 1
                 // Reset rotation when changing photos
                 imageRotation = 0
+                // Reset zoom and pan
+                resetZoomAndPan()
                 // Clear face detection state
                 isFaceDetectionActive = false
                 detectedFaces = []
@@ -2164,8 +2284,24 @@ struct PhotoDetailView: View {
         }
     }
     
+    // Reset zoom and pan state to defaults
+    private func resetZoomAndPan() {
+        withAnimation(.spring()) {
+            currentScale = 1.0
+            dragOffset = .zero
+            lastScale = 1.0
+            isZoomed = false
+        }
+        // Reset the last drag position outside of animation to avoid jumps
+        lastDragPosition = .zero
+    }
+    
     // Manually rotate image if needed
     private func rotateImage(direction: Double) {
+        // Reset any zoom or panning when rotating
+        resetZoomAndPan()
+        
+        // Apply rotation
         imageRotation += direction
         
         // Normalize to 0-360 range
