@@ -1202,6 +1202,9 @@ struct PhotoCell: View {
     let isSelecting: Bool
     let onTap: () -> Void
     let onDelete: () -> Void
+    
+    // Track whether this cell is visible in the viewport
+    @State private var isVisible: Bool = false
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
@@ -1216,6 +1219,20 @@ struct PhotoCell: View {
                     RoundedRectangle(cornerRadius: 10)
                         .stroke(isSelected ? Color.blue : Color.clear, lineWidth: 3)
                 )
+                // Track appearance/disappearance for memory management
+                .onAppear {
+                    // This cell is now visible
+                    isVisible = true
+                    photo.isVisible = true
+                    MemoryManager.shared.reportThumbnailLoaded()
+                }
+                .onDisappear {
+                    // This cell is no longer visible
+                    isVisible = false
+                    photo.markAsInvisible()
+                    // Let the memory manager know it can clean up if needed
+                    MemoryManager.shared.checkMemoryUsage()
+                }
 
             // Selection checkmark when in selection mode and selected
             if isSelecting && isSelected {
@@ -1402,8 +1419,25 @@ struct SecureGalleryView: View {
                             for photo in self.photos {
                                 photo.clearMemory(keepThumbnail: true)
                             }
+                            // Trigger garbage collection
+                            MemoryManager.shared.checkMemoryUsage()
                         }
                     )
+                    .onAppear {
+                        // Trigger preloading of adjacent photos after a small delay
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            // We can only preload by ensuring the photos are registered with memory manager
+                            MemoryManager.shared.registerPhotos(photos)
+                            
+                            // This will cause adjacent photos to be preloaded
+                            if initialIndex > 0 {
+                                photos[initialIndex-1].isVisible = true
+                            }
+                            if initialIndex < photos.count - 1 {
+                                photos[initialIndex+1].isVisible = true
+                            }
+                        }
+                    }
                 } else {
                     // Fallback if photo not found in array
                     PhotoDetailView(
@@ -1412,6 +1446,8 @@ struct SecureGalleryView: View {
                         onDelete: { _ in loadPhotos() },
                         onDismiss: {
                             photo.clearMemory(keepThumbnail: true)
+                            // Trigger garbage collection
+                            MemoryManager.shared.checkMemoryUsage()
                         }
                     )
                 }
@@ -1555,12 +1591,14 @@ struct SecureGalleryView: View {
 
                 // Update UI on the main thread
                 DispatchQueue.main.async {
-                    // Clear memory of existing photos if we're refreshing
-                    for photo in self.photos {
-                        photo.clearMemory(keepThumbnail: false)
-                    }
+                    // First clear memory of existing photos if we're refreshing
+                    MemoryManager.shared.freeAllMemory()
                     
+                    // Update the photos array
                     self.photos = loadedPhotos
+                    
+                    // Register these photos with the memory manager
+                    MemoryManager.shared.registerPhotos(loadedPhotos)
                 }
             } catch {
                 print("Error loading photos: \(error.localizedDescription)")
@@ -1672,12 +1710,16 @@ struct SecureGalleryView: View {
     }
 }
 
-// Struct to represent a photo in the app with optimized memory usage
+// Class to represent a photo in the app with optimized memory usage
 class SecurePhoto: Identifiable, Equatable {
     let id = UUID()
     let filename: String
     let metadata: [String: Any]
     let fileURL: URL
+    
+    // Memory tracking
+    var isVisible: Bool = false
+    private var lastAccessTime: Date = Date()
     
     // Use lazy loading for images to reduce memory usage
     private var _thumbnail: UIImage?
@@ -1685,12 +1727,18 @@ class SecurePhoto: Identifiable, Equatable {
     
     // Thumbnail is loaded on demand and cached
     var thumbnail: UIImage {
+        // Update last access time
+        lastAccessTime = Date()
+        
         if let cachedThumbnail = _thumbnail {
             return cachedThumbnail
         }
         
         // Load thumbnail if needed
         do {
+            // Mark this photo as actively being used
+            isVisible = true
+            
             if let thumb = try secureFileManager.loadPhotoThumbnail(from: fileURL) {
                 _thumbnail = thumb
                 return thumb
@@ -1705,15 +1753,25 @@ class SecurePhoto: Identifiable, Equatable {
     
     // Full image is loaded on demand
     var fullImage: UIImage {
+        // Update last access time
+        lastAccessTime = Date()
+        
         if let cachedFullImage = _fullImage {
             return cachedFullImage
         }
         
         // Load full image if needed
         do {
+            // Mark this photo as actively being used
+            isVisible = true
+            
             let (data, _) = try secureFileManager.loadPhoto(filename: filename)
             if let img = UIImage(data: data) {
                 _fullImage = img
+                
+                // When we load a full image, notify the memory manager
+                MemoryManager.shared.reportFullImageLoaded()
+                
                 return img
             }
         } catch {
@@ -1724,12 +1782,30 @@ class SecurePhoto: Identifiable, Equatable {
         return thumbnail
     }
     
+    // Mark as no longer visible in the UI
+    func markAsInvisible() {
+        isVisible = false
+    }
+    
+    // Get the time since this photo was last accessed
+    var timeSinceLastAccess: TimeInterval {
+        return Date().timeIntervalSince(lastAccessTime)
+    }
+    
     // Clear memory when no longer needed
     func clearMemory(keepThumbnail: Bool = true) {
-        _fullImage = nil
+        if _fullImage != nil {
+            _fullImage = nil
+            
+            // Notify memory manager when we free a full image
+            MemoryManager.shared.reportFullImageUnloaded()
+        }
         
-        if !keepThumbnail {
+        if !keepThumbnail && _thumbnail != nil {
             _thumbnail = nil
+            
+            // Notify memory manager when we free a thumbnail
+            MemoryManager.shared.reportThumbnailUnloaded()
         }
     }
     
@@ -1755,6 +1831,111 @@ class SecurePhoto: Identifiable, Equatable {
     
     // Shared file manager instance
     private let secureFileManager = SecureFileManager()
+}
+
+// Singleton memory manager to track and clean up photo memory usage
+class MemoryManager {
+    static let shared = MemoryManager()
+    
+    // Memory tracking counters
+    private var loadedFullImages: Int = 0
+    private var loadedThumbnails: Int = 0
+    
+    // Memory thresholds
+    private let maxLoadedFullImages = 3  // Maximum number of full images to keep in memory
+    private let maxLoadedThumbnails = 30 // Maximum number of thumbnails to keep in memory
+    private let thumbnailCacheDuration: TimeInterval = 60.0 // Time in seconds to keep thumbnails in cache
+    
+    // Registry of photos to manage
+    private var managedPhotos: [SecurePhoto] = []
+    
+    private init() {}
+    
+    // Register photos for memory management
+    func registerPhotos(_ photos: [SecurePhoto]) {
+        managedPhotos = photos
+    }
+    
+    // Report when a full image is loaded
+    func reportFullImageLoaded() {
+        loadedFullImages += 1
+        checkMemoryUsage()
+    }
+    
+    // Report when a full image is unloaded
+    func reportFullImageUnloaded() {
+        loadedFullImages = max(0, loadedFullImages - 1)
+    }
+    
+    // Report when a thumbnail is loaded
+    func reportThumbnailLoaded() {
+        loadedThumbnails += 1
+        checkMemoryUsage()
+    }
+    
+    // Report when a thumbnail is unloaded
+    func reportThumbnailUnloaded() {
+        loadedThumbnails = max(0, loadedThumbnails - 1)
+    }
+    
+    // Check and clean up memory if needed
+    func checkMemoryUsage() {
+        // Clean up full images if over threshold
+        if loadedFullImages > maxLoadedFullImages {
+            cleanupFullImages()
+        }
+        
+        // Clean up thumbnails if over threshold
+        if loadedThumbnails > maxLoadedThumbnails {
+            cleanupThumbnails()
+        }
+    }
+    
+    // Free memory for photos that are not visible
+    private func cleanupFullImages() {
+        let nonVisiblePhotos = managedPhotos.filter { !$0.isVisible }
+        
+        // Sort by last access time (oldest first)
+        let sortedPhotos = nonVisiblePhotos.sorted { $0.timeSinceLastAccess > $1.timeSinceLastAccess }
+        
+        // Clear memory for the oldest photos
+        for photo in sortedPhotos {
+            photo.clearMemory(keepThumbnail: true)
+            
+            // Stop when we're below threshold
+            if loadedFullImages <= maxLoadedFullImages {
+                break
+            }
+        }
+    }
+    
+    // Free memory for thumbnail images of photos that haven't been accessed recently
+    private func cleanupThumbnails() {
+        let nonVisiblePhotos = managedPhotos.filter { !$0.isVisible }
+        
+        // Find photos whose thumbnails haven't been accessed in a while
+        let oldThumbnails = nonVisiblePhotos.filter { $0.timeSinceLastAccess > thumbnailCacheDuration }
+        
+        // Clear thumbnails for old photos
+        for photo in oldThumbnails {
+            photo.clearMemory(keepThumbnail: false)
+            
+            // Stop when we're below threshold
+            if loadedThumbnails <= maxLoadedThumbnails {
+                break
+            }
+        }
+    }
+    
+    // Free all memory to reset state
+    func freeAllMemory() {
+        for photo in managedPhotos {
+            photo.clearMemory(keepThumbnail: false)
+        }
+        
+        loadedFullImages = 0
+        loadedThumbnails = 0
+    }
 }
 
 // Photo detail view that supports swiping between photos
@@ -1862,8 +2043,21 @@ struct PhotoDetailView: View {
     // Get the current photo to display
     private var currentPhoto: SecurePhoto {
         if !allPhotos.isEmpty {
+            // Set visibility state of photos
+            for (index, photo) in allPhotos.enumerated() {
+                if index == currentIndex {
+                    photo.isVisible = true
+                } else {
+                    // Mark photos far from current as invisible for memory management
+                    let distance = abs(index - currentIndex)
+                    if distance > 3 {
+                        photo.markAsInvisible()
+                    }
+                }
+            }
             return allPhotos[currentIndex]
         } else if let photo = photo {
+            photo.isVisible = true
             return photo
         } else {
             // Should never happen but just in case
@@ -1876,7 +2070,12 @@ struct PhotoDetailView: View {
         if isFaceDetectionActive, let modified = modifiedImage {
             return modified
         } else {
-            return currentPhoto.fullImage
+            let image = currentPhoto.fullImage
+            // Trigger memory cleanup after loading the current image
+            DispatchQueue.main.async {
+                MemoryManager.shared.checkMemoryUsage()
+            }
+            return image
         }
     }
     
@@ -2246,6 +2445,31 @@ struct PhotoDetailView: View {
                     ]
                 )
             }
+            .onAppear {
+                // When the detail view appears, ensure it's properly registered with memory manager
+                if !allPhotos.isEmpty {
+                    // Current photo should be visible
+                    allPhotos[currentIndex].isVisible = true
+                    
+                    // Register all photos with the memory manager
+                    MemoryManager.shared.registerPhotos(allPhotos)
+                    
+                    // Preload adjacent photos for smoother navigation
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                        self.preloadAdjacentPhotos()
+                    }
+                } else if let photo = photo {
+                    // Single photo case
+                    photo.isVisible = true
+                    MemoryManager.shared.registerPhotos([photo])
+                }
+            }
+            .onDisappear {
+                // Explicit cleanup when view disappears
+                if let onDismiss = onDismiss {
+                    onDismiss()
+                }
+            }
         }
     }
     
@@ -2352,6 +2576,35 @@ struct PhotoDetailView: View {
         }
     }
     
+    // Preload adjacent photos to make swiping smoother
+    func preloadAdjacentPhotos() {
+        guard !allPhotos.isEmpty else { return }
+        
+        // Preload previous photo if available
+        if currentIndex > 0 {
+            let prevIndex = currentIndex - 1
+            let prevPhoto = allPhotos[prevIndex]
+            prevPhoto.isVisible = true  // Mark as visible for memory manager
+            
+            // Access thumbnail to trigger load but in a background thread
+            DispatchQueue.global(qos: .userInitiated).async {
+                _ = prevPhoto.thumbnail
+            }
+        }
+        
+        // Preload next photo if available
+        if currentIndex < allPhotos.count - 1 {
+            let nextIndex = currentIndex + 1
+            let nextPhoto = allPhotos[nextIndex]
+            nextPhoto.isVisible = true  // Mark as visible for memory manager
+            
+            // Access thumbnail to trigger load but in a background thread
+            DispatchQueue.global(qos: .userInitiated).async {
+                _ = nextPhoto.thumbnail
+            }
+        }
+    }
+    
     // Navigation functions
     private func navigateToPrevious() {
         if canGoToPrevious {
@@ -2369,6 +2622,11 @@ struct PhotoDetailView: View {
                 isFaceDetectionActive = false
                 detectedFaces = []
                 modifiedImage = nil
+            }
+            
+            // Preload adjacent photos for smoother navigation
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                self.preloadAdjacentPhotos()
             }
         }
     }
@@ -2389,6 +2647,11 @@ struct PhotoDetailView: View {
                 isFaceDetectionActive = false
                 detectedFaces = []
                 modifiedImage = nil
+            }
+            
+            // Preload adjacent photos for smoother navigation
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                self.preloadAdjacentPhotos()
             }
         }
     }
