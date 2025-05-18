@@ -1199,7 +1199,7 @@ struct SettingsView: View {
 struct PhotoCell: View {
     let photo: SecurePhoto
     let isSelected: Bool
-    let isEditing: Bool
+    let isSelecting: Bool
     let onTap: () -> Void
     let onDelete: () -> Void
 
@@ -1217,15 +1217,13 @@ struct PhotoCell: View {
                         .stroke(isSelected ? Color.blue : Color.clear, lineWidth: 3)
                 )
 
-            // Delete button in edit mode
-            if isEditing {
-                Button(action: onDelete) {
-                    Image(systemName: "trash.circle.fill")
-                        .font(.system(size: 24))
-                        .foregroundColor(.red)
-                        .background(Circle().fill(Color.white))
-                }
-                .padding(5)
+            // Selection checkmark when in selection mode and selected
+            if isSelecting && isSelected {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 24))
+                    .foregroundColor(.blue)
+                    .background(Circle().fill(Color.white))
+                    .padding(5)
             }
         }
     }
@@ -1253,25 +1251,54 @@ struct EmptyGalleryView: View {
 
 // Gallery toolbar view
 struct GalleryToolbar: ToolbarContent {
-    @Binding var editMode: EditMode
+    @Binding var isSelecting: Bool
     @Binding var showDeleteConfirmation: Bool
+    @Binding var selectedPhotoIds: Set<UUID>
     let hasSelection: Bool
     let onRefresh: () -> Void
+    let onShare: () -> Void
 
     var body: some ToolbarContent {
+        // Left side button (Select/Cancel)
         ToolbarItem(placement: .navigationBarLeading) {
-            EditButton()
+            Button(action: {
+                if isSelecting {
+                    // If we're currently selecting, cancel selection mode and clear selections
+                    isSelecting = false
+                    selectedPhotoIds.removeAll()
+                } else {
+                    // Enter selection mode
+                    isSelecting = true
+                }
+            }) {
+                Text(isSelecting ? "Cancel" : "Select")
+                    .foregroundColor(isSelecting ? .red : .blue)
+            }
         }
 
+        // Right side buttons (delete/share when selecting, refresh/import otherwise)
         ToolbarItem(placement: .navigationBarTrailing) {
-            if editMode.isEditing && hasSelection {
-                Button(action: { showDeleteConfirmation = true }) {
-                    Image(systemName: "trash")
-                        .foregroundColor(.red)
-                }
-            } else {
-                Button(action: onRefresh) {
-                    Image(systemName: "arrow.clockwise")
+            HStack(spacing: 20) {
+                // When in selection mode and items are selected, show delete button
+                if isSelecting && hasSelection {
+                    // Delete button
+                    Button(action: { showDeleteConfirmation = true }) {
+                        Image(systemName: "trash")
+                            .foregroundColor(.red)
+                    }
+                    
+                    // Share button
+                    Button(action: onShare) {
+                        Image(systemName: "square.and.arrow.up")
+                            .foregroundColor(.blue)
+                    }
+                } 
+                // When not in selection mode or nothing selected, show refresh button
+                else if !isSelecting {
+                    Button(action: onRefresh) {
+                        Image(systemName: "arrow.clockwise")
+                            .foregroundColor(.blue)
+                    }
                 }
             }
         }
@@ -1283,7 +1310,7 @@ struct SecureGalleryView: View {
     @State private var photos: [SecurePhoto] = []
     @State private var selectedPhoto: SecurePhoto?
     @AppStorage("showFaceDetection") private var showFaceDetection = true  // Using AppStorage to share with Settings
-    @State private var editMode: EditMode = .inactive
+    @State private var isSelecting: Bool = false
     @State private var selectedPhotoIds = Set<UUID>()
     @State private var showDeleteConfirmation = false
     @State private var isShowingImagePicker = false
@@ -1293,12 +1320,15 @@ struct SecureGalleryView: View {
     @Environment(\.dismiss) private var dismiss
 
     // Computed properties to simplify the view
-    private var isEditing: Bool {
-        editMode.isEditing
-    }
-
     private var hasSelection: Bool {
         !selectedPhotoIds.isEmpty
+    }
+    
+    // Get an array of selected photos for sharing
+    private var selectedPhotos: [UIImage] {
+        photos
+            .filter { selectedPhotoIds.contains($0.id) }
+            .map { $0.fullImage }
     }
 
     var body: some View {
@@ -1313,24 +1343,29 @@ struct SecureGalleryView: View {
             .navigationTitle("Secure Gallery")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                // Import button
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: {
-                        isShowingImagePicker = true
-                    }) {
-                        Image(systemName: "square.and.arrow.down")
-                            .font(.system(size: 16))
+                // Only show import button when not in selection mode
+                if !isSelecting {
+                    // Import button
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button(action: {
+                            isShowingImagePicker = true
+                        }) {
+                            Image(systemName: "square.and.arrow.down")
+                                .font(.system(size: 16))
+                        }
                     }
                 }
-                // Standard gallery toolbar
+                
+                // Gallery toolbar with selection mode
                 GalleryToolbar(
-                    editMode: $editMode,
+                    isSelecting: $isSelecting,
                     showDeleteConfirmation: $showDeleteConfirmation,
+                    selectedPhotoIds: $selectedPhotoIds,
                     hasSelection: hasSelection,
-                    onRefresh: loadPhotos
+                    onRefresh: loadPhotos,
+                    onShare: shareSelectedPhotos
                 )
             }
-            .environment(\.editMode, $editMode)
             .onAppear(perform: loadPhotos)
             .onChange(of: selectedPhoto) { _, newValue in
                 if newValue == nil {
@@ -1373,7 +1408,7 @@ struct SecureGalleryView: View {
                     PhotoCell(
                         photo: photo,
                         isSelected: selectedPhotoIds.contains(photo.id),
-                        isEditing: isEditing,
+                        isSelecting: isSelecting,
                         onTap: {
                             handlePhotoTap(photo)
                         },
@@ -1434,7 +1469,7 @@ struct SecureGalleryView: View {
     // MARK: - Action methods
 
     private func handlePhotoTap(_ photo: SecurePhoto) {
-        if isEditing {
+        if isSelecting {
             togglePhotoSelection(photo)
         } else {
             selectedPhoto = photo
@@ -1549,11 +1584,11 @@ struct SecureGalleryView: View {
             photos.first(where: { $0.id == id })
         }
 
-        // Clear selection and exit edit mode immediately
+        // Clear selection and exit selection mode immediately
         // for better UI responsiveness
         DispatchQueue.main.async {
             self.selectedPhotoIds.removeAll()
-            self.editMode = .inactive
+            self.isSelecting = false
         }
 
         // Process deletions in a background queue
@@ -1581,6 +1616,46 @@ struct SecureGalleryView: View {
                     }
                 }
             }
+        }
+    }
+    
+    // Share selected photos
+    private func shareSelectedPhotos() {
+        // Get all the selected photos
+        let images = selectedPhotos
+        
+        guard !images.isEmpty else { return }
+        
+        // Use UIApplication.shared.windows approach for SwiftUI integration
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let window = windowScene.windows.first,
+              let rootViewController = window.rootViewController else {
+            print("Could not find root view controller")
+            return
+        }
+        
+        // Create a UIActivityViewController to show the sharing options
+        let activityViewController = UIActivityViewController(
+            activityItems: images,
+            applicationActivities: nil
+        )
+        
+        // For iPad support
+        if let popover = activityViewController.popoverPresentationController {
+            popover.sourceView = window
+            popover.sourceRect = CGRect(x: window.bounds.midX, y: window.bounds.midY, width: 0, height: 0)
+            popover.permittedArrowDirections = []
+        }
+        
+        // Find the presented view controller to present from
+        var currentController = rootViewController
+        while let presented = currentController.presentedViewController {
+            currentController = presented
+        }
+        
+        // Present the share sheet from the topmost presented controller
+        DispatchQueue.main.async {
+            currentController.present(activityViewController, animated: true, completion: nil)
         }
     }
 }
