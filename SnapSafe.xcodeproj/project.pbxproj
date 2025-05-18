@@ -1,0 +1,607 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A9B3E0882DCF1D3C003F1ED3 /* Dependencies in Frameworks */ = {isa = PBXBuildFile; productRef = A9B3E0872DCF1D3C003F1ED3 /* Dependencies */; };
+		A9B3E08A2DCF1D3C003F1ED3 /* DependenciesTestSupport in Frameworks */ = {isa = PBXBuildFile; productRef = A9B3E0892DCF1D3C003F1ED3 /* DependenciesTestSupport */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		A9DE37582DC5F34600679C2C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A9DE373F2DC5F34400679C2C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A9DE37462DC5F34400679C2C;
+			remoteInfo = "Snap Safe";
+		};
+		A9DE37622DC5F34600679C2C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A9DE373F2DC5F34400679C2C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A9DE37462DC5F34400679C2C;
+			remoteInfo = "Snap Safe";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		A9DE37472DC5F34400679C2C /* SnapSafe.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SnapSafe.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A9DE37572DC5F34600679C2C /* SnapSafeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SnapSafeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A9DE37612DC5F34600679C2C /* SnapSafeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SnapSafeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		A9DE37492DC5F34400679C2C /* SnapSafe */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = SnapSafe;
+			sourceTree = "<group>";
+		};
+		A9DE375A2DC5F34600679C2C /* SnapSafeTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = SnapSafeTests;
+			sourceTree = "<group>";
+		};
+		A9DE37642DC5F34600679C2C /* SnapSafeUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = SnapSafeUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A9DE37442DC5F34400679C2C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A9B3E0882DCF1D3C003F1ED3 /* Dependencies in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A9DE37542DC5F34600679C2C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A9B3E08A2DCF1D3C003F1ED3 /* DependenciesTestSupport in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A9DE375E2DC5F34600679C2C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A9DE373E2DC5F34400679C2C = {
+			isa = PBXGroup;
+			children = (
+				A9DE37492DC5F34400679C2C /* SnapSafe */,
+				A9DE375A2DC5F34600679C2C /* SnapSafeTests */,
+				A9DE37642DC5F34600679C2C /* SnapSafeUITests */,
+				A9DE37482DC5F34400679C2C /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A9DE37482DC5F34400679C2C /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A9DE37472DC5F34400679C2C /* SnapSafe.app */,
+				A9DE37572DC5F34600679C2C /* SnapSafeTests.xctest */,
+				A9DE37612DC5F34600679C2C /* SnapSafeUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A9DE37462DC5F34400679C2C /* SnapSafe */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A9DE376B2DC5F34600679C2C /* Build configuration list for PBXNativeTarget "SnapSafe" */;
+			buildPhases = (
+				A9DE37432DC5F34400679C2C /* Sources */,
+				A9DE37442DC5F34400679C2C /* Frameworks */,
+				A9DE37452DC5F34400679C2C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				A9DE37492DC5F34400679C2C /* SnapSafe */,
+			);
+			name = SnapSafe;
+			packageProductDependencies = (
+				A9B3E0872DCF1D3C003F1ED3 /* Dependencies */,
+			);
+			productName = "Snap Safe";
+			productReference = A9DE37472DC5F34400679C2C /* SnapSafe.app */;
+			productType = "com.apple.product-type.application";
+		};
+		A9DE37562DC5F34600679C2C /* SnapSafeTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A9DE376E2DC5F34600679C2C /* Build configuration list for PBXNativeTarget "SnapSafeTests" */;
+			buildPhases = (
+				A9DE37532DC5F34600679C2C /* Sources */,
+				A9DE37542DC5F34600679C2C /* Frameworks */,
+				A9DE37552DC5F34600679C2C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A9DE37592DC5F34600679C2C /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				A9DE375A2DC5F34600679C2C /* SnapSafeTests */,
+			);
+			name = SnapSafeTests;
+			packageProductDependencies = (
+				A9B3E0892DCF1D3C003F1ED3 /* DependenciesTestSupport */,
+			);
+			productName = "Snap SafeTests";
+			productReference = A9DE37572DC5F34600679C2C /* SnapSafeTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		A9DE37602DC5F34600679C2C /* SnapSafeUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A9DE37712DC5F34600679C2C /* Build configuration list for PBXNativeTarget "SnapSafeUITests" */;
+			buildPhases = (
+				A9DE375D2DC5F34600679C2C /* Sources */,
+				A9DE375E2DC5F34600679C2C /* Frameworks */,
+				A9DE375F2DC5F34600679C2C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A9DE37632DC5F34600679C2C /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				A9DE37642DC5F34600679C2C /* SnapSafeUITests */,
+			);
+			name = SnapSafeUITests;
+			packageProductDependencies = (
+			);
+			productName = "Snap SafeUITests";
+			productReference = A9DE37612DC5F34600679C2C /* SnapSafeUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A9DE373F2DC5F34400679C2C /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1620;
+				LastUpgradeCheck = 1620;
+				TargetAttributes = {
+					A9DE37462DC5F34400679C2C = {
+						CreatedOnToolsVersion = 16.2;
+					};
+					A9DE37562DC5F34600679C2C = {
+						CreatedOnToolsVersion = 16.2;
+						TestTargetID = A9DE37462DC5F34400679C2C;
+					};
+					A9DE37602DC5F34600679C2C = {
+						CreatedOnToolsVersion = 16.2;
+						TestTargetID = A9DE37462DC5F34400679C2C;
+					};
+				};
+			};
+			buildConfigurationList = A9DE37422DC5F34400679C2C /* Build configuration list for PBXProject "SnapSafe" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = A9DE373E2DC5F34400679C2C;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				A9B3E0862DCF1D3C003F1ED3 /* XCRemoteSwiftPackageReference "swift-dependencies" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = A9DE37482DC5F34400679C2C /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A9DE37462DC5F34400679C2C /* SnapSafe */,
+				A9DE37562DC5F34600679C2C /* SnapSafeTests */,
+				A9DE37602DC5F34600679C2C /* SnapSafeUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A9DE37452DC5F34400679C2C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A9DE37552DC5F34600679C2C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A9DE375F2DC5F34600679C2C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A9DE37432DC5F34400679C2C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A9DE37532DC5F34600679C2C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A9DE375D2DC5F34600679C2C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A9DE37592DC5F34600679C2C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A9DE37462DC5F34400679C2C /* SnapSafe */;
+			targetProxy = A9DE37582DC5F34600679C2C /* PBXContainerItemProxy */;
+		};
+		A9DE37632DC5F34600679C2C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A9DE37462DC5F34400679C2C /* SnapSafe */;
+			targetProxy = A9DE37622DC5F34600679C2C /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		A9DE37692DC5F34600679C2C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		A9DE376A2DC5F34600679C2C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		A9DE376C2DC5F34600679C2C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"SnapSafe/Preview Content\"";
+				DEVELOPMENT_TEAM = BP75F4S5N3;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Snap-Safe-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = SnapSafe;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.photography";
+				INFOPLIST_KEY_NSCameraUsageDescription = "This app needs camera access so you can take photos that are encrypted and stored locally.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "snapsafe.Snap-Safe";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		A9DE376D2DC5F34600679C2C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"SnapSafe/Preview Content\"";
+				DEVELOPMENT_TEAM = BP75F4S5N3;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Snap-Safe-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = SnapSafe;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.photography";
+				INFOPLIST_KEY_NSCameraUsageDescription = "This app needs camera access so you can take photos that are encrypted and stored locally.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "snapsafe.Snap-Safe";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		A9DE376F2DC5F34600679C2C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = BP75F4S5N3;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "snapsafe.Snap-SafeTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Snap Safe.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Snap Safe";
+			};
+			name = Debug;
+		};
+		A9DE37702DC5F34600679C2C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = BP75F4S5N3;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "snapsafe.Snap-SafeTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Snap Safe.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Snap Safe";
+			};
+			name = Release;
+		};
+		A9DE37722DC5F34600679C2C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = BP75F4S5N3;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "snapsafe.Snap-SafeUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = "Snap Safe";
+			};
+			name = Debug;
+		};
+		A9DE37732DC5F34600679C2C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = BP75F4S5N3;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "snapsafe.Snap-SafeUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = "Snap Safe";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A9DE37422DC5F34400679C2C /* Build configuration list for PBXProject "SnapSafe" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A9DE37692DC5F34600679C2C /* Debug */,
+				A9DE376A2DC5F34600679C2C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		A9DE376B2DC5F34600679C2C /* Build configuration list for PBXNativeTarget "SnapSafe" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A9DE376C2DC5F34600679C2C /* Debug */,
+				A9DE376D2DC5F34600679C2C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		A9DE376E2DC5F34600679C2C /* Build configuration list for PBXNativeTarget "SnapSafeTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A9DE376F2DC5F34600679C2C /* Debug */,
+				A9DE37702DC5F34600679C2C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		A9DE37712DC5F34600679C2C /* Build configuration list for PBXNativeTarget "SnapSafeUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A9DE37722DC5F34600679C2C /* Debug */,
+				A9DE37732DC5F34600679C2C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		A9B3E0862DCF1D3C003F1ED3 /* XCRemoteSwiftPackageReference "swift-dependencies" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/pointfreeco/swift-dependencies";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.9.2;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		A9B3E0872DCF1D3C003F1ED3 /* Dependencies */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A9B3E0862DCF1D3C003F1ED3 /* XCRemoteSwiftPackageReference "swift-dependencies" */;
+			productName = Dependencies;
+		};
+		A9B3E0892DCF1D3C003F1ED3 /* DependenciesTestSupport */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A9B3E0862DCF1D3C003F1ED3 /* XCRemoteSwiftPackageReference "swift-dependencies" */;
+			productName = DependenciesTestSupport;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = A9DE373F2DC5F34400679C2C /* Project object */;
+}

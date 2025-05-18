@@ -1,0 +1,59 @@
+############################################################
+##  macOS cruft
+############################################################
+.DS_Store
+
+############################################################
+##  Xcode build artefacts
+############################################################
+build/
+DerivedData/
+
+############################################################
+##  User-specific Xcode state (safe to ignore)
+############################################################
+*.xcuserstate
+*.xccheckout
+*.xcscmblueprint
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+
+############################################################
+##  Swift Package Manager
+############################################################
+.build/              # intermediates
+!Package.resolved    # ← keep this under version control
+
+############################################################
+##  CocoaPods (optional)
+############################################################
+Pods/                # ignore if you regenerate locally
+!Podfile
+!Podfile.lock        # lock-file **should** be committed
+
+############################################################
+##  Carthage (optional)
+############################################################
+Carthage/Checkouts/
+Carthage/Build/
+
+############################################################
+##  Fastlane artefacts
+############################################################
+fastlane/report.xml
+fastlane/screenshots/**/*.png
+fastlane/test_output/
+
+############################################################
+##  Debug / archive artefacts
+############################################################
+*.ipa
+*.dSYM*
+*.memgraph
+
+############################################################
+##  Playgrounds
+############################################################
+timeline.xctimeline
+playground.xcworkspace
+
