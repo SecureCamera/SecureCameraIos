@@ -55,9 +55,9 @@ struct ContentView: View {
 
                     HStack {
                         Button(action: {
-                            isShowingGallery = true
+                            isShowingSettings = true
                         }) {
-                            Image(systemName: "photo.on.rectangle")
+                            Image(systemName: "gear")
                                 .font(.system(size: 24))
                                 .foregroundColor(.white)
                                 .padding()
@@ -81,11 +81,10 @@ struct ContentView: View {
                         }
 
                         Spacer()
-
                         Button(action: {
-                            isShowingSettings = true
+                            isShowingGallery = true
                         }) {
-                            Image(systemName: "gear")
+                            Image(systemName: "photo.on.rectangle")
                                 .font(.system(size: 24))
                                 .foregroundColor(.white)
                                 .padding()
@@ -933,13 +932,13 @@ struct SettingsView: View {
                 // SHARING SECTION
                 Section(header: Text("Sharing Options")) {
                     Toggle("Sanitize File Name", isOn: $sanitizeFileName)
-                        .onChange(of: sanitizeFileName) { newValue in
+                        .onChange(of: sanitizeFileName) { _, newValue in
                             print("Sanitize file name: \(newValue)")
                             // TODO: Update user preferences
                         }
                     
                     Toggle("Sanitize Metadata", isOn: $sanitizeMetadata)
-                        .onChange(of: sanitizeMetadata) { newValue in
+                        .onChange(of: sanitizeMetadata) { _, newValue in
                             print("Sanitize metadata: \(newValue)")
                             // TODO: Update user preferences
                         }
@@ -985,13 +984,13 @@ struct SettingsView: View {
                         Text("30 minutes").tag(30)
                         Text("Never").tag(0)
                     }
-                    .onChange(of: sessionTimeout) { newValue in
+                    .onChange(of: sessionTimeout) { _, newValue in
                         print("Session timeout changed to \(newValue) minutes")
                         // TODO: Update user preferences
                     }
                     
                     Toggle("Biometric Authentication", isOn: $biometricEnabled)
-                        .onChange(of: biometricEnabled) { newValue in
+                        .onChange(of: biometricEnabled) { _, newValue in
                             print("Biometric auth: \(newValue)")
                             // TODO: Update auth manager
                             // authManager.isBiometricEnabled = newValue
