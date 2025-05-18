@@ -37,6 +37,25 @@ struct ContentView: View {
 
                 // Camera controls overlay
                 VStack {
+                    // Top control bar with flash toggle
+                    HStack {
+                        Spacer()
+                        
+                        // Flash control button
+                        Button(action: {
+                            toggleFlashMode()
+                        }) {
+                            Image(systemName: flashIcon(for: cameraModel.flashMode))
+                                .font(.system(size: 20))
+                                .foregroundColor(.white)
+                                .padding(12)
+                                .background(Color.black.opacity(0.6))
+                                .clipShape(Circle())
+                        }
+                        .padding(.top, 16)
+                        .padding(.trailing, 16)
+                    }
+                    
                     Spacer()
 
                     // Zoom level indicator
@@ -118,6 +137,34 @@ struct ContentView: View {
             isShutterAnimating = false
         }
     }
+    
+    // Toggle between flash modes (auto -> on -> off -> auto)
+    private func toggleFlashMode() {
+        switch cameraModel.flashMode {
+        case .auto:
+            cameraModel.flashMode = .on
+        case .on:
+            cameraModel.flashMode = .off
+        case .off:
+            cameraModel.flashMode = .auto
+        @unknown default:
+            cameraModel.flashMode = .auto
+        }
+    }
+    
+    // Get the appropriate icon for the current flash mode
+    private func flashIcon(for mode: AVCaptureDevice.FlashMode) -> String {
+        switch mode {
+        case .auto:
+            return "bolt.badge.a"
+        case .on:
+            return "bolt"
+        case .off:
+            return "bolt.slash"
+        @unknown default:
+            return "bolt.badge.a"
+        }
+    }
 }
 
 // Camera model that handles the AVFoundation functionality
@@ -142,6 +189,9 @@ class CameraModel: NSObject, ObservableObject {
     // Focus indicator properties
     @Published var focusIndicatorPoint: CGPoint? = nil
     @Published var showingFocusIndicator = false
+    
+    // Flash control
+    @Published var flashMode: AVCaptureDevice.FlashMode = .auto
     
     // Timer to reset to auto-focus mode after tap-to-focus
     private var focusResetTimer: Timer?
@@ -345,8 +395,16 @@ class CameraModel: NSObject, ObservableObject {
     }
 
     func capturePhoto() {
-        // Configure photo settings
+        // Configure photo settings with flash mode
         let photoSettings = AVCapturePhotoSettings()
+        
+        // Apply flash mode setting if flash is available
+        if self.output.supportedFlashModes.contains(AVCaptureDevice.FlashMode(rawValue: flashMode.rawValue)!) {
+            photoSettings.flashMode = flashMode
+            print("📸 Using flash mode: \(flashMode)")
+        } else {
+            print("📸 Flash not supported for requested mode: \(flashMode)")
+        }
 
         self.output.capturePhoto(with: photoSettings, delegate: self)
     }
@@ -931,6 +989,9 @@ struct SettingsView: View {
     @State private var sanitizeFileName = true
     @State private var sanitizeMetadata = true
     
+    // Privacy and detection options
+    @AppStorage("showFaceDetection") private var showFaceDetection = true
+    
     // Security settings
     @State private var biometricEnabled = false
     @State private var sessionTimeout = 5 // minutes
@@ -963,6 +1024,19 @@ struct SettingsView: View {
                         }
                         
                     Text("When enabled, personal information will be removed from photos before sharing")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .padding(.top, 4)
+                }
+                
+                // PRIVACY & DETECTION SECTION
+                Section(header: Text("Privacy & Detection")) {
+                    Toggle("Face Detection", isOn: $showFaceDetection)
+                        .onChange(of: showFaceDetection) { _, newValue in
+                            print("Face detection: \(newValue)")
+                        }
+                    
+                    Text("When enabled, faces can be detected in photos for privacy protection")
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .padding(.top, 4)
@@ -1208,10 +1282,13 @@ struct GalleryToolbar: ToolbarContent {
 struct SecureGalleryView: View {
     @State private var photos: [SecurePhoto] = []
     @State private var selectedPhoto: SecurePhoto?
-    @State private var showFaceDetection = true  // Enable face detection by default
+    @AppStorage("showFaceDetection") private var showFaceDetection = true  // Using AppStorage to share with Settings
     @State private var editMode: EditMode = .inactive
     @State private var selectedPhotoIds = Set<UUID>()
     @State private var showDeleteConfirmation = false
+    @State private var isShowingImagePicker = false
+    @State private var importedImage: UIImage?
+    
     private let secureFileManager = SecureFileManager()
     @Environment(\.dismiss) private var dismiss
 
@@ -1236,16 +1313,16 @@ struct SecureGalleryView: View {
             .navigationTitle("Secure Gallery")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                // Face detection toggle button
+                // Import button
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Toggle(isOn: $showFaceDetection) {
-                        Image(systemName: "face.dashed")
+                    Button(action: {
+                        isShowingImagePicker = true
+                    }) {
+                        Image(systemName: "square.and.arrow.down")
+                            .font(.system(size: 16))
                     }
-                    .toggleStyle(SwitchToggleStyle(tint: .blue))
-                    .padding(.trailing, 8)
-                    .labelsHidden()
                 }
-
+                
                 // Standard gallery toolbar
                 GalleryToolbar(
                     editMode: $editMode,
@@ -1260,6 +1337,9 @@ struct SecureGalleryView: View {
                 if newValue == nil {
                     loadPhotos()
                 }
+            }
+            .sheet(isPresented: $isShowingImagePicker) {
+                ImagePicker(image: $importedImage, onDismiss: handleImportedImage)
             }
             .sheet(item: $selectedPhoto) { photo in
                 // Find the index of the selected photo in the photos array
@@ -1316,6 +1396,40 @@ struct SecureGalleryView: View {
             secondaryButton: .cancel()
         )
     }
+    
+    // Handle imported image from picker
+    private func handleImportedImage() {
+        guard let image = importedImage else { return }
+        
+        // Convert image to data
+        guard let imageData = image.jpegData(compressionQuality: 0.8) else {
+            print("Failed to convert image to data")
+            return
+        }
+        
+        // Save imported photo
+        DispatchQueue.global(qos: .userInitiated).async {
+            do {
+                // Create basic metadata
+                let metadata: [String: Any] = [
+                    "imported": true,
+                    "creationDate": Date().timeIntervalSince1970
+                ]
+                
+                let _ = try secureFileManager.savePhoto(imageData, withMetadata: metadata)
+                print("Imported photo saved successfully")
+                
+                // Reload photos to show the new one
+                DispatchQueue.main.async {
+                    self.importedImage = nil
+                    self.loadPhotos()
+                }
+            } catch {
+                print("Error saving imported photo: \(error.localizedDescription)")
+            }
+        }
+    }
+//}
 
     // MARK: - Action methods
 
@@ -1978,6 +2092,48 @@ struct SizePreferenceKey: PreferenceKey {
     static var defaultValue: CGSize = .zero
     static func reduce(value: inout CGSize, nextValue: () -> CGSize) {
         value = nextValue()
+    }
+}
+
+// UIKit Image Picker wrapped for SwiftUI
+struct ImagePicker: UIViewControllerRepresentable {
+    @Binding var image: UIImage?
+    var onDismiss: () -> Void
+    
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.delegate = context.coordinator
+        picker.sourceType = .photoLibrary
+        picker.allowsEditing = false
+        return picker
+    }
+    
+    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+    
+    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+        let parent: ImagePicker
+        
+        init(_ parent: ImagePicker) {
+            self.parent = parent
+        }
+        
+        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
+            if let selectedImage = info[.originalImage] as? UIImage {
+                parent.image = selectedImage
+            }
+            
+            picker.dismiss(animated: true) {
+                self.parent.onDismiss()
+            }
+        }
+        
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            picker.dismiss(animated: true, completion: nil)
+        }
     }
 }
 //}
