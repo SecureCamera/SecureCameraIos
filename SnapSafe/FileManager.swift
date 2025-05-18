@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftUI
 
 class SecureFileManager {
     private let fileManager = FileManager.default
@@ -93,7 +94,58 @@ class SecureFileManager {
         return cleanedMetadata
     }
     
-    // Load all photos with their filenames
+    // Load only photo filenames and metadata (not the actual image data)
+    func loadAllPhotoMetadata() throws -> [(filename: String, metadata: [String: Any], fileURL: URL)] {
+        let secureDirectory = try getSecureDirectory()
+        let contents = try fileManager.contentsOfDirectory(at: secureDirectory, includingPropertiesForKeys: [.contentModificationDateKey], options: .skipsHiddenFiles)
+        
+        var photos: [(filename: String, metadata: [String: Any], fileURL: URL)] = []
+        
+        for fileURL in contents {
+            if fileURL.pathExtension == "photo" {
+                let filename = fileURL.deletingPathExtension().lastPathComponent
+                
+                // Try to load metadata if it exists
+                let metadataURL = secureDirectory.appendingPathComponent("\(filename).metadata")
+                var metadata: [String: Any] = [:]
+                
+                if fileManager.fileExists(atPath: metadataURL.path) {
+                    if let metadataData = try? Data(contentsOf: metadataURL) {
+                        if let loadedMetadata = try? JSONSerialization.jsonObject(with: metadataData, options: []) as? [String: Any] {
+                            metadata = loadedMetadata
+                        }
+                    }
+                }
+                
+                photos.append((filename: filename, metadata: metadata, fileURL: fileURL))
+            }
+        }
+        
+        return photos
+    }
+    
+    // Load thumbnail version of a photo to reduce memory usage
+    func loadPhotoThumbnail(from fileURL: URL, maxSize: CGFloat = 200) throws -> UIImage? {
+        // Use image source to load a thumbnail instead of full-sized image
+        guard let imageSource = CGImageSourceCreateWithURL(fileURL as CFURL, nil) else {
+            return nil
+        }
+        
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: maxSize,
+            kCGImageSourceShouldCacheImmediately: false
+        ]
+        
+        if let thumbnailCGImage = CGImageSourceCreateThumbnailAtIndex(imageSource, 0, options as CFDictionary) {
+            return UIImage(cgImage: thumbnailCGImage)
+        }
+        
+        return nil
+    }
+    
+    // Keep this for compatibility, but don't use it for loading the gallery
     func loadAllPhotos() throws -> [(filename: String, data: Data, metadata: [String: Any])] {
         let secureDirectory = try getSecureDirectory()
         let contents = try fileManager.contentsOfDirectory(at: secureDirectory, includingPropertiesForKeys: nil)

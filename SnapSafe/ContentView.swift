@@ -1396,14 +1396,23 @@ struct SecureGalleryView: View {
                         allPhotos: photos,
                         initialIndex: initialIndex,
                         showFaceDetection: showFaceDetection,
-                        onDelete: { _ in loadPhotos() }
+                        onDelete: { _ in loadPhotos() },
+                        onDismiss: {
+                            // Clean up memory for all loaded full-size images when returning to gallery
+                            for photo in self.photos {
+                                photo.clearMemory(keepThumbnail: true)
+                            }
+                        }
                     )
                 } else {
                     // Fallback if photo not found in array
                     PhotoDetailView(
                         photo: photo,
                         showFaceDetection: showFaceDetection,
-                        onDelete: { _ in loadPhotos() }
+                        onDelete: { _ in loadPhotos() },
+                        onDismiss: {
+                            photo.clearMemory(keepThumbnail: true)
+                        }
                     )
                 }
             }
@@ -1522,31 +1531,16 @@ struct SecureGalleryView: View {
         // Load photos in the background thread to avoid UI blocking
         DispatchQueue.global(qos: .userInitiated).async {
             do {
-                let photoData = try self.secureFileManager.loadAllPhotos()
+                // Only load metadata and file URLs, not actual image data
+                let photoMetadata = try self.secureFileManager.loadAllPhotoMetadata()
 
-                // Convert loaded photos to SecurePhoto objects
-                var loadedPhotos = photoData.map { (filename, data, metadata) in
-                    // Create a full image from the data
-                    if let image = UIImage(data: data) {
-                        // Fix the orientation
-                        let correctedImage = self.fixImageOrientation(image)
-
-                        // Use the same image for thumbnail for simplicity
-                        return SecurePhoto(
-                            filename: filename,
-                            thumbnail: correctedImage,
-                            fullImage: correctedImage,
-                            metadata: metadata
-                        )
-                    } else {
-                        // Fallback to a placeholder if image can't be created
-                        return SecurePhoto(
-                            filename: filename,
-                            thumbnail: UIImage(),
-                            fullImage: UIImage(),
-                            metadata: metadata
-                        )
-                    }
+                // Create photo objects that will load their images on demand
+                var loadedPhotos = photoMetadata.map { (filename, metadata, fileURL) in
+                    return SecurePhoto(
+                        filename: filename,
+                        metadata: metadata,
+                        fileURL: fileURL
+                    )
                 }
 
                 // Sort photos by creation date (oldest at top, newest at bottom)
@@ -1555,12 +1549,17 @@ struct SecureGalleryView: View {
                     let date1 = photo1.metadata["creationDate"] as? Double ?? 0
                     let date2 = photo2.metadata["creationDate"] as? Double ?? 0
 
-                    // Sort by date (ascending - oldest first)
-                    return date1 < date2
+                    // Sort by date (descending - newest first, which is more typical for photo galleries)
+                    return date2 < date1
                 }
 
                 // Update UI on the main thread
                 DispatchQueue.main.async {
+                    // Clear memory of existing photos if we're refreshing
+                    for photo in self.photos {
+                        photo.clearMemory(keepThumbnail: false)
+                    }
+                    
                     self.photos = loadedPhotos
                 }
             } catch {
@@ -1673,19 +1672,89 @@ struct SecureGalleryView: View {
     }
 }
 
-// Struct to represent a photo in the app
-struct SecurePhoto: Identifiable, Equatable {
+// Struct to represent a photo in the app with optimized memory usage
+class SecurePhoto: Identifiable, Equatable {
     let id = UUID()
     let filename: String
-    let thumbnail: UIImage
-    let fullImage: UIImage
     let metadata: [String: Any]
+    let fileURL: URL
+    
+    // Use lazy loading for images to reduce memory usage
+    private var _thumbnail: UIImage?
+    private var _fullImage: UIImage?
+    
+    // Thumbnail is loaded on demand and cached
+    var thumbnail: UIImage {
+        if let cachedThumbnail = _thumbnail {
+            return cachedThumbnail
+        }
+        
+        // Load thumbnail if needed
+        do {
+            if let thumb = try secureFileManager.loadPhotoThumbnail(from: fileURL) {
+                _thumbnail = thumb
+                return thumb
+            }
+        } catch {
+            print("Error loading thumbnail: \(error)")
+        }
+        
+        // Fallback to placeholder
+        return UIImage(systemName: "photo") ?? UIImage()
+    }
+    
+    // Full image is loaded on demand
+    var fullImage: UIImage {
+        if let cachedFullImage = _fullImage {
+            return cachedFullImage
+        }
+        
+        // Load full image if needed
+        do {
+            let (data, _) = try secureFileManager.loadPhoto(filename: filename)
+            if let img = UIImage(data: data) {
+                _fullImage = img
+                return img
+            }
+        } catch {
+            print("Error loading full image: \(error)")
+        }
+        
+        // Fallback to thumbnail
+        return thumbnail
+    }
+    
+    // Clear memory when no longer needed
+    func clearMemory(keepThumbnail: Bool = true) {
+        _fullImage = nil
+        
+        if !keepThumbnail {
+            _thumbnail = nil
+        }
+    }
+    
+    init(filename: String, metadata: [String: Any], fileURL: URL, preloadedThumbnail: UIImage? = nil) {
+        self.filename = filename
+        self.metadata = metadata
+        self.fileURL = fileURL
+        self._thumbnail = preloadedThumbnail
+    }
+    
+    // Legacy initializer for compatibility
+    convenience init(filename: String, thumbnail: UIImage, fullImage: UIImage, metadata: [String: Any]) {
+        self.init(filename: filename, metadata: metadata, fileURL: URL(fileURLWithPath: ""))
+        self._thumbnail = thumbnail
+        self._fullImage = fullImage
+    }
 
     // Implement Equatable
     static func == (lhs: SecurePhoto, rhs: SecurePhoto) -> Bool {
         // Compare by id and filename
         return lhs.id == rhs.id && lhs.filename == rhs.filename
     }
+    
+    // Shared file manager instance
+    private let secureFileManager = SecureFileManager()
 }
 
 // Photo detail view that supports swiping between photos
@@ -1699,6 +1768,7 @@ struct PhotoDetailView: View {
     
     let showFaceDetection: Bool
     var onDelete: ((SecurePhoto) -> Void)? = nil
+    var onDismiss: (() -> Void)? = nil
     
     @State private var currentIndex: Int = 0
     @State private var showDeleteConfirmation = false
@@ -1773,18 +1843,20 @@ struct PhotoDetailView: View {
     }
     
     // Initialize the current index in init
-    init(photo: SecurePhoto, showFaceDetection: Bool, onDelete: ((SecurePhoto) -> Void)? = nil) {
+    init(photo: SecurePhoto, showFaceDetection: Bool, onDelete: ((SecurePhoto) -> Void)? = nil, onDismiss: (() -> Void)? = nil) {
         self.photo = photo
         self.showFaceDetection = showFaceDetection
         self.onDelete = onDelete
+        self.onDismiss = onDismiss
     }
     
-    init(allPhotos: [SecurePhoto], initialIndex: Int, showFaceDetection: Bool, onDelete: ((SecurePhoto) -> Void)? = nil) {
+    init(allPhotos: [SecurePhoto], initialIndex: Int, showFaceDetection: Bool, onDelete: ((SecurePhoto) -> Void)? = nil, onDismiss: (() -> Void)? = nil) {
         self._allPhotos = State(initialValue: allPhotos)
         self.initialIndex = initialIndex
         self._currentIndex = State(initialValue: initialIndex)
         self.showFaceDetection = showFaceDetection
         self.onDelete = onDelete
+        self.onDismiss = onDismiss
     }
     
     // Get the current photo to display
@@ -1927,6 +1999,8 @@ struct PhotoDetailView: View {
                                         // Check if we should return to the gallery
                                         if currentScale < 0.6 && !isFaceDetectionActive {
                                             // User has pinched out enough to dismiss
+                                            // Call cleanup handler before dismissing
+                                            onDismiss?()
                                             dismiss()
                                         } else if currentScale < 1.0 {
                                             // Reset to normal scale using our helper method
@@ -2143,6 +2217,10 @@ struct PhotoDetailView: View {
             .sheet(isPresented: $showImageInfo) {
                 ImageInfoView(photo: currentPhoto)
             }
+            .onDisappear {
+                // Clean up when view disappears 
+                onDismiss?()
+            }
             .actionSheet(isPresented: $showMaskOptions) {
                 ActionSheet(
                     title: Text("Select Mask Type"),
@@ -2184,12 +2262,17 @@ struct PhotoDetailView: View {
         
         // Run face detection on a background thread
         DispatchQueue.global(qos: .userInitiated).async {
-            faceDetector.detectFaces(in: currentPhoto.fullImage) { faces in
-                // Update UI on main thread
-                DispatchQueue.main.async {
-                    withAnimation {
-                        self.detectedFaces = faces
-                        self.processingFaces = false
+            // Use autoreleasepool to ensure memory is released promptly after processing
+            autoreleasepool {
+                let imageToProcess = currentPhoto.fullImage
+                
+                faceDetector.detectFaces(in: imageToProcess) { faces in
+                    // Update UI on main thread
+                    DispatchQueue.main.async {
+                        withAnimation {
+                            self.detectedFaces = faces
+                            self.processingFaces = false
+                        }
                     }
                 }
             }
@@ -2213,40 +2296,58 @@ struct PhotoDetailView: View {
         
         // Apply masking on a background thread
         DispatchQueue.global(qos: .userInitiated).async {
-            // Use the new maskFaces method with the selected mask mode
-            if let maskedImage = faceDetector.maskFaces(in: currentPhoto.fullImage, faces: detectedFaces, modes: [selectedMaskMode]) {
-                // Save the masked image to the file system
-                let imageData = maskedImage.jpegData(compressionQuality: 0.9) ?? Data()
+            // Use autoreleasepool to ensure memory is released promptly
+            autoreleasepool {
+                // Get the image to process, copy of metadata and selected mode
+                let imageToProcess = currentPhoto.fullImage
+                let facesToMask = detectedFaces
+                let metadataCopy = currentPhoto.metadata
+                let maskMode = selectedMaskMode
                 
-                do {
-                    try secureFileManager.savePhoto(imageData, withMetadata: currentPhoto.metadata)
-                    
-                    // Update UI on main thread
-                    DispatchQueue.main.async {
-                        withAnimation {
-                            self.modifiedImage = maskedImage
+                // Process the image
+                if let maskedImage = faceDetector.maskFaces(in: imageToProcess, faces: facesToMask, modes: [maskMode]) {
+                    // Save the masked image to the file system
+                    guard let imageData = maskedImage.jpegData(compressionQuality: 0.9) else {
+                        DispatchQueue.main.async {
                             self.processingFaces = false
-                            
-                            // Exit face detection mode after a short delay
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                                withAnimation {
-                                    self.isFaceDetectionActive = false
-                                    self.detectedFaces = []
+                        }
+                        print("Error creating JPEG data")
+                        return
+                    }
+                    
+                    do {
+                        try secureFileManager.savePhoto(imageData, withMetadata: metadataCopy)
+                        
+                        // Update UI on main thread
+                        DispatchQueue.main.async {
+                            withAnimation {
+                                self.modifiedImage = maskedImage
+                                self.processingFaces = false
+                                
+                                // Exit face detection mode after a short delay
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                                    withAnimation {
+                                        self.isFaceDetectionActive = false
+                                        self.detectedFaces = []
+                                        
+                                        // Force memory cleanup
+                                        self.modifiedImage = nil
+                                    }
                                 }
                             }
                         }
+                    } catch {
+                        DispatchQueue.main.async {
+                            self.processingFaces = false
+                        }
+                        print("Error saving masked photo: \(error.localizedDescription)")
                     }
-                } catch {
+                } else {
                     DispatchQueue.main.async {
                         self.processingFaces = false
                     }
-                    print("Error saving masked photo: \(error.localizedDescription)")
+                    print("Error creating masked image")
                 }
-            } else {
-                DispatchQueue.main.async {
-                    self.processingFaces = false
-                }
-                print("Error creating masked image")
             }
         }
     }
@@ -2254,6 +2355,10 @@ struct PhotoDetailView: View {
     // Navigation functions
     private func navigateToPrevious() {
         if canGoToPrevious {
+            // Clean up memory by releasing the full-size image of the current photo
+            // but keep the thumbnail for the gallery view
+            allPhotos[currentIndex].clearMemory(keepThumbnail: true)
+            
             withAnimation {
                 currentIndex -= 1
                 // Reset rotation when changing photos
@@ -2270,6 +2375,10 @@ struct PhotoDetailView: View {
     
     private func navigateToNext() {
         if canGoToNext {
+            // Clean up memory by releasing the full-size image of the current photo
+            // but keep the thumbnail for the gallery view
+            allPhotos[currentIndex].clearMemory(keepThumbnail: true)
+            
             withAnimation {
                 currentIndex += 1
                 // Reset rotation when changing photos

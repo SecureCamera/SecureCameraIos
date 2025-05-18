@@ -106,7 +106,7 @@ class FaceDetector {
         return CGRect(x: left, y: top, width: right - left, height: bottom - top)
     }
     
-    // Process faces with specified masking modes
+    // Process faces with specified masking modes with memory optimizations
     func maskFaces(in image: UIImage, faces: [DetectedFace], modes: [MaskMode]) -> UIImage? {
         // Only process selected faces
         let selectedFaces = faces.filter { $0.isSelected }
@@ -115,33 +115,127 @@ class FaceDetector {
             return image
         }
         
-        // Create a copy of the image to work with
+        // Get the primary masking mode (using only one to avoid creating multiple image copies)
+        let primaryMode = modes.first ?? .blur
+        
+        // Create a context with the image size (reused for all operations)
         UIGraphicsBeginImageContextWithOptions(image.size, false, image.scale)
         defer { UIGraphicsEndImageContext() }
         
         // Draw the original image
         image.draw(at: .zero)
-        guard var workingImage = UIGraphicsGetImageFromCurrentImageContext() else { return nil }
+        guard let workingImage = UIGraphicsGetImageFromCurrentImageContext() else { return nil }
         
-        // Apply each selected mask mode to each selected face
+        // Get the current graphics context
+        guard let context = UIGraphicsGetCurrentContext() else { return nil }
+        
+        // Apply the selected mask mode to all selected faces
+        // Instead of creating a new image for each face, we'll update the same context
         for face in selectedFaces {
             let safeRect = coerceRectToImage(rect: face.rect, image: workingImage)
             
-            for mode in modes {
-                switch mode {
-                case .blackout:
-                    workingImage = blackout(image: workingImage, rect: safeRect) ?? workingImage
-                case .pixelate:
-                    workingImage = pixelate(image: workingImage, rect: safeRect, targetBlockSize: 8, addNoise: true) ?? workingImage
-                case .blur:
-                    workingImage = blur(image: workingImage, rect: safeRect, radius: 25.0, rounds: 10) ?? workingImage
-                case .noise:
-                    workingImage = noise(image: workingImage, rect: safeRect) ?? workingImage
+            // Save the graphics state before modifications
+            context.saveGState()
+            
+            // Clip to the face rectangle to limit the effect
+            context.clip(to: safeRect)
+            
+            // Clear the face area
+            context.clear(safeRect)
+            
+            // Apply the appropriate masking effect
+            switch primaryMode {
+            case .blackout:
+                // For blackout, just fill with black
+                context.setFillColor(UIColor.black.cgColor)
+                context.fill(safeRect)
+                
+            case .pixelate:
+                // For pixelation, extract the face, pixelate it, and draw it back
+                if let faceCGImage = workingImage.cgImage?.cropping(to: safeRect),
+                   let faceImage = pixelateImage(UIImage(cgImage: faceCGImage), targetBlockSize: 8) {
+                    faceImage.draw(in: safeRect)
+                }
+                
+            case .blur:
+                // For blur, apply a CIFilter directly
+                if let faceCGImage = workingImage.cgImage?.cropping(to: safeRect),
+                   let blurredFace = applyBlur(to: UIImage(cgImage: faceCGImage), radius: 25.0) {
+                    blurredFace.draw(in: safeRect)
+                }
+                
+            case .noise:
+                // For noise, generate noise directly in the area
+                applyNoiseDirectly(to: context, in: safeRect)
+            }
+            
+            // Restore the graphics state
+            context.restoreGState()
+        }
+        
+        // Get the final image from the context
+        let finalImage = UIGraphicsGetImageFromCurrentImageContext()
+        return finalImage
+    }
+    
+    // Helper method to pixelate an image without creating multiple copies
+    private func pixelateImage(_ image: UIImage, targetBlockSize: Int = 8) -> UIImage? {
+        let scale = CGFloat(targetBlockSize) / max(image.size.width, image.size.height)
+        let smallSize = CGSize(width: image.size.width * scale, height: image.size.height * scale)
+        
+        // Downscale
+        UIGraphicsBeginImageContextWithOptions(smallSize, false, 1.0)
+        defer { UIGraphicsEndImageContext() }
+        
+        image.draw(in: CGRect(origin: .zero, size: smallSize))
+        guard let smallImage = UIGraphicsGetImageFromCurrentImageContext() else { return nil }
+        
+        // Upscale
+        UIGraphicsBeginImageContextWithOptions(image.size, false, 1.0)
+        defer { UIGraphicsEndImageContext() }
+        
+        smallImage.draw(in: CGRect(origin: .zero, size: image.size), blendMode: .normal, alpha: 1.0)
+        
+        return UIGraphicsGetImageFromCurrentImageContext()
+    }
+    
+    // Helper to apply blur without multiple intermediate images
+    private func applyBlur(to image: UIImage, radius: Float) -> UIImage? {
+        guard let ciImage = CIImage(image: image) else { return nil }
+        
+        guard let filter = CIFilter(name: "CIGaussianBlur") else { return nil }
+        filter.setValue(ciImage, forKey: kCIInputImageKey)
+        filter.setValue(radius, forKey: kCIInputRadiusKey)
+        
+        guard let outputCIImage = filter.outputImage else { return nil }
+        
+        let context = CIContext(options: [.useSoftwareRenderer: false])
+        guard let cgImage = context.createCGImage(outputCIImage, from: outputCIImage.extent) else { return nil }
+        
+        return UIImage(cgImage: cgImage)
+    }
+    
+    // Apply noise directly to a context
+    private func applyNoiseDirectly(to context: CGContext, in rect: CGRect) {
+        let width = Int(rect.width)
+        let height = Int(rect.height)
+        
+        // Define noise density
+        let noiseDensity = 0.3
+        
+        // Generate noise points directly on the context
+        for y in 0..<height {
+            for x in 0..<width {
+                var randomByte: UInt8 = 0
+                SecRandomCopyBytes(kSecRandomDefault, 1, &randomByte)
+                
+                if Double(randomByte) / 255.0 < noiseDensity {
+                    let randomColor = randomByte > 127 ? UIColor.black : UIColor.white
+                    context.setFillColor(randomColor.cgColor)
+                    context.fill(CGRect(x: rect.minX + CGFloat(x), y: rect.minY + CGFloat(y), width: 1, height: 1))
                 }
             }
         }
-        
-        return workingImage
     }
     
     // Blur faces with default blur mode
