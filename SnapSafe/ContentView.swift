@@ -648,9 +648,9 @@ struct CameraView: View {
                 
                 // Debug rectangle to show view bounds
                 // Uncomment this to debug coordinate spaces
-                 Rectangle()
-                     .stroke(Color.green, lineWidth: 2)
-                     .opacity(0.5)
+                // Rectangle()
+                //     .stroke(Color.green, lineWidth: 2)
+                //     .opacity(0.5)
             }
             .onAppear {
                 print("📏 Camera view size: \(geometry.size.width)x\(geometry.size.height)")
@@ -705,9 +705,10 @@ struct CameraPreviewView: UIViewRepresentable {
     // Store the view reference to help with coordinate mapping
     class CameraPreviewHolder {
         weak var view: UIView?
+        var previewLayer: AVCaptureVideoPreviewLayer?
     }
     
-    // Shared holder to maintain a reference to the view
+    // Shared holder to maintain a reference to the view and preview layer
     private let viewHolder = CameraPreviewHolder()
 
     func makeUIView(context: Context) -> UIView {
@@ -724,7 +725,9 @@ struct CameraPreviewView: UIViewRepresentable {
         previewLayer.frame = view.bounds
         previewLayer.videoGravity = .resizeAspectFill
         previewLayer.connection?.videoRotationAngle = 90 // Force portrait orientation
-        cameraModel.preview = previewLayer
+        
+        // Store the preview layer in our holder instead of directly in the cameraModel
+        viewHolder.previewLayer = previewLayer
 
         // Ensure the layer is added to the view
         view.layer.addSublayer(previewLayer)
@@ -754,6 +757,12 @@ struct CameraPreviewView: UIViewRepresentable {
         
         // Store exact view dimensions in the model for coordinate mapping
         cameraModel.viewSize = viewSize
+        
+        // Assign the preview layer to cameraModel after the view is created
+        // This needs to be done on the main thread since it modifies @Published property
+        DispatchQueue.main.async {
+            cameraModel.preview = previewLayer
+        }
 
         return view
     }
@@ -763,7 +772,17 @@ struct CameraPreviewView: UIViewRepresentable {
         DispatchQueue.main.async {
             // Update frame with the latest size
             uiView.frame = CGRect(origin: .zero, size: viewSize)
-            cameraModel.preview?.frame = uiView.bounds
+            
+            // Update the preview layer frame
+            if let layer = viewHolder.previewLayer {
+                layer.frame = uiView.bounds
+                
+                // Ensure we're using the correct layer in the camera model
+                // Only update if necessary to avoid excessive property changes
+                if cameraModel.preview !== layer {
+                    cameraModel.preview = layer
+                }
+            }
             
             // Update the size in the model
             cameraModel.viewSize = viewSize
@@ -820,7 +839,7 @@ struct CameraPreviewView: UIViewRepresentable {
             print("👆 Double tap detected at \(location.x), \(location.y)")
             
             // Convert touch point to camera coordinate
-            if let layer = parent.cameraModel.preview {
+            if let layer = parent.viewHolder.previewLayer {
                 // Convert the point from the view's coordinate space to the preview layer's coordinate space
                 let pointInPreviewLayer = layer.captureDevicePointConverted(fromLayerPoint: location)
                 print("👆 Converted to camera coordinates: \(pointInPreviewLayer.x), \(pointInPreviewLayer.y)")
@@ -841,7 +860,7 @@ struct CameraPreviewView: UIViewRepresentable {
             print("👆 Single tap detected at \(location.x), \(location.y)")
             
             // Convert touch point to camera coordinate
-            if let layer = parent.cameraModel.preview {
+            if let layer = parent.viewHolder.previewLayer {
                 // Convert the point from the view's coordinate space to the preview layer's coordinate space
                 let pointInPreviewLayer = layer.captureDevicePointConverted(fromLayerPoint: location)
                 print("👆 Converted to camera coordinates: \(pointInPreviewLayer.x), \(pointInPreviewLayer.y)")
