@@ -1331,9 +1331,10 @@ struct SecureGalleryView: View {
     @State private var selectedPhotoIds = Set<UUID>()
     @State private var showDeleteConfirmation = false
     @State private var isShowingImagePicker = false
-    @State private var importedImage: UIImage?
-    @State private var importedImages: [UIImage] = []
+    @State private var importedImage: UIImage?  // Legacy support
     @State private var pickerItems: [PhotosPickerItem] = []
+    @State private var isImporting: Bool = false
+    @State private var importProgress: Float = 0
     
     private let secureFileManager = SecureFileManager()
     @Environment(\.dismiss) private var dismiss
@@ -1354,11 +1355,33 @@ struct SecureGalleryView: View {
 //        VStack {
 //        }
         NavigationView {
-            Group {
-                if photos.isEmpty {
-                    EmptyGalleryView(onDismiss: { dismiss() })
-                } else {
-                    photosGridView
+            ZStack {
+                Group {
+                    if photos.isEmpty {
+                        EmptyGalleryView(onDismiss: { dismiss() })
+                    } else {
+                        photosGridView
+                    }
+                }
+                
+                // Import progress overlay
+                if isImporting {
+                    VStack {
+                        ProgressView("Importing photos...", value: importProgress, total: 1.0)
+                            .progressViewStyle(LinearProgressViewStyle())
+                            .padding()
+                        
+                        Text("\(Int(importProgress * 100))%")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(width: 200)
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color(.systemBackground))
+                            .shadow(radius: 5)
+                    )
                 }
             }
             .navigationTitle("Secure Gallery")
@@ -1369,15 +1392,62 @@ struct SecureGalleryView: View {
                     // Import button
                     ToolbarItem(placement: .navigationBarTrailing) {
                         
-                        PhotosPicker(selection: $pickerItems, matching: .images) {
+                        PhotosPicker(selection: $pickerItems, matching: .images, photoLibrary: .shared()) {
                             Image(systemName: "square.and.arrow.down")
                                 .font(.system(size: 16))
                         }
-                        .onChange(of: pickerItems) { _, _ in
+                        .onChange(of: pickerItems) { _, newItems in
+                            // Process selected images from picker
                             Task {
-                                for item in pickerItems {
-                                    if let data = try? await item.loadTransferable(type: Data.self) {
-                                        importedImages.append(UIImage(data: data)!)
+                                var hadSuccessfulImport = false
+                                
+                                // Show import progress to user
+                                let importCount = newItems.count
+                                if importCount > 0 {
+                                    // Update UI to show import is happening
+                                    await MainActor.run {
+                                        isImporting = true
+                                        importProgress = 0
+                                    }
+                                    
+                                    print("Importing \(importCount) photos...")
+                                    
+                                    // Process each selected item with progress tracking
+                                    for (index, item) in newItems.enumerated() {
+                                        // Update progress
+                                        let currentProgress = Float(index) / Float(importCount)
+                                        await MainActor.run {
+                                            importProgress = currentProgress
+                                        }
+                                        
+                                        // Load and process the image
+                                        if let data = try? await item.loadTransferable(type: Data.self) {
+                                            // Process this image
+                                            await processImportedImageData(data)
+                                            hadSuccessfulImport = true
+                                        }
+                                    }
+                                    
+                                    // Show 100% progress briefly before hiding
+                                    await MainActor.run {
+                                        importProgress = 1.0
+                                    }
+                                    
+                                    // Small delay to show completion
+                                    try? await Task.sleep(nanoseconds: 300_000_000) // 0.3 seconds
+                                }
+                                
+                                // After importing all items, reset the picker selection and refresh gallery
+                                await MainActor.run {
+                                    // Reset picked items
+                                    pickerItems = []
+                                    
+                                    // Hide progress indicator
+                                    isImporting = false
+                                    
+                                    // Reload the gallery if we imported images
+                                    if hadSuccessfulImport {
+                                        loadPhotos()
                                     }
                                 }
                             }
@@ -1490,7 +1560,34 @@ struct SecureGalleryView: View {
         )
     }
     
-    // Handle imported image from picker
+    // Process image data from the PhotosPicker and save it to the gallery
+    private func processImportedImageData(_ imageData: Data) async {
+        // Create metadata including import timestamp
+        let metadata: [String: Any] = [
+            "imported": true,
+            "importSource": "PhotosPicker",
+            "creationDate": Date().timeIntervalSince1970
+        ]
+        
+        // Save the photo data (runs on background thread)
+        let filename = await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async {
+                do {
+                    let filename = try self.secureFileManager.savePhoto(imageData, withMetadata: metadata)
+                    continuation.resume(returning: filename)
+                } catch {
+                    print("Error saving imported photo: \(error.localizedDescription)")
+                    continuation.resume(returning: "")
+                }
+            }
+        }
+        
+        if !filename.isEmpty {
+            print("Successfully imported photo: \(filename)")
+        }
+    }
+    
+    // Legacy method for backward compatibility
     private func handleImportedImage() {
         guard let image = importedImage else { return }
         
@@ -1500,25 +1597,14 @@ struct SecureGalleryView: View {
             return
         }
         
-        // Save imported photo
-        DispatchQueue.global(qos: .userInitiated).async {
-            do {
-                // Create basic metadata
-                let metadata: [String: Any] = [
-                    "imported": true,
-                    "creationDate": Date().timeIntervalSince1970
-                ]
-                
-                let _ = try secureFileManager.savePhoto(imageData, withMetadata: metadata)
-                print("Imported photo saved successfully")
-                
-                // Reload photos to show the new one
-                DispatchQueue.main.async {
-                    self.importedImage = nil
-                    self.loadPhotos()
-                }
-            } catch {
-                print("Error saving imported photo: \(error.localizedDescription)")
+        // Process the image data using the new method
+        Task {
+            await processImportedImageData(imageData)
+            
+            // Reload photos to show the new one
+            DispatchQueue.main.async {
+                self.importedImage = nil
+                self.loadPhotos()
             }
         }
     }
