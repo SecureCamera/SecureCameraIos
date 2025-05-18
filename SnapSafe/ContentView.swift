@@ -5,8 +5,8 @@
 //  Created by Bill Booth on 5/2/25.
 //
 
-import SwiftUI
 
+import PhotosUI
 import SwiftUI
 import AVFoundation
 
@@ -1315,6 +1315,8 @@ struct SecureGalleryView: View {
     @State private var showDeleteConfirmation = false
     @State private var isShowingImagePicker = false
     @State private var importedImage: UIImage?
+    @State private var importedImages: [UIImage] = []
+    @State private var pickerItems: [PhotosPickerItem] = []
     
     private let secureFileManager = SecureFileManager()
     @Environment(\.dismiss) private var dismiss
@@ -1332,6 +1334,8 @@ struct SecureGalleryView: View {
     }
 
     var body: some View {
+//        VStack {
+//        }
         NavigationView {
             Group {
                 if photos.isEmpty {
@@ -1347,11 +1351,19 @@ struct SecureGalleryView: View {
                 if !isSelecting {
                     // Import button
                     ToolbarItem(placement: .navigationBarTrailing) {
-                        Button(action: {
-                            isShowingImagePicker = true
-                        }) {
+                        
+                        PhotosPicker(selection: $pickerItems, matching: .images) {
                             Image(systemName: "square.and.arrow.down")
                                 .font(.system(size: 16))
+                        }
+                        .onChange(of: pickerItems) { _, _ in
+                            Task {
+                                for item in pickerItems {
+                                    if let data = try? await item.loadTransferable(type: Data.self) {
+                                        importedImages.append(UIImage(data: data)!)
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -1372,10 +1384,11 @@ struct SecureGalleryView: View {
                     loadPhotos()
                 }
             }
-            .sheet(isPresented: $isShowingImagePicker) {
-//                ImagePicker(image: $importedImage, onDismiss: handleImportedImage)
-                EmptyView()
-            }
+//            .sheet(isPresented: $isShowingImagePicker) {
+//// old way
+////                ImagePicker(image: $importedImage, onDismiss: handleImportedImage)
+//                EmptyView()
+//            }
             .sheet(item: $selectedPhoto) { photo in
                 // Find the index of the selected photo in the photos array
                 if let initialIndex = photos.firstIndex(where: { $0.id == photo.id }) {
