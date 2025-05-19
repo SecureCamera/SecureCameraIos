@@ -58,7 +58,7 @@ struct GalleryToolbar: ToolbarContent {
                         Image(systemName: "trash")
                             .foregroundColor(.red)
                     }
-                    
+
                     // Share button
                     Button(action: onShare) {
                         Image(systemName: "square.and.arrow.up")
@@ -77,35 +77,34 @@ struct GalleryToolbar: ToolbarContent {
     }
 }
 
-
 // Gallery view to display the stored photos
 struct SecureGalleryView: View {
     @State private var photos: [SecurePhoto] = []
     @State private var selectedPhoto: SecurePhoto?
-    @AppStorage("showFaceDetection") private var showFaceDetection = true  // Using AppStorage to share with Settings
+    @AppStorage("showFaceDetection") private var showFaceDetection = true // Using AppStorage to share with Settings
     @State private var isSelecting: Bool = false
     @State private var selectedPhotoIds = Set<UUID>()
     @State private var showDeleteConfirmation = false
     @State private var isShowingImagePicker = false
-    @State private var importedImage: UIImage?  // Legacy support
+    @State private var importedImage: UIImage? // Legacy support
     @State private var pickerItems: [PhotosPickerItem] = []
     @State private var isImporting: Bool = false
     @State private var importProgress: Float = 0
-    
+
     // Decoy selection mode
     @State private var isSelectingDecoys: Bool = false
     @State private var maxDecoys: Int = 5
     @State private var showDecoyLimitWarning: Bool = false
     @State private var showDecoyConfirmation: Bool = false
-    
+
     private let secureFileManager = SecureFileManager()
     @Environment(\.dismiss) private var dismiss
-    
+
     // Initializers
     init() {
         // Default initializer
     }
-    
+
     // Initializer for decoy selection mode
     init(selectingDecoys: Bool) {
         _isSelectingDecoys = State(initialValue: selectingDecoys)
@@ -115,12 +114,12 @@ struct SecureGalleryView: View {
     private var hasSelection: Bool {
         !selectedPhotoIds.isEmpty
     }
-    
+
     // Computed property to get current decoy photo count
     private var currentDecoyCount: Int {
         photos.filter { $0.isDecoy }.count
     }
-    
+
     // Get an array of selected photos for sharing
     private var selectedPhotos: [UIImage] {
         photos
@@ -140,14 +139,14 @@ struct SecureGalleryView: View {
                         photosGridView
                     }
                 }
-                
+
                 // Import progress overlay
                 if isImporting {
                     VStack {
                         ProgressView("Importing photos...", value: importProgress, total: 1.0)
                             .progressViewStyle(LinearProgressViewStyle())
                             .padding()
-                        
+
                         Text("\(Int(importProgress * 100))%")
                             .font(.caption)
                             .foregroundColor(.secondary)
@@ -191,7 +190,7 @@ struct SecureGalleryView: View {
                         .foregroundColor(.blue)
                     }
                 }
-                
+
                 // Right side actions
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack(spacing: 16) {
@@ -209,7 +208,7 @@ struct SecureGalleryView: View {
                             }
                             .foregroundColor(.blue)
                             .disabled(selectedPhotoIds.isEmpty)
-                            
+
                             // Count label showing selected/max
                             Text("\(selectedPhotoIds.count)/\(maxDecoys)")
                                 .font(.caption)
@@ -227,7 +226,7 @@ struct SecureGalleryView: View {
                                 // Process selected images from picker
                                 Task {
                                     var hadSuccessfulImport = false
-                                    
+
                                     // Show import progress to user
                                     let importCount = newItems.count
                                     if importCount > 0 {
@@ -236,9 +235,9 @@ struct SecureGalleryView: View {
                                             isImporting = true
                                             importProgress = 0
                                         }
-                                        
+
                                         print("Importing \(importCount) photos...")
-                                        
+
                                         // Process each selected item with progress tracking
                                         for (index, item) in newItems.enumerated() {
                                             // Update progress
@@ -246,7 +245,7 @@ struct SecureGalleryView: View {
                                             await MainActor.run {
                                                 importProgress = currentProgress
                                             }
-                                            
+
                                             // Load and process the image
                                             if let data = try? await item.loadTransferable(type: Data.self) {
                                                 // Process this image
@@ -254,24 +253,24 @@ struct SecureGalleryView: View {
                                                 hadSuccessfulImport = true
                                             }
                                         }
-                                        
+
                                         // Show 100% progress briefly before hiding
                                         await MainActor.run {
                                             importProgress = 1.0
                                         }
-                                        
+
                                         // Small delay to show completion
                                         try? await Task.sleep(nanoseconds: 300_000_000) // 0.3 seconds
                                     }
-                                    
+
                                     // After importing all items, reset the picker selection and refresh gallery
                                     await MainActor.run {
                                         // Reset picked items
                                         pickerItems = []
-                                        
+
                                         // Hide progress indicator
                                         isImporting = false
-                                        
+
                                         // Reload the gallery if we imported images
                                         if hadSuccessfulImport {
                                             loadPhotos()
@@ -279,7 +278,7 @@ struct SecureGalleryView: View {
                                     }
                                 }
                             }
-                            
+
                             // Refresh button
                             Button(action: loadPhotos) {
                                 Image(systemName: "arrow.clockwise")
@@ -293,7 +292,7 @@ struct SecureGalleryView: View {
                                 Image(systemName: "trash")
                                     .foregroundColor(.red)
                             }
-                            
+
                             // Share button
                             Button(action: shareSelectedPhotos) {
                                 Image(systemName: "square.and.arrow.up")
@@ -310,8 +309,8 @@ struct SecureGalleryView: View {
                 }
             }
 //            .sheet(isPresented: $isShowingImagePicker) {
-//// old way
-////                ImagePicker(image: $importedImage, onDismiss: handleImportedImage)
+            //// old way
+            ////                ImagePicker(image: $importedImage, onDismiss: handleImportedImage)
 //                EmptyView()
 //            }
             .sheet(item: $selectedPhoto) { photo in
@@ -336,13 +335,13 @@ struct SecureGalleryView: View {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                             // We can only preload by ensuring the photos are registered with memory manager
                             MemoryManager.shared.registerPhotos(photos)
-                            
+
                             // This will cause adjacent photos to be preloaded
                             if initialIndex > 0 {
-                                photos[initialIndex-1].isVisible = true
+                                photos[initialIndex - 1].isVisible = true
                             }
                             if initialIndex < photos.count - 1 {
-                                photos[initialIndex+1].isVisible = true
+                                photos[initialIndex + 1].isVisible = true
                             }
                         }
                     }
@@ -403,16 +402,16 @@ struct SecureGalleryView: View {
             secondaryButton: .cancel()
         )
     }
-    
+
     // Process image data from the PhotosPicker and save it to the gallery
     private func processImportedImageData(_ imageData: Data) async {
         // Create metadata including import timestamp
         let metadata: [String: Any] = [
             "imported": true,
             "importSource": "PhotosPicker",
-            "creationDate": Date().timeIntervalSince1970
+            "creationDate": Date().timeIntervalSince1970,
         ]
-        
+
         // Save the photo data (runs on background thread)
         let filename = await withCheckedContinuation { continuation in
             DispatchQueue.global(qos: .userInitiated).async {
@@ -425,26 +424,26 @@ struct SecureGalleryView: View {
                 }
             }
         }
-        
+
         if !filename.isEmpty {
             print("Successfully imported photo: \(filename)")
         }
     }
-    
+
     // Legacy method for backward compatibility
     private func handleImportedImage() {
         guard let image = importedImage else { return }
-        
+
         // Convert image to data
         guard let imageData = image.jpegData(compressionQuality: 0.8) else {
             print("Failed to convert image to data")
             return
         }
-        
+
         // Process the image data using the new method
         Task {
             await processImportedImageData(imageData)
-            
+
             // Reload photos to show the new one
             DispatchQueue.main.async {
                 self.importedImage = nil
@@ -452,7 +451,8 @@ struct SecureGalleryView: View {
             }
         }
     }
-//}
+
+    // }
 
     // MARK: - Action methods
 
@@ -506,14 +506,14 @@ struct SecureGalleryView: View {
                 let photoMetadata = try self.secureFileManager.loadAllPhotoMetadata()
 
                 // Create photo objects that will load their images on demand
-                var loadedPhotos = photoMetadata.map { (filename, metadata, fileURL) in
-                    return SecurePhoto(
+                var loadedPhotos = photoMetadata.map { filename, metadata, fileURL in
+                    SecurePhoto(
                         filename: filename,
                         metadata: metadata,
                         fileURL: fileURL
                     )
                 }
-                
+
                 // We'll update on main thread after sorting
 
                 // Sort photos by creation date (oldest at top, newest at bottom)
@@ -530,10 +530,10 @@ struct SecureGalleryView: View {
                 DispatchQueue.main.async {
                     // First clear memory of existing photos if we're refreshing
                     MemoryManager.shared.freeAllMemory()
-                    
+
                     // Update the photos array
                     self.photos = loadedPhotos
-                    
+
                     // If in decoy selection mode, pre-select existing decoy photos
                     if self.isSelectingDecoys {
                         // Find and select all photos that are already marked as decoys
@@ -542,11 +542,11 @@ struct SecureGalleryView: View {
                                 self.selectedPhotoIds.insert(photo.id)
                             }
                         }
-                        
+
                         // Enable selection mode
                         self.isSelecting = true
                     }
-                    
+
                     // Register these photos with the memory manager
                     MemoryManager.shared.registerPhotos(loadedPhotos)
                 }
@@ -618,14 +618,14 @@ struct SecureGalleryView: View {
             }
         }
     }
-    
+
     // Share selected photos
     // Save selected photos as decoys
     private func saveDecoySelections() {
         // First, un-mark any previously tagged decoys that aren't currently selected
         for photo in photos {
             let isCurrentlySelected = selectedPhotoIds.contains(photo.id)
-            
+
             // If it's currently a decoy but not selected, unmark it
             if photo.isDecoy && !isCurrentlySelected {
                 photo.setDecoyStatus(false)
@@ -635,16 +635,16 @@ struct SecureGalleryView: View {
                 photo.setDecoyStatus(true)
             }
         }
-        
+
         // Reset selection and exit decoy mode
         isSelectingDecoys = false
         isSelecting = false
         selectedPhotoIds.removeAll()
-        
+
         // Return to settings
         dismiss()
     }
-    
+
     // Computed property for decoy limit warning alert
     private var decoyLimitWarningAlert: Alert {
         Alert(
@@ -653,7 +653,7 @@ struct SecureGalleryView: View {
             dismissButton: .default(Text("OK"))
         )
     }
-    
+
     // Computed property for decoy confirmation alert
     private var decoyConfirmationAlert: Alert {
         Alert(
@@ -665,40 +665,41 @@ struct SecureGalleryView: View {
             secondaryButton: .cancel()
         )
     }
-    
+
     private func shareSelectedPhotos() {
         // Get all the selected photos
         let images = selectedPhotos
-        
+
         guard !images.isEmpty else { return }
-        
+
         // Use UIApplication.shared.windows approach for SwiftUI integration
         guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
               let window = windowScene.windows.first,
-              let rootViewController = window.rootViewController else {
+              let rootViewController = window.rootViewController
+        else {
             print("Could not find root view controller")
             return
         }
-        
+
         // Create a UIActivityViewController to show the sharing options
         let activityViewController = UIActivityViewController(
             activityItems: images,
             applicationActivities: nil
         )
-        
+
         // For iPad support
         if let popover = activityViewController.popoverPresentationController {
             popover.sourceView = window
             popover.sourceRect = CGRect(x: window.bounds.midX, y: window.bounds.midY, width: 0, height: 0)
             popover.permittedArrowDirections = []
         }
-        
+
         // Find the presented view controller to present from
         var currentController = rootViewController
         while let presented = currentController.presentedViewController {
             currentController = presented
         }
-        
+
         // Present the share sheet from the topmost presented controller
         DispatchQueue.main.async {
             currentController.present(activityViewController, animated: true, completion: nil)

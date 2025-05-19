@@ -5,12 +5,12 @@
 //  Created by Bill Booth on 5/3/25.
 //
 
-import UIKit
 import AVFoundation
-import Photos
+import CoreGraphics
 import CoreLocation
 import ImageIO
-import CoreGraphics
+import Photos
+import UIKit
 
 class SecureCameraController: UIViewController, AVCapturePhotoCaptureDelegate {
     private var captureSession: AVCaptureSession!
@@ -54,7 +54,7 @@ class SecureCameraController: UIViewController, AVCapturePhotoCaptureDelegate {
         photoOutput.capturePhoto(with: settings, delegate: self)
     }
 
-    func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
+    func photoOutput(_: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
         guard error == nil else {
             // Handle photo capture error
             return
@@ -66,26 +66,26 @@ class SecureCameraController: UIViewController, AVCapturePhotoCaptureDelegate {
         }
     }
 
-   private func processAndSecurePhoto(_ photoData: Data) {
-       // Extract EXIF data before encryption
-       if let image = UIImage(data: photoData),
-          let _ = image.cgImage,
-          let metadata = extractMetadata(from: photoData) {
+    private func processAndSecurePhoto(_ photoData: Data) {
+        // Extract EXIF data before encryption
+        if let image = UIImage(data: photoData),
+           let _ = image.cgImage,
+           let metadata = extractMetadata(from: photoData)
+        {
+            // Process EXIF data (location, timestamps, etc.)
+            let processedEXIF = processEXIFData(metadata)
 
-           // Process EXIF data (location, timestamps, etc.)
-           let processedEXIF = processEXIFData(metadata)
-
-           // Save the photo without encryption for now
-           do {
-               // In a real implementation, we would encrypt the data first
-               let secureFileManager = SecureFileManager()
-               try secureFileManager.savePhoto(photoData, withMetadata: processedEXIF)
-           } catch {
-               // Handle save error
-               print("Error saving photo: \(error.localizedDescription)")
-           }
-       }
-   }
+            // Save the photo without encryption for now
+            do {
+                // In a real implementation, we would encrypt the data first
+                let secureFileManager = SecureFileManager()
+                try secureFileManager.savePhoto(photoData, withMetadata: processedEXIF)
+            } catch {
+                // Handle save error
+                print("Error saving photo: \(error.localizedDescription)")
+            }
+        }
+    }
 
     private func extractMetadata(from imageData: Data) -> [String: Any]? {
         guard let source = CGImageSourceCreateWithData(imageData as CFData, nil) else {
