@@ -9,9 +9,12 @@
 import PhotosUI
 import SwiftUI
 import AVFoundation
+import ImageIO
+import CoreGraphics
 
 struct ContentView: View {
     @StateObject private var cameraModel = CameraModel()
+    @StateObject private var locationManager = LocationManager.shared
     @State private var isShowingSettings = false
     @State private var isShowingGallery = false
     @State private var isAuthenticated = true // TODO, default
@@ -667,14 +670,18 @@ extension CameraModel: AVCapturePhotoCaptureDelegate {
 
                     // Ensure orientation is preserved correctly in metadata
                     // This is important for re-opening the image with correct orientation
-                    if var tiffDict = metadata[kCGImagePropertyTIFFDictionary as String] as? [String: Any] {
-                        tiffDict[kCGImagePropertyTIFFOrientation as String] = 1 // Force "up" orientation
-                        metadata[kCGImagePropertyTIFFDictionary as String] = tiffDict
+                    if var tiffDict = metadata[String(kCGImagePropertyTIFFDictionary)] as? [String: Any] {
+                        tiffDict[String(kCGImagePropertyTIFFOrientation)] = 1 // Force "up" orientation
+                        metadata[String(kCGImagePropertyTIFFDictionary)] = tiffDict
                     }
+                    
+                    // Add location data if enabled and available from LocationManager
+                    // The FileManager will handle this now, no need to add it here
                 }
             }
 
             // Save the photo without encryption for now
+            // Location data will be added by SecureFileManager if enabled
             do {
                 let _ = try self.secureFileManager.savePhoto(imageData, withMetadata: metadata)
                 print("Photo saved successfully")

@@ -9,6 +9,8 @@ import UIKit
 import AVFoundation
 import Photos
 import CoreLocation
+import ImageIO
+import CoreGraphics
 
 class SecureCameraController: UIViewController, AVCapturePhotoCaptureDelegate {
     private var captureSession: AVCaptureSession!
@@ -101,7 +103,7 @@ class SecureCameraController: UIViewController, AVCapturePhotoCaptureDelegate {
         let processedMetadata = metadata
 
         // Extract GPS data if available
-        if metadata[kCGImagePropertyGPSDictionary as String] is [String: Any] {
+        if metadata[String(kCGImagePropertyGPSDictionary)] is [String: Any] {
             // Process GPS data as needed
             // Store separate from image for security
         }

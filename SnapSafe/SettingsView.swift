@@ -7,6 +7,7 @@
 
 import SwiftUI
 import Combine
+import CoreLocation
 
 struct SettingsView: View {
     // Sharing options
@@ -28,6 +29,8 @@ struct SettingsView: View {
     
     // Location permissions
     @State private var locationPermissionStatus = "Not Determined"
+    @StateObject private var locationManager = LocationManager.shared
+    @State private var includeLocationData = false
     
     // Dependency injections (commented until implementations are ready)
     // private let authManager = AuthenticationManager()
@@ -71,18 +74,25 @@ struct SettingsView: View {
                 
                 // LOCATION SECTION
                 Section(header: Text("Location")) {
+                    Toggle("Include Location Data", isOn: $includeLocationData)
+                        .onChange(of: includeLocationData) { _, newValue in
+                            locationManager.setIncludeLocationData(newValue)
+                        }
+                        
                     HStack {
                         Text("Permission Status")
                         Spacer()
-                        Text(locationPermissionStatus)
+                        Text(locationManager.getAuthorizationStatusString())
                             .foregroundColor(locationStatusColor)
                     }
                     
-                    Button("Check Location Permission") {
-                        checkLocationPermission()
+                    Button("Request Location Permission") {
+                        locationManager.requestLocationPermission()
                     }
+                    .disabled(locationManager.authorizationStatus == .authorizedWhenInUse || 
+                             locationManager.authorizationStatus == .authorizedAlways)
                     
-                    Text("Location data can be embedded in photos when permission is granted")
+                    Text("When enabled, location data will be embedded in newly captured photos. Location requires permission and GPS availability.")
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .padding(.top, 4)
@@ -180,7 +190,8 @@ struct SettingsView: View {
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .onAppear {
-                checkLocationPermission()
+                // Initialize includeLocationData from the LocationManager
+                includeLocationData = locationManager.shouldIncludeLocationData
             }
             .alert(isPresented: $showResetConfirmation) {
                 Alert(
@@ -205,28 +216,20 @@ struct SettingsView: View {
     // MARK: - Helper Properties
     
     private var locationStatusColor: Color {
-        switch locationPermissionStatus {
-        case "Authorized":
+        switch locationManager.authorizationStatus {
+        case .authorizedWhenInUse, .authorizedAlways:
             return .green
-        case "Denied", "Restricted":
+        case .denied, .restricted:
             return .red
-        default:
+        case .notDetermined:
             return .orange
+        @unknown default:
+            return .gray
         }
     }
     
     // MARK: - Helper Methods
     
-    private func checkLocationPermission() {
-        // In a real implementation, this would use CLLocationManager
-        // For now we'll simulate the permission check
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            // Simulate different permission states for demo purposes
-            let statuses = ["Not Determined", "Authorized", "Denied", "Restricted"]
-            self.locationPermissionStatus = statuses[Int.random(in: 0..<statuses.count)]
-        }
-    }
     
     private func resetSecuritySettings() {
         // Reset all security settings to default values

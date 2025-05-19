@@ -415,6 +415,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = SnapSafe;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.photography";
 				INFOPLIST_KEY_NSCameraUsageDescription = "This app needs camera access so you can take photos that are encrypted and stored locally.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "This lets the app tag your photos with where they were taken.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -448,6 +449,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = SnapSafe;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.photography";
 				INFOPLIST_KEY_NSCameraUsageDescription = "This app needs camera access so you can take photos that are encrypted and stored locally.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "This lets the app tag your photos with where they were taken.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

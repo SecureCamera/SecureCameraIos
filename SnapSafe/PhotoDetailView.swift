@@ -6,6 +6,8 @@
 //
 
 import SwiftUI
+import ImageIO
+import CoreGraphics
 
 // Photo detail view that supports swiping between photos
 struct PhotoDetailView: View {
@@ -947,25 +949,25 @@ struct PhotoDetailView: View {
         
         // Extract location data from EXIF
         private func locationString(from metadata: [String: Any]) -> String {
-            if let gpsData = metadata[kCGImagePropertyGPSDictionary as String] as? [String: Any] {
+            if let gpsData = metadata[String(kCGImagePropertyGPSDictionary)] as? [String: Any] {
                 var locationParts: [String] = []
                 
                 // Extract latitude
-                if let latitudeRef = gpsData[kCGImagePropertyGPSLatitudeRef as String] as? String,
-                   let latitude = gpsData[kCGImagePropertyGPSLatitude as String] as? Double {
+                if let latitudeRef = gpsData[String(kCGImagePropertyGPSLatitudeRef)] as? String,
+                   let latitude = gpsData[String(kCGImagePropertyGPSLatitude)] as? Double {
                     let latDirection = latitudeRef == "N" ? "N" : "S"
                     locationParts.append(String(format: "%.6f°%@", latitude, latDirection))
                 }
                 
                 // Extract longitude
-                if let longitudeRef = gpsData[kCGImagePropertyGPSLongitudeRef as String] as? String,
-                   let longitude = gpsData[kCGImagePropertyGPSLongitude as String] as? Double {
+                if let longitudeRef = gpsData[String(kCGImagePropertyGPSLongitudeRef)] as? String,
+                   let longitude = gpsData[String(kCGImagePropertyGPSLongitude)] as? Double {
                     let longDirection = longitudeRef == "E" ? "E" : "W"
                     locationParts.append(String(format: "%.6f°%@", longitude, longDirection))
                 }
                 
                 // Include altitude if available
-                if let altitude = gpsData[kCGImagePropertyGPSAltitude as String] as? Double {
+                if let altitude = gpsData[String(kCGImagePropertyGPSAltitude)] as? Double {
                     locationParts.append(String(format: "Alt: %.1fm", altitude))
                 }
                 
@@ -1016,8 +1018,8 @@ struct PhotoDetailView: View {
                                 .foregroundColor(.secondary)
                         }
                         
-                        if let exifDict = photo.metadata[kCGImagePropertyExifDictionary as String] as? [String: Any],
-                           let dateTimeOriginal = exifDict[kCGImagePropertyExifDateTimeOriginal as String] as? String {
+                        if let exifDict = photo.metadata[String(kCGImagePropertyExifDictionary)] as? [String: Any],
+                           let dateTimeOriginal = exifDict[String(kCGImagePropertyExifDateTimeOriginal)] as? String {
                             HStack {
                                 Text("Original Date")
                                 Spacer()
@@ -1028,8 +1030,8 @@ struct PhotoDetailView: View {
                     }
                     
                     Section(header: Text("Orientation")) {
-                        if let tiffDict = photo.metadata[kCGImagePropertyTIFFDictionary as String] as? [String: Any],
-                           let orientation = tiffDict[kCGImagePropertyTIFFOrientation as String] as? Int {
+                        if let tiffDict = photo.metadata[String(kCGImagePropertyTIFFDictionary)] as? [String: Any],
+                           let orientation = tiffDict[String(kCGImagePropertyTIFFOrientation)] as? Int {
                             HStack {
                                 Text("Orientation")
                                 Spacer()
@@ -1048,9 +1050,9 @@ struct PhotoDetailView: View {
                     }
                     
                     Section(header: Text("Camera Information")) {
-                        if let exifDict = photo.metadata[kCGImagePropertyExifDictionary as String] as? [String: Any] {
-                            if let make = (photo.metadata[kCGImagePropertyTIFFDictionary as String] as? [String: Any])?[kCGImagePropertyTIFFMake as String] as? String,
-                               let model = (photo.metadata[kCGImagePropertyTIFFDictionary as String] as? [String: Any])?[kCGImagePropertyTIFFModel as String] as? String {
+                        if let exifDict = photo.metadata[String(kCGImagePropertyExifDictionary)] as? [String: Any] {
+                            if let make = (photo.metadata[String(kCGImagePropertyTIFFDictionary)] as? [String: Any])?[String(kCGImagePropertyTIFFMake)] as? String,
+                               let model = (photo.metadata[String(kCGImagePropertyTIFFDictionary)] as? [String: Any])?[String(kCGImagePropertyTIFFModel)] as? String {
                                 HStack {
                                     Text("Camera")
                                     Spacer()
@@ -1059,7 +1061,7 @@ struct PhotoDetailView: View {
                                 }
                             }
                             
-                            if let fNumber = exifDict[kCGImagePropertyExifFNumber as String] as? Double {
+                            if let fNumber = exifDict[String(kCGImagePropertyExifFNumber)] as? Double {
                                 HStack {
                                     Text("Aperture")
                                     Spacer()
@@ -1068,7 +1070,7 @@ struct PhotoDetailView: View {
                                 }
                             }
                             
-                            if let exposureTime = exifDict[kCGImagePropertyExifExposureTime as String] as? Double {
+                            if let exposureTime = exifDict[String(kCGImagePropertyExifExposureTime)] as? Double {
                                 HStack {
                                     Text("Shutter Speed")
                                     Spacer()
@@ -1077,7 +1079,7 @@ struct PhotoDetailView: View {
                                 }
                             }
                             
-                            if let isoValue = exifDict[kCGImagePropertyExifISOSpeedRatings as String] as? [Int],
+                            if let isoValue = exifDict[String(kCGImagePropertyExifISOSpeedRatings)] as? [Int],
                                let iso = isoValue.first {
                                 HStack {
                                     Text("ISO")
@@ -1087,7 +1089,7 @@ struct PhotoDetailView: View {
                                 }
                             }
                             
-                            if let focalLength = exifDict[kCGImagePropertyExifFocalLength as String] as? Double {
+                            if let focalLength = exifDict[String(kCGImagePropertyExifFocalLength)] as? Double {
                                 HStack {
                                     Text("Focal Length")
                                     Spacer()

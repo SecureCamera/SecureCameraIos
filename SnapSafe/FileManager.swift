@@ -7,6 +7,8 @@
 
 import Foundation
 import SwiftUI
+import ImageIO
+import CoreGraphics
 
 class SecureFileManager {
     private let fileManager = FileManager.default
@@ -47,6 +49,13 @@ class SecureFileManager {
         // Add creation date to metadata for sorting
         let now = Date()
         serializedMetadata["creationDate"] = now.timeIntervalSince1970
+        
+        // Add location data if enabled and available
+        if let locationMetadata = LocationManager.shared.getCurrentLocationMetadata() {
+            for (key, value) in locationMetadata {
+                serializedMetadata[key] = value
+            }
+        }
         
         // Save metadata separately
         let metadataURL = secureDirectory.appendingPathComponent("\(filename).metadata")

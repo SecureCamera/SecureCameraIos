@@ -7,10 +7,12 @@
 	<key>INIntentsRestrictedWhileLocked</key>
 	<array>
 		<string>NSCameraUsageDescription</string>
+		<string>NSLocationWhenInUseUsageDescription</string>
 	</array>
 	<key>INIntentsSupported</key>
 	<array>
 		<string>NSCameraUsageDescription</string>
+		<string>NSLocationWhenInUseUsageDescription</string>
 	</array>
 </dict>
 </plist>
