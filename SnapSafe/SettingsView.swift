@@ -31,6 +31,8 @@ struct SettingsView: View {
     @State private var locationPermissionStatus = "Not Determined"
     @StateObject private var locationManager = LocationManager.shared
     @State private var includeLocationData = false
+    
+    @Environment(\.openURL) private var openURL
 
     // Dependency injections (commented until implementations are ready)
     // private let authManager = AuthenticationManager()
@@ -86,11 +88,21 @@ struct SettingsView: View {
                             .foregroundColor(locationStatusColor)
                     }
 
-                    Button("Request Location Permission") {
-                        locationManager.requestLocationPermission()
-                    }
-                    .disabled(locationManager.authorizationStatus == .authorizedWhenInUse ||
-                        locationManager.authorizationStatus == .authorizedAlways)
+                    let permissionNotDetermined = locationManager.authorizationStatus == .notDetermined
+                    
+                    Button {
+                        if permissionNotDetermined {
+                            locationManager.requestLocationPermission()
+                        } else {
+                            if let url = URL(string: UIApplication.openSettingsURLString) {
+                                openURL(url)
+                            }
+                        }
+                        } label: {
+                            Text(permissionNotDetermined
+                                 ? "Request Location Permission"
+                                 : "Manage Permission in Settings")
+                        }
 
                     Text("When enabled, location data will be embedded in newly captured photos. Location requires permission and GPS availability.")
                         .font(.caption)
