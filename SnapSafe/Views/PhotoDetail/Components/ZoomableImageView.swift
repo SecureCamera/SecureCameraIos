@@ -44,33 +44,75 @@ struct ZoomableImageView<Overlay: View>: View {
     // Face detection state
     let isFaceDetectionActive: Bool
     
+    // Orientation properties
+    private var isLandscape: Bool {
+        // Consider the image orientation
+        let orientation = image.imageOrientation.rawValue
+        // Orientations 5-8 are 90/270 degree rotations
+        let isRotated = orientation >= 5 && orientation <= 8
+        
+        if isRotated {
+            // For rotated images, swap dimensions for comparison
+            return image.size.height > image.size.width
+        } else {
+            // Normal comparison
+            return image.size.width > image.size.height
+        }
+    }
+    
+    // Device orientation state
+    @State private var deviceOrientation = UIDevice.current.orientation
+    
     // Custom overlay
     @ViewBuilder var overlay: () -> Overlay
     
     var body: some View {
-        // Image display
-        Image(uiImage: image)
-            .resizable()
-            .aspectRatio(contentMode: .fit)
-            .rotationEffect(.degrees(imageRotation))
-            .scaleEffect(currentScale)
-            .offset(x: offset + dragOffset.width, y: dragOffset.height)
-            .animation(.interactiveSpring(), value: offset) // Smooth animation for offset
-            .animation(nil, value: dragOffset) // No animation for drag to prevent jumping
-            .overlay(
-                GeometryReader { imageGeometry in
-                    ZStack {
-                        Color.clear
-                            .preference(key: ImageSizePreferenceKey.self, value: imageGeometry.size)
-                            .onPreferenceChange(ImageSizePreferenceKey.self) { size in
-                                self.imageFrameSize = size
+        GeometryReader { geometry in
+            ZStack {
+                // Background color to fill empty space
+                Color.black
+                    .edgesIgnoringSafeArea(.all)
+                
+                // Container to handle orientation and scaling
+                VStack {
+                    Spacer()
+                    
+                    // Image display
+                    Image(uiImage: image)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .rotationEffect(.degrees(imageRotation))
+                        .scaleEffect(currentScale)
+                        .offset(x: offset + dragOffset.width, y: dragOffset.height)
+                        .animation(.interactiveSpring(), value: offset) // Smooth animation for offset
+                        .animation(nil, value: dragOffset) // No animation for drag to prevent jumping
+                        .frame(
+                            maxWidth: geometry.size.width,
+                            maxHeight: geometry.size.height
+                        )
+                        .overlay(
+                            GeometryReader { imageGeometry in
+                                ZStack {
+                                    Color.clear
+                                        .preference(key: ImageSizePreferenceKey.self, value: imageGeometry.size)
+                                        .onPreferenceChange(ImageSizePreferenceKey.self) { size in
+                                            self.imageFrameSize = size
+                                        }
+                                    
+                                    // Custom overlay content
+                                    overlay()
+                                }
                             }
-                        
-                        // Custom overlay content
-                        overlay()
-                    }
+                        )
+                    
+                    Spacer()
                 }
-            )
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIDevice.orientationDidChangeNotification)) { _ in
+                // Update device orientation when it changes
+                deviceOrientation = UIDevice.current.orientation
+            }
+        }
             // Apply multiple gestures with a gesture modifier
             .gesture(
                 // Magnification (pinch) gesture for zoom in/out

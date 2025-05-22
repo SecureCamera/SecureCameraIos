@@ -64,7 +64,7 @@ struct PhotoDetailView_Impl: View {
                         isVisible: viewModel.isZoomed
                     )
                     
-                    // Centered image display
+                    // Centered image display with appropriate orientation handling
                     ZoomableImageView(
                         image: viewModel.displayedImage,
                         geometrySize: geometry.size,

@@ -407,6 +407,20 @@ class CameraModel: NSObject, ObservableObject {
         } else {
             print("📸 Flash not supported for requested mode: \(flashMode)")
         }
+        
+        // Set video connection orientation based on device orientation
+        if let connection = output.connection(with: .video) {
+            // Get current device orientation and convert to AVCaptureVideoOrientation
+            if let videoOrientation = AVCaptureVideoOrientation(deviceOrientation: UIDevice.current.orientation) {
+                // Set the video orientation to match device orientation
+                connection.videoOrientation = videoOrientation
+                print("📸 Setting video orientation to match device orientation: \(videoOrientation.rawValue)")
+            } else {
+                // Default to portrait if we can't determine from device orientation
+                connection.videoOrientation = .portrait
+                print("📸 Using default portrait orientation")
+            }
+        }
 
         output.capturePhoto(with: photoSettings, delegate: self)
     }
@@ -627,33 +641,53 @@ extension CameraModel: AVCapturePhotoCaptureDelegate {
             return
         }
 
-        // Save the image data directly
+        // Print EXIF data for debugging
+        if let source = CGImageSourceCreateWithData(imageData as CFData, nil),
+           let metadata = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [String: Any] {
+            print("📸 Image metadata: \(metadata)")
+            
+            // Log orientation information
+            if let tiffDict = metadata[String(kCGImagePropertyTIFFDictionary)] as? [String: Any],
+               let orientation = tiffDict[String(kCGImagePropertyTIFFOrientation)] as? Int {
+                print("📸 TIFF Orientation: \(orientation)")
+            }
+            
+            if let exifDict = metadata[String(kCGImagePropertyExifDictionary)] as? [String: Any],
+               let orientation = exifDict[String(kCGImagePropertyOrientation)] as? Int {
+                print("📸 EXIF Orientation: \(orientation)")
+            }
+        }
+
+        // Save the image data directly with orientation preserved
         savePhoto(imageData)
 
-        // Update UI with the captured image
+        // Update UI with the captured image - we want to show the image with its natural orientation
         if let image = UIImage(data: imageData) {
-            // Fix orientation for preview
-            let correctedImage = fixImageOrientation(image)
-
+            print("📸 Captured image orientation: \(image.imageOrientation.rawValue)")
+            
+            // Keep the original orientation for preview
             DispatchQueue.main.async {
-                self.recentImage = correctedImage
+                self.recentImage = image
             }
         }
     }
 
-    // Fix image orientation issues
+    // Fix image orientation issues but preserve landscape vs portrait information in metadata
     private func fixImageOrientation(_ image: UIImage) -> UIImage {
-        // If the orientation is already correct, return the image as is
+        // Store the original orientation for later reference
+        _ = image.imageOrientation
+        
+        // Create image with correct orientation but preserve aspect ratio
         if image.imageOrientation == .up {
             return image
         }
-
+        
         // Create a new image with correct orientation
         UIGraphicsBeginImageContextWithOptions(image.size, false, image.scale)
         image.draw(in: CGRect(origin: .zero, size: image.size))
         let normalizedImage = UIGraphicsGetImageFromCurrentImageContext()!
         UIGraphicsEndImageContext()
-
+        
         return normalizedImage
     }
 
@@ -666,13 +700,47 @@ extension CameraModel: AVCapturePhotoCaptureDelegate {
             if let source = CGImageSourceCreateWithData(imageData as CFData, nil) {
                 if let imageMetadata = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [String: Any] {
                     metadata = imageMetadata
-
-                    // Ensure orientation is preserved correctly in metadata
-                    // This is important for re-opening the image with correct orientation
-                    if var tiffDict = metadata[String(kCGImagePropertyTIFFDictionary)] as? [String: Any] {
-                        tiffDict[String(kCGImagePropertyTIFFOrientation)] = 1 // Force "up" orientation
-                        metadata[String(kCGImagePropertyTIFFDictionary)] = tiffDict
+                    
+                    // Get the EXIF orientation value
+                    var exifOrientation: Int = 1 // Default to 1 (normal orientation)
+                    
+                    // First check EXIF dictionary
+                    if let exifDict = metadata[String(kCGImagePropertyExifDictionary)] as? [String: Any],
+                       let orientation = exifDict[String(kCGImagePropertyOrientation)] as? Int {
+                        exifOrientation = orientation
+                        print("📸 Found EXIF orientation: \(orientation)")
                     }
+                    // Then check TIFF dictionary
+                    else if let tiffDict = metadata[String(kCGImagePropertyTIFFDictionary)] as? [String: Any],
+                            let orientation = tiffDict[String(kCGImagePropertyTIFFOrientation)] as? Int {
+                        exifOrientation = orientation
+                        print("📸 Found TIFF orientation: \(orientation)")
+                    }
+                    
+                    // Store the original orientation value for later use
+                    metadata["originalOrientation"] = exifOrientation
+                    print("📸 Saved original orientation value: \(exifOrientation)")
+                    
+                    // Check if this is a landscape photo by examining dimensions and orientation
+                    if let pixelWidth = metadata[String(kCGImagePropertyPixelWidth)] as? Int,
+                       let pixelHeight = metadata[String(kCGImagePropertyPixelHeight)] as? Int {
+                        
+                        // Determine if landscape based on both dimensions and orientation
+                        // Orientation values 5-8 mean the image is rotated 90/270 degrees
+                        let isRotated = (exifOrientation >= 5 && exifOrientation <= 8)
+                        
+                        // If rotated, swap dimensions for comparison
+                        if isRotated {
+                            metadata["isLandscape"] = pixelHeight > pixelWidth
+                        } else {
+                            metadata["isLandscape"] = pixelWidth > pixelHeight
+                        }
+                        
+                        print("📸 Photo dimensions: \(pixelWidth)x\(pixelHeight), orientation: \(exifOrientation), isLandscape: \(metadata["isLandscape"] as? Bool ?? false)")
+                    }
+                    
+                    // Preserve the original EXIF orientation
+                    // DO NOT normalize the orientation here - we want to keep the original
 
                     // Add location data if enabled and available from LocationManager
                     // The FileManager will handle this now, no need to add it here
@@ -1212,15 +1280,28 @@ struct PhotoCell: View {
 
     // Track whether this cell is visible in the viewport
     @State private var isVisible: Bool = false
+    
+    // Cell size
+    private let cellSize: CGFloat = 100
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
-            // Photo image
+            // Background for photos (shows black for landscape photos)
+            Rectangle()
+                .fill(Color.black)
+                .frame(width: cellSize, height: cellSize)
+                .cornerRadius(10)
+            
+            // Photo image with proper aspect ratio and orientation
             Image(uiImage: photo.thumbnail)
                 .resizable()
-                .aspectRatio(contentMode: .fill)
-                .frame(width: 100, height: 100)
-                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .aspectRatio(contentMode: .fit) // Use .fit to preserve aspect ratio
+                .frame(
+                    width: photo.frameSizeForDisplay(cellSize: cellSize).width,
+                    height: photo.frameSizeForDisplay(cellSize: cellSize).height
+                )
+                .frame(width: cellSize, height: cellSize) // Outer frame maintains cell size
+                .cornerRadius(10)
                 .onTapGesture(perform: onTap)
                 .overlay(
                     RoundedRectangle(cornerRadius: 10)
@@ -1250,6 +1331,57 @@ struct PhotoCell: View {
                     .padding(5)
             }
         }
+    }
+}
+
+// Extension to convert between device orientation and video orientation
+extension AVCaptureVideoOrientation {
+    init?(deviceOrientation: UIDeviceOrientation) {
+        switch deviceOrientation {
+        case .portrait:
+            self = .portrait
+        case .portraitUpsideDown:
+            self = .portraitUpsideDown
+        case .landscapeLeft:
+            self = .landscapeRight  // Note: These are flipped because the camera is on the back of the device
+        case .landscapeRight:
+            self = .landscapeLeft   // Note: These are flipped because the camera is on the back of the device
+        default:
+            return nil
+        }
+    }
+    
+    init?(interfaceOrientation: UIInterfaceOrientation) {
+        switch interfaceOrientation {
+        case .portrait:
+            self = .portrait
+        case .portraitUpsideDown:
+            self = .portraitUpsideDown
+        case .landscapeLeft:
+            self = .landscapeLeft
+        case .landscapeRight:
+            self = .landscapeRight
+        default:
+            return nil
+        }
+    }
+}
+
+// Extension for UIImage to get an image with the correct orientation applied
+extension UIImage {
+    func imageWithProperOrientation() -> UIImage {
+        // If already in correct orientation, return self
+        if self.imageOrientation == .up {
+            return self
+        }
+        
+        // Create a proper oriented image
+        UIGraphicsBeginImageContextWithOptions(self.size, false, self.scale)
+        self.draw(in: CGRect(origin: .zero, size: self.size))
+        let normalizedImage = UIGraphicsGetImageFromCurrentImageContext()!
+        UIGraphicsEndImageContext()
+        
+        return normalizedImage
     }
 }
 
