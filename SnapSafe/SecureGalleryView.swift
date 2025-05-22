@@ -692,10 +692,9 @@ struct SecureGalleryView: View {
     private func shareSelectedPhotos() {
         // Get all the selected photos
         let images = selectedPhotos
-
         guard !images.isEmpty else { return }
-
-        // Use UIApplication.shared.windows approach for SwiftUI integration
+        
+        // Find the root view controller
         guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
               let window = windowScene.windows.first,
               let rootViewController = window.rootViewController
@@ -703,29 +702,68 @@ struct SecureGalleryView: View {
             print("Could not find root view controller")
             return
         }
-
-        // Create a UIActivityViewController to show the sharing options
-        let activityViewController = UIActivityViewController(
-            activityItems: images,
-            applicationActivities: nil
-        )
-
-        // For iPad support
-        if let popover = activityViewController.popoverPresentationController {
-            popover.sourceView = window
-            popover.sourceRect = CGRect(x: window.bounds.midX, y: window.bounds.midY, width: 0, height: 0)
-            popover.permittedArrowDirections = []
-        }
-
+        
         // Find the presented view controller to present from
         var currentController = rootViewController
         while let presented = currentController.presentedViewController {
             currentController = presented
         }
-
-        // Present the share sheet from the topmost presented controller
-        DispatchQueue.main.async {
-            currentController.present(activityViewController, animated: true, completion: nil)
+        
+        // Create and prepare temporary files with UUID filenames
+        var filesToShare: [URL] = []
+        
+        for image in images {
+            if let imageData = image.jpegData(compressionQuality: 0.9) {
+                do {
+                    let fileURL = try secureFileManager.preparePhotoForSharing(imageData: imageData)
+                    filesToShare.append(fileURL)
+                    print("Prepared file for sharing: \(fileURL.lastPathComponent)")
+                } catch {
+                    print("Error preparing photo for sharing: \(error.localizedDescription)")
+                }
+            }
+        }
+        
+        // Share files if any were successfully prepared
+        if !filesToShare.isEmpty {
+            // Create a UIActivityViewController to share the files
+            let activityViewController = UIActivityViewController(
+                activityItems: filesToShare,
+                applicationActivities: nil
+            )
+            
+            // For iPad support
+            if let popover = activityViewController.popoverPresentationController {
+                popover.sourceView = window
+                popover.sourceRect = CGRect(x: window.bounds.midX, y: window.bounds.midY, width: 0, height: 0)
+                popover.permittedArrowDirections = []
+            }
+            
+            // Present the share sheet
+            DispatchQueue.main.async {
+                currentController.present(activityViewController, animated: true) {
+                    print("Share sheet presented successfully for \(filesToShare.count) files")
+                }
+            }
+        } else {
+            // Fallback to sharing just the images if file preparation failed for all
+            print("Falling back to sharing images directly")
+            
+            let activityViewController = UIActivityViewController(
+                activityItems: images,
+                applicationActivities: nil
+            )
+            
+            // For iPad support
+            if let popover = activityViewController.popoverPresentationController {
+                popover.sourceView = window
+                popover.sourceRect = CGRect(x: window.bounds.midX, y: window.bounds.midY, width: 0, height: 0)
+                popover.permittedArrowDirections = []
+            }
+            
+            DispatchQueue.main.async {
+                currentController.present(activityViewController, animated: true, completion: nil)
+            }
         }
     }
 }

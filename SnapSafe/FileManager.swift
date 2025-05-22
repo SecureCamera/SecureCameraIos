@@ -34,10 +34,18 @@ class SecureFileManager {
         return secureDirectory
     }
 
-    // Basic version - saves photo without encryption for now
+    // Save photo with UTC timestamp filename for better chronological sorting
     func savePhoto(_ photoData: Data, withMetadata metadata: [String: Any] = [:]) throws -> String {
         let secureDirectory = try getSecureDirectory()
-        let filename = UUID().uuidString
+        
+        // Generate UTC timestamp filename with microsecond precision
+        let dateFormatter = ISO8601DateFormatter()
+        dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let utcTimestamp = dateFormatter.string(from: Date())
+            .replacingOccurrences(of: ":", with: "")
+            .replacingOccurrences(of: "-", with: "")
+        
+        let filename = utcTimestamp
         let fileURL = secureDirectory.appendingPathComponent("\(filename).photo")
 
         // Save photo
@@ -63,6 +71,21 @@ class SecureFileManager {
         try metadataData.write(to: metadataURL)
 
         return filename
+    }
+    
+    // Creates a temporary file for sharing with a UUID filename
+    func preparePhotoForSharing(imageData: Data) throws -> URL {
+        // Get temporary directory
+        let tempDirectory = FileManager.default.temporaryDirectory
+        
+        // Create UUID filename for sharing
+        let uuid = UUID().uuidString
+        let tempFileURL = tempDirectory.appendingPathComponent("\(uuid).jpg")
+        
+        // Write the data to the temporary file
+        try imageData.write(to: tempFileURL)
+        
+        return tempFileURL
     }
 
     // Process metadata to make it JSON serializable

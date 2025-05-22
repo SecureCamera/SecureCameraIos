@@ -451,21 +451,63 @@ class PhotoDetailViewModel: ObservableObject {
         // Get the current photo image
         let image = displayedImage
         
-        // Create a UIActivityViewController to show the sharing options
-        let activityViewController = UIActivityViewController(
-            activityItems: [image],
-            applicationActivities: nil
-        )
-        
-        // For iPad support
-        if let popover = activityViewController.popoverPresentationController {
-            popover.sourceView = viewController.view
-            popover.sourceRect = CGRect(x: viewController.view.bounds.midX, y: viewController.view.bounds.midY, width: 0, height: 0)
-            popover.permittedArrowDirections = []
+        // Convert image to data for sharing with UUID filename
+        if let imageData = image.jpegData(compressionQuality: 0.9) {
+            do {
+                // Prepare photo for sharing with UUID filename
+                let fileURL = try secureFileManager.preparePhotoForSharing(imageData: imageData)
+                
+                print("Sharing photo with UUID filename: \(fileURL.lastPathComponent)")
+                
+                // Create a UIActivityViewController to show the sharing options with the file
+                let activityViewController = UIActivityViewController(
+                    activityItems: [fileURL],
+                    applicationActivities: nil
+                )
+                
+                // For iPad support
+                if let popover = activityViewController.popoverPresentationController {
+                    popover.sourceView = viewController.view
+                    popover.sourceRect = CGRect(x: viewController.view.bounds.midX, y: viewController.view.bounds.midY, width: 0, height: 0)
+                    popover.permittedArrowDirections = []
+                }
+                
+                // Present the share sheet
+                viewController.present(activityViewController, animated: true) {
+                    print("Share sheet presented successfully")
+                }
+            } catch {
+                print("Error preparing photo for sharing: \(error.localizedDescription)")
+                
+                // Fallback to sharing just the image if file preparation fails
+                let activityViewController = UIActivityViewController(
+                    activityItems: [image],
+                    applicationActivities: nil
+                )
+                
+                if let popover = activityViewController.popoverPresentationController {
+                    popover.sourceView = viewController.view
+                    popover.sourceRect = CGRect(x: viewController.view.bounds.midX, y: viewController.view.bounds.midY, width: 0, height: 0)
+                    popover.permittedArrowDirections = []
+                }
+                
+                viewController.present(activityViewController, animated: true, completion: nil)
+            }
+        } else {
+            // Fallback to sharing just the image if data conversion fails
+            let activityViewController = UIActivityViewController(
+                activityItems: [image],
+                applicationActivities: nil
+            )
+            
+            if let popover = activityViewController.popoverPresentationController {
+                popover.sourceView = viewController.view
+                popover.sourceRect = CGRect(x: viewController.view.bounds.midX, y: viewController.view.bounds.midY, width: 0, height: 0)
+                popover.permittedArrowDirections = []
+            }
+            
+            viewController.present(activityViewController, animated: true, completion: nil)
         }
-        
-        // Present the share sheet
-        viewController.present(activityViewController, animated: true, completion: nil)
     }
     
     // MARK: - View Lifecycle

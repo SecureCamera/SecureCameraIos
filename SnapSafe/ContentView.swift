@@ -679,11 +679,10 @@ extension CameraModel: AVCapturePhotoCaptureDelegate {
                 }
             }
 
-            // Save the photo without encryption for now
-            // Location data will be added by SecureFileManager if enabled
+            // Save the photo with UTC timestamp filename
             do {
-                let _ = try self.secureFileManager.savePhoto(imageData, withMetadata: metadata)
-                print("Photo saved successfully")
+                let filename = try self.secureFileManager.savePhoto(imageData, withMetadata: metadata)
+                print("Photo saved successfully with timestamp filename: \(filename)")
             } catch {
                 print("Error saving photo: \(error.localizedDescription)")
             }
