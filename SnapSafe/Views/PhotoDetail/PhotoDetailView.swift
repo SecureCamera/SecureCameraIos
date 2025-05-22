@@ -169,34 +169,43 @@ struct PhotoDetailView_Impl: View {
                                     viewModel.sharePhoto(from: controller)
                                 }
                             },
-                            onDelete: { viewModel.showDeleteConfirmation = true },
+                            onDelete: { 
+                                print("Delete button pressed - showing confirmation")
+                                viewModel.showDeleteConfirmation = true 
+                            },
                             isZoomed: viewModel.isZoomed
                         )
                     }
                 }
             }
             .navigationBarTitle("Photo Detail", displayMode: .inline)
-            .alert(isPresented: $viewModel.showDeleteConfirmation) {
-                Alert(
-                    title: Text("Delete Photo"),
-                    message: Text("Are you sure you want to delete this photo? This action cannot be undone."),
-                    primaryButton: .destructive(Text("Delete")) {
+            .alert(
+                "Delete Photo",
+                isPresented: $viewModel.showDeleteConfirmation,
+                actions: {
+                    Button("Cancel", role: .cancel) {}
+                    Button("Delete", role: .destructive) {
                         viewModel.deleteCurrentPhoto()
                         dismiss()
-                    },
-                    secondaryButton: .cancel()
-                )
-            }
-            .alert(isPresented: $viewModel.showBlurConfirmation) {
-                Alert(
-                    title: Text(viewModel.maskActionTitle),
-                    message: Text("Are you sure you want to \(viewModel.maskActionVerb) the selected faces? This will permanently modify the photo."),
-                    primaryButton: .destructive(Text(viewModel.maskButtonLabel)) {
+                    }
+                },
+                message: {
+                    Text("Are you sure you want to delete this photo? This action cannot be undone.")
+                }
+            )
+            .alert(
+                viewModel.maskActionTitle,
+                isPresented: $viewModel.showBlurConfirmation,
+                actions: {
+                    Button("Cancel", role: .cancel) {}
+                    Button(viewModel.maskButtonLabel, role: .destructive) {
                         viewModel.applyFaceMasking()
-                    },
-                    secondaryButton: .cancel()
-                )
-            }
+                    }
+                },
+                message: {
+                    Text("Are you sure you want to \(viewModel.maskActionVerb) the selected faces? This will permanently modify the photo.")
+                }
+            )
             .sheet(isPresented: $viewModel.showImageInfo) {
                 ImageInfoView(photo: viewModel.currentPhoto)
             }

@@ -386,6 +386,7 @@ class PhotoDetailViewModel: ObservableObject {
     }
     
     func deleteCurrentPhoto() {
+        print("deleteCurrentPhoto called - starting deletion process")
         // Get the photo to delete
         let photoToDelete = currentPhoto
         
@@ -393,10 +394,13 @@ class PhotoDetailViewModel: ObservableObject {
         DispatchQueue.global(qos: .userInitiated).async {
             do {
                 // Actually delete the file
+                print("Attempting to delete file: \(photoToDelete.filename)")
                 try self.secureFileManager.deletePhoto(filename: photoToDelete.filename)
+                print("File deletion successful")
                 
                 // All UI updates must happen on the main thread
                 DispatchQueue.main.async {
+                    print("Calling onDelete callback")
                     // Notify the parent view about the deletion
                     if let onDelete = self.onDelete {
                         onDelete(photoToDelete)
