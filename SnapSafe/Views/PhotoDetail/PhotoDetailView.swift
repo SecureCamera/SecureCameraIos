@@ -18,9 +18,6 @@ struct PhotoDetailView_Impl: View {
     // Environment
     @Environment(\.dismiss) private var dismiss
     
-    // UIKit integration for sharing
-    @State private var rootViewController: UIViewController?
-    
     // Initialize with a single photo
     init(photo: SecurePhoto, showFaceDetection: Bool, onDelete: ((SecurePhoto) -> Void)? = nil, onDismiss: (() -> Void)? = nil) {
         _viewModel = StateObject(wrappedValue: PhotoDetailViewModel(
@@ -127,7 +124,6 @@ struct PhotoDetailView_Impl: View {
                         }
                     }
                     .frame(maxWidth: .infinity, maxHeight: geometry.size.height * 0.7)
-                    .background(UIViewControllerRepresentable())
                     
                     Spacer()
                     
@@ -164,10 +160,8 @@ struct PhotoDetailView_Impl: View {
                             onInfo: { viewModel.showImageInfo = true },
                             onObfuscate: viewModel.detectFaces,
                             onShare: {
-                                // Get the rootViewController for sharing
-                                if let controller = rootViewController {
-                                    viewModel.sharePhoto(from: controller)
-                                }
+                                print("Share button pressed - showing share sheet")
+                                viewModel.sharePhoto()
                             },
                             onDelete: { 
                                 print("Delete button pressed - showing confirmation")
@@ -243,59 +237,5 @@ struct PhotoDetailView_Impl: View {
         }
     }
     
-    // UIViewControllerRepresentable to get access to the UIViewController for sharing
-    struct UIViewControllerRepresentable: UIViewRepresentable {
-        func makeUIView(context: Context) -> UIView {
-            let view = UIView()
-            return view
-        }
-        
-        func updateUIView(_ uiView: UIView, context: Context) {
-            // Store the view controller when available
-            if let viewController = findViewController(from: uiView) {
-                DispatchQueue.main.async {
-                    // Store a reference to the view controller
-                    if let photoDetailView = findPhotoDetailView(from: viewController) {
-                        photoDetailView.rootViewController = viewController
-                    }
-                }
-            }
-        }
-        
-        // Helper to find the parent view controller from a UIView
-        private func findViewController(from view: UIView) -> UIViewController? {
-            var responder: UIResponder? = view
-            while responder != nil {
-                if let viewController = responder as? UIViewController {
-                    return viewController
-                }
-                responder = responder?.next
-            }
-            return nil
-        }
-        
-        // Helper to find the PhotoDetailView from a view controller
-        private func findPhotoDetailView(from viewController: UIViewController) -> PhotoDetailView_Impl? {
-            let mirror = Mirror(reflecting: viewController)
-            
-            // Check if the view controller has a hosting controller
-            for child in mirror.children {
-                if let content = child.value as? PhotoDetailView_Impl {
-                    return content
-                }
-                
-                // Check deeper if there's a hosting view
-                if let hosting = child.value as? UIView {
-                    let hostingMirror = Mirror(reflecting: hosting)
-                    for hostingChild in hostingMirror.children {
-                        if let content = hostingChild.value as? PhotoDetailView_Impl {
-                            return content
-                        }
-                    }
-                }
-            }
-            
-            return nil
-        }
-    }
+    // No additional helpers needed now
 }

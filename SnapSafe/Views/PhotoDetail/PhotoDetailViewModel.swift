@@ -201,7 +201,7 @@ class PhotoDetailViewModel: ObservableObject {
     func toggleFaceSelection(_ face: DetectedFace) {
         // Find and toggle the selected face
         if let index = detectedFaces.firstIndex(where: { $0.id == face.id }) {
-            var updatedFaces = detectedFaces
+            let updatedFaces = detectedFaces
             updatedFaces[index].isSelected.toggle()
             detectedFaces = updatedFaces
         }
@@ -447,9 +447,24 @@ class PhotoDetailViewModel: ObservableObject {
     
     // MARK: - Sharing
     
-    func sharePhoto(from viewController: UIViewController) {
+    func sharePhoto() {
         // Get the current photo image
         let image = displayedImage
+        
+        // Find the root view controller
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let window = windowScene.windows.first,
+              let rootViewController = window.rootViewController
+        else {
+            print("Could not find root view controller")
+            return
+        }
+        
+        // Find the presented view controller to present from
+        var currentController = rootViewController
+        while let presented = currentController.presentedViewController {
+            currentController = presented
+        }
         
         // Convert image to data for sharing with UUID filename
         if let imageData = image.jpegData(compressionQuality: 0.9) {
@@ -467,14 +482,16 @@ class PhotoDetailViewModel: ObservableObject {
                 
                 // For iPad support
                 if let popover = activityViewController.popoverPresentationController {
-                    popover.sourceView = viewController.view
-                    popover.sourceRect = CGRect(x: viewController.view.bounds.midX, y: viewController.view.bounds.midY, width: 0, height: 0)
+                    popover.sourceView = window
+                    popover.sourceRect = CGRect(x: window.bounds.midX, y: window.bounds.midY, width: 0, height: 0)
                     popover.permittedArrowDirections = []
                 }
                 
                 // Present the share sheet
-                viewController.present(activityViewController, animated: true) {
-                    print("Share sheet presented successfully")
+                DispatchQueue.main.async {
+                    currentController.present(activityViewController, animated: true) {
+                        print("Share sheet presented successfully")
+                    }
                 }
             } catch {
                 print("Error preparing photo for sharing: \(error.localizedDescription)")
@@ -485,13 +502,18 @@ class PhotoDetailViewModel: ObservableObject {
                     applicationActivities: nil
                 )
                 
+                // For iPad support
                 if let popover = activityViewController.popoverPresentationController {
-                    popover.sourceView = viewController.view
-                    popover.sourceRect = CGRect(x: viewController.view.bounds.midX, y: viewController.view.bounds.midY, width: 0, height: 0)
+                    popover.sourceView = window
+                    popover.sourceRect = CGRect(x: window.bounds.midX, y: window.bounds.midY, width: 0, height: 0)
                     popover.permittedArrowDirections = []
                 }
                 
-                viewController.present(activityViewController, animated: true, completion: nil)
+                DispatchQueue.main.async {
+                    currentController.present(activityViewController, animated: true) {
+                        print("Share sheet presented successfully (image fallback)")
+                    }
+                }
             }
         } else {
             // Fallback to sharing just the image if data conversion fails
@@ -500,13 +522,18 @@ class PhotoDetailViewModel: ObservableObject {
                 applicationActivities: nil
             )
             
+            // For iPad support
             if let popover = activityViewController.popoverPresentationController {
-                popover.sourceView = viewController.view
-                popover.sourceRect = CGRect(x: viewController.view.bounds.midX, y: viewController.view.bounds.midY, width: 0, height: 0)
+                popover.sourceView = window
+                popover.sourceRect = CGRect(x: window.bounds.midX, y: window.bounds.midY, width: 0, height: 0)
                 popover.permittedArrowDirections = []
             }
             
-            viewController.present(activityViewController, animated: true, completion: nil)
+            DispatchQueue.main.async {
+                currentController.present(activityViewController, animated: true) {
+                    print("Share sheet presented successfully (image fallback)")
+                }
+            }
         }
     }
     
