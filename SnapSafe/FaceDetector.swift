@@ -11,33 +11,8 @@ import Security
 import UIKit
 import Vision
 
-// Enum to represent different face masking modes
-enum MaskMode {
-    case blackout
-    case pixelate
-    case blur
-    case noise
-}
-
-// Struct to represent a detected face with selection state
-struct DetectedFace: Identifiable {
-    let id = UUID()
-    let rect: CGRect
-    var isSelected: Bool = false
-
-    // Scale the rect to match the view's display size
-    func scaledRect(originalSize: CGSize, displaySize: CGSize) -> CGRect {
-        let scaleX = displaySize.width / originalSize.width
-        let scaleY = displaySize.height / originalSize.height
-
-        return CGRect(
-            x: rect.origin.x * scaleX,
-            y: rect.origin.y * scaleY,
-            width: rect.width * scaleX,
-            height: rect.height * scaleY
-        )
-    }
-}
+// Use our shared MaskMode enum from Models/MaskMode.swift
+// and our shared DetectedFace class from Models/DetectedFace.swift
 
 class FaceDetector {
     // Detect faces and return as DetectedFace objects
@@ -69,7 +44,8 @@ class FaceDetector {
                 let y = (1 - boundingBox.origin.y - boundingBox.height) * image.size.height
                 let width = boundingBox.width * image.size.width
 
-                return DetectedFace(rect: CGRect(x: x, y: y, width: width, height: height))
+                // Use the bounds parameter of our new DetectedFace class
+                return DetectedFace(bounds: CGRect(x: x, y: y, width: width, height: height))
             }
 
             completion(detectedFaces)
@@ -132,7 +108,7 @@ class FaceDetector {
         // Apply the selected mask mode to all selected faces
         // Instead of creating a new image for each face, we'll update the same context
         for face in selectedFaces {
-            let safeRect = coerceRectToImage(rect: face.rect, image: workingImage)
+            let safeRect = coerceRectToImage(rect: face.bounds, image: workingImage)
 
             // Save the graphics state before modifications
             context.saveGState()
