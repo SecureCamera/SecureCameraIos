@@ -288,7 +288,10 @@ struct SecureGalleryView: View {
                         // When in normal selection mode and items are selected
                         else if hasSelection && !isSelectingDecoys {
                             // Delete button
-                            Button(action: { showDeleteConfirmation = true }) {
+                            Button(action: { 
+                                print("Delete button pressed in gallery view, selected photos: \(selectedPhotoIds.count)")
+                                showDeleteConfirmation = true
+                            }) {
                                 Image(systemName: "trash")
                                     .foregroundColor(.red)
                             }
@@ -359,15 +362,43 @@ struct SecureGalleryView: View {
                     )
                 }
             }
-            .alert(isPresented: $showDeleteConfirmation) {
-                deleteConfirmationAlert
-            }
-            .alert(isPresented: $showDecoyLimitWarning) {
-                decoyLimitWarningAlert
-            }
-            .alert(isPresented: $showDecoyConfirmation) {
-                decoyConfirmationAlert
-            }
+            .alert(
+                "Delete Photo\(selectedPhotoIds.count > 1 ? "s" : "")",
+                isPresented: $showDeleteConfirmation,
+                actions: {
+                    Button("Cancel", role: .cancel) {}
+                    Button("Delete", role: .destructive) {
+                        print("Delete confirmation button pressed, deleting \(selectedPhotoIds.count) photos")
+                        deleteSelectedPhotos()
+                    }
+                },
+                message: {
+                    Text("Are you sure you want to delete \(selectedPhotoIds.count) photo\(selectedPhotoIds.count > 1 ? "s" : "")? This action cannot be undone.")
+                }
+            )
+            .alert(
+                "Too Many Decoys",
+                isPresented: $showDecoyLimitWarning,
+                actions: {
+                    Button("OK", role: .cancel) {}
+                },
+                message: {
+                    Text("You can select a maximum of \(maxDecoys) decoy photos. Please deselect some photos before saving.")
+                }
+            )
+            .alert(
+                "Save Decoy Selection",
+                isPresented: $showDecoyConfirmation,
+                actions: {
+                    Button("Cancel", role: .cancel) {}
+                    Button("Save") {
+                        saveDecoySelections()
+                    }
+                },
+                message: {
+                    Text("Are you sure you want to save these \(selectedPhotoIds.count) photos as decoys? These will be shown when the emergency PIN is entered.")
+                }
+            )
         }
     }
 
@@ -391,16 +422,6 @@ struct SecureGalleryView: View {
             }
             .padding()
         }
-    }
-
-    // Delete confirmation alert
-    private var deleteConfirmationAlert: Alert {
-        Alert(
-            title: Text("Delete Photo\(selectedPhotoIds.count > 1 ? "s" : "")"),
-            message: Text("Are you sure you want to delete \(selectedPhotoIds.count) photo\(selectedPhotoIds.count > 1 ? "s" : "")? This action cannot be undone."),
-            primaryButton: .destructive(Text("Delete"), action: deleteSelectedPhotos),
-            secondaryButton: .cancel()
-        )
     }
 
     // Process image data from the PhotosPicker and save it to the gallery
@@ -579,42 +600,64 @@ struct SecureGalleryView: View {
     }
 
     private func deleteSelectedPhotos() {
+        print("deleteSelectedPhotos() called")
+        
         // Create a local copy of the photos to delete
         let photosToDelete = selectedPhotoIds.compactMap { id in
             photos.first(where: { $0.id == id })
         }
+        
+        print("Will delete \(photosToDelete.count) photos: \(photosToDelete.map { $0.filename }.joined(separator: ", "))")
 
         // Clear selection and exit selection mode immediately
         // for better UI responsiveness
         DispatchQueue.main.async {
+            print("Clearing selection UI state")
             self.selectedPhotoIds.removeAll()
             self.isSelecting = false
         }
 
         // Process deletions in a background queue
         DispatchQueue.global(qos: .userInitiated).async {
+            print("Starting background deletion process")
             let group = DispatchGroup()
 
             // Delete each photo
             for photo in photosToDelete {
                 group.enter()
                 do {
+                    print("Attempting to delete: \(photo.filename)")
                     try self.secureFileManager.deletePhoto(filename: photo.filename)
+                    print("Successfully deleted: \(photo.filename)")
                     group.leave()
                 } catch {
-                    print("Error deleting photo: \(error.localizedDescription)")
+                    print("Error deleting photo \(photo.filename): \(error.localizedDescription)")
                     group.leave()
                 }
             }
 
             // After all deletions are complete, update the UI
             group.notify(queue: .main) {
+                print("All deletions complete, updating UI")
+                
+                // Count photos before removal
+                let initialCount = self.photos.count
+                
                 // Remove deleted photos from our array
                 withAnimation {
                     self.photos.removeAll { photo in
-                        photosToDelete.contains { $0.id == photo.id }
+                        let shouldRemove = photosToDelete.contains { $0.id == photo.id }
+                        if shouldRemove {
+                            print("Removing photo \(photo.filename) from UI")
+                        }
+                        return shouldRemove
                     }
                 }
+                
+                // Verify removal
+                let finalCount = self.photos.count
+                let removedCount = initialCount - finalCount
+                print("UI update complete: removed \(removedCount) photos. Gallery now has \(finalCount) photos.")
             }
         }
     }
@@ -645,26 +688,6 @@ struct SecureGalleryView: View {
         dismiss()
     }
 
-    // Computed property for decoy limit warning alert
-    private var decoyLimitWarningAlert: Alert {
-        Alert(
-            title: Text("Too Many Decoys"),
-            message: Text("You can select a maximum of \(maxDecoys) decoy photos. Please deselect some photos before saving."),
-            dismissButton: .default(Text("OK"))
-        )
-    }
-
-    // Computed property for decoy confirmation alert
-    private var decoyConfirmationAlert: Alert {
-        Alert(
-            title: Text("Save Decoy Selection"),
-            message: Text("Are you sure you want to save these \(selectedPhotoIds.count) photos as decoys? These will be shown when the emergency PIN is entered."),
-            primaryButton: .default(Text("Save")) {
-                saveDecoySelections()
-            },
-            secondaryButton: .cancel()
-        )
-    }
 
     private func shareSelectedPhotos() {
         // Get all the selected photos
