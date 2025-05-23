@@ -24,9 +24,13 @@ struct SettingsView: View {
     @State private var biometricEnabled = false
     @State private var sessionTimeout = 5 // minutes
     @State private var appPIN = ""
+    @State private var confirmAppPIN = ""
     @State private var poisonPIN = ""
     @State private var showResetConfirmation = false
     @State private var requirePINOnResume: Bool = false
+    @State private var showPINError = false
+    @State private var pinErrorMessage = ""
+    @State private var showPINSuccess = false
 
     // Decoy photos
     @State private var isSelectingDecoys = false
@@ -165,20 +169,67 @@ struct SettingsView: View {
                 }
 
                 // APP PIN SECTION
-                Section(header: Text("App PIN"), footer: Text("Set an app-specific PIN for additional security")) {
-                    SecureField("Set App PIN", text: $appPIN)
+                Section(header: Text("App PIN"), footer: Text("Enter a new 4-digit PIN twice to change your app security PIN")) {
+                    SecureField("New PIN (4 digits)", text: $appPIN)
                         .keyboardType(.numberPad)
                         .autocorrectionDisabled(true)
                         .textContentType(.oneTimeCode) // Prevents keychain suggestions
-
-                    Button("Save App PIN") {
-                        if !appPIN.isEmpty {
-                            print("Setting app PIN")
-                            // authManager.setAppPIN(appPIN)
-                            appPIN = ""
+                        .onChange(of: appPIN) { _, newValue in
+                            // Limit to 4 digits
+                            if newValue.count > 4 {
+                                appPIN = String(newValue.prefix(4))
+                            }
+                            
+                            // Only allow numbers
+                            if !newValue.allSatisfy({ $0.isNumber }) {
+                                appPIN = newValue.filter { $0.isNumber }
+                            }
+                            
+                            // Clear any previous errors when typing
+                            if showPINError {
+                                showPINError = false
+                            }
                         }
+                    
+                    SecureField("Confirm New PIN", text: $confirmAppPIN)
+                        .keyboardType(.numberPad)
+                        .autocorrectionDisabled(true)
+                        .textContentType(.oneTimeCode)
+                        .onChange(of: confirmAppPIN) { _, newValue in
+                            // Limit to 4 digits
+                            if newValue.count > 4 {
+                                confirmAppPIN = String(newValue.prefix(4))
+                            }
+                            
+                            // Only allow numbers
+                            if !newValue.allSatisfy({ $0.isNumber }) {
+                                confirmAppPIN = newValue.filter { $0.isNumber }
+                            }
+                            
+                            // Clear any previous errors when typing
+                            if showPINError {
+                                showPINError = false
+                            }
+                        }
+                    
+                    if showPINError {
+                        Text(pinErrorMessage)
+                            .foregroundColor(.red)
+                            .font(.caption)
+                            .padding(.vertical, 5)
                     }
-                    .disabled(appPIN.isEmpty)
+                    
+                    if showPINSuccess {
+                        Text("PIN updated successfully!")
+                            .foregroundColor(.green)
+                            .font(.caption)
+                            .padding(.vertical, 5)
+                    }
+
+                    Button("Update PIN") {
+                        resetAppPIN()
+                    }
+                    .disabled(appPIN.isEmpty || confirmAppPIN.isEmpty)
                 }
 
                 // EMERGENCY ERASURE SECTION (POISON PILL)
@@ -258,12 +309,53 @@ struct SettingsView: View {
 
     // MARK: - Helper Methods
 
+    /// Reset or change the app PIN
+    private func resetAppPIN() {
+        // Reset any previous feedback
+        showPINError = false
+        showPINSuccess = false
+        
+        // Validate PIN
+        if appPIN.count != 4 {
+            showPINError = true
+            pinErrorMessage = "PIN must be 4 digits"
+            return
+        }
+        
+        // Check if PINs match
+        if appPIN != confirmAppPIN {
+            showPINError = true
+            pinErrorMessage = "PINs do not match"
+            return
+        }
+        
+        // Update the PIN using PIN manager
+        pinManager.setPIN(appPIN)
+        
+        // Show success message
+        showPINSuccess = true
+        
+        // Clear the fields
+        appPIN = ""
+        confirmAppPIN = ""
+        
+        // Clear success message after delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+            self.showPINSuccess = false
+        }
+        
+        print("App PIN has been updated")
+    }
+    
     private func resetSecuritySettings() {
         // Reset all security settings to default values
         biometricEnabled = false
         sessionTimeout = 5
         appPIN = ""
+        confirmAppPIN = ""
         poisonPIN = ""
+        showPINError = false
+        showPINSuccess = false
 
         // In a real implementation:
         // authManager.resetSecuritySettings()
