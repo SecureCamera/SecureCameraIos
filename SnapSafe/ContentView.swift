@@ -39,21 +39,36 @@ struct ContentView: View {
 
                 // Camera controls overlay
                 VStack {
-                    // Top control bar with flash toggle
+                    // Top control bar with flash toggle and camera switch
                     HStack {
-                        Spacer()
-
-                        // Flash control button
+                        // Camera switch button
                         Button(action: {
-                            toggleFlashMode()
+                            toggleCameraPosition()
                         }) {
-                            Image(systemName: flashIcon(for: cameraModel.flashMode))
+                            Image(systemName: "arrow.triangle.2.circlepath.camera")
                                 .font(.system(size: 20))
                                 .foregroundColor(.white)
                                 .padding(12)
                                 .background(Color.black.opacity(0.6))
                                 .clipShape(Circle())
                         }
+                        .padding(.top, 16)
+                        .padding(.leading, 16)
+                        
+                        Spacer()
+
+                        // Flash control button - disabled for front camera
+                        Button(action: {
+                            toggleFlashMode()
+                        }) {
+                            Image(systemName: flashIcon(for: cameraModel.flashMode))
+                                .font(.system(size: 20))
+                                .foregroundColor(cameraModel.cameraPosition == .front ? .gray : .white)
+                                .padding(12)
+                                .background(Color.black.opacity(0.6))
+                                .clipShape(Circle())
+                        }
+                        .disabled(cameraModel.cameraPosition == .front)
                         .padding(.top, 16)
                         .padding(.trailing, 16)
                     }
@@ -153,6 +168,13 @@ struct ContentView: View {
             cameraModel.flashMode = .auto
         }
     }
+    
+    // Toggle between front and back cameras
+    private func toggleCameraPosition() {
+        // Toggle between front and back cameras
+        let newPosition: AVCaptureDevice.Position = (cameraModel.cameraPosition == .back) ? .front : .back
+        cameraModel.switchCamera(to: newPosition)
+    }
 
     // Get the appropriate icon for the current flash mode
     private func flashIcon(for mode: AVCaptureDevice.FlashMode) -> String {
@@ -194,6 +216,9 @@ class CameraModel: NSObject, ObservableObject {
 
     // Flash control
     @Published var flashMode: AVCaptureDevice.FlashMode = .auto
+    
+    // Camera position (front or back)
+    @Published var cameraPosition: AVCaptureDevice.Position = .back
 
     // Timer to reset to auto-focus mode after tap-to-focus
     private var focusResetTimer: Timer?
@@ -259,8 +284,8 @@ class CameraModel: NSObject, ObservableObject {
             session.beginConfiguration()
 
             // Add device input - use specific device type for faster initialization
-            guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) else {
-                print("Failed to get camera device")
+            guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: cameraPosition) else {
+                print("Failed to get camera device for position: \(cameraPosition)")
                 return
             }
 
@@ -395,33 +420,73 @@ class CameraModel: NSObject, ObservableObject {
             }
         }
     }
+    
+    // Helper: map legacy orientations to a rotation angle (deg, CW)
+    private func rotationAngle(for orientation: UIDeviceOrientation) -> Double {
+        switch orientation {
+        case .portrait:              return 90          // device upright → rotate CW so horizon is level
+        case .portraitUpsideDown:    return 270
+        case .landscapeLeft:         return 0           // lens at top
+        case .landscapeRight:        return 180         // lens at bottom
+        default:                     return 0
+        }
+    }
 
     func capturePhoto() {
-        // Configure photo settings with flash mode
+        // --- 1. build AVCapturePhotoSettings exactly as you did before ----------------------------
         let photoSettings = AVCapturePhotoSettings()
 
-        // Apply flash mode setting if flash is available
-        if output.supportedFlashModes.contains(AVCaptureDevice.FlashMode(rawValue: flashMode.rawValue)!) {
-            photoSettings.flashMode = flashMode
-            print("📸 Using flash mode: \(flashMode)")
-        } else {
-            print("📸 Flash not supported for requested mode: \(flashMode)")
-        }
-        
-        // Set video connection orientation based on device orientation
-        if let connection = output.connection(with: .video) {
-            // Get current device orientation and convert to AVCaptureVideoOrientation
-            if let videoOrientation = AVCaptureVideoOrientation(deviceOrientation: UIDevice.current.orientation) {
-                // Set the video orientation to match device orientation
-                connection.videoOrientation = videoOrientation
-                print("📸 Setting video orientation to match device orientation: \(videoOrientation.rawValue)")
+        if cameraPosition == .back {
+            if output.supportedFlashModes.contains(AVCaptureDevice.FlashMode(rawValue: flashMode.rawValue)!) {
+                photoSettings.flashMode = flashMode
+                print("📸 Using flash mode: \(flashMode)")
             } else {
-                // Default to portrait if we can't determine from device orientation
+                print("📸 Flash not supported for requested mode: \(flashMode)")
+            }
+        } else {
+            photoSettings.flashMode = .off
+            print("📸 Flash disabled for front camera")
+        }
+
+        // --- 2. set capture-orientation on the connection -----------------------------------------
+        guard let connection = output.connection(with: .video) else {
+            output.capturePhoto(with: photoSettings, delegate: self)
+            return
+        }
+
+        if #available(iOS 17, *) {
+            // New way: RotationCoordinator + videoRotationAngle
+            // - find the *device* driving this output
+            guard
+                let deviceInput = session.inputs
+                    .compactMap({ $0 as? AVCaptureDeviceInput })
+                    .first(where: { $0.device.hasMediaType(.video) })
+            else {
+                output.capturePhoto(with: photoSettings, delegate: self)
+                return
+            }
+
+            // - build a coordinator; pass a previewLayer if you want it rotated too
+            let rotationCoordinator = AVCaptureDevice.RotationCoordinator(
+                device: deviceInput.device,
+                previewLayer: nil        // <<— hand in your AVCaptureVideoPreviewLayer if you have one
+            )
+
+            // - ask the coordinator for the *capture* rotation
+            connection.videoRotationAngle = rotationCoordinator.videoRotationAngleForHorizonLevelCapture
+            print("📸 [iOS 17+] rotation angle from coordinator = \(connection.videoRotationAngle)°")
+        } else {
+            // 👉 Legacy way: derive AVCaptureVideoOrientation from UIDeviceOrientation
+            if let vOrient = AVCaptureVideoOrientation(deviceOrientation: UIDevice.current.orientation) {
+                connection.videoOrientation = vOrient
+                print("📸 [≤ iOS 16] set videoOrientation = \(vOrient.rawValue)")
+            } else {
                 connection.videoOrientation = .portrait
-                print("📸 Using default portrait orientation")
+                print("📸 [≤ iOS 16] defaulting to portrait")
             }
         }
 
+        // --- 3. capture ---------------------------------------------------------------------------
         output.capturePhoto(with: photoSettings, delegate: self)
     }
 
@@ -575,6 +640,97 @@ class CameraModel: NSObject, ObservableObject {
             print("Error resetting focus: \(error.localizedDescription)")
         }
     }
+    
+    // Method to switch between front and back cameras
+    func switchCamera(to position: AVCaptureDevice.Position) {
+        // Don't do anything if we're already using this camera position
+        if position == cameraPosition && currentDevice != nil {
+            print("📸 Already using camera position: \(position)")
+            return
+        }
+        
+        print("📸 Switching camera to position: \(position)")
+        
+        // Update the camera position state
+        cameraPosition = position
+        
+        // Check if we need to reconfigure the camera session
+        DispatchQueue.global(qos: .userInteractive).async { [weak self] in
+            guard let self = self else { return }
+            
+            // We need to stop the session while making changes
+            self.session.beginConfiguration()
+            
+            // Remove existing input
+            if let inputs = self.session.inputs as? [AVCaptureDeviceInput] {
+                for input in inputs {
+                    self.session.removeInput(input)
+                }
+            }
+            
+            do {
+                // Get the new camera device for the requested position
+                guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: position) else {
+                    print("📸 Failed to get camera device for position: \(position)")
+                    self.session.commitConfiguration()
+                    return
+                }
+                
+                // Store the device reference for zoom functionality
+                self.currentDevice = device
+                
+                // Configure device settings
+                try device.lockForConfiguration()
+                
+                // Set initial zoom factor
+                device.videoZoomFactor = 1.0
+                
+                // Configure focus modes
+                if device.isFocusModeSupported(.continuousAutoFocus) {
+                    device.focusMode = .continuousAutoFocus
+                    device.isSmoothAutoFocusEnabled = true
+                    
+                    if device.isAutoFocusRangeRestrictionSupported {
+                        device.autoFocusRangeRestriction = .none
+                    }
+                }
+                
+                // Configure exposure mode
+                if device.isExposureModeSupported(.continuousAutoExposure) {
+                    device.exposureMode = .continuousAutoExposure
+                }
+                
+                // Configure white balance mode
+                if device.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance) {
+                    device.whiteBalanceMode = .continuousAutoWhiteBalance
+                }
+                
+                device.unlockForConfiguration()
+                
+                // Create and add new input
+                let newInput = try AVCaptureDeviceInput(device: device)
+                if self.session.canAddInput(newInput) {
+                    self.session.addInput(newInput)
+                    print("📸 Added new camera input for position: \(position)")
+                } else {
+                    print("📸 Could not add camera input for position: \(position)")
+                }
+                
+                // Apply all configuration changes
+                self.session.commitConfiguration()
+                
+                // Update UI properties on main thread
+                DispatchQueue.main.async {
+                    self.zoomFactor = 1.0
+                    print("📸 Camera switch complete to position: \(position)")
+                }
+                
+            } catch {
+                print("📸 Error switching camera: \(error.localizedDescription)")
+                self.session.commitConfiguration()
+            }
+        }
+    }
 
     // Show the visual focus indicator at the specified point in the UI
     private func showFocusIndicator(at devicePoint: CGPoint) {
@@ -721,6 +877,9 @@ extension CameraModel: AVCapturePhotoCaptureDelegate {
                     metadata["originalOrientation"] = exifOrientation
                     print("📸 Saved original orientation value: \(exifOrientation)")
                     
+                    // Store the camera position that was used to take the photo
+                    metadata["cameraPosition"] = self.cameraPosition == .front ? "front" : "back"
+                    
                     // Check if this is a landscape photo by examining dimensions and orientation
                     if let pixelWidth = metadata[String(kCGImagePropertyPixelWidth)] as? Int,
                        let pixelHeight = metadata[String(kCGImagePropertyPixelHeight)] as? Int {
@@ -736,7 +895,7 @@ extension CameraModel: AVCapturePhotoCaptureDelegate {
                             metadata["isLandscape"] = pixelWidth > pixelHeight
                         }
                         
-                        print("📸 Photo dimensions: \(pixelWidth)x\(pixelHeight), orientation: \(exifOrientation), isLandscape: \(metadata["isLandscape"] as? Bool ?? false)")
+                        print("📸 Photo dimensions: \(pixelWidth)x\(pixelHeight), orientation: \(exifOrientation), isLandscape: \(metadata["isLandscape"] as? Bool ?? false), camera: \(metadata["cameraPosition"] as? String ?? "unknown")")
                     }
                     
                     // Preserve the original EXIF orientation
@@ -1384,255 +1543,3 @@ extension UIImage {
         return normalizedImage
     }
 }
-
-// Class to represent a photo in the app with optimized memory usage
-//class SecurePhoto: Identifiable, Equatable {
-//    let id = UUID()
-//    let filename: String
-//    var metadata: [String: Any]
-//    let fileURL: URL
-//
-//    // Memory tracking
-//    var isVisible: Bool = false
-//    private var lastAccessTime: Date = .init()
-//
-//    // Use lazy loading for images to reduce memory usage
-//    private var _thumbnail: UIImage?
-//    private var _fullImage: UIImage?
-//
-//    // Computed property to check if this photo is marked as a decoy
-//    var isDecoy: Bool {
-//        return metadata["isDecoy"] as? Bool ?? false
-//    }
-//
-//    // Function to mark/unmark as decoy
-//    func setDecoyStatus(_ isDecoy: Bool) {
-//        metadata["isDecoy"] = isDecoy
-//
-//        // Save updated metadata back to disk
-//        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-//            guard let self = self else { return }
-//            do {
-//                let secureFileManager = SecureFileManager()
-//                let metadataURL = try secureFileManager.getSecureDirectory().appendingPathComponent("\(filename).metadata")
-//                let metadataData = try JSONSerialization.data(withJSONObject: metadata, options: [])
-//                try metadataData.write(to: metadataURL)
-//                print("Updated decoy status for photo: \(filename)")
-//            } catch {
-//                print("Error updating decoy status: \(error.localizedDescription)")
-//            }
-//        }
-//    }
-//
-//    // Thumbnail is loaded on demand and cached
-//    var thumbnail: UIImage {
-//        // Update last access time
-//        lastAccessTime = Date()
-//
-//        if let cachedThumbnail = _thumbnail {
-//            return cachedThumbnail
-//        }
-//
-//        // Load thumbnail if needed
-//        do {
-//            // Mark this photo as actively being used
-//            isVisible = true
-//
-//            if let thumb = try secureFileManager.loadPhotoThumbnail(from: fileURL) {
-//                _thumbnail = thumb
-//                return thumb
-//            }
-//        } catch {
-//            print("Error loading thumbnail: \(error)")
-//        }
-//
-//        // Fallback to placeholder
-//        return UIImage(systemName: "photo") ?? UIImage()
-//    }
-//
-//    // Full image is loaded on demand
-//    var fullImage: UIImage {
-//        // Update last access time
-//        lastAccessTime = Date()
-//
-//        if let cachedFullImage = _fullImage {
-//            return cachedFullImage
-//        }
-//
-//        // Load full image if needed
-//        do {
-//            // Mark this photo as actively being used
-//            isVisible = true
-//
-//            let (data, _) = try secureFileManager.loadPhoto(filename: filename)
-//            if let img = UIImage(data: data) {
-//                _fullImage = img
-//
-//                // When we load a full image, notify the memory manager
-//                MemoryManager.shared.reportFullImageLoaded()
-//
-//                return img
-//            }
-//        } catch {
-//            print("Error loading full image: \(error)")
-//        }
-//
-//        // Fallback to thumbnail
-//        return thumbnail
-//    }
-//
-//    // Mark as no longer visible in the UI
-//    func markAsInvisible() {
-//        isVisible = false
-//    }
-//
-//    // Get the time since this photo was last accessed
-//    var timeSinceLastAccess: TimeInterval {
-//        return Date().timeIntervalSince(lastAccessTime)
-//    }
-//
-//    // Clear memory when no longer needed
-//    func clearMemory(keepThumbnail: Bool = true) {
-//        if _fullImage != nil {
-//            _fullImage = nil
-//
-//            // Notify memory manager when we free a full image
-//            MemoryManager.shared.reportFullImageUnloaded()
-//        }
-//
-//        if !keepThumbnail && _thumbnail != nil {
-//            _thumbnail = nil
-//
-//            // Notify memory manager when we free a thumbnail
-//            MemoryManager.shared.reportThumbnailUnloaded()
-//        }
-//    }
-//
-//    init(filename: String, metadata: [String: Any], fileURL: URL, preloadedThumbnail: UIImage? = nil) {
-//        self.filename = filename
-//        self.metadata = metadata
-//        self.fileURL = fileURL
-//        _thumbnail = preloadedThumbnail
-//    }
-//
-//    // Legacy initializer for compatibility
-//    convenience init(filename: String, thumbnail: UIImage, fullImage: UIImage, metadata: [String: Any]) {
-//        self.init(filename: filename, metadata: metadata, fileURL: URL(fileURLWithPath: ""))
-//        _thumbnail = thumbnail
-//        _fullImage = fullImage
-//    }
-//
-//    // Implement Equatable
-//    static func == (lhs: SecurePhoto, rhs: SecurePhoto) -> Bool {
-//        // Compare by id and filename
-//        return lhs.id == rhs.id && lhs.filename == rhs.filename
-//    }
-//
-//    // Shared file manager instance
-//    private let secureFileManager = SecureFileManager()
-//}
-
-// Singleton memory manager to track and clean up photo memory usage
-//class MemoryManager {
-//    static let shared = MemoryManager()
-//
-//    // Memory tracking counters
-//    private var loadedFullImages: Int = 0
-//    private var loadedThumbnails: Int = 0
-//
-//    // Memory thresholds
-//    private let maxLoadedFullImages = 3 // Maximum number of full images to keep in memory
-//    private let maxLoadedThumbnails = 30 // Maximum number of thumbnails to keep in memory
-//    private let thumbnailCacheDuration: TimeInterval = 60.0 // Time in seconds to keep thumbnails in cache
-//
-//    // Registry of photos to manage
-//    private var managedPhotos: [SecurePhoto] = []
-//
-//    private init() {}
-//
-//    // Register photos for memory management
-//    func registerPhotos(_ photos: [SecurePhoto]) {
-//        managedPhotos = photos
-//    }
-//
-//    // Report when a full image is loaded
-//    func reportFullImageLoaded() {
-//        loadedFullImages += 1
-//        checkMemoryUsage()
-//    }
-//
-//    // Report when a full image is unloaded
-//    func reportFullImageUnloaded() {
-//        loadedFullImages = max(0, loadedFullImages - 1)
-//    }
-//
-//    // Report when a thumbnail is loaded
-//    func reportThumbnailLoaded() {
-//        loadedThumbnails += 1
-//        checkMemoryUsage()
-//    }
-//
-//    // Report when a thumbnail is unloaded
-//    func reportThumbnailUnloaded() {
-//        loadedThumbnails = max(0, loadedThumbnails - 1)
-//    }
-//
-//    // Check and clean up memory if needed
-//    func checkMemoryUsage() {
-//        // Clean up full images if over threshold
-//        if loadedFullImages > maxLoadedFullImages {
-//            cleanupFullImages()
-//        }
-//
-//        // Clean up thumbnails if over threshold
-//        if loadedThumbnails > maxLoadedThumbnails {
-//            cleanupThumbnails()
-//        }
-//    }
-//
-//    // Free memory for photos that are not visible
-//    private func cleanupFullImages() {
-//        let nonVisiblePhotos = managedPhotos.filter { !$0.isVisible }
-//
-//        // Sort by last access time (oldest first)
-//        let sortedPhotos = nonVisiblePhotos.sorted { $0.timeSinceLastAccess > $1.timeSinceLastAccess }
-//
-//        // Clear memory for the oldest photos
-//        for photo in sortedPhotos {
-//            photo.clearMemory(keepThumbnail: true)
-//
-//            // Stop when we're below threshold
-//            if loadedFullImages <= maxLoadedFullImages {
-//                break
-//            }
-//        }
-//    }
-//
-//    // Free memory for thumbnail images of photos that haven't been accessed recently
-//    private func cleanupThumbnails() {
-//        let nonVisiblePhotos = managedPhotos.filter { !$0.isVisible }
-//
-//        // Find photos whose thumbnails haven't been accessed in a while
-//        let oldThumbnails = nonVisiblePhotos.filter { $0.timeSinceLastAccess > thumbnailCacheDuration }
-//
-//        // Clear thumbnails for old photos
-//        for photo in oldThumbnails {
-//            photo.clearMemory(keepThumbnail: false)
-//
-//            // Stop when we're below threshold
-//            if loadedThumbnails <= maxLoadedThumbnails {
-//                break
-//            }
-//        }
-//    }
-//
-//    // Free all memory to reset state
-//    func freeAllMemory() {
-//        for photo in managedPhotos {
-//            photo.clearMemory(keepThumbnail: false)
-//        }
-//
-//        loadedFullImages = 0
-//        loadedThumbnails = 0
-//    }
-//}
