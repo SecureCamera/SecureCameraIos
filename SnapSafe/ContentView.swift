@@ -15,12 +15,12 @@ struct ContentView: View {
     @StateObject private var cameraModel = CameraModel()
     @StateObject private var locationManager = LocationManager.shared
     @ObservedObject private var pinManager = PINManager.shared
+    @ObservedObject private var appStateCoordinator = AppStateCoordinator.shared
     @State private var isShowingSettings = false
     @State private var isShowingGallery = false
     @State private var isAuthenticated = false
     @State private var isPINSetupComplete = false
     @State private var isShutterAnimating = false
-    @State private var wasInBackground = false
     @Environment(\.scenePhase) private var scenePhase
     @ObservedObject private var screenCaptureManager = ScreenCaptureManager.shared
 
@@ -29,9 +29,15 @@ struct ContentView: View {
             if !pinManager.isPINSet {
                 // First time setup - show PIN setup screen
                 PINSetupView(isPINSetupComplete: $isPINSetupComplete)
-            } else if !isAuthenticated {
+            } else if !isAuthenticated || appStateCoordinator.needsAuthentication {
                 // PIN verification screen
                 PINVerificationView(isAuthenticated: $isAuthenticated)
+                    .onChange(of: isAuthenticated) { _, authenticated in
+                        if authenticated {
+                            // Reset the coordinator's auth state when authenticated
+                            appStateCoordinator.authenticationComplete()
+                        }
+                    }
             } else {
                 // Camera view - now contains both the camera preview and focus indicator
                 CameraView(cameraModel: cameraModel)
@@ -146,11 +152,15 @@ struct ContentView: View {
             SettingsView()
                 .obscuredWhenInactive()
                 .screenCaptureProtected()
+                .handleAppState(isPresented: $isShowingSettings)
+                .withAuthenticationOverlay()
         }
         .sheet(isPresented: $isShowingGallery) {
             SecureGalleryView()
                 .obscuredWhenInactive()
                 .screenCaptureProtected()
+                .handleAppState(isPresented: $isShowingGallery)
+                .withAuthenticationOverlay()
         }
         // Apply privacy shield when app is inactive (task switcher, control center, etc.)
         .obscuredWhenInactive()
@@ -181,20 +191,37 @@ struct ContentView: View {
         }
         // Scene phase monitoring for background/foreground transitions
         .onChange(of: scenePhase) { _, newPhase in
+            print("ContentView scene phase changed to: \(newPhase)")
+            
             if newPhase == .active {
-                if wasInBackground {
-                    // App is coming back to foreground from background
-                    print("App coming back from background, requirePINOnResume: \(pinManager.requirePINOnResume)")
-                    if pinManager.isPINSet && pinManager.requirePINOnResume {
-                        isAuthenticated = false
-                    }
-                    wasInBackground = false
-                }
-                pinManager.updateLastActiveTime()
+                // App is becoming active - let coordinator handle this
+                appStateCoordinator.handleWillEnterForeground()
             } else if newPhase == .background {
-                // App is going to background
-                wasInBackground = true
-                print("App going to background")
+                // App is going to background - let coordinator handle this
+                appStateCoordinator.handleDidEnterBackground()
+            } else if newPhase == .inactive {
+                // Transitional state
+                print("App becoming inactive")
+            }
+        }
+        // Monitor authentication state from coordinator
+        .onChange(of: appStateCoordinator.needsAuthentication) { _, needsAuth in
+            if needsAuth {
+                // Force re-authentication
+                isAuthenticated = false
+            }
+        }
+        // Monitor dismiss all sheets signal
+        .onChange(of: appStateCoordinator.dismissAllSheets) { _, shouldDismiss in
+            if shouldDismiss {
+                // Dismiss all sheets
+                isShowingSettings = false
+                isShowingGallery = false
+                
+                // Reset flag after a short delay
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    appStateCoordinator.resetAuthenticationState()
+                }
             }
         }
         // Camera permissions and setup are now handled in CameraModel's init method

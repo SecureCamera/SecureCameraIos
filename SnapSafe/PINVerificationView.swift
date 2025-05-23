@@ -84,12 +84,21 @@ struct PINVerificationView: View {
     
     private func verifyPIN() {
         if pinManager.verifyPIN(pin) {
-            // PIN is correct
-            isAuthenticated = true
-            showError = false
+            // PIN is correct - prioritize setting authentication flag
+            // to trigger immediate transition
+            print("PIN correct, transitioning immediately")
             
-            // Update last active time
-            pinManager.updateLastActiveTime()
+            // Update authentication state with high priority
+            DispatchQueue.main.async(qos: .userInteractive) {
+                self.isAuthenticated = true
+                self.showError = false
+                
+                // Update last active time after transition has started
+                self.pinManager.updateLastActiveTime()
+                
+                // Clear the PIN field for next time
+                self.pin = ""
+            }
         } else {
             // PIN is incorrect
             isAuthenticated = false

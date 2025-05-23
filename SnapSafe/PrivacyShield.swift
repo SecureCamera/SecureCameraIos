@@ -29,7 +29,7 @@ struct PrivacyShield: View {
                     .foregroundColor(.white)
                 
                 // Privacy message
-                Text("Content Hidden")
+                Text("The camera app that minds its own business.")
                     .font(.system(size: 20, weight: .medium))
                     .foregroundColor(.gray)
                 
