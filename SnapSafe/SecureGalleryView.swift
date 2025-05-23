@@ -93,7 +93,7 @@ struct SecureGalleryView: View {
 
     // Decoy selection mode
     @State private var isSelectingDecoys: Bool = false
-    @State private var maxDecoys: Int = 5
+    @State private var maxDecoys: Int = 10
     @State private var showDecoyLimitWarning: Bool = false
     @State private var showDecoyConfirmation: Bool = false
 
