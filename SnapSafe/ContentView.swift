@@ -14,16 +14,23 @@ import SwiftUI
 struct ContentView: View {
     @StateObject private var cameraModel = CameraModel()
     @StateObject private var locationManager = LocationManager.shared
+    @ObservedObject private var pinManager = PINManager.shared
     @State private var isShowingSettings = false
     @State private var isShowingGallery = false
-    @State private var isAuthenticated = true // TODO, default
+    @State private var isAuthenticated = false
+    @State private var isPINSetupComplete = false
     @State private var isShutterAnimating = false
+    @State private var wasInBackground = false
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         ZStack {
-            if !isAuthenticated {
-                // Authentication screen
-                AuthenticationView(isAuthenticated: $isAuthenticated)
+            if !pinManager.isPINSet {
+                // First time setup - show PIN setup screen
+                PINSetupView(isPINSetupComplete: $isPINSetupComplete)
+            } else if !isAuthenticated {
+                // PIN verification screen
+                PINVerificationView(isAuthenticated: $isAuthenticated)
             } else {
                 // Camera view - now contains both the camera preview and focus indicator
                 CameraView(cameraModel: cameraModel)
@@ -139,6 +146,47 @@ struct ContentView: View {
         }
         .sheet(isPresented: $isShowingGallery) {
             SecureGalleryView()
+        }
+        // Monitor PIN setup completion
+        .onChange(of: isPINSetupComplete) { _, completed in
+            if completed {
+                print("PIN setup complete, authenticating user")
+                isAuthenticated = true
+                // Reset flag to avoid issues on subsequent launches
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                    isPINSetupComplete = false
+                }
+            }
+        }
+        .onAppear {
+            print("ContentView appeared - PIN is set: \(pinManager.isPINSet), require PIN on resume: \(pinManager.requirePINOnResume)")
+            
+            // Check if PIN is set, and only auto-authenticate if PIN check is not required
+            if pinManager.isPINSet {
+                // Only auto-authenticate if PIN verification is not required
+                isAuthenticated = !pinManager.requirePINOnResume
+                print("PIN is set, auto-authentication set to: \(isAuthenticated)")
+            } else {
+                print("PIN is not set, showing PIN setup screen")
+            }
+        }
+        // Scene phase monitoring for background/foreground transitions
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .active {
+                if wasInBackground {
+                    // App is coming back to foreground from background
+                    print("App coming back from background, requirePINOnResume: \(pinManager.requirePINOnResume)")
+                    if pinManager.isPINSet && pinManager.requirePINOnResume {
+                        isAuthenticated = false
+                    }
+                    wasInBackground = false
+                }
+                pinManager.updateLastActiveTime()
+            } else if newPhase == .background {
+                // App is going to background
+                wasInBackground = true
+                print("App going to background")
+            }
         }
         // Camera permissions and setup are now handled in CameraModel's init method
         // This allows initialization to start immediately when the model is created

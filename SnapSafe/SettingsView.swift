@@ -9,6 +9,9 @@ import Combine
 import CoreLocation
 import SwiftUI
 
+// Add PINManager
+@_exported import Foundation
+
 struct SettingsView: View {
     // Sharing options
     @State private var sanitizeFileName = true
@@ -23,6 +26,7 @@ struct SettingsView: View {
     @State private var appPIN = ""
     @State private var poisonPIN = ""
     @State private var showResetConfirmation = false
+    @State private var requirePINOnResume: Bool = false
 
     // Decoy photos
     @State private var isSelectingDecoys = false
@@ -31,6 +35,9 @@ struct SettingsView: View {
     @State private var locationPermissionStatus = "Not Determined"
     @StateObject private var locationManager = LocationManager.shared
     @State private var includeLocationData = false
+    
+    // PIN Manager
+    @ObservedObject private var pinManager = PINManager.shared
     
     @Environment(\.openURL) private var openURL
 
@@ -149,6 +156,12 @@ struct SettingsView: View {
                             // TODO: Update auth manager
                             // authManager.isBiometricEnabled = newValue
                         }
+                        
+                    Toggle("Require PIN when app resumes", isOn: $requirePINOnResume)
+                        .onChange(of: requirePINOnResume) { _, newValue in
+                            print("Require PIN on resume: \(newValue)")
+                            pinManager.setRequirePINOnResume(newValue)
+                        }
                 }
 
                 // APP PIN SECTION
@@ -204,6 +217,9 @@ struct SettingsView: View {
             .onAppear {
                 // Initialize includeLocationData from the LocationManager
                 includeLocationData = locationManager.shouldIncludeLocationData
+                
+                // Initialize PIN on resume setting
+                requirePINOnResume = pinManager.requirePINOnResume
             }
             .alert(isPresented: $showResetConfirmation) {
                 Alert(
