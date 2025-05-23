@@ -106,6 +106,7 @@ struct PINSetupView: View {
             }
             .navigationBarTitle("", displayMode: .inline)
             .navigationBarHidden(true)
+            .obscuredWhenInactive()
         }
     }
     

@@ -143,10 +143,14 @@ struct ContentView: View {
         .animation(.easeInOut(duration: 0.1), value: isShutterAnimating)
         .sheet(isPresented: $isShowingSettings) {
             SettingsView()
+                .obscuredWhenInactive()
         }
         .sheet(isPresented: $isShowingGallery) {
             SecureGalleryView()
+                .obscuredWhenInactive()
         }
+        // Apply privacy shield when app is inactive (task switcher, control center, etc.)
+        .obscuredWhenInactive()
         // Monitor PIN setup completion
         .onChange(of: isPINSetupComplete) { _, completed in
             if completed {

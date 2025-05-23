@@ -78,6 +78,7 @@ struct PINVerificationView: View {
             // Update last active time when view appears
             pinManager.updateLastActiveTime()
         }
+        .obscuredWhenInactive()
     }
     
     private func verifyPIN() {
