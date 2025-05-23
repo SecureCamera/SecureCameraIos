@@ -479,6 +479,28 @@ class CameraModel: NSObject, ObservableObject {
             if device.isExposureModeSupported(.continuousAutoExposure) {
                 device.exposureMode = .continuousAutoExposure
                 print("📸 Enabled continuous auto-exposure")
+                
+                // For iOS 17+: Set shutter-priority exposure for sharper images
+                if #available(iOS 17.0, *) {
+                    // Use a faster shutter speed (1/500 sec) for sharper images
+                    let fastShutter = CMTime(value: 1, timescale: 500) // 1/500 sec
+                    // Set ISO to a reasonable value (or max if needed)
+                    let iso = min(device.activeFormat.maxISO, 400)
+                    
+                    // Only set custom exposure if we're in good lighting conditions
+                    // This check helps avoid overly dark images in low light
+                    if device.exposureDuration.seconds < 0.1 { // Current exposure is faster than 1/10s
+                        print("📸 Setting shutter-priority exposure: 1/500s, ISO: \(iso)")
+                        device.setExposureModeCustom(duration: fastShutter, iso: iso) { _ in
+                            // After setting custom exposure, lock it to prevent auto changes
+                            try? device.lockForConfiguration()
+                            device.exposureMode = .locked
+                            device.unlockForConfiguration()
+                        }
+                    } else {
+                        print("📸 Low light detected, keeping auto exposure")
+                    }
+                }
             }
 
             // Enable continuous auto white balance
@@ -491,12 +513,6 @@ class CameraModel: NSObject, ObservableObject {
             device.isSubjectAreaChangeMonitoringEnabled = true
             print("📸 Enabled subject area change monitoring")
 
-            // Set minimum and maximum focus distance if available
-//            if #available(iOS 15.0, *), device.isLockingFocusWithCustomLensPositionSupported {
-            // These settings help with depth of field optimization
-            // print("📸 Focus distance range: \(device.minimumFocusDistance) to \(device.maximumFocusDistance)")
-//            }
-
             device.unlockForConfiguration()
 
             // Create and add input
@@ -507,27 +523,12 @@ class CameraModel: NSObject, ObservableObject {
 
             // Add photo output with high-quality settings
             if session.canAddOutput(output) {
-                // First add the output to the session
                 session.addOutput(output)
-
-                // Now that the output is connected to the session, configure it
-                if #available(iOS 16.0, *) {
-                    // Only try to set maxPhotoDimensions after the output is connected
-                    // to the session, as required by the API
-                    if let maxDimensions = device.activeFormat.supportedMaxPhotoDimensions.last {
-                        print("Setting max photo dimensions to \(maxDimensions.width)x\(maxDimensions.height)")
-                        self.output.maxPhotoDimensions = maxDimensions
-                    }
-                } else {
-                    // Fall back to deprecated API for earlier iOS versions
-                    output.isHighResolutionCaptureEnabled = true
-                }
+                configurePhotoOutputForMaxQuality()
             }
 
-            // Apply all configuration changes at once
             session.commitConfiguration()
 
-            // Update all @Published properties on the main thread
             DispatchQueue.main.async {
                 self.minZoom = minZoomValue
                 self.maxZoom = maxZoomValue
@@ -539,21 +540,33 @@ class CameraModel: NSObject, ObservableObject {
 
             // Start a periodic task to check and adjust focus if needed
             startPeriodicFocusCheck()
+            prepareZeroShutterLagCapture()
+
 
         } catch {
             print("Error setting up camera: \(error.localizedDescription)")
         }
     }
+    
+    private func configurePhotoOutputForMaxQuality() {
+        output.maxPhotoQualityPrioritization = .quality
+    }
 
-    // Timer for periodic auto-focus check
+    private func prepareZeroShutterLagCapture() {
+        // Check if fast capture prioritization is supported
+        if output.isFastCapturePrioritizationSupported {
+            print("Fast capture prioritization is supported, preparing zero shutter lag pipeline")
+            let zslSettings = AVCapturePhotoSettings()
+            output.setPreparedPhotoSettingsArray([zslSettings])
+        } else {
+            print("Fast capture prioritization is not supported on this device")
+        }
+    }
+
     private var focusCheckTimer: Timer?
 
-    // Start a periodic check to ensure focus is optimized
     private func startPeriodicFocusCheck() {
-        // Cancel any existing timer
         focusCheckTimer?.invalidate()
-
-        // Create a new timer that runs every 3 seconds
         focusCheckTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { [weak self] _ in
             self?.checkAndOptimizeFocus()
         }
@@ -596,9 +609,10 @@ class CameraModel: NSObject, ObservableObject {
     }
 
     func capturePhoto() {
-        // --- 1. build AVCapturePhotoSettings exactly as you did before ----------------------------
-        let photoSettings = AVCapturePhotoSettings()
-
+        // Create advanced photo settings
+        let photoSettings = createAdvancedPhotoSettings()
+        
+        // Configure flash based on camera position
         if cameraPosition == .back {
             if output.supportedFlashModes.contains(AVCaptureDevice.FlashMode(rawValue: flashMode.rawValue)!) {
                 photoSettings.flashMode = flashMode
@@ -611,46 +625,46 @@ class CameraModel: NSObject, ObservableObject {
             print("📸 Flash disabled for front camera")
         }
 
-        // --- 2. set capture-orientation on the connection -----------------------------------------
+        // Get the video connection for proper rotation
         guard let connection = output.connection(with: .video) else {
             output.capturePhoto(with: photoSettings, delegate: self)
             return
         }
-
-        if #available(iOS 17, *) {
-            // New way: RotationCoordinator + videoRotationAngle
-            // - find the *device* driving this output
-            guard
-                let deviceInput = session.inputs
-                    .compactMap({ $0 as? AVCaptureDeviceInput })
-                    .first(where: { $0.device.hasMediaType(.video) })
-            else {
-                output.capturePhoto(with: photoSettings, delegate: self)
-                return
-            }
-
-            // - build a coordinator; pass a previewLayer if you want it rotated too
-            let rotationCoordinator = AVCaptureDevice.RotationCoordinator(
-                device: deviceInput.device,
-                previewLayer: nil        // <<— hand in your AVCaptureVideoPreviewLayer if you have one
-            )
-
-            // - ask the coordinator for the *capture* rotation
-            connection.videoRotationAngle = rotationCoordinator.videoRotationAngleForHorizonLevelCapture
-            print("📸 [iOS 17+] rotation angle from coordinator = \(connection.videoRotationAngle)°")
-        } else {
-            // 👉 Legacy way: derive AVCaptureVideoOrientation from UIDeviceOrientation
-            if let vOrient = AVCaptureVideoOrientation(deviceOrientation: UIDevice.current.orientation) {
-                connection.videoOrientation = vOrient
-                print("📸 [≤ iOS 16] set videoOrientation = \(vOrient.rawValue)")
-            } else {
-                connection.videoOrientation = .portrait
-                print("📸 [≤ iOS 16] defaulting to portrait")
-            }
+        
+        // Find the camera device for the rotation coordinator
+        guard
+            let deviceInput = session.inputs
+                .compactMap({ $0 as? AVCaptureDeviceInput })
+                .first(where: { $0.device.hasMediaType(.video) })
+        else {
+            output.capturePhoto(with: photoSettings, delegate: self)
+            return
         }
 
-        // --- 3. capture ---------------------------------------------------------------------------
+        // Use AVCaptureDevice.RotationCoordinator for proper image rotation (iOS 17+ approach)
+        let rotationCoordinator = AVCaptureDevice.RotationCoordinator(
+            device: deviceInput.device, 
+            previewLayer: preview // Use our preview layer for accurate coordination
+        )
+        
+        // Set the rotation angle for proper horizon-level capture
+        connection.videoRotationAngle = rotationCoordinator.videoRotationAngleForHorizonLevelCapture
+        print("📸 Setting rotation angle from coordinator = \(connection.videoRotationAngle)°")
+        
+        // Capture the photo with the configured settings
         output.capturePhoto(with: photoSettings, delegate: self)
+    }
+    
+    private func createAdvancedPhotoSettings() -> AVCapturePhotoSettings {
+        let settings = AVCapturePhotoSettings()
+        settings.photoQualityPrioritization = .quality
+
+//        if output.isStillImageStabilizationSupported {
+//            settings.isAutoStillImageStabilizationEnabled = true
+//            print("📸 Enabled still image stabilization")
+//        }
+
+        return settings
     }
 
     // Method to handle zoom with smooth animation
@@ -869,6 +883,25 @@ class CameraModel: NSObject, ObservableObject {
                 // Configure exposure mode
                 if device.isExposureModeSupported(.continuousAutoExposure) {
                     device.exposureMode = .continuousAutoExposure
+                    
+                    // For iOS 17+: Set shutter-priority exposure for sharper images
+                    if #available(iOS 17.0, *) {
+                        // Use a faster shutter speed (1/500 sec) for sharper images
+                        let fastShutter = CMTime(value: 1, timescale: 500) // 1/500 sec
+                        // Set ISO to a reasonable value (or max if needed)
+                        let iso = min(device.activeFormat.maxISO, 400)
+                        
+                        // Only set custom exposure if we're in good lighting conditions
+                        if device.exposureDuration.seconds < 0.1 { // Current exposure is faster than 1/10s
+                            print("📸 Setting shutter-priority exposure: 1/500s, ISO: \(iso)")
+                            device.setExposureModeCustom(duration: fastShutter, iso: iso) { _ in
+                                // After setting custom exposure, lock it to prevent auto changes
+                                try? device.lockForConfiguration()
+                                device.exposureMode = .locked
+                                device.unlockForConfiguration()
+                            }
+                        }
+                    }
                 }
                 
                 // Configure white balance mode
@@ -896,6 +929,12 @@ class CameraModel: NSObject, ObservableObject {
                 
                 // Set up subject area change monitoring for new device
                 self.setupSubjectAreaChangeMonitoring(for: device)
+                
+                // If iOS 17+, prepare for zero shutter lag captures
+                if #available(iOS 17.0, *) {
+                    self.configurePhotoOutputForMaxQuality()
+                    self.prepareZeroShutterLagCapture()
+                }
                 
                 // Update UI properties on main thread
                 DispatchQueue.main.async {
@@ -1003,6 +1042,35 @@ extension CameraModel: AVCapturePhotoCaptureDelegate {
             DispatchQueue.main.async {
                 self.recentImage = image
             }
+        }
+    }
+    
+    // Handle deferred photo processing (iOS 17+)
+    @available(iOS 17.0, *)
+    func photoOutput(_ output: AVCapturePhotoOutput, didFinishCapturingDeferredPhotoProxy proxy: AVCaptureDeferredPhotoProxy?, error: Error?) {
+        guard error == nil else {
+            print("Error with deferred photo: \(error!.localizedDescription)")
+            return
+        }
+        
+        // Show an instant preview using the proxy's pixel buffer
+        if let previewPixelBuffer = proxy?.previewPixelBuffer {
+            print("📸 Received deferred photo proxy with preview")
+            
+            // Convert the pixel buffer to a UIImage
+            let ciImage = CIImage(cvPixelBuffer: previewPixelBuffer)
+            let context = CIContext()
+            if let cgImage = context.createCGImage(ciImage, from: ciImage.extent) {
+                let previewImage = UIImage(cgImage: cgImage)
+                
+                // Update the UI with this preview immediately
+                DispatchQueue.main.async {
+                    // We use the preview image as a temporary placeholder until the full quality image is ready
+                    self.recentImage = previewImage
+                }
+            }
+        } else {
+            print("📸 Deferred photo proxy did not contain a preview")
         }
     }
 
@@ -1671,35 +1739,21 @@ struct PhotoCell: View {
     }
 }
 
-// Extension to convert between device orientation and video orientation
-extension AVCaptureVideoOrientation {
-    init?(deviceOrientation: UIDeviceOrientation) {
-        switch deviceOrientation {
+// Extension to get rotation angle for a device orientation
+// This replaces the deprecated AVCaptureVideoOrientation methods with iOS 17+ compliant alternatives
+extension UIDeviceOrientation {
+    func getRotationAngle() -> Double {
+        switch self {
         case .portrait:
-            self = .portrait
+            return 90    // device upright → rotate 90° CW
         case .portraitUpsideDown:
-            self = .portraitUpsideDown
+            return 270   // device upside down → rotate 270° CW
         case .landscapeLeft:
-            self = .landscapeRight  // Note: These are flipped because the camera is on the back of the device
+            return 0     // device rotated left (home button right) → 0° rotation (natural)
         case .landscapeRight:
-            self = .landscapeLeft   // Note: These are flipped because the camera is on the back of the device
+            return 180   // device rotated right (home button left) → 180° rotation
         default:
-            return nil
-        }
-    }
-    
-    init?(interfaceOrientation: UIInterfaceOrientation) {
-        switch interfaceOrientation {
-        case .portrait:
-            self = .portrait
-        case .portraitUpsideDown:
-            self = .portraitUpsideDown
-        case .landscapeLeft:
-            self = .landscapeLeft
-        case .landscapeRight:
-            self = .landscapeRight
-        default:
-            return nil
+            return 90    // Default to portrait rotation if unknown
         }
     }
 }
