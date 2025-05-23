@@ -22,6 +22,7 @@ struct ContentView: View {
     @State private var isShutterAnimating = false
     @State private var wasInBackground = false
     @Environment(\.scenePhase) private var scenePhase
+    @ObservedObject private var screenCaptureManager = ScreenCaptureManager.shared
 
     var body: some View {
         ZStack {
@@ -144,13 +145,17 @@ struct ContentView: View {
         .sheet(isPresented: $isShowingSettings) {
             SettingsView()
                 .obscuredWhenInactive()
+                .screenCaptureProtected()
         }
         .sheet(isPresented: $isShowingGallery) {
             SecureGalleryView()
                 .obscuredWhenInactive()
+                .screenCaptureProtected()
         }
         // Apply privacy shield when app is inactive (task switcher, control center, etc.)
         .obscuredWhenInactive()
+        // Protect against screen recording and screenshots
+        .screenCaptureProtected()
         // Monitor PIN setup completion
         .onChange(of: isPINSetupComplete) { _, completed in
             if completed {

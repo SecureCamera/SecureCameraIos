@@ -79,6 +79,7 @@ struct PINVerificationView: View {
             pinManager.updateLastActiveTime()
         }
         .obscuredWhenInactive()
+        .screenCaptureProtected()
     }
     
     private func verifyPIN() {
