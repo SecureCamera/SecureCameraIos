@@ -42,10 +42,52 @@ class SecureCameraController: UIViewController, AVCapturePhotoCaptureDelegate {
             previewLayer.frame = view.bounds
             previewLayer.videoGravity = .resizeAspectFill
             view.layer.addSublayer(previewLayer)
+            
+            // Enable subject area change monitoring
+            try backCamera.lockForConfiguration()
+            backCamera.isSubjectAreaChangeMonitoringEnabled = true
+            backCamera.unlockForConfiguration()
+            
+            // Add observer for subject area changes
+            NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(subjectAreaDidChange),
+                name: .AVCaptureDeviceSubjectAreaDidChange,
+                object: backCamera
+            )
 
             captureSession.startRunning()
         } catch {
             // Handle camera setup error
+        }
+    }
+    
+    // Handle subject area changes by refocusing
+    @objc private func subjectAreaDidChange(notification: NSNotification) {
+        guard let device = notification.object as? AVCaptureDevice else { return }
+        
+        // Refocus to center or last known focus point
+        let focusPoint = CGPoint(x: 0.5, y: 0.5) // Default to center
+        
+        do {
+            try device.lockForConfiguration()
+            
+            // Set focus point and mode if supported
+            if device.isFocusPointOfInterestSupported && device.isFocusModeSupported(.autoFocus) {
+                device.focusPointOfInterest = focusPoint
+                device.focusMode = .autoFocus
+                print("📸 Refocusing after subject area change")
+            }
+            
+            // Set exposure point if supported
+            if device.isExposurePointOfInterestSupported && device.isExposureModeSupported(.continuousAutoExposure) {
+                device.exposurePointOfInterest = focusPoint
+                device.exposureMode = .continuousAutoExposure
+            }
+            
+            device.unlockForConfiguration()
+        } catch {
+            print("Error refocusing: \(error.localizedDescription)")
         }
     }
 

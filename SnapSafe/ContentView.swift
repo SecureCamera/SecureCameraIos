@@ -306,6 +306,71 @@ class CameraModel: NSObject, ObservableObject {
 
     // Timer to reset to auto-focus mode after tap-to-focus
     private var focusResetTimer: Timer?
+    
+    // Last focus point for refocusing on subject area change
+    private var lastFocusPoint: CGPoint = CGPoint(x: 0.5, y: 0.5) // Default to center
+    
+    // Setup subject area change monitoring
+    private func setupSubjectAreaChangeMonitoring(for device: AVCaptureDevice) {
+        // Remove any existing observer first to avoid duplicates
+        NotificationCenter.default.removeObserver(self, name: .AVCaptureDeviceSubjectAreaDidChange, object: device)
+        
+        // Add observer for subject area changes
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(subjectAreaDidChange),
+            name: .AVCaptureDeviceSubjectAreaDidChange,
+            object: device
+        )
+        
+        print("📸 Subject area change monitoring set up for device: \(device.localizedName)")
+    }
+    
+    // Handle subject area changes
+    @objc private func subjectAreaDidChange(notification: Notification) {
+        // When the subject area changes, refocus to the last focus point or center
+        print("📸 Subject area changed, refocusing")
+        refocusCamera()
+    }
+    
+    // Refocus camera after subject area change
+    private func refocusCamera() {
+        guard let device = currentDevice else { return }
+        
+        // Use last known focus point or default to center
+        let focusPoint = lastFocusPoint
+        
+        do {
+            try device.lockForConfiguration()
+            
+            // Set focus point and mode if supported
+            if device.isFocusPointOfInterestSupported && device.isFocusModeSupported(.autoFocus) {
+                device.focusPointOfInterest = focusPoint
+                device.focusMode = .autoFocus
+                print("📸 Refocusing to point: \(focusPoint.x), \(focusPoint.y)")
+            }
+            
+            // Set exposure point and mode if supported
+            if device.isExposurePointOfInterestSupported && device.isExposureModeSupported(.autoExpose) {
+                device.exposurePointOfInterest = focusPoint
+                device.exposureMode = .autoExpose
+            }
+            
+            device.unlockForConfiguration()
+            
+            // Show visual feedback for refocusing
+            showFocusIndicator(at: focusPoint)
+            
+            // Schedule return to continuous auto modes after a delay
+            focusResetTimer?.invalidate()
+            focusResetTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [weak self] _ in
+                self?.resetToAutoFocus()
+            }
+            
+        } catch {
+            print("Error refocusing: \(error.localizedDescription)")
+        }
+    }
 
     // Storage managers
     private let secureFileManager = SecureFileManager()
@@ -316,6 +381,13 @@ class CameraModel: NSObject, ObservableObject {
         // Begin checking permissions immediately when instance is created
         DispatchQueue.global(qos: .userInitiated).async {
             self.checkPermissions()
+        }
+    }
+    
+    deinit {
+        // Clean up notification observers when deallocated
+        if let device = currentDevice {
+            NotificationCenter.default.removeObserver(self, name: .AVCaptureDeviceSubjectAreaDidChange, object: device)
         }
     }
 
@@ -414,6 +486,10 @@ class CameraModel: NSObject, ObservableObject {
                 device.whiteBalanceMode = .continuousAutoWhiteBalance
                 print("📸 Enabled continuous auto white balance")
             }
+            
+            // Enable subject area change monitoring for better focus
+            device.isSubjectAreaChangeMonitoringEnabled = true
+            print("📸 Enabled subject area change monitoring")
 
             // Set minimum and maximum focus distance if available
 //            if #available(iOS 15.0, *), device.isLockingFocusWithCustomLensPositionSupported {
@@ -457,6 +533,9 @@ class CameraModel: NSObject, ObservableObject {
                 self.maxZoom = maxZoomValue
                 self.zoomFactor = defaultZoomValue
             }
+            
+            // Set up subject area change monitoring
+            setupSubjectAreaChangeMonitoring(for: device)
 
             // Start a periodic task to check and adjust focus if needed
             startPeriodicFocusCheck()
@@ -636,6 +715,9 @@ class CameraModel: NSObject, ObservableObject {
         // Log original coordinates
         print("🎯 Request to focus at device coordinates: \(point.x), \(point.y), lockWhiteBalance: \(lockWhiteBalance)")
 
+        // Store this as the last focus point for subject area change refocusing
+        lastFocusPoint = point
+        
         // Cancel any existing focus reset timer
         focusResetTimer?.invalidate()
 
@@ -745,6 +827,11 @@ class CameraModel: NSObject, ObservableObject {
             // We need to stop the session while making changes
             self.session.beginConfiguration()
             
+            // Remove observer for subject area change from old device
+            if let oldDevice = self.currentDevice {
+                NotificationCenter.default.removeObserver(self, name: .AVCaptureDeviceSubjectAreaDidChange, object: oldDevice)
+            }
+            
             // Remove existing input
             if let inputs = self.session.inputs as? [AVCaptureDeviceInput] {
                 for input in inputs {
@@ -789,6 +876,10 @@ class CameraModel: NSObject, ObservableObject {
                     device.whiteBalanceMode = .continuousAutoWhiteBalance
                 }
                 
+                // Enable subject area change monitoring
+                device.isSubjectAreaChangeMonitoringEnabled = true
+                print("📸 Enabled subject area change monitoring for \(position) camera")
+                
                 device.unlockForConfiguration()
                 
                 // Create and add new input
@@ -802,6 +893,9 @@ class CameraModel: NSObject, ObservableObject {
                 
                 // Apply all configuration changes
                 self.session.commitConfiguration()
+                
+                // Set up subject area change monitoring for new device
+                self.setupSubjectAreaChangeMonitoring(for: device)
                 
                 // Update UI properties on main thread
                 DispatchQueue.main.async {
