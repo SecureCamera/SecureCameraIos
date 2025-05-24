@@ -9,10 +9,8 @@ import UIKit
 import SwiftUI
 
 class PhotoDetailViewModel: ObservableObject {
-    // Single photo reference
     private var photo: SecurePhoto?
     
-    // For multiple photos case
     @Published var allPhotos: [SecurePhoto] = []
     @Published var currentIndex: Int = 0
     
@@ -42,17 +40,13 @@ class PhotoDetailViewModel: ObservableObject {
     @Published var selectedMaskMode: MaskMode = .blur
     @Published var showMaskOptions = false
     
-    // Image info states
     @Published var showImageInfo = false
     
-    // Used to measure the displayed image size
     @Published var imageFrameSize: CGSize = .zero
     
-    // Services
     private let faceDetector = FaceDetector()
     private let secureFileManager = SecureFileManager()
     
-    // Flag for feature availability
     let showFaceDetection: Bool
     
     // MARK: - Initialization
@@ -73,11 +67,8 @@ class PhotoDetailViewModel: ObservableObject {
     }
     
     // MARK: - Computed Properties
-    
-    // Get the current photo to display
     var currentPhoto: SecurePhoto {
         if !allPhotos.isEmpty {
-            // Set visibility state of photos
             for (index, photo) in allPhotos.enumerated() {
                 if index == currentIndex {
                     photo.isVisible = true
@@ -99,13 +90,11 @@ class PhotoDetailViewModel: ObservableObject {
         }
     }
     
-    // Get the image to display (original or modified)
     var displayedImage: UIImage {
         if isFaceDetectionActive, let modified = modifiedImage {
             return modified
         } else {
             let image = currentPhoto.fullImage
-            // Trigger memory cleanup after loading the current image
             DispatchQueue.main.async {
                 MemoryManager.shared.checkMemoryUsage()
             }
@@ -113,7 +102,6 @@ class PhotoDetailViewModel: ObservableObject {
         }
     }
     
-    // Check if navigation is possible
     var canGoToPrevious: Bool {
         !allPhotos.isEmpty && currentIndex > 0
     }
@@ -122,12 +110,10 @@ class PhotoDetailViewModel: ObservableObject {
         !allPhotos.isEmpty && currentIndex < allPhotos.count - 1
     }
     
-    // Check if any faces are selected for masking
     var hasFacesSelected: Bool {
         detectedFaces.contains { $0.isSelected }
     }
     
-    // Computed properties for mask action text
     var maskActionTitle: String {
         switch selectedMaskMode {
         case .blur:
@@ -175,18 +161,14 @@ class PhotoDetailViewModel: ObservableObject {
             processingFaces = true
         }
         
-        // Clear any previous results
         detectedFaces = []
         modifiedImage = nil
         
-        // Run face detection on a background thread
         DispatchQueue.global(qos: .userInitiated).async {
-            // Use autoreleasepool to ensure memory is released promptly after processing
             autoreleasepool {
                 let imageToProcess = self.currentPhoto.fullImage
                 
                 self.faceDetector.detectFaces(in: imageToProcess) { faces in
-                    // Update UI on main thread
                     DispatchQueue.main.async {
                         withAnimation {
                             self.detectedFaces = faces
@@ -199,7 +181,6 @@ class PhotoDetailViewModel: ObservableObject {
     }
     
     func toggleFaceSelection(_ face: DetectedFace) {
-        // Find and toggle the selected face
         if let index = detectedFaces.firstIndex(where: { $0.id == face.id }) {
             let updatedFaces = detectedFaces
             updatedFaces[index].isSelected.toggle()
@@ -208,16 +189,12 @@ class PhotoDetailViewModel: ObservableObject {
     }
     
     func applyFaceMasking() {
-        // Show a loading indicator while processing
         withAnimation {
             processingFaces = true
         }
         
-        // Apply masking on a background thread
         DispatchQueue.global(qos: .userInitiated).async {
-            // Use autoreleasepool to ensure memory is released promptly
             autoreleasepool {
-                // Get the image to process, copy of metadata and selected mode
                 let imageToProcess = self.currentPhoto.fullImage
                 let facesToMask = self.detectedFaces
                 let metadataCopy = self.currentPhoto.metadata
@@ -237,19 +214,15 @@ class PhotoDetailViewModel: ObservableObject {
                     do {
                         _ = try self.secureFileManager.savePhoto(imageData, withMetadata: metadataCopy)
                         
-                        // Update UI on main thread
                         DispatchQueue.main.async {
                             withAnimation {
                                 self.modifiedImage = maskedImage
                                 self.processingFaces = false
                                 
-                                // Exit face detection mode after a short delay
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
                                     withAnimation {
                                         self.isFaceDetectionActive = false
                                         self.detectedFaces = []
-                                        
-                                        // Force memory cleanup
                                         self.modifiedImage = nil
                                     }
                                 }

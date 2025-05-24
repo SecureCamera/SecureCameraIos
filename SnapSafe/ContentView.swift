@@ -23,6 +23,9 @@ struct ContentView: View {
     @State private var isShutterAnimating = false
     @Environment(\.scenePhase) private var scenePhase
     @ObservedObject private var screenCaptureManager = ScreenCaptureManager.shared
+    
+    // Track device orientation changes
+    @State private var deviceOrientation = UIDevice.current.orientation
 
     var body: some View {
         ZStack {
@@ -99,9 +102,15 @@ struct ContentView: View {
                             .font(.system(size: 14, weight: .bold))
                             .foregroundColor(.white)
                     }
-                    .opacity(cameraModel.zoomFactor > 1.0 ? 1.0 : 0.0)
+                    // Show for all zoom levels (including 0.5x for wide angle)
+                    .opacity(cameraModel.zoomFactor != 1.0 ? 1.0 : 0.0)
                     .animation(.easeInOut, value: cameraModel.zoomFactor)
                     .padding(.bottom, 10)
+                    // Rotate the zoom indicator based on device orientation
+                    .rotationEffect(getRotationAngle())
+                    // Separate animation for rotation to ensure it responds to device orientation
+                    // changes independent of zoom changes
+                    .animation(.easeInOut, value: deviceOrientation)
 
                     HStack {
                         Button(action: {
@@ -188,6 +197,19 @@ struct ContentView: View {
             } else {
                 print("PIN is not set, showing PIN setup screen")
             }
+            
+            // Start monitoring orientation changes
+            UIDevice.current.beginGeneratingDeviceOrientationNotifications()
+            NotificationCenter.default.addObserver(forName: UIDevice.orientationDidChangeNotification, 
+                                                  object: nil, 
+                                                  queue: .main) { _ in
+                self.deviceOrientation = UIDevice.current.orientation
+            }
+        }
+        .onDisappear {
+            // Stop monitoring orientation changes
+            NotificationCenter.default.removeObserver(self, name: UIDevice.orientationDidChangeNotification, object: nil)
+            UIDevice.current.endGeneratingDeviceOrientationNotifications()
         }
         // Scene phase monitoring for background/foreground transitions
         .onChange(of: scenePhase) { _, newPhase in
@@ -273,6 +295,20 @@ struct ContentView: View {
             return "bolt.badge.a"
         }
     }
+    
+    // Get rotation angle for the zoom indicator based on device orientation
+    private func getRotationAngle() -> Angle {
+        switch UIDevice.current.orientation {
+        case .landscapeLeft:
+            return Angle(degrees: 90)
+        case .landscapeRight:
+            return Angle(degrees: -90)
+        case .portraitUpsideDown:
+            return Angle(degrees: 180)
+        default:
+            return Angle(degrees: 0) // Default to portrait
+        }
+    }
 }
 
 // Camera model that handles the AVFoundation functionality
@@ -286,10 +322,21 @@ class CameraModel: NSObject, ObservableObject {
 
     // Zoom properties
     @Published var zoomFactor: CGFloat = 1.0
-    @Published var minZoom: CGFloat = 1.0
+    @Published var minZoom: CGFloat = 0.5 // Allow going to 0.5x for ultra-wide
     @Published var maxZoom: CGFloat = 10.0
     private var initialZoom: CGFloat = 1.0
     private var currentDevice: AVCaptureDevice?
+    
+    // Camera lens options
+    private var wideAngleDevice: AVCaptureDevice?
+    private var ultraWideDevice: AVCaptureDevice?
+    
+    // Current lens type
+    enum CameraLensType {
+        case ultraWide   // 0.5x zoom
+        case wideAngle   // 1x zoom (standard)
+    }
+    @Published var currentLensType: CameraLensType = .wideAngle
 
     // View size for coordinate mapping
     var viewSize: CGSize = .zero
@@ -375,12 +422,22 @@ class CameraModel: NSObject, ObservableObject {
     // Storage managers
     private let secureFileManager = SecureFileManager()
 
-    // Initialize as part of class creation for faster startup
+    // Initialize as part of class creation with more careful setup
     override init() {
         super.init()
-        // Begin checking permissions immediately when instance is created
-        DispatchQueue.global(qos: .userInitiated).async {
-            self.checkPermissions()
+        
+        // Since this is a class, we can use self directly, but we'll still be careful
+        // with the reference to avoid any potential retain cycles
+        
+        // Initialize with a small delay to ensure everything is ready
+        // This helps prevent race conditions in app startup
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            // Begin checking permissions on a background thread
+            DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+                guard let self = self else { return }
+                print("📸 Starting camera permission check")
+                self.checkPermissions()
+            }
         }
     }
     
@@ -392,26 +449,30 @@ class CameraModel: NSObject, ObservableObject {
     }
 
     func checkPermissions() {
+        print("📸 Checking camera permissions...")
         switch AVCaptureDevice.authorizationStatus(for: .video) {
         case .authorized:
             // Update @Published property on main thread
             DispatchQueue.main.async {
                 self.isPermissionGranted = true
             }
-            // Set up on a high-priority background thread
-            DispatchQueue.global(qos: .userInteractive).async {
+            // Set up on a background thread with slight delay to ensure UI is ready
+            DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + 0.2) {
+                print("📸 Permission already granted, setting up camera")
                 self.setupCamera()
             }
         case .notDetermined:
             // Request permission
+            print("📸 Requesting camera permission from user")
             AVCaptureDevice.requestAccess(for: .video) { status in
                 if status {
                     // Update @Published property on main thread
                     DispatchQueue.main.async {
                         self.isPermissionGranted = true
                     }
-                    // Setup on a high-priority background thread immediately after permission is granted
-                    DispatchQueue.global(qos: .userInteractive).async {
+                    // Setup on a background thread with slight delay
+                    DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + 0.2) {
+                        print("📸 Permission granted, setting up camera")
                         self.setupCamera()
                     }
                 } else {
@@ -419,6 +480,7 @@ class CameraModel: NSObject, ObservableObject {
                     DispatchQueue.main.async {
                         self.isPermissionGranted = false
                         self.alert = true
+                        print("📸 Camera permission denied by user")
                     }
                 }
             }
@@ -427,10 +489,25 @@ class CameraModel: NSObject, ObservableObject {
             DispatchQueue.main.async {
                 self.isPermissionGranted = false
                 self.alert = true
+                print("📸 Camera permission previously denied")
             }
         }
     }
 
+    // Get the ultra-wide camera device (0.5x zoom)
+    private func ultraWideCamera() -> AVCaptureDevice? {
+        if let ultraWide = AVCaptureDevice.default(.builtInUltraWideCamera, for: .video, position: .back) {
+            return ultraWide // 0.5× lens
+        }
+        // Fallback (every iPhone has at least a wide-angle lens)
+        return AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
+    }
+    
+    // Get the wide-angle camera device (1x zoom)
+    private func wideAngleCamera(position: AVCaptureDevice.Position = .back) -> AVCaptureDevice? {
+        return AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: position)
+    }
+    
     func setupCamera() {
         // Pre-configure an optimal camera session
         session.sessionPreset = .photo
@@ -439,8 +516,33 @@ class CameraModel: NSObject, ObservableObject {
         do {
             session.beginConfiguration()
 
-            // Add device input - use specific device type for faster initialization
-            guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: cameraPosition) else {
+            // Find available camera devices
+            wideAngleDevice = wideAngleCamera(position: cameraPosition)
+            
+            // Only search for ultra-wide camera when using back camera
+            if cameraPosition == .back {
+                ultraWideDevice = ultraWideCamera()
+                print("📸 Ultra-wide camera available: \(ultraWideDevice != nil)")
+            }
+            
+            // Set the initial device based on lens type
+            var device: AVCaptureDevice?
+            
+            let shouldUseUltraWide = currentLensType == .ultraWide && ultraWideDevice != nil && cameraPosition == .back
+            
+            if shouldUseUltraWide {
+                device = ultraWideDevice
+                print("📸 Using ultra-wide camera")
+            } else {
+                device = wideAngleDevice
+                // Update the published property on main thread
+                DispatchQueue.main.async {
+                    self.currentLensType = .wideAngle  // Ensure we're using the correct lens type
+                }
+                print("📸 Using wide-angle camera")
+            }
+            
+            guard let device = device else {
                 print("Failed to get camera device for position: \(cameraPosition)")
                 return
             }
@@ -541,6 +643,10 @@ class CameraModel: NSObject, ObservableObject {
             // Start a periodic task to check and adjust focus if needed
             startPeriodicFocusCheck()
             prepareZeroShutterLagCapture()
+            
+            // Note: We DO NOT start the session here anymore.
+            // The session is started in the CameraPreviewView's makeCoordinator method
+            // after all configuration is complete.
 
 
         } catch {
@@ -676,24 +782,56 @@ class CameraModel: NSObject, ObservableObject {
 
             // Calculate new zoom factor
             var newZoomFactor = factor
-
-            // Limit zoom factor to device's range
-            newZoomFactor = max(minZoom, min(newZoomFactor, maxZoom))
-
-            // Get the current factor for interpolation
-            let currentZoom = device.videoZoomFactor
-
-            // Apply smooth animation through interpolation
-            // This makes the zoom change more gradually
-            let interpolationFactor: CGFloat = 0.3 // Lower = smoother but slower
-            let smoothedZoom = currentZoom + (newZoomFactor - currentZoom) * interpolationFactor
-
-            // Set the zoom factor with the smoothed value
-            device.videoZoomFactor = smoothedZoom
-
-            // Always update published values on the main thread
-            DispatchQueue.main.async {
-                self.zoomFactor = smoothedZoom
+            
+            // Apply lens-specific zoom adjustments
+            if currentLensType == .ultraWide {
+                // For ultra-wide camera, we want 0.5x to appear as 0.5x to the user
+                // but the device itself doesn't need zoom factor adjustment
+                newZoomFactor = max(0.5, min(newZoomFactor, maxZoom))
+                
+                // Map the user-facing zoom range to the actual device zoom range
+                // Ultra-wide at 0.5x = device at 1.0x
+                let deviceZoomFactor = (newZoomFactor / 0.5)
+                
+                // Limit zoom factor to device's range
+                let limitedDeviceZoom = min(deviceZoomFactor, device.activeFormat.videoMaxZoomFactor)
+                
+                // Get the current factor for interpolation
+                let currentZoom = device.videoZoomFactor
+                
+                // Apply smooth animation through interpolation
+                let interpolationFactor: CGFloat = 0.3 // Lower = smoother but slower
+                let smoothedZoom = currentZoom + (limitedDeviceZoom - currentZoom) * interpolationFactor
+                
+                // Set the zoom factor with the smoothed value
+                device.videoZoomFactor = smoothedZoom
+                
+                // Calculate the user-facing zoom factor (0.5x - maxZoom)
+                let userFacingZoom = max(0.5, min(newZoomFactor, maxZoom))
+                
+                // Always update published values on the main thread
+                DispatchQueue.main.async {
+                    self.zoomFactor = userFacingZoom
+                }
+            } else {
+                // For wide-angle camera, limit zoom factor to device's range
+                newZoomFactor = max(1.0, min(newZoomFactor, maxZoom))
+                
+                // Get the current factor for interpolation
+                let currentZoom = device.videoZoomFactor
+                
+                // Apply smooth animation through interpolation
+                // This makes the zoom change more gradually
+                let interpolationFactor: CGFloat = 0.3 // Lower = smoother but slower
+                let smoothedZoom = currentZoom + (newZoomFactor - currentZoom) * interpolationFactor
+                
+                // Set the zoom factor with the smoothed value
+                device.videoZoomFactor = smoothedZoom
+                
+                // Always update published values on the main thread
+                DispatchQueue.main.async {
+                    self.zoomFactor = smoothedZoom
+                }
             }
 
             device.unlockForConfiguration()
@@ -717,9 +855,22 @@ class CameraModel: NSObject, ObservableObject {
         // Calculate the new zoom factor with a smoother progression
         // Start from the initial zoom when the gesture began
         let newZoomFactor = initialZoom + (zoomDelta * (maxZoom - minZoom))
-
-        // Apply the zoom with animation for smoothness
-        zoom(factor: newZoomFactor)
+        
+        // Calculate whether we need to switch cameras based on new zoom factor
+        let shouldUseUltraWide = newZoomFactor <= 0.9 && cameraPosition == .back
+        let shouldUseWideAngle = newZoomFactor > 0.9 || cameraPosition == .front
+        
+        // Check if we need to switch camera types
+        if shouldUseUltraWide && currentLensType != .ultraWide && ultraWideDevice != nil {
+            print("📸 Switching to ultra-wide camera (0.5x)")
+            switchLensType(to: .ultraWide)
+        } else if shouldUseWideAngle && currentLensType != .wideAngle && wideAngleDevice != nil {
+            print("📸 Switching to wide-angle camera (1x)")
+            switchLensType(to: .wideAngle)
+        } else {
+            // No camera switch needed, just apply zoom with animation for smoothness
+            zoom(factor: newZoomFactor)
+        }
     }
 
     // Method to handle white balance and focus adjustment at a specific point
@@ -821,18 +972,25 @@ class CameraModel: NSObject, ObservableObject {
         }
     }
     
-    // Method to switch between front and back cameras
-    func switchCamera(to position: AVCaptureDevice.Position) {
-        // Don't do anything if we're already using this camera position
-        if position == cameraPosition && currentDevice != nil {
-            print("📸 Already using camera position: \(position)")
+    // Switch between ultra-wide and wide-angle cameras
+    func switchLensType(to lensType: CameraLensType) {
+        // Don't do anything if we're already using this lens type or if we can't switch
+        if lensType == currentLensType || cameraPosition == .front && lensType == .ultraWide {
             return
         }
         
-        print("📸 Switching camera to position: \(position)")
+        // Ultra-wide camera is only available on the back camera
+        if cameraPosition == .front && lensType == .ultraWide {
+            print("📸 Cannot use ultra-wide with front camera")
+            return
+        }
         
-        // Update the camera position state
-        cameraPosition = position
+        print("📸 Switching lens type to: \(lensType)")
+        
+        // Update the lens type state on the main thread
+        DispatchQueue.main.async {
+            self.currentLensType = lensType
+        }
         
         // Check if we need to reconfigure the camera session
         DispatchQueue.global(qos: .userInteractive).async { [weak self] in
@@ -854,8 +1012,213 @@ class CameraModel: NSObject, ObservableObject {
             }
             
             do {
-                // Get the new camera device for the requested position
-                guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: position) else {
+                // Get the appropriate camera device based on lens type
+                var device: AVCaptureDevice?
+                switch lensType {
+                case .ultraWide:
+                    device = self.ultraWideDevice
+                case .wideAngle:
+                    device = self.wideAngleDevice
+                }
+                
+                // Handle missing device - can't use guard with reassignment
+                if device == nil {
+                    print("📸 Failed to get camera device for lens type: \(lensType)")
+                    
+                    // Fall back to wide angle if ultra-wide is not available
+                    if lensType == .ultraWide && self.wideAngleDevice != nil {
+                        print("📸 Falling back to wide-angle camera")
+                        self.currentLensType = .wideAngle
+                        device = self.wideAngleDevice
+                    } else {
+                        // No fallback available
+                        self.session.commitConfiguration()
+                        return
+                    }
+                }
+                
+                // At this point, device should be non-nil, but double-check
+                guard let device = device else {
+                    print("📸 No camera device available")
+                    self.session.commitConfiguration()
+                    return
+                }
+                
+                // Set initial zoom factor based on lens type
+                let initialZoomFactor: CGFloat = (lensType == .ultraWide) ? 1.0 : 1.0
+                
+                // Store the device reference for zoom functionality
+                self.currentDevice = device
+                
+                // Configure device for optimal settings
+                try device.lockForConfiguration()
+                
+                // Set initial zoom factor
+                device.videoZoomFactor = initialZoomFactor
+                
+                // Update the user-facing zoom factor
+                if lensType == .ultraWide {
+                    DispatchQueue.main.async {
+                        self.zoomFactor = 0.5 // Show as 0.5x for ultra-wide
+                    }
+                } else {
+                    DispatchQueue.main.async {
+                        self.zoomFactor = 1.0 // Show as 1.0x for wide-angle
+                    }
+                }
+                
+                // Configure focus modes
+                if device.isFocusModeSupported(.continuousAutoFocus) {
+                    device.focusMode = .continuousAutoFocus
+                    device.isSmoothAutoFocusEnabled = true
+                    
+                    if device.isAutoFocusRangeRestrictionSupported {
+                        device.autoFocusRangeRestriction = .none
+                    }
+                }
+                
+                // Configure exposure mode
+                if device.isExposureModeSupported(.continuousAutoExposure) {
+                    device.exposureMode = .continuousAutoExposure
+                    
+                    // For iOS 17+: Set shutter-priority exposure for sharper images
+                    if #available(iOS 17.0, *) {
+                        // Use a faster shutter speed (1/500 sec) for sharper images
+                        let fastShutter = CMTime(value: 1, timescale: 500) // 1/500 sec
+                        // Set ISO to a reasonable value (or max if needed)
+                        let iso = min(device.activeFormat.maxISO, 400)
+                        
+                        // Only set custom exposure if we're in good lighting conditions
+                        if device.exposureDuration.seconds < 0.1 { // Current exposure is faster than 1/10s
+                            print("📸 Setting shutter-priority exposure: 1/500s, ISO: \(iso)")
+                            device.setExposureModeCustom(duration: fastShutter, iso: iso) { _ in
+                                // After setting custom exposure, lock it to prevent auto changes
+                                try? device.lockForConfiguration()
+                                device.exposureMode = .locked
+                                device.unlockForConfiguration()
+                            }
+                        }
+                    }
+                }
+                
+                // Configure white balance mode
+                if device.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance) {
+                    device.whiteBalanceMode = .continuousAutoWhiteBalance
+                }
+                
+                // Enable subject area change monitoring
+                device.isSubjectAreaChangeMonitoringEnabled = true
+                print("📸 Enabled subject area change monitoring for \(lensType) camera")
+                
+                device.unlockForConfiguration()
+                
+                // Create and add new input
+                let newInput = try AVCaptureDeviceInput(device: device)
+                if self.session.canAddInput(newInput) {
+                    self.session.addInput(newInput)
+                    print("📸 Added new camera input for lens type: \(lensType)")
+                } else {
+                    print("📸 Could not add camera input for lens type: \(lensType)")
+                }
+                
+                // Apply all configuration changes
+                self.session.commitConfiguration()
+                
+                // Set up subject area change monitoring for new device
+                self.setupSubjectAreaChangeMonitoring(for: device)
+                
+                // If iOS 17+, prepare for zero shutter lag captures
+                if #available(iOS 17.0, *) {
+                    self.configurePhotoOutputForMaxQuality()
+                    self.prepareZeroShutterLagCapture()
+                }
+                
+                // Now we can safely restart the session if it was running before
+                if !self.session.isRunning {
+                    DispatchQueue.global(qos: .userInteractive).async {
+                        self.session.startRunning()
+                    }
+                }
+            } catch {
+                print("📸 Error switching lens type: \(error.localizedDescription)")
+                self.session.commitConfiguration()
+            }
+        }
+    }
+    
+    // Method to switch between front and back cameras
+    func switchCamera(to position: AVCaptureDevice.Position) {
+        // Don't do anything if we're already using this camera position
+        if position == cameraPosition && currentDevice != nil {
+            print("📸 Already using camera position: \(position)")
+            return
+        }
+        
+        print("📸 Switching camera to position: \(position)")
+        
+        // Update the camera position state on main thread
+        DispatchQueue.main.async {
+            self.cameraPosition = position
+        }
+        
+        // Get a local copy of the lens type to avoid UI updates from a background thread
+        let currentLensTypeSnapshot = currentLensType
+        
+        // Reset to wide-angle when switching to front camera since front doesn't support ultra-wide
+        if position == .front && currentLensTypeSnapshot == .ultraWide {
+            // Update the published property on main thread
+            DispatchQueue.main.async {
+                self.currentLensType = .wideAngle
+            }
+        }
+        
+        // Check if we need to reconfigure the camera session
+        DispatchQueue.global(qos: .userInteractive).async { [weak self] in
+            guard let self = self else { return }
+            
+            // We need to stop the session while making changes
+            self.session.beginConfiguration()
+            
+            // Remove observer for subject area change from old device
+            if let oldDevice = self.currentDevice {
+                NotificationCenter.default.removeObserver(self, name: .AVCaptureDeviceSubjectAreaDidChange, object: oldDevice)
+            }
+            
+            // Remove existing input
+            if let inputs = self.session.inputs as? [AVCaptureDeviceInput] {
+                for input in inputs {
+                    self.session.removeInput(input)
+                }
+            }
+            
+            do {
+                // Update available camera devices for new position
+                self.wideAngleDevice = self.wideAngleCamera(position: position)
+                
+                if position == .back {
+                    // Only look for ultra-wide on back camera
+                    self.ultraWideDevice = self.ultraWideCamera()
+                } else {
+                    // Front camera doesn't have ultra-wide
+                    self.ultraWideDevice = nil
+                }
+                
+                // Get the appropriate device
+                var device: AVCaptureDevice?
+                if position == .back && currentLensType == .ultraWide && ultraWideDevice != nil {
+                    device = ultraWideDevice
+                } else {
+                    device = wideAngleDevice
+                    // Ensure we're using the correct lens type
+                    if position == .front {
+                        // Update the published property on main thread
+                        DispatchQueue.main.async {
+                            self.currentLensType = .wideAngle
+                        }
+                    }
+                }
+                
+                guard let device = device else {
                     print("📸 Failed to get camera device for position: \(position)")
                     self.session.commitConfiguration()
                     return
@@ -940,6 +1303,13 @@ class CameraModel: NSObject, ObservableObject {
                 DispatchQueue.main.async {
                     self.zoomFactor = 1.0
                     print("📸 Camera switch complete to position: \(position)")
+                }
+                
+                // Now we can safely restart the session if it was running before
+                if !self.session.isRunning {
+                    DispatchQueue.global(qos: .userInteractive).async {
+                        self.session.startRunning()
+                    }
                 }
                 
             } catch {
@@ -1376,12 +1746,7 @@ struct CameraPreviewView: UIViewRepresentable {
         singleTapGesture.require(toFail: doubleTapGesture)
         view.addGestureRecognizer(singleTapGesture)
 
-        // Start the session on a background thread with higher priority
-        DispatchQueue.global(qos: .userInteractive).async {
-            if !cameraModel.session.isRunning {
-                cameraModel.session.startRunning()
-            }
-        }
+        // Note: We DO NOT start the session here anymore - it's handled below after configuration is committed
 
         // Store exact view dimensions in the model for coordinate mapping
         cameraModel.viewSize = viewSize
@@ -1518,18 +1883,30 @@ struct CameraPreviewView: UIViewRepresentable {
             // Update the size in the model
             cameraModel.viewSize = containerSize // Store the actual photo preview size
             print("📐 Updated camera preview to size: \(containerSize.width)x\(containerSize.height)")
-
-            // Ensure the camera is running
-            if !cameraModel.session.isRunning {
-                DispatchQueue.global(qos: .userInteractive).async {
-                    cameraModel.session.startRunning()
+        }
+    }
+    
+    // This method is called once after makeUIView
+    func makeCoordinator() -> Coordinator {
+        // Create coordinator first - this shouldn't trigger camera operations
+        let coordinator = Coordinator(self)
+        
+        // Capture cameraModel to avoid potential reference issues
+        let capturedCameraModel = cameraModel
+        
+        // Give a slight delay before starting the camera session
+        // This ensures all UI setup is complete and configuration has been committed
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            // Start camera on background thread after delay
+            DispatchQueue.global(qos: .userInitiated).async {
+                if !capturedCameraModel.session.isRunning {
+                    print("📸 Starting camera session from makeCoordinator after delay")
+                    capturedCameraModel.session.startRunning()
                 }
             }
         }
-    }
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(self)
+        
+        return coordinator
     }
 
     // Coordinator for handling UIKit gestures

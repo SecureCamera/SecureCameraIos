@@ -11,8 +11,6 @@ import Security
 import UIKit
 import Vision
 
-// Use our shared MaskMode enum from Models/MaskMode.swift
-// and our shared DetectedFace class from Models/DetectedFace.swift
 
 class FaceDetector {
     // Detect faces and return as DetectedFace objects
