@@ -246,22 +246,15 @@ struct ContentView: View {
                 }
             }
         }
-        // Camera permissions and setup are now handled in CameraModel's init method
-        // This allows initialization to start immediately when the model is created
     }
 
-    // Trigger the shutter animation effect
     private func triggerShutterEffect() {
-        // Show the black overlay
         isShutterAnimating = true
-
-        // Hide it after a short delay
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
             isShutterAnimating = false
         }
     }
 
-    // Toggle between flash modes (auto -> on -> off -> auto)
     private func toggleFlashMode() {
         switch cameraModel.flashMode {
         case .auto:
@@ -282,7 +275,6 @@ struct ContentView: View {
         cameraModel.switchCamera(to: newPosition)
     }
 
-    // Get the appropriate icon for the current flash mode
     private func flashIcon(for mode: AVCaptureDevice.FlashMode) -> String {
         switch mode {
         case .auto:
@@ -580,27 +572,21 @@ class CameraModel: NSObject, ObservableObject {
             // Enable continuous auto-exposure
             if device.isExposureModeSupported(.continuousAutoExposure) {
                 device.exposureMode = .continuousAutoExposure
-                print("📸 Enabled continuous auto-exposure")
+                print("Enabled continuous auto-exposure")
+                // Use a faster shutter speed (1/500 sec) for sharper images
+                let fastShutter = CMTime(value: 1, timescale: 500) // 1/500 sec
+                // Set ISO to a reasonable value (or max if needed)
+                let iso = min(device.activeFormat.maxISO, 400)
                 
-                // For iOS 17+: Set shutter-priority exposure for sharper images
-                if #available(iOS 17.0, *) {
-                    // Use a faster shutter speed (1/500 sec) for sharper images
-                    let fastShutter = CMTime(value: 1, timescale: 500) // 1/500 sec
-                    // Set ISO to a reasonable value (or max if needed)
-                    let iso = min(device.activeFormat.maxISO, 400)
-                    
-                    // Only set custom exposure if we're in good lighting conditions
-                    // This check helps avoid overly dark images in low light
-                    if device.exposureDuration.seconds < 0.1 { // Current exposure is faster than 1/10s
-                        print("📸 Setting shutter-priority exposure: 1/500s, ISO: \(iso)")
-                        device.setExposureModeCustom(duration: fastShutter, iso: iso) { _ in
-                            // After setting custom exposure, lock it to prevent auto changes
-                            try? device.lockForConfiguration()
-                            device.exposureMode = .locked
-                            device.unlockForConfiguration()
-                        }
-                    } else {
-                        print("📸 Low light detected, keeping auto exposure")
+                // Only set custom exposure if we're in good lighting conditions
+                // This check helps avoid overly dark images in low light
+                if device.exposureDuration.seconds < 0.1 { // Current exposure is faster than 1/10s
+                    print("📸 Setting shutter-priority exposure: 1/500s, ISO: \(iso)")
+                    device.setExposureModeCustom(duration: fastShutter, iso: iso) { _ in
+                        // After setting custom exposure, lock it to prevent auto changes
+                        try? device.lockForConfiguration()
+                        device.exposureMode = .locked
+                        device.unlockForConfiguration()
                     }
                 }
             }
@@ -747,7 +733,7 @@ class CameraModel: NSObject, ObservableObject {
             return
         }
 
-        // Use AVCaptureDevice.RotationCoordinator for proper image rotation (iOS 17+ approach)
+        // Use AVCaptureDevice.RotationCoordinator for proper image rotation
         let rotationCoordinator = AVCaptureDevice.RotationCoordinator(
             device: deviceInput.device, 
             previewLayer: preview // Use our preview layer for accurate coordination
@@ -755,7 +741,7 @@ class CameraModel: NSObject, ObservableObject {
         
         // Set the rotation angle for proper horizon-level capture
         connection.videoRotationAngle = rotationCoordinator.videoRotationAngleForHorizonLevelCapture
-        print("📸 Setting rotation angle from coordinator = \(connection.videoRotationAngle)°")
+        print("Setting rotation angle from coordinator = \(connection.videoRotationAngle)°")
         
         // Capture the photo with the configured settings
         output.capturePhoto(with: photoSettings, delegate: self)
@@ -1081,22 +1067,19 @@ class CameraModel: NSObject, ObservableObject {
                 if device.isExposureModeSupported(.continuousAutoExposure) {
                     device.exposureMode = .continuousAutoExposure
                     
-                    // For iOS 17+: Set shutter-priority exposure for sharper images
-                    if #available(iOS 17.0, *) {
-                        // Use a faster shutter speed (1/500 sec) for sharper images
-                        let fastShutter = CMTime(value: 1, timescale: 500) // 1/500 sec
-                        // Set ISO to a reasonable value (or max if needed)
-                        let iso = min(device.activeFormat.maxISO, 400)
-                        
-                        // Only set custom exposure if we're in good lighting conditions
-                        if device.exposureDuration.seconds < 0.1 { // Current exposure is faster than 1/10s
-                            print("📸 Setting shutter-priority exposure: 1/500s, ISO: \(iso)")
-                            device.setExposureModeCustom(duration: fastShutter, iso: iso) { _ in
-                                // After setting custom exposure, lock it to prevent auto changes
-                                try? device.lockForConfiguration()
-                                device.exposureMode = .locked
-                                device.unlockForConfiguration()
-                            }
+                    // Use a faster shutter speed (1/500 sec) for sharper images
+                    let fastShutter = CMTime(value: 1, timescale: 500) // 1/500 sec
+                    // Set ISO to a reasonable value (or max if needed)
+                    let iso = min(device.activeFormat.maxISO, 400)
+                    
+                    // Only set custom exposure if we're in good lighting conditions
+                    if device.exposureDuration.seconds < 0.1 { // Current exposure is faster than 1/10s
+                        print("📸 Setting shutter-priority exposure: 1/500s, ISO: \(iso)")
+                        device.setExposureModeCustom(duration: fastShutter, iso: iso) { _ in
+                            // After setting custom exposure, lock it to prevent auto changes
+                            try? device.lockForConfiguration()
+                            device.exposureMode = .locked
+                            device.unlockForConfiguration()
                         }
                     }
                 }
@@ -1127,11 +1110,8 @@ class CameraModel: NSObject, ObservableObject {
                 // Set up subject area change monitoring for new device
                 self.setupSubjectAreaChangeMonitoring(for: device)
                 
-                // If iOS 17+, prepare for zero shutter lag captures
-                if #available(iOS 17.0, *) {
-                    self.configurePhotoOutputForMaxQuality()
-                    self.prepareZeroShutterLagCapture()
-                }
+                self.configurePhotoOutputForMaxQuality()
+                self.prepareZeroShutterLagCapture()
                 
                 // Now we can safely restart the session if it was running before
                 if !self.session.isRunning {
@@ -1246,23 +1226,18 @@ class CameraModel: NSObject, ObservableObject {
                 // Configure exposure mode
                 if device.isExposureModeSupported(.continuousAutoExposure) {
                     device.exposureMode = .continuousAutoExposure
+                    let fastShutter = CMTime(value: 1, timescale: 500) // 1/500 sec
+                    // Set ISO to a reasonable value (or max if needed)
+                    let iso = min(device.activeFormat.maxISO, 400)
                     
-                    // For iOS 17+: Set shutter-priority exposure for sharper images
-                    if #available(iOS 17.0, *) {
-                        // Use a faster shutter speed (1/500 sec) for sharper images
-                        let fastShutter = CMTime(value: 1, timescale: 500) // 1/500 sec
-                        // Set ISO to a reasonable value (or max if needed)
-                        let iso = min(device.activeFormat.maxISO, 400)
-                        
-                        // Only set custom exposure if we're in good lighting conditions
-                        if device.exposureDuration.seconds < 0.1 { // Current exposure is faster than 1/10s
-                            print("📸 Setting shutter-priority exposure: 1/500s, ISO: \(iso)")
-                            device.setExposureModeCustom(duration: fastShutter, iso: iso) { _ in
-                                // After setting custom exposure, lock it to prevent auto changes
-                                try? device.lockForConfiguration()
-                                device.exposureMode = .locked
-                                device.unlockForConfiguration()
-                            }
+                    // Only set custom exposure if we're in good lighting conditions
+                    if device.exposureDuration.seconds < 0.1 { // Current exposure is faster than 1/10s
+                        print("📸 Setting shutter-priority exposure: 1/500s, ISO: \(iso)")
+                        device.setExposureModeCustom(duration: fastShutter, iso: iso) { _ in
+                            // After setting custom exposure, lock it to prevent auto changes
+                            try? device.lockForConfiguration()
+                            device.exposureMode = .locked
+                            device.unlockForConfiguration()
                         }
                     }
                 }
@@ -1293,11 +1268,8 @@ class CameraModel: NSObject, ObservableObject {
                 // Set up subject area change monitoring for new device
                 self.setupSubjectAreaChangeMonitoring(for: device)
                 
-                // If iOS 17+, prepare for zero shutter lag captures
-                if #available(iOS 17.0, *) {
-                    self.configurePhotoOutputForMaxQuality()
-                    self.prepareZeroShutterLagCapture()
-                }
+                self.configurePhotoOutputForMaxQuality()
+                self.prepareZeroShutterLagCapture()
                 
                 // Update UI properties on main thread
                 DispatchQueue.main.async {
@@ -1415,8 +1387,7 @@ extension CameraModel: AVCapturePhotoCaptureDelegate {
         }
     }
     
-    // Handle deferred photo processing (iOS 17+)
-    @available(iOS 17.0, *)
+    // Handle deferred photo processing
     func photoOutput(_ output: AVCapturePhotoOutput, didFinishCapturingDeferredPhotoProxy proxy: AVCaptureDeferredPhotoProxy?, error: Error?) {
         guard error == nil else {
             print("Error with deferred photo: \(error!.localizedDescription)")
@@ -2116,8 +2087,6 @@ struct PhotoCell: View {
     }
 }
 
-// Extension to get rotation angle for a device orientation
-// This replaces the deprecated AVCaptureVideoOrientation methods with iOS 17+ compliant alternatives
 extension UIDeviceOrientation {
     func getRotationAngle() -> Double {
         switch self {
