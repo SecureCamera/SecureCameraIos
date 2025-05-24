@@ -205,7 +205,7 @@ class FaceDetector {
         for y in 0 ..< height {
             for x in 0 ..< width {
                 var randomByte: UInt8 = 0
-                SecRandomCopyBytes(kSecRandomDefault, 1, &randomByte)
+                _ = SecRandomCopyBytes(kSecRandomDefault, 1, &randomByte)
 
                 if Double(randomByte) / 255.0 < noiseDensity {
                     let randomColor = randomByte > 127 ? UIColor.black : UIColor.white
@@ -282,12 +282,12 @@ class FaceDetector {
             for y in 0 ..< Int(smallSize.height) {
                 for x in 0 ..< Int(smallSize.width) {
                     // Get random byte for probability check
-                    SecRandomCopyBytes(kSecRandomDefault, 1, &randomBytes)
+                    _ = SecRandomCopyBytes(kSecRandomDefault, 1, &randomBytes)
                     let randValue = Float(randomBytes[0]) / 255.0
 
                     if randValue <= Float(noiseProbability) {
                         // Get another random byte for color determination
-                        SecRandomCopyBytes(kSecRandomDefault, 1, &randomBytes)
+                        _ = SecRandomCopyBytes(kSecRandomDefault, 1, &randomBytes)
 
                         let color = (randomBytes[0] > 127) ? UIColor.black : UIColor.white
                         noiseContext.setFillColor(color.cgColor)
@@ -388,7 +388,7 @@ class FaceDetector {
         // Fill buffer with random values
         for i in stride(from: 0, to: randomData.count, by: 4) {
             var randomBytes = [UInt8](repeating: 0, count: 4)
-            SecRandomCopyBytes(kSecRandomDefault, 4, &randomBytes)
+            _ = SecRandomCopyBytes(kSecRandomDefault, 4, &randomBytes)
 
             randomData[i] = randomBytes[0] // R
             randomData[i + 1] = randomBytes[1] // G

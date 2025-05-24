@@ -235,7 +235,7 @@ class PhotoDetailViewModel: ObservableObject {
                     }
                     
                     do {
-                        try self.secureFileManager.savePhoto(imageData, withMetadata: metadataCopy)
+                        _ = try self.secureFileManager.savePhoto(imageData, withMetadata: metadataCopy)
                         
                         // Update UI on main thread
                         DispatchQueue.main.async {

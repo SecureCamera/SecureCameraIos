@@ -203,7 +203,7 @@ class SecureCameraController: UIViewController, AVCapturePhotoCaptureDelegate {
             do {
                 // In a real implementation, we would encrypt the data first
                 let secureFileManager = SecureFileManager()
-                try secureFileManager.savePhoto(photoData, withMetadata: processedEXIF)
+                _ = try secureFileManager.savePhoto(photoData, withMetadata: processedEXIF)
             } catch {
                 // Handle save error
                 print("Error saving photo: \(error.localizedDescription)")
