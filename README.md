@@ -1,3 +1,6 @@
-Document for the user that if they manually enable “Back Up This iPhone” you still keep their images local because the files are flagged “do-not-backup”.
+# SnapSafe for iOS
 
-We can't prevent user from configuring backup, so we use FDE with the key in the secure enclave to deal with this.
+The camera app that minds its own business.
+
+[![iOS build](https://github.com/SecureCamera/SecureCameraIos/actions/workflows/ios.yml/badge.svg)](https://github.com/SecureCamera/SecureCameraIos/actions/workflows/ios.yml)
+
