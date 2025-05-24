@@ -12,8 +12,12 @@ jobs:
     runs-on: macos-latest
 
     steps:
+      - name: List available Xcode versions
+        run: ls /Applications | grep Xcode
       - name: Set Xcode version 16.2
         run: sudo xcode-select -s /Applications/Xcode_16.2.app
+      - name: Show current version of Xcode
+        run: xcodebuild -version
       - name: Checkout
         uses: actions/checkout@v4
       - name: Set Default Scheme
