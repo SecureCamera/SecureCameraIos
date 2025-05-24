@@ -47,7 +47,6 @@ class CameraModel: NSObject, ObservableObject {
     // Camera position (front or back)
     @Published var cameraPosition: AVCaptureDevice.Position = .back
     
-    // ADD: Configuration state to prevent race conditions
     private var isConfiguring = false
 
     // Timer to reset to auto-focus mode after tap-to-focus
@@ -82,39 +81,42 @@ class CameraModel: NSObject, ObservableObject {
     // Refocus camera after subject area change
     private func refocusCamera() {
         guard let device = currentDevice else { return }
-        
-        // Use last known focus point or default to center
-        let focusPoint = lastFocusPoint
-        
-        do {
-            try device.lockForConfiguration()
-            
-            // Set focus point and mode if supported
-            if device.isFocusPointOfInterestSupported && device.isFocusModeSupported(.autoFocus) {
-                device.focusPointOfInterest = focusPoint
-                device.focusMode = .autoFocus
-                print("📸 Refocusing to point: \(focusPoint.x), \(focusPoint.y)")
+
+        // Only run if we're not in a user-defined focus mode
+        if device.focusMode != .locked {
+            // We could add scene analysis logic here to determine optimal focus
+            // For now, we'll just ensure we're in continuous auto-focus mode
+
+            do {
+                try device.lockForConfiguration()
+                
+                // Set focus point and mode if supported
+                if device.isFocusPointOfInterestSupported && device.isFocusModeSupported(.autoFocus) {
+                    device.focusPointOfInterest = lastFocusPoint
+                    device.focusMode = .autoFocus
+                    print("📸 Refocusing to point: \(lastFocusPoint.x), \(lastFocusPoint.y)")
+                }
+                
+                // Set exposure point and mode if supported
+                if device.isExposurePointOfInterestSupported && device.isExposureModeSupported(.autoExpose) {
+                    device.exposurePointOfInterest = lastFocusPoint
+                    device.exposureMode = .autoExpose
+                }
+                
+                device.unlockForConfiguration()
+                
+                // Show visual feedback for refocusing
+                showFocusIndicator(at: lastFocusPoint)
+                
+                // Schedule return to continuous auto modes after a delay
+                focusResetTimer?.invalidate()
+                focusResetTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [weak self] _ in
+                    self?.resetToAutoFocus()
+                }
+                
+            } catch {
+                print("Error refocusing: \(error.localizedDescription)")
             }
-            
-            // Set exposure point and mode if supported
-            if device.isExposurePointOfInterestSupported && device.isExposureModeSupported(.autoExpose) {
-                device.exposurePointOfInterest = focusPoint
-                device.exposureMode = .autoExpose
-            }
-            
-            device.unlockForConfiguration()
-            
-            // Show visual feedback for refocusing
-            showFocusIndicator(at: focusPoint)
-            
-            // Schedule return to continuous auto modes after a delay
-            focusResetTimer?.invalidate()
-            focusResetTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [weak self] _ in
-                self?.resetToAutoFocus()
-            }
-            
-        } catch {
-            print("Error refocusing: \(error.localizedDescription)")
         }
     }
 
@@ -276,26 +278,9 @@ class CameraModel: NSObject, ObservableObject {
                 print("📸 Enabled continuous auto-focus with smooth transitions")
             }
 
-            // Enable continuous auto-exposure
             if device.isExposureModeSupported(.continuousAutoExposure) {
                 device.exposureMode = .continuousAutoExposure
-                print("Enabled continuous auto-exposure")
-                // Use a faster shutter speed (1/500 sec) for sharper images
-                let fastShutter = CMTime(value: 1, timescale: 500) // 1/500 sec
-                // Set ISO to a reasonable value (or max if needed)
-                let iso = min(device.activeFormat.maxISO, 400)
-                
-                // Only set custom exposure if we're in good lighting conditions
-                // This check helps avoid overly dark images in low light
-                if device.exposureDuration.seconds < 0.1 { // Current exposure is faster than 1/10s
-                    print("📸 Setting shutter-priority exposure: 1/500s, ISO: \(iso)")
-                    device.setExposureModeCustom(duration: fastShutter, iso: iso) { _ in
-                        // After setting custom exposure, lock it to prevent auto changes
-                        try? device.lockForConfiguration()
-                        device.exposureMode = .locked
-                        device.unlockForConfiguration()
-                    }
-                }
+                print("📸 Enabled continuous auto-exposure for adaptive lighting")
             }
 
             // Enable continuous auto white balance
@@ -384,13 +369,13 @@ class CameraModel: NSObject, ObservableObject {
 
             do {
                 try device.lockForConfiguration()
-
+                
                 // Make sure auto-focus is still active
                 if device.focusMode != .continuousAutoFocus && device.isFocusModeSupported(.continuousAutoFocus) {
                     device.focusMode = .continuousAutoFocus
                     print("📸 Re-enabled continuous auto-focus")
                 }
-
+                
                 device.unlockForConfiguration()
             } catch {
                 print("Error in focus check: \(error.localizedDescription)")
@@ -474,6 +459,16 @@ class CameraModel: NSObject, ObservableObject {
 
         do {
             try device.lockForConfiguration()
+            
+            if device.isExposureModeSupported(.continuousAutoExposure) && device.exposureMode != .continuousAutoExposure {
+                device.exposureMode = .continuousAutoExposure
+                print("📸 Restored auto-exposure during zoom")
+            }
+            
+            if device.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance) && device.whiteBalanceMode != .continuousAutoWhiteBalance {
+                device.whiteBalanceMode = .continuousAutoWhiteBalance
+                print("📸 Restored auto white balance during zoom")
+            }
 
             // Calculate new zoom factor
             var newZoomFactor = factor
@@ -558,12 +553,74 @@ class CameraModel: NSObject, ObservableObject {
         // Check if we need to switch camera types
         if shouldUseUltraWide && currentLensType != .ultraWide && ultraWideDevice != nil {
             print("📸 Switching to ultra-wide camera (0.5x)")
+            
+            if let device = currentDevice {
+                do {
+                    try device.lockForConfiguration()
+                    
+                    // Ensure we're in auto modes for smooth lens transition
+                    if device.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance) {
+                        device.whiteBalanceMode = .continuousAutoWhiteBalance
+                    }
+                    if device.isExposureModeSupported(.continuousAutoExposure) {
+                        device.exposureMode = .continuousAutoExposure
+                    }
+                    
+                    device.unlockForConfiguration()
+                } catch {
+                    print("📸 Error preparing auto modes before lens switch: \(error.localizedDescription)")
+                }
+            }
+            
+            // Now switch lens type
             switchLensType(to: .ultraWide)
         } else if shouldUseWideAngle && currentLensType != .wideAngle && wideAngleDevice != nil {
             print("📸 Switching to wide-angle camera (1x)")
+            
+            if let device = currentDevice {
+                do {
+                    try device.lockForConfiguration()
+                    
+                    // Ensure we're in auto modes for smooth lens transition
+                    if device.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance) {
+                        device.whiteBalanceMode = .continuousAutoWhiteBalance
+                    }
+                    if device.isExposureModeSupported(.continuousAutoExposure) {
+                        device.exposureMode = .continuousAutoExposure
+                    }
+                    
+                    device.unlockForConfiguration()
+                } catch {
+                    print("📸 Error preparing auto modes before lens switch: \(error.localizedDescription)")
+                }
+            }
+            
+            // Now switch lens type
             switchLensType(to: .wideAngle)
         } else {
             // No camera switch needed, just apply zoom with animation for smoothness
+            
+            if let device = currentDevice {
+                do {
+                    try device.lockForConfiguration()
+                    
+                    if device.isExposureModeSupported(.continuousAutoExposure) && device.exposureMode != .continuousAutoExposure {
+                        device.exposureMode = .continuousAutoExposure
+                        print("📸 Restored auto-exposure during zoom gesture")
+                    }
+                    
+                    if device.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance) && device.whiteBalanceMode != .continuousAutoWhiteBalance {
+                        device.whiteBalanceMode = .continuousAutoWhiteBalance
+                        print("📸 Restored auto white balance during zoom gesture")
+                    }
+                    
+                    device.unlockForConfiguration()
+                } catch {
+                    // Ignore errors here, it's just optimization
+                }
+            }
+            
+            // Apply zoom with white balance adjustment
             zoom(factor: newZoomFactor)
         }
     }
@@ -667,7 +724,6 @@ class CameraModel: NSObject, ObservableObject {
         }
     }
 
-    // ADD: Helper to ensure white balance gains are within device-supported range
     private func normalizeGains(_ gains: AVCaptureDevice.WhiteBalanceGains, for device: AVCaptureDevice) -> AVCaptureDevice.WhiteBalanceGains {
         var normalizedGains = gains
         normalizedGains.redGain = max(1.0, min(gains.redGain, device.maxWhiteBalanceGain))
@@ -686,12 +742,6 @@ class CameraModel: NSObject, ObservableObject {
         
         // Don't do anything if we're already using this lens type or if we can't switch
         if lensType == currentLensType || cameraPosition == .front && lensType == .ultraWide {
-            return
-        }
-        
-        // Ultra-wide camera is only available on the back camera
-        if cameraPosition == .front && lensType == .ultraWide {
-            print("📸 Cannot use ultra-wide with front camera")
             return
         }
         
@@ -749,6 +799,7 @@ class CameraModel: NSObject, ObservableObject {
             do {
                 // Get the appropriate camera device based on lens type
                 var device: AVCaptureDevice?
+                
                 switch lensType {
                 case .ultraWide:
                     device = self.ultraWideDevice
@@ -779,9 +830,6 @@ class CameraModel: NSObject, ObservableObject {
                     return
                 }
                 
-                // Set initial zoom factor based on lens type
-                let initialZoomFactor: CGFloat = (lensType == .ultraWide) ? 1.0 : 1.0
-                
                 // Store the device reference for zoom functionality
                 self.currentDevice = device
                 
@@ -789,18 +837,7 @@ class CameraModel: NSObject, ObservableObject {
                 try device.lockForConfiguration()
                 
                 // Set initial zoom factor
-                device.videoZoomFactor = initialZoomFactor
-                
-                // Update the user-facing zoom factor
-                if lensType == .ultraWide {
-                    DispatchQueue.main.async {
-                        self.zoomFactor = 0.5 // Show as 0.5x for ultra-wide
-                    }
-                } else {
-                    DispatchQueue.main.async {
-                        self.zoomFactor = 1.0 // Show as 1.0x for wide-angle
-                    }
-                }
+                device.videoZoomFactor = 1.0
                 
                 // Configure focus modes
                 if device.isFocusModeSupported(.continuousAutoFocus) {
@@ -815,40 +852,22 @@ class CameraModel: NSObject, ObservableObject {
                 // Configure exposure mode
                 if device.isExposureModeSupported(.continuousAutoExposure) {
                     device.exposureMode = .continuousAutoExposure
-                    
-                    // Use a faster shutter speed (1/500 sec) for sharper images
-                    let fastShutter = CMTime(value: 1, timescale: 500) // 1/500 sec
-                    // Set ISO to a reasonable value (or max if needed)
-                    let iso = min(device.activeFormat.maxISO, 400)
-                    
-                    // Only set custom exposure if we're in good lighting conditions
-                    if device.exposureDuration.seconds < 0.1 { // Current exposure is faster than 1/10s
-                        print("📸 Setting shutter-priority exposure: 1/500s, ISO: \(iso)")
-                        device.setExposureModeCustom(duration: fastShutter, iso: iso) { _ in
-                            // After setting custom exposure, lock it to prevent auto changes
-                            try? device.lockForConfiguration()
-                            device.exposureMode = .locked
-                            device.unlockForConfiguration()
-                        }
-                    }
+                    print("📸 Using continuous auto-exposure for camera position: \(self.cameraPosition)")
                 }
                 
-                // Apply previous white balance settings if available for smooth transition
                 if let previousGains = previousWhiteBalanceGains,
                    device.isWhiteBalanceModeSupported(.locked) {
-//                     Normalize the gains to ensure they're within the allowed range for this device
-//                     BILL DEBUG TODO
+                    // Normalize the gains to ensure they're within the allowed range for this device
                     let normalizedGains = self.normalizeGains(previousGains, for: device)
                     
-                    //print("📸 Applying previous white balance to new device: R:\(normalizedGains.redGain), G:\(normalizedGains.greenGain), B:\(normalizedGains.blueGain), Mode: \(previousWhiteBalanceMode)")
+                    print("📸 Applying previous white balance to new device: R:\(normalizedGains.redGain), G:\(normalizedGains.greenGain), B:\(normalizedGains.blueGain), Mode: \(previousWhiteBalanceMode)")
                     
                     // Apply smooth white balance transition based on previous mode
                     if previousWhiteBalanceMode == .locked {
                         // Previous device had locked white balance, maintain it smoothly
-                        // BILL DEBUG TODO
-//                        device.setWhiteBalanceModeLocked(with: normalizedGains) { _ in
-//                            print("📸 Maintained locked white balance from previous device")
-//                        }
+                        device.setWhiteBalanceModeLocked(with: normalizedGains) { _ in
+                            print("📸 Maintained locked white balance from previous device")
+                        }
                     } else {
                         // Previous device was in auto mode, do a smooth transition
                         // Briefly apply the previous gains, then return to auto mode
@@ -858,8 +877,7 @@ class CameraModel: NSObject, ObservableObject {
                                 do {
                                     try device.lockForConfiguration()
                                     if device.isWhiteBalanceModeSupported(previousWhiteBalanceMode) {
-                                        // BILL DEBUG TODO
-                                        //device.whiteBalanceMode = previousWhiteBalanceMode
+                                        device.whiteBalanceMode = previousWhiteBalanceMode
                                         print("📸 Restored previous white balance mode: \(previousWhiteBalanceMode)")
                                     } else if device.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance) {
                                         device.whiteBalanceMode = .continuousAutoWhiteBalance
@@ -903,7 +921,7 @@ class CameraModel: NSObject, ObservableObject {
                 
                 // Set up subject area change monitoring for new device
                 self.setupSubjectAreaChangeMonitoring(for: device)
-                
+
                 self.configurePhotoOutputForMaxQuality()
                 self.prepareZeroShutterLagCapture()
                 
@@ -916,6 +934,7 @@ class CameraModel: NSObject, ObservableObject {
                 
                 // Reset configuration flag
                 self.isConfiguring = false
+                
             } catch {
                 print("📸 Error switching lens type: \(error.localizedDescription)")
                 self.session.commitConfiguration()
@@ -1054,20 +1073,7 @@ class CameraModel: NSObject, ObservableObject {
                 // Configure exposure mode
                 if device.isExposureModeSupported(.continuousAutoExposure) {
                     device.exposureMode = .continuousAutoExposure
-                    let fastShutter = CMTime(value: 1, timescale: 500) // 1/500 sec
-                    // Set ISO to a reasonable value (or max if needed)
-                    let iso = min(device.activeFormat.maxISO, 400)
-                    
-                    // Only set custom exposure if we're in good lighting conditions
-                    if device.exposureDuration.seconds < 0.1 { // Current exposure is faster than 1/10s
-                        print("📸 Setting shutter-priority exposure: 1/500s, ISO: \(iso)")
-                        device.setExposureModeCustom(duration: fastShutter, iso: iso) { _ in
-                            // After setting custom exposure, lock it to prevent auto changes
-                            try? device.lockForConfiguration()
-                            device.exposureMode = .locked
-                            device.unlockForConfiguration()
-                        }
-                    }
+                    print("📸 Using continuous auto-exposure for camera position: \(position)")
                 }
                 
                 // For front/back camera switches, usually we want a clean white balance
@@ -1280,59 +1286,57 @@ extension CameraModel: AVCapturePhotoCaptureDelegate {
             // Extract basic metadata if possible
             var metadata: [String: Any] = [:]
 
-            if let source = CGImageSourceCreateWithData(imageData as CFData, nil) {
-                if let imageMetadata = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [String: Any] {
-                    metadata = imageMetadata
-                    
-                    // Get the EXIF orientation value
-                    var exifOrientation: Int = 1 // Default to 1 (normal orientation)
-                    
-                    // First check EXIF dictionary
-                    if let exifDict = metadata[String(kCGImagePropertyExifDictionary)] as? [String: Any],
-                       let orientation = exifDict[String(kCGImagePropertyOrientation)] as? Int {
-                        exifOrientation = orientation
-                        print("📸 Found EXIF orientation: \(orientation)")
-                    }
-                    // Then check TIFF dictionary
-                    else if let tiffDict = metadata[String(kCGImagePropertyTIFFDictionary)] as? [String: Any],
-                            let orientation = tiffDict[String(kCGImagePropertyTIFFOrientation)] as? Int {
-                        exifOrientation = orientation
-                        print("📸 Found TIFF orientation: \(orientation)")
-                    }
-                    
-                    // Store the original orientation value for later use
-                    metadata["originalOrientation"] = exifOrientation
-                    print("📸 Saved original orientation value: \(exifOrientation)")
-                    
-                    // Store the camera position that was used to take the photo
-                    metadata["cameraPosition"] = self.cameraPosition == .front ? "front" : "back"
-                    
-                    // Check if this is a landscape photo by examining dimensions and orientation
-                    if let pixelWidth = metadata[String(kCGImagePropertyPixelWidth)] as? Int,
-                       let pixelHeight = metadata[String(kCGImagePropertyPixelHeight)] as? Int {
-                        
-                        // Determine if landscape based on both dimensions and orientation
-                        // Orientation values 5-8 mean the image is rotated 90/270 degrees
-                        let isRotated = (exifOrientation >= 5 && exifOrientation <= 8)
-                        
-                        // If rotated, swap dimensions for comparison
-                        if isRotated {
-                            metadata["isLandscape"] = pixelHeight > pixelWidth
-                        } else {
-                            metadata["isLandscape"] = pixelWidth > pixelHeight
-                        }
-                        
-                        print("📸 Photo dimensions: \(pixelWidth)x\(pixelHeight), orientation: \(exifOrientation), isLandscape: \(metadata["isLandscape"] as? Bool ?? false), camera: \(metadata["cameraPosition"] as? String ?? "unknown")")
-                    }
-                    
-                    // Preserve the original EXIF orientation
-                    // DO NOT normalize the orientation here - we want to keep the original
-
-                    // Add location data if enabled and available from LocationManager
-                    // The FileManager will handle this now, no need to add it here
+            if let source = CGImageSourceCreateWithData(imageData as CFData, nil),
+               let imageMetadata = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [String: Any] {
+                metadata = imageMetadata
+                
+                // Get the EXIF orientation value
+                var exifOrientation: Int = 1 // Default to 1 (normal orientation)
+                
+                // First check EXIF dictionary
+                if let exifDict = metadata[String(kCGImagePropertyExifDictionary)] as? [String: Any],
+                   let orientation = exifDict[String(kCGImagePropertyOrientation)] as? Int {
+                    exifOrientation = orientation
+                    print("📸 Found EXIF orientation: \(orientation)")
                 }
-            }
+                // Then check TIFF dictionary
+                else if let tiffDict = metadata[String(kCGImagePropertyTIFFDictionary)] as? [String: Any],
+                        let orientation = tiffDict[String(kCGImagePropertyTIFFOrientation)] as? Int {
+                    exifOrientation = orientation
+                    print("📸 Found TIFF orientation: \(orientation)")
+                }
+                
+                // Store the original orientation value for later use
+                metadata["originalOrientation"] = exifOrientation
+                print("📸 Saved original orientation value: \(exifOrientation)")
+                
+                // Store the camera position that was used to take the photo
+                metadata["cameraPosition"] = self.cameraPosition == .front ? "front" : "back"
+                
+                // Check if this is a landscape photo by examining dimensions and orientation
+                if let pixelWidth = metadata[String(kCGImagePropertyPixelWidth)] as? Int,
+                   let pixelHeight = metadata[String(kCGImagePropertyPixelHeight)] as? Int {
+                    
+                    // Determine if landscape based on both dimensions and orientation
+                    // Orientation values 5-8 mean the image is rotated 90/270 degrees
+                    let isRotated = (exifOrientation >= 5 && exifOrientation <= 8)
+                    
+                    // If rotated, swap dimensions for comparison
+                    if isRotated {
+                        metadata["isLandscape"] = pixelHeight > pixelWidth
+                    } else {
+                        metadata["isLandscape"] = pixelWidth > pixelHeight
+                    }
+                    
+                    print("📸 Photo dimensions: \(pixelWidth)x\(pixelHeight), orientation: \(exifOrientation), isLandscape: \(metadata["isLandscape"] as? Bool ?? false), camera: \(metadata["cameraPosition"] as? String ?? "unknown")")
+                }
+                
+                // Preserve the original EXIF orientation
+                // DO NOT normalize the orientation here - we want to keep the original
 
+                // Add location data if enabled and available from LocationManager
+                // The FileManager will handle this now, no need to add it here
+            }
             // Save the photo with UTC timestamp filename
             do {
                 let filename = try self.secureFileManager.savePhoto(imageData, withMetadata: metadata)
