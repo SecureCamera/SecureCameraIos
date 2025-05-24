@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 70;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -35,21 +35,9 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		A9DE37492DC5F34400679C2C /* SnapSafe */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = SnapSafe;
-			sourceTree = "<group>";
-		};
-		A9DE375A2DC5F34600679C2C /* SnapSafeTests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = SnapSafeTests;
-			sourceTree = "<group>";
-		};
-		A9DE37642DC5F34600679C2C /* SnapSafeUITests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = SnapSafeUITests;
-			sourceTree = "<group>";
-		};
+		A9DE37492DC5F34400679C2C /* SnapSafe */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = SnapSafe; sourceTree = "<group>"; };
+		A9DE375A2DC5F34600679C2C /* SnapSafeTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = SnapSafeTests; sourceTree = "<group>"; };
+		A9DE37642DC5F34600679C2C /* SnapSafeUITests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = SnapSafeUITests; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -196,6 +184,7 @@
 				};
 			};
 			buildConfigurationList = A9DE37422DC5F34400679C2C /* Build configuration list for PBXProject "SnapSafe" */;
+			compatibilityVersion = "Xcode 15.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -207,7 +196,6 @@
 			packageReferences = (
 				A9B3E0862DCF1D3C003F1ED3 /* XCRemoteSwiftPackageReference "swift-dependencies" */,
 			);
-			preferredProjectObjectVersion = 77;
 			productRefGroup = A9DE37482DC5F34400679C2C /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
