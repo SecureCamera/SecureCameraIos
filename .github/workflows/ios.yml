@@ -18,6 +18,8 @@ jobs:
         run: sudo xcode-select -s /Applications/Xcode_16.2.app
       - name: Show current version of Xcode
         run: xcodebuild -version
+      - name: xcpretty install
+        run: gem install xcpretty
       - name: Checkout
         uses: actions/checkout@v4
       - name: Set Default Scheme
@@ -31,5 +33,5 @@ jobs:
           scheme: ${{ 'default' }}
           platform: ${{ 'iOS Simulator' }}
         run: |
-          xcodebuild -project SnapSafe.xcodeproj/ -scheme SnapSafe -configuration Debug -sdk iphonesimulator18.2 -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.2' -derivedDataPath ./build CODE_SIGNING_ALLOWED=NO build-for-testing
+          xcodebuild -project SnapSafe.xcodeproj/ -scheme SnapSafe -configuration Debug -sdk iphonesimulator18.2 -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.2' -derivedDataPath ./build CODE_SIGNING_ALLOWED=NO build-for-testing | xcpretty
           
