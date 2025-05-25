@@ -69,7 +69,7 @@ class SecureCameraController: UIViewController, AVCapturePhotoCaptureDelegate {
                 
                 // Only set custom exposure if we're in good lighting conditions
                 if backCamera.exposureDuration.seconds < 0.1 { // Current exposure is faster than 1/10s
-                    print("📸 Setting shutter-priority exposure: 1/500s, ISO: \(iso)")
+                    print("Setting shutter-priority exposure: 1/500s, ISO: \(iso)")
                     backCamera.setExposureModeCustom(duration: fastShutter, iso: iso) { _ in
                         // After setting custom exposure, lock it to prevent auto changes
                         try? backCamera.lockForConfiguration()

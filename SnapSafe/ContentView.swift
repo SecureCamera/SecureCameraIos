@@ -200,8 +200,8 @@ struct ContentView: View {
             
             // Start monitoring orientation changes
             UIDevice.current.beginGeneratingDeviceOrientationNotifications()
-            NotificationCenter.default.addObserver(forName: UIDevice.orientationDidChangeNotification, 
-                                                  object: nil, 
+            NotificationCenter.default.addObserver(forName: UIDevice.orientationDidChangeNotification,
+                                                  object: nil,
                                                   queue: .main) { _ in
                 self.deviceOrientation = UIDevice.current.orientation
             }
@@ -331,7 +331,7 @@ struct CameraView: View {
                 }
             }
             .onAppear {
-                print("📏 Camera view size: \(geometry.size.width)x\(geometry.size.height)")
+                print("Camera view size: \(geometry.size.width)x\(geometry.size.height)")
             }
         }
     }
@@ -715,7 +715,7 @@ struct CameraPreviewView: UIViewRepresentable {
         @objc func handleDoubleTapGesture(_ gesture: UITapGestureRecognizer) {
             guard let view = gesture.view else { return }
             let location = gesture.location(in: view)
-            print("👆 Double tap detected at \(location.x), \(location.y)")
+            print("Double tap detected at \(location.x), \(location.y)")
             
             // Get the container view for proper coordinate conversion
             guard let containerView = parent.viewHolder.previewContainer else { return }
@@ -723,15 +723,20 @@ struct CameraPreviewView: UIViewRepresentable {
             // Check if the tap is within the container bounds
             let locationInContainer = view.convert(location, to: containerView)
             if !containerView.bounds.contains(locationInContainer) {
-                print("👆 Tap outside of capture area, ignoring")
+                print("Tap outside of capture area, ignoring")
                 return
             }
+            
 
             // Convert touch point to camera coordinate
             if let layer = parent.viewHolder.previewLayer {
                 // Convert the point from the container's coordinate space to the preview layer's coordinate space
                 let pointInPreviewLayer = layer.captureDevicePointConverted(fromLayerPoint: locationInContainer)
-                print("👆 Converted to camera coordinates: \(pointInPreviewLayer.x), \(pointInPreviewLayer.y)")
+                let devicePoint = layer.devicePoint(from: location)
+                print("Converted to device coordinates (2x tap): \(devicePoint.x), \(devicePoint.y)")
+                
+
+//                print("Converted to camera coordinates (2x tap): \(pointInPreviewLayer.x), \(pointInPreviewLayer.y)")
 
                 // Lock both focus and white balance
                 // We set locked=true to indicate we want to lock white balance too
@@ -743,7 +748,7 @@ struct CameraPreviewView: UIViewRepresentable {
         @objc func handleSingleTapGesture(_ gesture: UITapGestureRecognizer) {
             guard let view = gesture.view else { return }
             let location = gesture.location(in: view)
-            print("👆 Single tap detected at \(location.x), \(location.y)")
+            print("Single tap detected at \(location.x), \(location.y)")
             
             // Get the container view for proper coordinate conversion
             guard let containerView = parent.viewHolder.previewContainer else { return }
@@ -759,12 +764,23 @@ struct CameraPreviewView: UIViewRepresentable {
             if let layer = parent.viewHolder.previewLayer {
                 // Convert the point from the container's coordinate space to the preview layer's coordinate space
                 let pointInPreviewLayer = layer.captureDevicePointConverted(fromLayerPoint: locationInContainer)
-                print("👆 Converted to camera coordinates: \(pointInPreviewLayer.x), \(pointInPreviewLayer.y)")
+                print("Converted to camera coordinates (1x tap): \(pointInPreviewLayer.x), \(pointInPreviewLayer.y)")
 
                 // Adjust focus and exposure but not white balance
                 parent.cameraModel.adjustCameraSettings(at: pointInPreviewLayer, lockWhiteBalance: false)
             }
         }
+    }
+}
+
+// MARK: - Conversion helpers
+extension AVCaptureVideoPreviewLayer {
+    func devicePoint(from viewPoint: CGPoint) -> CGPoint {
+        return self.captureDevicePointConverted(fromLayerPoint: viewPoint)
+    }
+
+    func viewPoint(from devicePoint: CGPoint) -> CGPoint {
+        return self.layerPointConverted(fromCaptureDevicePoint: devicePoint)
     }
 }
 
@@ -920,4 +936,171 @@ extension UIImage {
         
         return normalizedImage
     }
+}
+
+#Preview {
+    #if DEBUG
+    struct ContentViewPreview: View {
+        @StateObject private var cameraModel = CameraModel()
+        @StateObject private var locationManager = LocationManager.shared
+        @State private var isShutterAnimating = false
+        @State private var deviceOrientation = UIDevice.current.orientation
+
+        var body: some View {
+            ZStack {
+                // Camera view with all layers
+                CameraView(cameraModel: cameraModel)
+                    .edgesIgnoringSafeArea(.all)
+
+                // Shutter animation overlay
+                if isShutterAnimating {
+                    Color.black
+                        .opacity(0.8)
+                        .edgesIgnoringSafeArea(.all)
+                        .transition(.opacity)
+                }
+
+                // Camera controls overlay
+                VStack {
+                    // Top control bar with flash toggle and camera switch
+                    HStack {
+                        // Camera switch button
+                        Button(action: {
+                            let newPosition: AVCaptureDevice.Position = (cameraModel.cameraPosition == .back) ? .front : .back
+                            cameraModel.switchCamera(to: newPosition)
+                        }) {
+                            Image(systemName: "arrow.triangle.2.circlepath.camera")
+                                .font(.system(size: 20))
+                                .foregroundColor(.white)
+                                .padding(12)
+                                .background(Color.black.opacity(0.6))
+                                .clipShape(Circle())
+                        }
+                        .padding(.top, 16)
+                        .padding(.leading, 16)
+                        
+                        Spacer()
+
+                        // Flash control button
+                        Button(action: {
+                            switch cameraModel.flashMode {
+                            case .auto:
+                                cameraModel.flashMode = .on
+                            case .on:
+                                cameraModel.flashMode = .off
+                            case .off:
+                                cameraModel.flashMode = .auto
+                            @unknown default:
+                                cameraModel.flashMode = .auto
+                            }
+                        }) {
+                            Image(systemName: flashIcon(for: cameraModel.flashMode))
+                                .font(.system(size: 20))
+                                .foregroundColor(cameraModel.cameraPosition == .front ? .gray : .white)
+                                .padding(12)
+                                .background(Color.black.opacity(0.6))
+                                .clipShape(Circle())
+                        }
+                        .disabled(cameraModel.cameraPosition == .front)
+                        .padding(.top, 16)
+                        .padding(.trailing, 16)
+                    }
+
+                    Spacer()
+
+                    // Zoom level indicator
+                    ZStack {
+                        Capsule()
+                            .fill(Color.black.opacity(0.6))
+                            .frame(width: 80, height: 30)
+
+                        Text(String(format: "%.1fx", cameraModel.zoomFactor))
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(.white)
+                    }
+                    .opacity(cameraModel.zoomFactor != 1.0 ? 1.0 : 0.0)
+                    .animation(.easeInOut, value: cameraModel.zoomFactor)
+                    .padding(.bottom, 10)
+                    .rotationEffect(getRotationAngle())
+                    .animation(.easeInOut, value: deviceOrientation)
+
+                    HStack {
+                        Button(action: {}) {
+                            Image(systemName: "gear")
+                                .font(.system(size: 24))
+                                .foregroundColor(.white)
+                                .padding()
+                                .background(Color.black.opacity(0.6))
+                                .clipShape(Circle())
+                        }
+                        .padding()
+
+                        Spacer()
+
+                        // Capture button
+                        Button(action: {
+                            isShutterAnimating = true
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                                isShutterAnimating = false
+                            }
+                            cameraModel.capturePhoto()
+                        }) {
+                            Circle()
+                                .strokeBorder(Color.white, lineWidth: 4)
+                                .frame(width: 80, height: 80)
+                                .background(Circle().fill(Color.white))
+                                .padding()
+                        }
+
+                        Spacer()
+                        Button(action: {}) {
+                            Image(systemName: "photo.on.rectangle")
+                                .font(.system(size: 24))
+                                .foregroundColor(.white)
+                                .padding()
+                                .background(Color.black.opacity(0.6))
+                                .clipShape(Circle())
+                        }
+                        .padding()
+                    }
+                    .padding(.bottom)
+                }
+            }
+            .animation(.easeInOut(duration: 0.1), value: isShutterAnimating)
+            .onReceive(NotificationCenter.default.publisher(for: UIDevice.orientationDidChangeNotification)) { _ in
+                deviceOrientation = UIDevice.current.orientation
+            }
+        }
+        
+        private func flashIcon(for mode: AVCaptureDevice.FlashMode) -> String {
+            switch mode {
+            case .auto:
+                return "bolt.badge.a"
+            case .on:
+                return "bolt"
+            case .off:
+                return "bolt.slash"
+            @unknown default:
+                return "bolt.badge.a"
+            }
+        }
+        
+        private func getRotationAngle() -> Angle {
+            switch UIDevice.current.orientation {
+            case .landscapeLeft:
+                return Angle(degrees: 90)
+            case .landscapeRight:
+                return Angle(degrees: -90)
+            case .portraitUpsideDown:
+                return Angle(degrees: 180)
+            default:
+                return Angle(degrees: 0)
+            }
+        }
+    }
+    
+    return ContentViewPreview()
+    #else
+    return ContentView()
+    #endif
 }

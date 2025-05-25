@@ -9,13 +9,22 @@ import SwiftUI
 
 // Camera model that handles the AVFoundation functionality
 class CameraModel: NSObject, ObservableObject {
+    
+    // MARK: - Debug/Simulator Detection
+    private var isRunningInSimulator: Bool {
+        #if DEBUG && targetEnvironment(simulator)
+        return true
+        #else
+        return false
+        #endif
+    }
     @Published var isPermissionGranted = false
     @Published var session = AVCaptureSession()
     @Published var alert = false
     @Published var output = AVCapturePhotoOutput()
     @Published var preview: AVCaptureVideoPreviewLayer!
     @Published var recentImage: UIImage?
-
+    
     // Zoom and lens configuration
     @Published var zoomFactor: CGFloat = 1.0
     @Published var minZoom: CGFloat = 0.5
@@ -30,7 +39,7 @@ class CameraModel: NSObject, ObservableObject {
         case wideAngle   // 1x zoom (standard)
     }
     @Published var currentLensType: CameraLensType = .wideAngle
-
+    
     // UI interaction properties
     var viewSize: CGSize = .zero
     @Published var focusIndicatorPoint: CGPoint? = nil
@@ -60,7 +69,7 @@ class CameraModel: NSObject, ObservableObject {
     // Refocus camera to last focus point when subject area changes
     private func refocusCamera() {
         guard let device = currentDevice else { return }
-
+        
         if device.focusMode != .locked {
             do {
                 try device.lockForConfiguration()
@@ -77,7 +86,7 @@ class CameraModel: NSObject, ObservableObject {
                 
                 device.unlockForConfiguration()
                 
-                showFocusIndicator(at: lastFocusPoint)
+//                showFocusIndicator(on: lastFocusPoint)
                 
                 focusResetTimer?.invalidate()
                 focusResetTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [weak self] _ in
@@ -89,9 +98,9 @@ class CameraModel: NSObject, ObservableObject {
             }
         }
     }
-
+    
     private let secureFileManager = SecureFileManager()
-
+    
     // Initialize camera with delayed permission check to prevent race conditions
     override init() {
         super.init()
@@ -109,8 +118,20 @@ class CameraModel: NSObject, ObservableObject {
             NotificationCenter.default.removeObserver(self, name: .AVCaptureDeviceSubjectAreaDidChange, object: device)
         }
     }
-
+    
     func checkPermissions() {
+        #if DEBUG && targetEnvironment(simulator)
+        if isRunningInSimulator {
+            DispatchQueue.main.async {
+                self.isPermissionGranted = true
+            }
+            DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + 0.2) {
+                self.setupCamera()
+            }
+            return
+        }
+        #endif
+        
         switch AVCaptureDevice.authorizationStatus(for: .video) {
         case .authorized:
             DispatchQueue.main.async {
@@ -142,7 +163,7 @@ class CameraModel: NSObject, ObservableObject {
             }
         }
     }
-
+    
     // Get camera devices with fallback for ultra-wide
     private func ultraWideCamera() -> AVCaptureDevice? {
         if let ultraWide = AVCaptureDevice.default(.builtInUltraWideCamera, for: .video, position: .back) {
@@ -156,12 +177,19 @@ class CameraModel: NSObject, ObservableObject {
     }
     
     func setupCamera() {
+        #if DEBUG && targetEnvironment(simulator)
+        if isRunningInSimulator {
+            setupSimulatorMockCamera()
+            return
+        }
+        #endif
+        
         session.sessionPreset = .photo
         session.automaticallyConfiguresApplicationAudioSession = false
-
+        
         do {
             session.beginConfiguration()
-
+            
             wideAngleDevice = wideAngleCamera(position: cameraPosition)
             
             if cameraPosition == .back {
@@ -184,52 +212,52 @@ class CameraModel: NSObject, ObservableObject {
                 print("Failed to get camera device for position: \(cameraPosition)")
                 return
             }
-
+            
             currentDevice = device
-
+            
             // Configure device with optimal camera settings
             try device.lockForConfiguration()
-
+            
             let minZoomValue: CGFloat = 1.0
             let maxZoomValue = min(device.activeFormat.videoMaxZoomFactor, 10.0)
             let defaultZoomValue: CGFloat = 1.0
-
+            
             device.videoZoomFactor = defaultZoomValue
-
+            
             // Enable continuous auto modes with smooth transitions
             if device.isFocusModeSupported(.continuousAutoFocus) {
                 device.focusMode = .continuousAutoFocus
                 device.isSmoothAutoFocusEnabled = true
-
+                
                 if device.isAutoFocusRangeRestrictionSupported {
                     device.autoFocusRangeRestriction = .none
                 }
             }
-
+            
             if device.isExposureModeSupported(.continuousAutoExposure) {
                 device.exposureMode = .continuousAutoExposure
             }
-
+            
             if device.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance) {
                 device.whiteBalanceMode = .continuousAutoWhiteBalance
             }
             
             device.isSubjectAreaChangeMonitoringEnabled = true
-
+            
             device.unlockForConfiguration()
-
+            
             let input = try AVCaptureDeviceInput(device: device)
             if session.canAddInput(input) {
                 session.addInput(input)
             }
-
+            
             if session.canAddOutput(output) {
                 session.addOutput(output)
                 configurePhotoOutputForMaxQuality()
             }
-
+            
             session.commitConfiguration()
-
+            
             DispatchQueue.main.async {
                 self.minZoom = minZoomValue
                 self.maxZoom = maxZoomValue
@@ -239,34 +267,171 @@ class CameraModel: NSObject, ObservableObject {
             setupSubjectAreaChangeMonitoring(for: device)
             startPeriodicFocusCheck()
             prepareZeroShutterLagCapture()
-
+            
         } catch {
             print("Error setting up camera: \(error.localizedDescription)")
         }
     }
     
+    #if DEBUG && targetEnvironment(simulator)
+    // MARK: - Simulator Mock Camera Setup
+    private func setupSimulatorMockCamera() {
+        print("Setting up mock camera for simulator")
+        
+        DispatchQueue.main.async {
+            self.minZoom = 0.5
+            self.maxZoom = 10.0
+            self.zoomFactor = 1.0
+        }
+        
+        // Create mock photos for simulator
+        createMockPhotos()
+    }
+    
+    private func captureMockPhoto() {
+        print("Capturing mock photo in simulator")
+        
+        // Create a simple colored image for testing
+        let size = CGSize(width: 1080, height: 1920)
+        let colors: [UIColor] = [.systemBlue, .systemGreen, .systemOrange, .systemPurple, .systemRed]
+        let randomColor = colors.randomElement() ?? .systemBlue
+        
+        UIGraphicsBeginImageContextWithOptions(size, true, 1.0)
+        randomColor.setFill()
+        UIRectFill(CGRect(origin: .zero, size: size))
+        
+        // Add some text to make it look like a photo
+        let text = "Mock Photo\n\(Date().formatted())\nCamera: \(cameraPosition == .back ? "Back" : "Front")"
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont.systemFont(ofSize: 48, weight: .bold),
+            .foregroundColor: UIColor.white,
+        ]
+        
+        let textSize = text.size(withAttributes: attributes)
+        let textRect = CGRect(
+            x: (size.width - textSize.width) / 2,
+            y: (size.height - textSize.height) / 2,
+            width: textSize.width,
+            height: textSize.height
+        )
+        
+        text.draw(in: textRect, withAttributes: attributes)
+        
+        let mockImage = UIGraphicsGetImageFromCurrentImageContext()!
+        UIGraphicsEndImageContext()
+        
+        // Convert to JPEG data
+        guard let imageData = mockImage.jpegData(compressionQuality: 0.8) else {
+            print("Failed to create mock image data")
+            return
+        }
+        
+        // Update recent image
+        DispatchQueue.main.async {
+            self.recentImage = mockImage
+        }
+        
+        // Save the mock photo
+        saveMockPhoto(imageData)
+    }
+    
+    private func createMockPhotos() {
+        DispatchQueue.global(qos: .background).async {
+            // Create a few sample photos for the gallery
+            let sampleTexts = [
+                "Sample Photo 1\nLandscape",
+                "Sample Photo 2\nPortrait", 
+                "Sample Photo 3\nSquare"
+            ]
+            
+            for (index, text) in sampleTexts.enumerated() {
+                let isLandscape = index == 0
+                let size = isLandscape ? CGSize(width: 1920, height: 1080) : CGSize(width: 1080, height: 1920)
+                let color: UIColor = [.systemBlue, .systemGreen, .systemOrange][index]
+                
+                UIGraphicsBeginImageContextWithOptions(size, true, 1.0)
+                color.setFill()
+                UIRectFill(CGRect(origin: .zero, size: size))
+                
+                let attributes: [NSAttributedString.Key: Any] = [
+                    .font: UIFont.systemFont(ofSize: 48, weight: .bold),
+                    .foregroundColor: UIColor.white,
+                ]
+                
+                let textSize = text.size(withAttributes: attributes)
+                let textRect = CGRect(
+                    x: (size.width - textSize.width) / 2,
+                    y: (size.height - textSize.height) / 2,
+                    width: textSize.width,
+                    height: textSize.height
+                )
+                
+                text.draw(in: textRect, withAttributes: attributes)
+                
+                if let mockImage = UIGraphicsGetImageFromCurrentImageContext(),
+                   let imageData = mockImage.jpegData(compressionQuality: 0.8) {
+                    
+                    let metadata: [String: Any] = [
+                        "creationDate": Date().timeIntervalSince1970 - Double(index * 3600), // Stagger by hours
+                        "cameraPosition": "back",
+                        "isLandscape": isLandscape,
+                        "mockPhoto": true
+                    ]
+                    
+                    do {
+                        _ = try self.secureFileManager.savePhoto(imageData, withMetadata: metadata)
+                        print("Created mock photo \(index + 1)")
+                    } catch {
+                        print("Error creating mock photo: \(error)")
+                    }
+                }
+                
+                UIGraphicsEndImageContext()
+            }
+        }
+    }
+    
+    private func saveMockPhoto(_ imageData: Data) {
+        DispatchQueue.global(qos: .userInitiated).async {
+            let metadata: [String: Any] = [
+                "creationDate": Date().timeIntervalSince1970,
+                "cameraPosition": self.cameraPosition == .front ? "front" : "back",
+                "isLandscape": false, // Mock photos are portrait by default
+                "mockPhoto": true
+            ]
+            
+            do {
+                let filename = try self.secureFileManager.savePhoto(imageData, withMetadata: metadata)
+                print("Mock photo saved successfully: \(filename)")
+            } catch {
+                print("Error saving mock photo: \(error.localizedDescription)")
+            }
+        }
+    }
+    #endif
+    
     private func configurePhotoOutputForMaxQuality() {
         output.maxPhotoQualityPrioritization = .quality
     }
-
+    
     private func prepareZeroShutterLagCapture() {
         // TODO/debug
         return
     }
-
+    
     private var focusCheckTimer: Timer?
-
+    
     private func startPeriodicFocusCheck() {
         focusCheckTimer?.invalidate()
         focusCheckTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { [weak self] _ in
             self?.checkAndOptimizeFocus()
         }
     }
-
+    
     // Ensure continuous auto-focus remains active
     private func checkAndOptimizeFocus() {
         guard let device = currentDevice else { return }
-
+        
         if device.focusMode != .locked {
             do {
                 try device.lockForConfiguration()
@@ -292,8 +457,15 @@ class CameraModel: NSObject, ObservableObject {
         default:                     return 0
         }
     }
-
+    
     func capturePhoto() {
+        #if DEBUG && targetEnvironment(simulator)
+        if isRunningInSimulator {
+            captureMockPhoto()
+            return
+        }
+        #endif
+        
         let photoSettings = createAdvancedPhotoSettings()
         
         // Configure flash based on camera position
@@ -304,7 +476,7 @@ class CameraModel: NSObject, ObservableObject {
         } else {
             photoSettings.flashMode = .off
         }
-
+        
         // Set proper rotation using AVCaptureDevice.RotationCoordinator
         guard let connection = output.connection(with: .video) else {
             output.capturePhoto(with: photoSettings, delegate: self)
@@ -319,7 +491,7 @@ class CameraModel: NSObject, ObservableObject {
             output.capturePhoto(with: photoSettings, delegate: self)
             return
         }
-
+        
         let rotationCoordinator = AVCaptureDevice.RotationCoordinator(
             device: deviceInput.device,
             previewLayer: preview
@@ -335,11 +507,11 @@ class CameraModel: NSObject, ObservableObject {
         settings.photoQualityPrioritization = .quality
         return settings
     }
-
+    
     // Smooth zoom with lens-specific adjustments and auto mode restoration
     func zoom(factor: CGFloat) {
         guard let device = currentDevice else { return }
-
+        
         do {
             try device.lockForConfiguration()
             
@@ -351,7 +523,7 @@ class CameraModel: NSObject, ObservableObject {
             if device.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance) && device.whiteBalanceMode != .continuousAutoWhiteBalance {
                 device.whiteBalanceMode = .continuousAutoWhiteBalance
             }
-
+            
             var newZoomFactor = factor
             
             if currentLensType == .ultraWide {
@@ -382,19 +554,19 @@ class CameraModel: NSObject, ObservableObject {
                     self.zoomFactor = smoothedZoom
                 }
             }
-
+            
             device.unlockForConfiguration()
         } catch {
             print("Error setting zoom: \(error.localizedDescription)")
         }
     }
-
+    
     // Handle pinch gestures with automatic lens switching and smooth zoom
     func handlePinchGesture(scale: CGFloat, initialScale: CGFloat? = nil) {
         if initialScale != nil {
             initialZoom = zoomFactor
         }
-
+        
         let zoomSensitivity: CGFloat = 0.5
         let zoomDelta = pow(scale, zoomSensitivity) - 1.0
         let newZoomFactor = initialZoom + (zoomDelta * (maxZoom - minZoom))
@@ -465,32 +637,33 @@ class CameraModel: NSObject, ObservableObject {
             zoom(factor: newZoomFactor)
         }
     }
-
+    
     // Tap-to-focus with optional white balance locking
     func adjustCameraSettings(at point: CGPoint, lockWhiteBalance: Bool = false) {
         guard let device = currentDevice else { return }
-
+//        let devicePoint = preview.devicePoint(from: point)
+        let viewPoint = preview.viewPoint(from: point)
         lastFocusPoint = point
         focusResetTimer?.invalidate()
-
+        
         do {
             try device.lockForConfiguration()
-
+            
             // Set focus and exposure points
             if device.isFocusPointOfInterestSupported && device.isFocusModeSupported(.autoFocus) {
                 device.focusPointOfInterest = point
                 device.focusMode = .autoFocus
-
+                
                 if device.isSmoothAutoFocusSupported {
                     device.isSmoothAutoFocusEnabled = true
                 }
             }
-
+            
             if device.isExposurePointOfInterestSupported && device.isExposureModeSupported(.autoExpose) {
                 device.exposurePointOfInterest = point
                 device.exposureMode = .continuousAutoExposure
             }
-
+            
             // Handle white balance based on lock preference
             if device.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance) {
                 if lockWhiteBalance {
@@ -501,47 +674,47 @@ class CameraModel: NSObject, ObservableObject {
                     device.whiteBalanceMode = .continuousAutoWhiteBalance
                 }
             }
-
+            
             device.unlockForConfiguration()
-
+            
             // Schedule auto-focus reset with appropriate delay
             let resetDelay = lockWhiteBalance ? 8.0 : 3.0
             focusResetTimer = Timer.scheduledTimer(withTimeInterval: resetDelay, repeats: false) { [weak self] _ in
                 self?.resetToAutoFocus()
             }
-
-            showFocusIndicator(at: point)
-
+            
+            showFocusIndicator(on: viewPoint)
+            
         } catch {
             print("Error adjusting camera settings: \(error.localizedDescription)")
         }
     }
-
+    
     // Return to continuous auto modes after manual adjustments
     private func resetToAutoFocus() {
         guard let device = currentDevice else { return }
-
+        
         do {
             try device.lockForConfiguration()
-
+            
             if device.isFocusModeSupported(.continuousAutoFocus) {
                 device.focusMode = .continuousAutoFocus
             }
-
+            
             if device.isExposureModeSupported(.continuousAutoExposure) {
                 device.exposureMode = .continuousAutoExposure
             }
-
+            
             if device.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance) {
                 device.whiteBalanceMode = .continuousAutoWhiteBalance
             }
-
+            
             device.unlockForConfiguration()
         } catch {
             print("Error resetting focus: \(error.localizedDescription)")
         }
     }
-
+    
     private func normalizeGains(_ gains: AVCaptureDevice.WhiteBalanceGains, for device: AVCaptureDevice) -> AVCaptureDevice.WhiteBalanceGains {
         var normalizedGains = gains
         normalizedGains.redGain = max(1.0, min(gains.redGain, device.maxWhiteBalanceGain))
@@ -834,34 +1007,20 @@ class CameraModel: NSObject, ObservableObject {
             }
         }
     }
-
+    
     // Convert device coordinates to view coordinates for UI display
-    private func showFocusIndicator(at devicePoint: CGPoint) {
-        let viewPoint = convertToViewCoordinates(devicePoint: devicePoint)
-
+    private func showFocusIndicator(on viewPoint: CGPoint) {
         DispatchQueue.main.async {
             self.focusIndicatorPoint = viewPoint
             self.showingFocusIndicator = true
-
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                withAnimation(.easeOut(duration: 0.3)) {
-                    self.showingFocusIndicator = false
-                }
+                withAnimation(.easeOut(duration: 0.3)) { self.showingFocusIndicator = false }
             }
         }
     }
-
-    // Convert normalized device coordinates (0-1) to view coordinates for 90° rotation
-    private func convertToViewCoordinates(devicePoint: CGPoint) -> CGPoint {
-        // For 90-degree clockwise rotation: device.y → view.x, (1-device.x) → view.y
-        let viewX = devicePoint.y * viewSize.width
-        let viewY = (1 - devicePoint.x) * viewSize.height
-        return CGPoint(x: viewX, y: viewY)
-    }
 }
-
-// Photo capture delegate with metadata preservation and secure storage
-extension CameraModel: AVCapturePhotoCaptureDelegate {
+    // Photo capture delegate with metadata preservation and secure storage
+    extension CameraModel: AVCapturePhotoCaptureDelegate {
     func photoOutput(_: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
         if let error = error {
             print("Error capturing photo: \(error.localizedDescription)")
