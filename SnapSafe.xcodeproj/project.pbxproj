@@ -17,14 +17,14 @@
 			containerPortal = A9DE373F2DC5F34400679C2C /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = A9DE37462DC5F34400679C2C;
-			remoteInfo = "SnapSafe";
+			remoteInfo = SnapSafe;
 		};
 		A9DE37622DC5F34600679C2C /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = A9DE373F2DC5F34400679C2C /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = A9DE37462DC5F34400679C2C;
-			remoteInfo = "SnapSafe";
+			remoteInfo = SnapSafe;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -123,7 +123,7 @@
 			packageProductDependencies = (
 				A9B3E0872DCF1D3C003F1ED3 /* Dependencies */,
 			);
-			productName = "SnapSafe";
+			productName = SnapSafe;
 			productReference = A9DE37472DC5F34400679C2C /* SnapSafe.app */;
 			productType = "com.apple.product-type.application";
 		};
@@ -147,7 +147,7 @@
 			packageProductDependencies = (
 				A9B3E0892DCF1D3C003F1ED3 /* DependenciesTestSupport */,
 			);
-			productName = "SnapSafeTests";
+			productName = SnapSafeTests;
 			productReference = A9DE37572DC5F34600679C2C /* SnapSafeTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
@@ -170,7 +170,7 @@
 			name = SnapSafeUITests;
 			packageProductDependencies = (
 			);
-			productName = "SnapSafeUITests";
+			productName = SnapSafeUITests;
 			productReference = A9DE37612DC5F34600679C2C /* SnapSafeUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
@@ -521,7 +521,7 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = "SnapSafe";
+				TEST_TARGET_NAME = SnapSafe;
 			};
 			name = Debug;
 		};
@@ -538,7 +538,7 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = "SnapSafe";
+				TEST_TARGET_NAME = SnapSafe;
 			};
 			name = Release;
 		};

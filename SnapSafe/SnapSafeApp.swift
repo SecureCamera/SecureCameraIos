@@ -1,6 +1,6 @@
 //
 //  Snap_SafeApp.swift
-//  Snap Safe
+//  SnapSafe
 //
 //  Created by Bill Booth on 5/2/25.
 //
@@ -8,7 +8,7 @@
 import SwiftUI
 
 @main
-struct Snap_SafeApp: App {
+struct SnapSafeApp: App {
     @AppStorage("appearanceMode") private var appearanceMode: AppearanceMode = .system
     
     var body: some Scene {
