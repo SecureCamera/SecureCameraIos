@@ -42,7 +42,6 @@ class PINManager: ObservableObject {
         // Store PIN (not encrypted for now as requested)
         userDefaults.setValue(pin, forKey: pinKey)
         userDefaults.setValue(true, forKey: pinSetKey)
-        
         print("PIN has been set, isPINSet flag set to true")
         
         // Update published property

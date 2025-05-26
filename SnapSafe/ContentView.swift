@@ -1,6 +1,6 @@
 //
 //  ContentView.swift
-//  Snap Safe
+//  SnapSafe
 //
 //  Created by Bill Booth on 5/2/25.
 //
