@@ -102,6 +102,14 @@ class CameraModel: NSObject, ObservableObject {
     override init() {
         super.init()
         
+        // Listen for app entering foreground to reset zoom level
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleAppWillEnterForeground),
+            name: UIApplication.willEnterForegroundNotification,
+            object: nil
+        )
+        
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             DispatchQueue.global(qos: .userInitiated).async { [weak self] in
                 guard let self = self else { return }
@@ -114,6 +122,12 @@ class CameraModel: NSObject, ObservableObject {
         if let device = currentDevice {
             NotificationCenter.default.removeObserver(self, name: .AVCaptureDeviceSubjectAreaDidChange, object: device)
         }
+        NotificationCenter.default.removeObserver(self, name: UIApplication.willEnterForegroundNotification, object: nil)
+    }
+    
+    @objc private func handleAppWillEnterForeground() {
+        print("CameraModel: App entering foreground, resetting zoom level")
+        resetZoomLevel()
     }
     
     func checkPermissions() {
@@ -1006,6 +1020,34 @@ class CameraModel: NSObject, ObservableObject {
             self.showingFocusIndicator = true
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                 withAnimation(.easeOut(duration: 0.3)) { self.showingFocusIndicator = false }
+            }
+        }
+    }
+    
+    // Reset zoom level to 1.0 (called when app comes from background)
+    func resetZoomLevel() {
+        #if DEBUG && targetEnvironment(simulator)
+        if isRunningInSimulator {
+            DispatchQueue.main.async {
+                self.zoomFactor = 1.0
+            }
+            return
+        }
+        #endif
+        
+        guard let device = currentDevice else { return }
+        
+        DispatchQueue.global(qos: .userInitiated).async {
+            do {
+                try device.lockForConfiguration()
+                device.videoZoomFactor = 1.0
+                device.unlockForConfiguration()
+                
+                DispatchQueue.main.async {
+                    self.zoomFactor = 1.0
+                }
+            } catch {
+                print("Error resetting zoom level: \(error.localizedDescription)")
             }
         }
     }
