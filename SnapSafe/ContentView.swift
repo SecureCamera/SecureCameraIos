@@ -114,9 +114,9 @@ struct ContentView: View {
 
                     HStack {
                         Button(action: {
-                            isShowingSettings = true
+                            isShowingGallery = true
                         }) {
-                            Image(systemName: "gear")
+                            Image(systemName: "photo.on.rectangle")
                                 .font(.system(size: 24))
                                 .foregroundColor(.white)
                                 .padding()
@@ -141,9 +141,9 @@ struct ContentView: View {
 
                         Spacer()
                         Button(action: {
-                            isShowingGallery = true
+                            isShowingSettings = true
                         }) {
-                            Image(systemName: "photo.on.rectangle")
+                            Image(systemName: "gear")
                                 .font(.system(size: 24))
                                 .foregroundColor(.white)
                                 .padding()
@@ -1023,7 +1023,7 @@ extension UIImage {
 
                     HStack {
                         Button(action: {}) {
-                            Image(systemName: "gear")
+                            Image(systemName: "photo.on.rectangle")
                                 .font(.system(size: 24))
                                 .foregroundColor(.white)
                                 .padding()
@@ -1051,7 +1051,7 @@ extension UIImage {
 
                         Spacer()
                         Button(action: {}) {
-                            Image(systemName: "photo.on.rectangle")
+                            Image(systemName: "gear")
                                 .font(.system(size: 24))
                                 .foregroundColor(.white)
                                 .padding()
