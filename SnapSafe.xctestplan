@@ -1,0 +1,37 @@
+{
+  "configurations" : [
+    {
+      "id" : "929CCA3A-281C-4C29-BBDB-A900CB7C6C98",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:SnapSafe.xcodeproj",
+      "identifier" : "A9DE37462DC5F34400679C2C",
+      "name" : "SnapSafe"
+    }
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:SnapSafe.xcodeproj",
+        "identifier" : "A9DE37562DC5F34600679C2C",
+        "name" : "SnapSafeTests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:SnapSafe.xcodeproj",
+        "identifier" : "A9DE37602DC5F34600679C2C",
+        "name" : "SnapSafeUITests"
+      }
+    }
+  ],
+  "version" : 1
+}
