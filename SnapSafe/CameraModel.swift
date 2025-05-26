@@ -902,20 +902,6 @@ class CameraModel: NSObject, ObservableObject {
         
         DispatchQueue.global(qos: .userInteractive).async { [weak self] in
             guard let self = self else { return }
-            
-            // Capture white balance for reference (though typically not preserved for front/back switches)
-            var previousWhiteBalanceGains: AVCaptureDevice.WhiteBalanceGains?
-            
-            if let oldDevice = self.currentDevice {
-                do {
-                    try oldDevice.lockForConfiguration()
-                    previousWhiteBalanceGains = oldDevice.deviceWhiteBalanceGains
-                    oldDevice.unlockForConfiguration()
-                } catch {
-                    print("📸 Could not capture white balance from previous device: \(error.localizedDescription)")
-                }
-            }
-            
             self.session.beginConfiguration()
             
             if let oldDevice = self.currentDevice {
