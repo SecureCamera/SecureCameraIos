@@ -13,6 +13,9 @@ import SwiftUI
 @_exported import Foundation
 
 struct SettingsView: View {
+    // Appearance setting
+    @AppStorage("appearanceMode") private var appearanceMode: AppearanceMode = .system
+    
     // Sharing options
     @State private var sanitizeFileName = true
     @State private var sanitizeMetadata = true
@@ -52,6 +55,8 @@ struct SettingsView: View {
     var body: some View {
         NavigationView {
             List {
+
+                
                 // SHARING SECTION
                 Section(header: Text("Sharing Options")) {
                     Toggle("Sanitize File Name", isOn: $sanitizeFileName)
@@ -116,6 +121,20 @@ struct SettingsView: View {
                         }
 
                     Text("When enabled, location data will be embedded in newly captured photos. Location requires permission and GPS availability.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .padding(.top, 4)
+                }
+                // APPEARANCE SECTION
+                Section(header: Text("Appearance")) {
+                    Picker("Theme", selection: $appearanceMode) {
+                        ForEach(AppearanceMode.allCases, id: \.self) { mode in
+                            Text(mode.displayName).tag(mode)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    
+                    Text("Choose how the app appears. System follows your device's appearance setting.")
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .padding(.top, 4)
@@ -262,9 +281,11 @@ struct SettingsView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
+                
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
+            .preferredColorScheme(appearanceMode.colorScheme)
             .onAppear {
                 // Initialize includeLocationData from the LocationManager
                 includeLocationData = locationManager.shouldIncludeLocationData

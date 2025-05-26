@@ -9,9 +9,12 @@ import SwiftUI
 
 @main
 struct Snap_SafeApp: App {
+    @AppStorage("appearanceMode") private var appearanceMode: AppearanceMode = .system
+    
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .preferredColorScheme(appearanceMode.colorScheme)
         }
     }
 }
