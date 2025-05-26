@@ -148,27 +148,12 @@ class PINManagerTests: XCTestCase {
         // Given: Initial state should be false
         XCTAssertFalse(pinManager.isPINSet, "PIN should not be set initially")
         
-        // Create expectation for async update
-        let expectation = expectation(description: "isPINSet should be updated")
-        
-        // Subscribe to changes
-        pinManager.$isPINSet
-            .dropFirst() // Skip initial false value
-            .sink { isPINSet in
-                if isPINSet {
-                    expectation.fulfill()
-                }
-            }
-            .store(in: &cancellables)
-        
         // When: Setting a PIN
         let testPIN = "1234"
         pinManager.setPIN(testPIN)
         
-        // Then: Wait for async update and verify
-        waitForExpectations(timeout: 1.0) { error in
-            XCTAssertNil(error, "Should not timeout waiting for isPINSet update")
-        }
+        // Then: Wait for async update and verify using the helper method
+        waitForPINSetUpdate(expectedValue: true)
         
         XCTAssertTrue(pinManager.isPINSet, "PIN should be marked as set after setPIN is called")
     }
@@ -196,16 +181,20 @@ class PINManagerTests: XCTestCase {
     
     /// Test that setting a PIN publishes changes to observers
     func testSetPIN_PublishesChangesToObservers() {
-        // Given: Expectation for published property change
+        // Given: Expectation for published property change (only expect one fulfillment)
         let expectation = expectation(description: "isPINSet should be published")
+        expectation.expectedFulfillmentCount = 1
         
         var receivedValues: [Bool] = []
+        var hasFulfilled = false
         
-        // Subscribe to isPINSet changes
+        // Subscribe to isPINSet changes, skipping the initial value
         pinManager.$isPINSet
+            .dropFirst() // Skip the initial subscription value
             .sink { isPINSet in
                 receivedValues.append(isPINSet)
-                if isPINSet {
+                if isPINSet && !hasFulfilled {
+                    hasFulfilled = true
                     expectation.fulfill()
                 }
             }
