@@ -17,18 +17,19 @@
 			containerPortal = A9DE373F2DC5F34400679C2C /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = A9DE37462DC5F34400679C2C;
-			remoteInfo = "Snap Safe";
+			remoteInfo = "SnapSafe";
 		};
 		A9DE37622DC5F34600679C2C /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = A9DE373F2DC5F34400679C2C /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = A9DE37462DC5F34400679C2C;
-			remoteInfo = "Snap Safe";
+			remoteInfo = "SnapSafe";
 		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		A91DBB422DE41BAE001F42ED /* SnapSafe.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = SnapSafe.xctestplan; sourceTree = "<group>"; };
 		A9DE37472DC5F34400679C2C /* SnapSafe.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SnapSafe.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A9DE37572DC5F34600679C2C /* SnapSafeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SnapSafeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A9DE37612DC5F34600679C2C /* SnapSafeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SnapSafeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -82,6 +83,7 @@
 		A9DE373E2DC5F34400679C2C = {
 			isa = PBXGroup;
 			children = (
+				A91DBB422DE41BAE001F42ED /* SnapSafe.xctestplan */,
 				A9DE37492DC5F34400679C2C /* SnapSafe */,
 				A9DE375A2DC5F34600679C2C /* SnapSafeTests */,
 				A9DE37642DC5F34600679C2C /* SnapSafeUITests */,
@@ -121,7 +123,7 @@
 			packageProductDependencies = (
 				A9B3E0872DCF1D3C003F1ED3 /* Dependencies */,
 			);
-			productName = "Snap Safe";
+			productName = "SnapSafe";
 			productReference = A9DE37472DC5F34400679C2C /* SnapSafe.app */;
 			productType = "com.apple.product-type.application";
 		};
@@ -145,7 +147,7 @@
 			packageProductDependencies = (
 				A9B3E0892DCF1D3C003F1ED3 /* DependenciesTestSupport */,
 			);
-			productName = "Snap SafeTests";
+			productName = "SnapSafeTests";
 			productReference = A9DE37572DC5F34600679C2C /* SnapSafeTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
@@ -168,7 +170,7 @@
 			name = SnapSafeUITests;
 			packageProductDependencies = (
 			);
-			productName = "Snap SafeUITests";
+			productName = "SnapSafeUITests";
 			productReference = A9DE37612DC5F34600679C2C /* SnapSafeUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
@@ -426,7 +428,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "snapsafe.Snap-Safe";
+				PRODUCT_BUNDLE_IDENTIFIER = snapsafe.SnapSafe;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -460,7 +462,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "snapsafe.Snap-Safe";
+				PRODUCT_BUNDLE_IDENTIFIER = snapsafe.SnapSafe;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -483,7 +485,7 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Snap Safe.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Snap Safe";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SnapSafe.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/SnapSafe";
 			};
 			name = Debug;
 		};
@@ -502,7 +504,7 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Snap Safe.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Snap Safe";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SnapSafe.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/SnapSafe";
 			};
 			name = Release;
 		};
@@ -519,7 +521,7 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = "Snap Safe";
+				TEST_TARGET_NAME = "SnapSafe";
 			};
 			name = Debug;
 		};
@@ -536,7 +538,7 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = "Snap Safe";
+				TEST_TARGET_NAME = "SnapSafe";
 			};
 			name = Release;
 		};
