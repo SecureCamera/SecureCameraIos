@@ -741,6 +741,7 @@ struct CameraPreviewView: UIViewRepresentable {
                 // Lock both focus and white balance
                 // We set locked=true to indicate we want to lock white balance too
                 parent.cameraModel.adjustCameraSettings(at: pointInPreviewLayer, lockWhiteBalance: true)
+                parent.cameraModel.showFocusIndicator(on: location)
             }
         }
 
@@ -768,6 +769,7 @@ struct CameraPreviewView: UIViewRepresentable {
 
                 // Adjust focus and exposure but not white balance
                 parent.cameraModel.adjustCameraSettings(at: pointInPreviewLayer, lockWhiteBalance: false)
+                parent.cameraModel.showFocusIndicator(on: location)
             }
         }
     }

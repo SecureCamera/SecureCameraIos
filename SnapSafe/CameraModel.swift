@@ -85,9 +85,6 @@ class CameraModel: NSObject, ObservableObject {
                 }
                 
                 device.unlockForConfiguration()
-                
-//                showFocusIndicator(on: lastFocusPoint)
-                
                 focusResetTimer?.invalidate()
                 focusResetTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [weak self] _ in
                     self?.resetToAutoFocus()
@@ -641,14 +638,11 @@ class CameraModel: NSObject, ObservableObject {
     // Tap-to-focus with optional white balance locking
     func adjustCameraSettings(at point: CGPoint, lockWhiteBalance: Bool = false) {
         guard let device = currentDevice else { return }
-//        let devicePoint = preview.devicePoint(from: point)
-        let viewPoint = preview.viewPoint(from: point)
         lastFocusPoint = point
         focusResetTimer?.invalidate()
         
         do {
             try device.lockForConfiguration()
-            
             // Set focus and exposure points
             if device.isFocusPointOfInterestSupported && device.isFocusModeSupported(.autoFocus) {
                 device.focusPointOfInterest = point
@@ -682,9 +676,6 @@ class CameraModel: NSObject, ObservableObject {
             focusResetTimer = Timer.scheduledTimer(withTimeInterval: resetDelay, repeats: false) { [weak self] _ in
                 self?.resetToAutoFocus()
             }
-            
-            showFocusIndicator(on: viewPoint)
-            
         } catch {
             print("Error adjusting camera settings: \(error.localizedDescription)")
         }
@@ -1009,7 +1000,7 @@ class CameraModel: NSObject, ObservableObject {
     }
     
     // Convert device coordinates to view coordinates for UI display
-    private func showFocusIndicator(on viewPoint: CGPoint) {
+    func showFocusIndicator(on viewPoint: CGPoint) {
         DispatchQueue.main.async {
             self.focusIndicatorPoint = viewPoint
             self.showingFocusIndicator = true
