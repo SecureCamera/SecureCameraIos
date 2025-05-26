@@ -35,7 +35,10 @@ struct SecureGalleryView: View {
     @State private var pickerItems: [PhotosPickerItem] = []
     @State private var isImporting: Bool = false
     @State private var importProgress: Float = 0
-
+    
+    // Filter state
+    @State private var selectedFilter: PhotoFilter = .all
+    
     // Decoy selection mode
     @State private var isSelectingDecoys: Bool = false
     @State private var maxDecoys: Int = 10
@@ -67,6 +70,29 @@ struct SecureGalleryView: View {
     // Computed property to get current decoy photo count
     private var currentDecoyCount: Int {
         photos.filter { $0.isDecoy }.count
+    }
+    
+    // Computed property to get filtered photos
+    private var filteredPhotos: [SecurePhoto] {
+        switch selectedFilter {
+        case .all:
+            return photos
+        case .imported:
+            return photos.filter { $0.metadata["imported"] as? Bool == true }
+        case .edited:
+            return photos.filter { $0.metadata["isEdited"] as? Bool == true }
+        case .withLocation:
+            return photos.filter { 
+                // Check for GPS data in metadata using Core Graphics constants
+                guard let gpsData = $0.metadata[String(kCGImagePropertyGPSDictionary)] as? [String: Any] else { return false }
+                
+                // Verify we have either latitude or longitude data
+                let hasLatitude = gpsData[String(kCGImagePropertyGPSLatitude)] != nil
+                let hasLongitude = gpsData[String(kCGImagePropertyGPSLongitude)] != nil
+                
+                return hasLatitude || hasLongitude
+            }
+        }
     }
 
     // Get an array of selected photos for sharing
@@ -109,7 +135,7 @@ struct SecureGalleryView: View {
                 )
             }
         }
-        .navigationTitle(isSelectingDecoys ? "Select Decoy Photos" : "Secure Gallery")
+        .navigationTitle(isSelectingDecoys ? "Select Decoy Photos" : (selectedFilter == .all ? "Secure Gallery" : selectedFilter.rawValue))
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
         .toolbar {
@@ -159,11 +185,30 @@ struct SecureGalleryView: View {
                         }
                         .foregroundColor(.red)
                     } else {
-                        // Select button for normal mode
-                        Button("Select") {
-                            isSelecting = true
+                        // Context menu with Select and Filter options
+                        Menu {
+                            Button("Select Photos") {
+                                isSelecting = true
+                            }
+                            
+                            Menu("Filter Photos") {
+                                ForEach(PhotoFilter.allCases, id: \.self) { filter in
+                                    Button(action: {
+                                        selectedFilter = filter
+                                    }) {
+                                        HStack {
+                                            Text(filter.rawValue)
+                                            if selectedFilter == filter {
+                                                Image(systemName: "checkmark")
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis.circle")
+                                .foregroundColor(.blue)
                         }
-                        .foregroundColor(.blue)
                     }
                 }
             }
@@ -352,7 +397,7 @@ struct SecureGalleryView: View {
     private var photosGridView: some View {
         ScrollView {
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 10) {
-                ForEach(photos) { photo in
+                ForEach(filteredPhotos) { photo in
                     PhotoCell(
                         photo: photo,
                         isSelected: selectedPhotoIds.contains(photo.id),

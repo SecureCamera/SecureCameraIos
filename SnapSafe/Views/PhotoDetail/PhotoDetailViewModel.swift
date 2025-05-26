@@ -212,7 +212,7 @@ class PhotoDetailViewModel: ObservableObject {
                     }
                     
                     do {
-                        _ = try self.secureFileManager.savePhoto(imageData, withMetadata: metadataCopy)
+                        _ = try self.secureFileManager.savePhoto(imageData, withMetadata: metadataCopy, isEdited: true, originalFilename: self.currentPhoto.filename)
                         
                         DispatchQueue.main.async {
                             withAnimation {

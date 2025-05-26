@@ -35,7 +35,7 @@ class SecureFileManager {
     }
 
     // Save photo with UTC timestamp filename for better chronological sorting
-    func savePhoto(_ photoData: Data, withMetadata metadata: [String: Any] = [:]) throws -> String {
+    func savePhoto(_ photoData: Data, withMetadata metadata: [String: Any] = [:], isEdited: Bool = false, originalFilename: String? = nil) throws -> String {
         let secureDirectory = try getSecureDirectory()
         
         // Generate UTC timestamp filename with microsecond precision + UUID suffix for uniqueness
@@ -59,6 +59,16 @@ class SecureFileManager {
         // Add creation date to metadata for sorting
         let now = Date()
         serializedMetadata["creationDate"] = now.timeIntervalSince1970
+        
+        // Mark as edited if specified
+        if isEdited {
+            serializedMetadata["isEdited"] = true
+            
+            // Link to original photo if provided
+            if let originalFilename = originalFilename {
+                serializedMetadata["originalFilename"] = originalFilename
+            }
+        }
 
         // Add location data if enabled and available
         if let locationMetadata = LocationManager.shared.getCurrentLocationMetadata() {

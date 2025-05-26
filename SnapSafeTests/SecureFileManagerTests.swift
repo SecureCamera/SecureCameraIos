@@ -314,6 +314,106 @@ class SecureFileManagerTests: XCTestCase {
         try? FileManager.default.removeItem(at: tempURL2)
     }
     
+    // MARK: - Edited Photo Saving Tests
+    
+    /// Tests that savePhoto() with isEdited flag marks photos correctly
+    /// Assertion: Edited photos should have isEdited metadata and original filename link
+    func testSavePhoto_WithEditedParameters_ShouldSaveCorrectly() throws {
+        let metadata: [String: Any] = ["testKey": "testValue"]
+        
+        let filename = try secureFileManager.savePhoto(
+            testPhotoData,
+            withMetadata: metadata,
+            isEdited: true,
+            originalFilename: "original_test_photo"
+        )
+        
+        XCTAssertFalse(filename.isEmpty, "Filename should not be empty")
+        
+        // Verify photo was saved by loading it
+        let (loadedData, loadedMetadata) = try secureFileManager.loadPhoto(filename: filename)
+        
+        // Verify data integrity
+        XCTAssertEqual(loadedData, testPhotoData, "Loaded photo data should match original")
+        
+        // Verify edited metadata was added
+        XCTAssertTrue(loadedMetadata["isEdited"] as? Bool == true, "Photo should be marked as edited")
+        XCTAssertEqual(loadedMetadata["originalFilename"] as? String, "original_test_photo", "Original filename should be preserved")
+        
+        // Verify original metadata was preserved
+        XCTAssertEqual(loadedMetadata["testKey"] as? String, "testValue", "Original metadata should be preserved")
+        
+        // Verify automatic metadata was added
+        XCTAssertNotNil(loadedMetadata["creationDate"], "Creation date should be added automatically")
+    }
+    
+    /// Tests that savePhoto() with isEdited but no original filename works correctly
+    /// Assertion: Should mark as edited without original filename link
+    func testSavePhoto_WithEditedFlagOnly_ShouldSaveWithoutOriginalFilename() throws {
+        let filename = try secureFileManager.savePhoto(
+            testPhotoData,
+            withMetadata: [:],
+            isEdited: true
+        )
+        
+        XCTAssertFalse(filename.isEmpty, "Filename should not be empty")
+        
+        // Verify photo was saved and metadata is correct
+        let (_, loadedMetadata) = try secureFileManager.loadPhoto(filename: filename)
+        
+        // Verify edited flag was set
+        XCTAssertTrue(loadedMetadata["isEdited"] as? Bool == true, "Photo should be marked as edited")
+        
+        // Verify no original filename is present
+        XCTAssertNil(loadedMetadata["originalFilename"], "Original filename should not be present when not provided")
+    }
+    
+    /// Tests that normal photo saving (not edited) doesn't add edited metadata
+    /// Assertion: Normal photos should not have isEdited flags
+    func testSavePhoto_WithoutEditedFlag_ShouldNotHaveEditedMetadata() throws {
+        let filename = try secureFileManager.savePhoto(testPhotoData, withMetadata: [:])
+        
+        XCTAssertFalse(filename.isEmpty, "Filename should not be empty")
+        
+        // Verify photo was saved without edited metadata
+        let (_, loadedMetadata) = try secureFileManager.loadPhoto(filename: filename)
+        
+        // Verify no edited metadata is present
+        XCTAssertNil(loadedMetadata["isEdited"], "Photo should not have isEdited flag")
+        XCTAssertNil(loadedMetadata["originalFilename"], "Photo should not have originalFilename")
+    }
+    
+    /// Tests that multiple edited photos with different originals are tracked separately
+    /// Assertion: Each edited photo should maintain its own original filename link
+    func testSavePhoto_MultipleEditedPhotos_ShouldTrackSeparately() throws {
+        let filename1 = try secureFileManager.savePhoto(
+            testPhotoData,
+            withMetadata: [:],
+            isEdited: true,
+            originalFilename: "original_photo_1"
+        )
+        
+        let filename2 = try secureFileManager.savePhoto(
+            testPhotoData,
+            withMetadata: [:],
+            isEdited: true,
+            originalFilename: "original_photo_2"
+        )
+        
+        // Verify both photos were saved with unique filenames
+        XCTAssertNotEqual(filename1, filename2, "Filenames should be unique")
+        
+        // Verify first photo metadata
+        let (_, metadata1) = try secureFileManager.loadPhoto(filename: filename1)
+        XCTAssertTrue(metadata1["isEdited"] as? Bool == true)
+        XCTAssertEqual(metadata1["originalFilename"] as? String, "original_photo_1")
+        
+        // Verify second photo metadata
+        let (_, metadata2) = try secureFileManager.loadPhoto(filename: filename2)
+        XCTAssertTrue(metadata2["isEdited"] as? Bool == true)
+        XCTAssertEqual(metadata2["originalFilename"] as? String, "original_photo_2")
+    }
+    
     // MARK: - Error Handling Tests
     
     /// Tests that file operations handle disk space issues gracefully
