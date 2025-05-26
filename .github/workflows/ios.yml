@@ -33,7 +33,7 @@ jobs:
           scheme: ${{ 'default' }}
           platform: ${{ 'iOS Simulator' }}
         run: |
-          xcodebuild -project SnapSafe.xcodeproj/ -scheme SnapSafe -configuration Debug -sdk iphonesimulator18.2 -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.2' -derivedDataPath ./build CODE_SIGNING_ALLOWED=NO clean build-for-testing | xcpretty
+          xcodebuild -project SnapSafe.xcodeproj/ -scheme SnapSafe -configuration Debug -sdk iphonesimulator18.2 -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.2' -derivedDataPath ./build CODE_SIGNING_ALLOWED=NO clean build | xcpretty
       - name: Test
         env:
           scheme: ${{ 'default' }}
