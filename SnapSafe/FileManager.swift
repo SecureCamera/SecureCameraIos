@@ -38,14 +38,16 @@ class SecureFileManager {
     func savePhoto(_ photoData: Data, withMetadata metadata: [String: Any] = [:]) throws -> String {
         let secureDirectory = try getSecureDirectory()
         
-        // Generate UTC timestamp filename with microsecond precision
+        // Generate UTC timestamp filename with microsecond precision + UUID suffix for uniqueness
         let dateFormatter = ISO8601DateFormatter()
         dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         let utcTimestamp = dateFormatter.string(from: Date())
             .replacingOccurrences(of: ":", with: "")
             .replacingOccurrences(of: "-", with: "")
         
-        let filename = utcTimestamp
+        // Add short UUID suffix to guarantee uniqueness for rapid saves
+        let uuidSuffix = UUID().uuidString.prefix(8)
+        let filename = "\(utcTimestamp)_\(uuidSuffix)"
         let fileURL = secureDirectory.appendingPathComponent("\(filename).photo")
 
         // Save photo

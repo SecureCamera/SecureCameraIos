@@ -48,8 +48,11 @@ class PINManagerTests: XCTestCase {
         // In a production app, we would refactor PINManager to accept UserDefaults as dependency
         pinManager = PINManager.shared
         
-        // Clear any existing PIN state for testing
-        pinManager.clearPIN()
+        // Clear any existing PIN state for testing and wait for async completion
+        clearPINAndWait()
+        
+        // Reset requirePINOnResume to default value and wait for async completion
+        resetRequirePINOnResumeAndWait()
         
         // Clear subscriptions
         cancellables.removeAll()
@@ -57,18 +60,79 @@ class PINManagerTests: XCTestCase {
         print("Test setup completed - clean state established")
     }
     
+    /// Helper method to clear PIN and wait for async update to complete
+    private func clearPINAndWait() {
+        let expectation = expectation(description: "PIN should be cleared")
+        
+        // If PIN is already not set, we're done
+        if !pinManager.isPINSet {
+            expectation.fulfill()
+        } else {
+            // Subscribe to changes and wait for isPINSet to become false
+            pinManager.$isPINSet
+                .dropFirst()
+                .sink { isPINSet in
+                    if !isPINSet {
+                        expectation.fulfill()
+                    }
+                }
+                .store(in: &cancellables)
+        }
+        
+        // Clear the PIN
+        pinManager.clearPIN()
+        
+        // Wait for async update
+        wait(for: [expectation], timeout: 1.0)
+        
+        // Clear subscriptions after setup
+        cancellables.removeAll()
+    }
+    
+    /// Helper method to reset requirePINOnResume to default and wait for async update
+    private func resetRequirePINOnResumeAndWait() {
+        let expectation = expectation(description: "requirePINOnResume should be reset to true")
+        
+        // If already true, we're done
+        if pinManager.requirePINOnResume {
+            expectation.fulfill()
+        } else {
+            // Subscribe to changes and wait for requirePINOnResume to become true
+            pinManager.$requirePINOnResume
+                .dropFirst()
+                .sink { requirePIN in
+                    if requirePIN {
+                        expectation.fulfill()
+                    }
+                }
+                .store(in: &cancellables)
+        }
+        
+        // Reset to default value
+        pinManager.setRequirePINOnResume(true)
+        
+        // Wait for async update
+        wait(for: [expectation], timeout: 1.0)
+        
+        // Clear subscriptions after setup
+        cancellables.removeAll()
+    }
+    
     /// Tear down method called after each test method
     override func tearDown() {
         // Clean up subscriptions
         cancellables.removeAll()
         
-        // Clear PIN state
-        pinManager.clearPIN()
+        // Clear PIN state using our helper method to ensure async completion
+        clearPINAndWait()
         
-        // Remove test UserDefaults
-//        if let suiteName = testUserDefaults.persistentDomainNames().first {
-//            testUserDefaults.removePersistentDomain(forName: suiteName as! String)
-//        }
+        // Reset requirePINOnResume to default value
+        resetRequirePINOnResumeAndWait()
+        
+        // Clear any UserDefaults keys that might have been set
+        UserDefaults.standard.removeObject(forKey: "snapSafe.userPIN")
+        UserDefaults.standard.removeObject(forKey: "snapSafe.isPINSet")
+        UserDefaults.standard.removeObject(forKey: "snapSafe.requirePINOnResume")
         
         pinManager = nil
         testUserDefaults = nil
@@ -230,18 +294,21 @@ class PINManagerTests: XCTestCase {
     
     /// Test that clearing PIN publishes changes
     func testClearPIN_PublishesChanges() {
-        // Given: A PIN is set and we're subscribed to changes
+        // Given: A PIN is set
         pinManager.setPIN("1234")
+        waitForPINSetUpdate(expectedValue: true)
         
         let expectation = expectation(description: "isPINSet should be published as false")
         var finalValue: Bool?
         
-        // Skip the initial true value and wait for false
+        // Subscribe to changes AFTER the PIN is set, so dropFirst skips the current true value
         pinManager.$isPINSet
             .dropFirst() // Skip the current true value
             .sink { isPINSet in
                 finalValue = isPINSet
-                expectation.fulfill()
+                if !isPINSet { // Only fulfill when we get false
+                    expectation.fulfill()
+                }
             }
             .store(in: &cancellables)
         
@@ -280,21 +347,24 @@ class PINManagerTests: XCTestCase {
     
     /// Test that requirePINOnResume publishes changes
     func testSetRequirePINOnResume_PublishesChanges() {
-        // Given: Expectation for published change
-        let expectation = expectation(description: "requirePINOnResume should be published")
+        // Given: Ensure we start with a known stable state (true)
+        XCTAssertTrue(pinManager.requirePINOnResume, "Should start with requirePINOnResume = true")
         
+        let expectation = expectation(description: "requirePINOnResume should be published")
         var receivedValue: Bool?
         
-        // Subscribe to requirePINOnResume changes (skip initial value)
+        // Subscribe to requirePINOnResume changes AFTER confirming stable state
         pinManager.$requirePINOnResume
-            .dropFirst()
+            .dropFirst() // Skip the current true value
             .sink { requirePIN in
                 receivedValue = requirePIN
-                expectation.fulfill()
+                if !requirePIN { // Only fulfill when we get false
+                    expectation.fulfill()
+                }
             }
             .store(in: &cancellables)
         
-        // When: Changing the setting
+        // When: Changing the setting from true to false
         pinManager.setRequirePINOnResume(false)
         
         // Then: Should receive published change

@@ -26,15 +26,14 @@ class SecurePhoto: Identifiable, Equatable {
     
     // Computed property to check if the photo is in landscape orientation
     var isLandscape: Bool {
-        // If we've already determined the orientation, return the cached value
-        if let cachedOrientation = _isLandscape {
-            return cachedOrientation
+        // Check if we have orientation info in metadata (always check metadata first)
+        if let isLandscape = metadata["isLandscape"] as? Bool {
+            return isLandscape
         }
         
-        // Check if we have orientation info in metadata
-        if let isLandscape = metadata["isLandscape"] as? Bool {
-            _isLandscape = isLandscape
-            return isLandscape
+        // If we've already calculated the orientation from image dimensions, return cached value
+        if let cachedOrientation = _isLandscape {
+            return cachedOrientation
         }
         
         // Check the orientation value
@@ -56,7 +55,7 @@ class SecurePhoto: Identifiable, Equatable {
             isLandscape = image.size.width > image.size.height
         }
         
-        // Cache the result
+        // Cache the result (only cache calculated values, not metadata values)
         _isLandscape = isLandscape
         
         return isLandscape
@@ -130,8 +129,9 @@ class SecurePhoto: Identifiable, Equatable {
 
     // Thumbnail is loaded on demand and cached
     var thumbnail: UIImage {
-        // Update last access time
+        // Update last access time and mark as visible (always do this when thumbnail is accessed)
         lastAccessTime = Date()
+        isVisible = true
 
         if let cachedThumbnail = _thumbnail {
             return cachedThumbnail
@@ -139,9 +139,6 @@ class SecurePhoto: Identifiable, Equatable {
 
         // Load thumbnail if needed
         do {
-            // Mark this photo as actively being used
-            isVisible = true
-
             if let thumb = try secureFileManager.loadPhotoThumbnail(from: fileURL) {
                 // Store the loaded thumbnail (with its original orientation)
                 _thumbnail = thumb
@@ -160,8 +157,9 @@ class SecurePhoto: Identifiable, Equatable {
 
     // Full image is loaded on demand
     var fullImage: UIImage {
-        // Update last access time
+        // Update last access time and mark as visible (always do this when fullImage is accessed)
         lastAccessTime = Date()
+        isVisible = true
 
         if let cachedFullImage = _fullImage {
             return cachedFullImage
@@ -169,9 +167,6 @@ class SecurePhoto: Identifiable, Equatable {
 
         // Load full image if needed
         do {
-            // Mark this photo as actively being used
-            isVisible = true
-
             let (data, _) = try secureFileManager.loadPhoto(filename: filename)
             if let img = UIImage(data: data) {
                 // Store the image with its original orientation
