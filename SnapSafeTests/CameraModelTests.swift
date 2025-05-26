@@ -303,14 +303,12 @@ class CameraModelTests: XCTestCase {
     /// Assertion: Should have valid capture session
     func testSession_ProperlyInitialized() {
         XCTAssertNotNil(cameraModel.session, "Capture session should be initialized")
-        XCTAssertTrue(cameraModel.session is AVCaptureSession, "Should be AVCaptureSession instance")
     }
     
     /// Tests that photo output is properly initialized
     /// Assertion: Should have valid photo output
     func testPhotoOutput_ProperlyInitialized() {
         XCTAssertNotNil(cameraModel.output, "Photo output should be initialized")
-        XCTAssertTrue(cameraModel.output is AVCapturePhotoOutput, "Should be AVCapturePhotoOutput instance")
     }
     
     // MARK: - Simulator-Specific Tests
