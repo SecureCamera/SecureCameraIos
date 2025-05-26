@@ -314,7 +314,6 @@ class CameraModelTests: XCTestCase {
     }
     
     // MARK: - Simulator-Specific Tests
-    
     #if DEBUG && targetEnvironment(simulator)
     /// Tests that simulator setup works correctly
     /// Assertion: Should set up mock camera functionality in simulator

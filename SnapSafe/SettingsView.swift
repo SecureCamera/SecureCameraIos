@@ -303,12 +303,16 @@ struct SettingsView: View {
                     secondaryButton: .cancel()
                 )
             }
-            .sheet(isPresented: $isSelectingDecoys) {
+            .fullScreenCover(isPresented: $isSelectingDecoys) {
                 // Reset the selection flag when the sheet is dismissed
                 isSelectingDecoys = false
             } content: {
-                // Initialize SecureGalleryView in decoy selection mode
-                SecureGalleryView(selectingDecoys: true)
+                NavigationView {
+                    // Initialize SecureGalleryView in decoy selection mode
+                    SecureGalleryView(selectingDecoys: true, onDismiss: {
+                        isSelectingDecoys = false
+                    })
+                }
             }
         }
     }

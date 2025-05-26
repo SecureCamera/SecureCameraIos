@@ -21,61 +21,6 @@ struct EmptyGalleryView: View {
     }
 }
 
-// Gallery toolbar view
-struct GalleryToolbar: ToolbarContent {
-    @Binding var isSelecting: Bool
-    @Binding var showDeleteConfirmation: Bool
-    @Binding var selectedPhotoIds: Set<UUID>
-    let hasSelection: Bool
-    let onRefresh: () -> Void
-    let onShare: () -> Void
-
-    var body: some ToolbarContent {
-        // Left side button (Select/Cancel)
-        ToolbarItem(placement: .navigationBarLeading) {
-            Button(action: {
-                if isSelecting {
-                    // If we're currently selecting, cancel selection mode and clear selections
-                    isSelecting = false
-                    selectedPhotoIds.removeAll()
-                } else {
-                    // Enter selection mode
-                    isSelecting = true
-                }
-            }) {
-                Text(isSelecting ? "Cancel" : "Select")
-                    .foregroundColor(isSelecting ? .red : .blue)
-            }
-        }
-
-        // Right side buttons (delete/share when selecting, refresh/import otherwise)
-        ToolbarItem(placement: .navigationBarTrailing) {
-            HStack(spacing: 20) {
-                // When in selection mode and items are selected, show delete button
-                if isSelecting && hasSelection {
-                    // Delete button
-                    Button(action: { showDeleteConfirmation = true }) {
-                        Image(systemName: "trash")
-                            .foregroundColor(.red)
-                    }
-
-                    // Share button
-                    Button(action: onShare) {
-                        Image(systemName: "square.and.arrow.up")
-                            .foregroundColor(.blue)
-                    }
-                }
-                // When not in selection mode or nothing selected, show refresh button
-                else if !isSelecting {
-                    Button(action: onRefresh) {
-                        Image(systemName: "arrow.clockwise")
-                            .foregroundColor(.blue)
-                    }
-                }
-            }
-        }
-    }
-}
 
 // Gallery view to display the stored photos
 struct SecureGalleryView: View {
@@ -99,15 +44,19 @@ struct SecureGalleryView: View {
 
     private let secureFileManager = SecureFileManager()
     @Environment(\.dismiss) private var dismiss
+    
+    // Callback for dismissing the gallery
+    let onDismiss: (() -> Void)?
 
     // Initializers
-    init() {
-        // Default initializer
+    init(onDismiss: (() -> Void)? = nil) {
+        self.onDismiss = onDismiss
     }
 
     // Initializer for decoy selection mode
-    init(selectingDecoys: Bool) {
+    init(selectingDecoys: Bool, onDismiss: (() -> Void)? = nil) {
         _isSelectingDecoys = State(initialValue: selectingDecoys)
+        self.onDismiss = onDismiss
     }
 
     // Computed properties to simplify the view
@@ -128,55 +77,82 @@ struct SecureGalleryView: View {
     }
 
     var body: some View {
-//        VStack {
-//        }
-        NavigationView {
-            ZStack {
-                Group {
-                    if photos.isEmpty {
-                        EmptyGalleryView(onDismiss: { dismiss() })
-                    } else {
-                        photosGridView
-                    }
-                }
-
-                // Import progress overlay
-                if isImporting {
-                    VStack {
-                        ProgressView("Importing photos...", value: importProgress, total: 1.0)
-                            .progressViewStyle(LinearProgressViewStyle())
-                            .padding()
-
-                        Text("\(Int(importProgress * 100))%")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    .frame(width: 200)
-                    .padding()
-                    .background(
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(Color(.systemBackground))
-                            .shadow(radius: 5)
-                    )
+        ZStack {
+            Group {
+                if photos.isEmpty {
+                    EmptyGalleryView(onDismiss: { 
+                        onDismiss?()
+                        dismiss() 
+                    })
+                } else {
+                    photosGridView
                 }
             }
-            .navigationTitle(isSelectingDecoys ? "Select Decoy Photos" : "Secure Gallery")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                // Left side button differs based on mode
-                ToolbarItem(placement: .navigationBarLeading) {
+
+            // Import progress overlay
+            if isImporting {
+                VStack {
+                    ProgressView("Importing photos...", value: importProgress, total: 1.0)
+                        .progressViewStyle(LinearProgressViewStyle())
+                        .padding()
+
+                    Text("\(Int(importProgress * 100))%")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .frame(width: 200)
+                .padding()
+                .background(
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(Color(.systemBackground))
+                        .shadow(radius: 5)
+                )
+            }
+        }
+        .navigationTitle(isSelectingDecoys ? "Select Decoy Photos" : "Secure Gallery")
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            // Back button in the leading position
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button(action: {
                     if isSelectingDecoys {
-                        // Cancel button for decoy selection mode
-                        Button("Cancel") {
-                            // Exit decoy selection mode and return to settings
-                            isSelectingDecoys = false
-                            isSelecting = false
-                            selectedPhotoIds.removeAll()
-                            dismiss()
+                        // Exit decoy selection mode and return to settings
+                        isSelectingDecoys = false
+                        isSelecting = false
+                        selectedPhotoIds.removeAll()
+                    }
+                    onDismiss?()
+                    dismiss()
+                }) {
+                    HStack {
+                        Image(systemName: "chevron.left")
+                        Text("Back")
+                    }
+                    .foregroundColor(.blue)
+                }
+            }
+            
+            // Action buttons in the trailing position (simplified for top toolbar)
+            ToolbarItem(placement: .navigationBarTrailing) {
+                HStack(spacing: 16) {
+                    if isSelectingDecoys {
+                        // Count label and Save button for decoy selection
+                        Text("\(selectedPhotoIds.count)/\(maxDecoys)")
+                            .font(.caption)
+                            .foregroundColor(selectedPhotoIds.count > maxDecoys ? .red : .secondary)
+                        
+                        Button("Save") {
+                            if selectedPhotoIds.count > maxDecoys {
+                                showDecoyLimitWarning = true
+                            } else {
+                                showDecoyConfirmation = true
+                            }
                         }
-                        .foregroundColor(.red)
+                        .foregroundColor(.blue)
+                        .disabled(selectedPhotoIds.isEmpty)
                     } else if isSelecting {
-                        // Cancel button for normal selection mode
+                        // Cancel selection button
                         Button("Cancel") {
                             isSelecting = false
                             selectedPhotoIds.removeAll()
@@ -190,133 +166,103 @@ struct SecureGalleryView: View {
                         .foregroundColor(.blue)
                     }
                 }
+            }
+        }
+        .toolbar {
+            // Bottom toolbar with main action buttons
+            ToolbarItemGroup(placement: .bottomBar) {
+                if !isSelectingDecoys && !isSelecting {
+                    // Normal mode: Import and Refresh buttons
+                    PhotosPicker(selection: $pickerItems, matching: .images, photoLibrary: .shared()) {
+                        Label("Import", systemImage: "square.and.arrow.down")
+                    }
+                    .onChange(of: pickerItems) { _, newItems in
+                        // Process selected images from picker
+                        Task {
+                            var hadSuccessfulImport = false
 
-                // Right side actions
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    HStack(spacing: 16) {
-                        // Show Save button when in decoy selection mode
-                        if isSelectingDecoys {
-                            // Save button for decoy selection
-                            Button("Save") {
-                                if selectedPhotoIds.count > maxDecoys {
-                                    // Show warning if too many decoys selected
-                                    showDecoyLimitWarning = true
-                                } else {
-                                    // Show confirmation before saving
-                                    showDecoyConfirmation = true
+                            // Show import progress to user
+                            let importCount = newItems.count
+                            if importCount > 0 {
+                                // Update UI to show import is happening
+                                await MainActor.run {
+                                    isImporting = true
+                                    importProgress = 0
                                 }
-                            }
-                            .foregroundColor(.blue)
-                            .disabled(selectedPhotoIds.isEmpty)
 
-                            // Count label showing selected/max
-                            Text("\(selectedPhotoIds.count)/\(maxDecoys)")
-                                .font(.caption)
-                                .foregroundColor(selectedPhotoIds.count > maxDecoys ? .red : .secondary)
-                                .frame(minWidth: 40)
-                        }
-                        // Show import button when not in selection mode
-                        else if !isSelecting {
-                            // Import button
-                            PhotosPicker(selection: $pickerItems, matching: .images, photoLibrary: .shared()) {
-                                Image(systemName: "square.and.arrow.down")
-                                    .font(.system(size: 16))
-                            }
-                            .onChange(of: pickerItems) { _, newItems in
-                                // Process selected images from picker
-                                Task {
-                                    var hadSuccessfulImport = false
+                                print("Importing \(importCount) photos...")
 
-                                    // Show import progress to user
-                                    let importCount = newItems.count
-                                    if importCount > 0 {
-                                        // Update UI to show import is happening
-                                        await MainActor.run {
-                                            isImporting = true
-                                            importProgress = 0
-                                        }
-
-                                        print("Importing \(importCount) photos...")
-
-                                        // Process each selected item with progress tracking
-                                        for (index, item) in newItems.enumerated() {
-                                            // Update progress
-                                            let currentProgress = Float(index) / Float(importCount)
-                                            await MainActor.run {
-                                                importProgress = currentProgress
-                                            }
-
-                                            // Load and process the image
-                                            if let data = try? await item.loadTransferable(type: Data.self) {
-                                                // Process this image
-                                                await processImportedImageData(data)
-                                                hadSuccessfulImport = true
-                                            }
-                                        }
-
-                                        // Show 100% progress briefly before hiding
-                                        await MainActor.run {
-                                            importProgress = 1.0
-                                        }
-
-                                        // Small delay to show completion
-                                        try? await Task.sleep(nanoseconds: 300_000_000) // 0.3 seconds
-                                    }
-
-                                    // After importing all items, reset the picker selection and refresh gallery
+                                // Process each selected item with progress tracking
+                                for (index, item) in newItems.enumerated() {
+                                    // Update progress
+                                    let currentProgress = Float(index) / Float(importCount)
                                     await MainActor.run {
-                                        // Reset picked items
-                                        pickerItems = []
+                                        importProgress = currentProgress
+                                    }
 
-                                        // Hide progress indicator
-                                        isImporting = false
-
-                                        // Reload the gallery if we imported images
-                                        if hadSuccessfulImport {
-                                            loadPhotos()
-                                        }
+                                    // Load and process the image
+                                    if let data = try? await item.loadTransferable(type: Data.self) {
+                                        // Process this image
+                                        await processImportedImageData(data)
+                                        hadSuccessfulImport = true
                                     }
                                 }
+
+                                // Show 100% progress briefly before hiding
+                                await MainActor.run {
+                                    importProgress = 1.0
+                                }
+
+                                // Small delay to show completion
+                                try? await Task.sleep(nanoseconds: 300_000_000) // 0.3 seconds
                             }
 
-                            // Refresh button
-                            Button(action: loadPhotos) {
-                                Image(systemName: "arrow.clockwise")
-                                    .foregroundColor(.blue)
-                            }
-                        }
-                        // When in normal selection mode and items are selected
-                        else if hasSelection && !isSelectingDecoys {
-                            // Delete button
-                            Button(action: { 
-                                print("Delete button pressed in gallery view, selected photos: \(selectedPhotoIds.count)")
-                                showDeleteConfirmation = true
-                            }) {
-                                Image(systemName: "trash")
-                                    .foregroundColor(.red)
-                            }
+                            // After importing all items, reset the picker selection and refresh gallery
+                            await MainActor.run {
+                                // Reset picked items
+                                pickerItems = []
 
-                            // Share button
-                            Button(action: shareSelectedPhotos) {
-                                Image(systemName: "square.and.arrow.up")
-                                    .foregroundColor(.blue)
+                                // Hide progress indicator
+                                isImporting = false
+
+                                // Reload the gallery if we imported images
+                                if hadSuccessfulImport {
+                                    loadPhotos()
+                                }
                             }
                         }
                     }
+                    
+                    Spacer()
+                    
+//                    Button(action: loadPhotos) {
+//                        Label("Refresh", systemImage: "arrow.clockwise")
+//                    }
+                } else if isSelecting && hasSelection && !isSelectingDecoys {
+                    // Selection mode: Delete and Share buttons
+                    Button(action: { 
+                        print("Delete button pressed in gallery view, selected photos: \(selectedPhotoIds.count)")
+                        showDeleteConfirmation = true
+                    }) {
+                        Label("Delete", systemImage: "trash")
+                            .foregroundColor(.red)
+                    }
+                    
+                    Spacer()
+                    
+                    Button(action: shareSelectedPhotos) {
+                        Label("Share", systemImage: "square.and.arrow.up")
+                    }
                 }
             }
-            .onAppear(perform: loadPhotos)
-            .onChange(of: selectedPhoto) { _, newValue in
-                if newValue == nil {
-                    loadPhotos()
-                }
+        }
+        .onAppear(perform: loadPhotos)
+        .onChange(of: selectedPhoto) { _, newValue in
+            if newValue == nil {
+                loadPhotos()
             }
-//            .sheet(isPresented: $isShowingImagePicker) {
-            //// old way
-            ////                ImagePicker(image: $importedImage, onDismiss: handleImportedImage)
-//                EmptyView()
-//            }
-            .sheet(item: $selectedPhoto) { photo in
+        }
+        .sheet(item: $selectedPhoto) { photo in
                 // Find the index of the selected photo in the photos array
                 if let initialIndex = photos.firstIndex(where: { $0.id == photo.id }) {
                     PhotoDetailView(
@@ -400,7 +346,7 @@ struct SecureGalleryView: View {
                 }
             )
         }
-    }
+//    }
 
     // Photo grid subview
     private var photosGridView: some View {
@@ -472,8 +418,6 @@ struct SecureGalleryView: View {
             }
         }
     }
-
-    // }
 
     // MARK: - Action methods
 
@@ -685,6 +629,7 @@ struct SecureGalleryView: View {
         selectedPhotoIds.removeAll()
 
         // Return to settings
+        onDismiss?()
         dismiss()
     }
 

@@ -69,27 +69,24 @@ struct ZoomableImageView<Overlay: View>: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                // Background color to fill empty space
-                Color.black
+                // Background color that adapts to user theme
+                Color(UIColor.systemBackground)
                     .edgesIgnoringSafeArea(.all)
                 
-                // Container to handle orientation and scaling
-                VStack {
-                    Spacer()
-                    
-                    // Image display
-                    Image(uiImage: image)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .rotationEffect(.degrees(imageRotation))
-                        .scaleEffect(currentScale)
-                        .offset(x: offset + dragOffset.width, y: dragOffset.height)
-                        .animation(.interactiveSpring(), value: offset) // Smooth animation for offset
-                        .animation(nil, value: dragOffset) // No animation for drag to prevent jumping
-                        .frame(
-                            maxWidth: geometry.size.width,
-                            maxHeight: geometry.size.height
-                        )
+                // Image display that fills the entire screen
+                Image(uiImage: image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .rotationEffect(.degrees(imageRotation))
+                    .scaleEffect(currentScale)
+                    .offset(x: offset + dragOffset.width, y: dragOffset.height)
+                    .animation(.interactiveSpring(), value: offset) // Smooth animation for offset
+                    .animation(nil, value: dragOffset) // No animation for drag to prevent jumping
+                    .frame(
+                        width: geometry.size.width,
+                        height: geometry.size.height
+                    )
+                    .clipped() // Clip any overflow from .fill scaling
                         .overlay(
                             GeometryReader { imageGeometry in
                                 ZStack {
@@ -112,7 +109,6 @@ struct ZoomableImageView<Overlay: View>: View {
                 // Update device orientation when it changes
                 deviceOrientation = UIDevice.current.orientation
             }
-        }
             // Apply multiple gestures with a gesture modifier
             .gesture(
                 // Magnification (pinch) gesture for zoom in/out

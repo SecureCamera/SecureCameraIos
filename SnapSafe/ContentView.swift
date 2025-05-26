@@ -164,12 +164,16 @@ struct ContentView: View {
                 .handleAppState(isPresented: $isShowingSettings)
                 .withAuthenticationOverlay()
         }
-        .sheet(isPresented: $isShowingGallery) {
-            SecureGalleryView()
+        .fullScreenCover(isPresented: $isShowingGallery) {
+            NavigationView {
+                SecureGalleryView(onDismiss: {
+                    isShowingGallery = false
+                })
                 .obscuredWhenInactive()
                 .screenCaptureProtected()
                 .handleAppState(isPresented: $isShowingGallery)
                 .withAuthenticationOverlay()
+            }
         }
         // Apply privacy shield when app is inactive (task switcher, control center, etc.)
         .obscuredWhenInactive()
@@ -857,21 +861,12 @@ struct PhotoCell: View {
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
-            // Background for photos (shows black for landscape photos)
-            Rectangle()
-                .fill(Color.black)
-                .frame(width: cellSize, height: cellSize)
-                .cornerRadius(10)
-            
-            // Photo image with proper aspect ratio and orientation
+            // Photo image that fills the entire cell
             Image(uiImage: photo.thumbnail)
                 .resizable()
-                .aspectRatio(contentMode: .fit) // Use .fit to preserve aspect ratio
-                .frame(
-                    width: photo.frameSizeForDisplay(cellSize: cellSize).width,
-                    height: photo.frameSizeForDisplay(cellSize: cellSize).height
-                )
-                .frame(width: cellSize, height: cellSize) // Outer frame maintains cell size
+                .aspectRatio(contentMode: .fill) // Use .fill to cover the entire cell
+                .frame(width: cellSize, height: cellSize)
+                .clipped() // Clip any overflow
                 .cornerRadius(10)
                 .onTapGesture(perform: onTap)
                 .overlay(
