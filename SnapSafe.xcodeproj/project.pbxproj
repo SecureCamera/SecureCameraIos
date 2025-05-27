@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 56;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -115,18 +115,18 @@
 		A9DE37612DC5F34600679C2C /* SnapSafeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SnapSafeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedRootGroup section */
+/* Begin PBXGroup section */
 		A9DE375A2DC5F34600679C2C /* SnapSafeTests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
+			isa = PBXGroup;
 			path = SnapSafeTests;
 			sourceTree = "<group>";
 		};
 		A9DE37642DC5F34600679C2C /* SnapSafeUITests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
+			isa = PBXGroup;
 			path = SnapSafeUITests;
 			sourceTree = "<group>";
 		};
-/* End PBXFileSystemSynchronizedRootGroup section */
+/* End PBXGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		A9DE37442DC5F34400679C2C /* Frameworks */ = {
