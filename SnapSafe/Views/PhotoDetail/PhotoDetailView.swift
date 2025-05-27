@@ -68,24 +68,15 @@ struct PhotoDetailView_Impl: View {
                     ZoomableImageView(
                         image: viewModel.displayedImage,
                         geometrySize: geometry.size,
-                        imageFrameSize: $viewModel.imageFrameSize,
-                        currentScale: $viewModel.currentScale,
-                        lastScale: $viewModel.lastScale,
-                        offset: $viewModel.offset,
-                        dragOffset: $viewModel.dragOffset,
-                        lastDragPosition: $viewModel.lastDragPosition,
-                        isZoomed: $viewModel.isZoomed,
-                        isSwiping: $viewModel.isSwiping,
                         canGoToPrevious: viewModel.canGoToPrevious,
-                        canGoToNext: viewModel.canGoToNext,
+                        canGoToNext:     viewModel.canGoToNext,
                         onNavigatePrevious: viewModel.navigateToPrevious,
-                        onNavigateNext: viewModel.navigateToNext,
-                        onDismiss: { 
+                        onNavigateNext:     viewModel.navigateToNext,
+                        onDismiss: {
                             viewModel.onDisappear()
-                            dismiss() 
+                            dismiss()
                         },
-                        onReset: viewModel.resetZoomAndPan,
-                        imageRotation: viewModel.imageRotation,
+                        imageRotation:        viewModel.imageRotation,
                         isFaceDetectionActive: viewModel.isFaceDetectionActive
                     ) {
                         // Face detection overlay

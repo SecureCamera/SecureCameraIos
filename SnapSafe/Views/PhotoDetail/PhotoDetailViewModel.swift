@@ -275,12 +275,13 @@ class PhotoDetailViewModel: ObservableObject {
     }
     
     func navigateToPrevious() {
+        print("🟢 PhotoDetailViewModel: navigateToPrevious called")
         if canGoToPrevious {
             // Clean up memory by releasing the full-size image of the current photo
             // but keep the thumbnail for the gallery view
             allPhotos[currentIndex].clearMemory(keepThumbnail: true)
             
-            withAnimation {
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
                 currentIndex -= 1
                 // Reset rotation when changing photos
                 imageRotation = 0
@@ -290,22 +291,26 @@ class PhotoDetailViewModel: ObservableObject {
                 isFaceDetectionActive = false
                 detectedFaces = []
                 modifiedImage = nil
+                // Reset any navigation offsets
+                offset = 0
+                isSwiping = false
             }
             
             // Preload adjacent photos for smoother navigation
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                 self.preloadAdjacentPhotos()
             }
         }
     }
     
     func navigateToNext() {
+        print("🟢 PhotoDetailViewModel: navigateToNext called")
         if canGoToNext {
             // Clean up memory by releasing the full-size image of the current photo
             // but keep the thumbnail for the gallery view
             allPhotos[currentIndex].clearMemory(keepThumbnail: true)
             
-            withAnimation {
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
                 currentIndex += 1
                 // Reset rotation when changing photos
                 imageRotation = 0
@@ -315,10 +320,13 @@ class PhotoDetailViewModel: ObservableObject {
                 isFaceDetectionActive = false
                 detectedFaces = []
                 modifiedImage = nil
+                // Reset any navigation offsets
+                offset = 0
+                isSwiping = false
             }
             
             // Preload adjacent photos for smoother navigation
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                 self.preloadAdjacentPhotos()
             }
         }

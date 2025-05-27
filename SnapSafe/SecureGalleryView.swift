@@ -307,11 +307,11 @@ struct SecureGalleryView: View {
                 loadPhotos()
             }
         }
-        .sheet(item: $selectedPhoto) { photo in
+        .fullScreenCover(item: $selectedPhoto) { photo in
                 // Find the index of the selected photo in the photos array
-                if let initialIndex = photos.firstIndex(where: { $0.id == photo.id }) {
-                    PhotoDetailView(
-                        allPhotos: photos,
+                if let initialIndex = filteredPhotos.firstIndex(where: { $0.id == photo.id }) {
+                    EnhancedPhotoDetailView(
+                        allPhotos: filteredPhotos,
                         initialIndex: initialIndex,
                         showFaceDetection: showFaceDetection,
                         onDelete: { _ in loadPhotos() },
@@ -324,21 +324,6 @@ struct SecureGalleryView: View {
                             MemoryManager.shared.checkMemoryUsage()
                         }
                     )
-                    .onAppear {
-                        // Trigger preloading of adjacent photos after a small delay
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                            // We can only preload by ensuring the photos are registered with memory manager
-                            MemoryManager.shared.registerPhotos(photos)
-
-                            // This will cause adjacent photos to be preloaded
-                            if initialIndex > 0 {
-                                photos[initialIndex - 1].isVisible = true
-                            }
-                            if initialIndex < photos.count - 1 {
-                                photos[initialIndex + 1].isVisible = true
-                            }
-                        }
-                    }
                 } else {
                     // Fallback if photo not found in array
                     PhotoDetailView(
