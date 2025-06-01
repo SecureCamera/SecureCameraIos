@@ -1,0 +1,396 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "" : {
+
+    },
+    "%lld" : {
+
+    },
+    "%lld × %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld × %2$lld"
+          }
+        }
+      }
+    },
+    "%lld faces detected, %lld selected" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld faces detected, %2$lld selected"
+          }
+        }
+      }
+    },
+    "%lld of %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld of %2$lld"
+          }
+        }
+      }
+    },
+    "%lld/%lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld/%2$lld"
+          }
+        }
+      }
+    },
+    "%lld%%" : {
+
+    },
+    "1 minute" : {
+
+    },
+    "5 minutes" : {
+
+    },
+    "15 minutes" : {
+
+    },
+    "30 minutes" : {
+
+    },
+    "Add Box" : {
+
+    },
+    "App PIN" : {
+
+    },
+    "Appearance" : {
+
+    },
+    "Are you sure you want to %@ the selected faces? This will permanently modify the photo." : {
+
+    },
+    "Are you sure you want to delete %lld photo%@? This action cannot be undone." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Are you sure you want to delete %1$lld photo%2$@? This action cannot be undone."
+          }
+        }
+      }
+    },
+    "Are you sure you want to delete this photo? This action cannot be undone." : {
+
+    },
+    "Are you sure you want to reset all security settings to default? This action cannot be undone." : {
+
+    },
+    "Are you sure you want to save these %lld photos as decoys? These will be shown when the emergency PIN is entered." : {
+
+    },
+    "Back" : {
+
+    },
+    "Basic Information" : {
+
+    },
+    "Biometric Authentication" : {
+
+    },
+    "Blackout" : {
+
+    },
+    "Blur" : {
+
+    },
+    "Cancel" : {
+
+    },
+    "Choose how the app appears. System follows your device's appearance setting." : {
+
+    },
+    "Choose how to mask the selected faces" : {
+
+    },
+    "Confirm New PIN" : {
+
+    },
+    "Confirm PIN" : {
+
+    },
+    "Date Information" : {
+
+    },
+    "Date Modified" : {
+
+    },
+    "Date Taken" : {
+
+    },
+    "Decoy Photos" : {
+
+    },
+    "Decoy photos will be shown when emergency PIN is entered" : {
+
+    },
+    "Delete" : {
+
+    },
+    "Delete Photo" : {
+
+    },
+    "Delete Photo%@" : {
+
+    },
+    "Detecting faces..." : {
+
+    },
+    "Done" : {
+
+    },
+    "Emergency Erasure" : {
+
+    },
+    "Enter 4-digit PIN" : {
+
+    },
+    "Enter a new 4-digit PIN twice to change your app security PIN" : {
+
+    },
+    "Enter your PIN to continue" : {
+
+    },
+    "Face Detection" : {
+
+    },
+    "Faces Detected" : {
+
+    },
+    "File Size" : {
+
+    },
+    "Filter Photos" : {
+
+    },
+    "For privacy and security reasons, screen recording is not allowed in SnapSafe." : {
+
+    },
+    "ID" : {
+
+    },
+    "If this PIN is entered, all photos will be immediately deleted" : {
+
+    },
+    "Image Information" : {
+
+    },
+    "Import" : {
+
+    },
+    "Importing photos..." : {
+
+    },
+    "Include Location Data" : {
+
+    },
+    "Info" : {
+
+    },
+    "Invalid PIN. Please try again." : {
+
+    },
+    "Location" : {
+
+    },
+    "Manage Permission in Settings" : {
+
+    },
+    "Mark Decoys" : {
+
+    },
+    "Mask Faces" : {
+
+    },
+    "Mask Mode" : {
+
+    },
+    "Never" : {
+
+    },
+    "New PIN (4 digits)" : {
+
+    },
+    "No faces detected" : {
+
+    },
+    "No photos yet" : {
+
+    },
+    "Noise" : {
+
+    },
+    "Obfuscate" : {
+
+    },
+    "OK" : {
+
+    },
+    "Permission Status" : {
+
+    },
+    "Photo Detail" : {
+
+    },
+    "Photo Details" : {
+
+    },
+    "PIN" : {
+
+    },
+    "PIN updated successfully!" : {
+
+    },
+    "Pixelate" : {
+
+    },
+    "Please create a 4-digit PIN to secure your photos" : {
+
+    },
+    "Please stop recording to continue using the app." : {
+
+    },
+    "Privacy & Detection" : {
+
+    },
+    "Request Location Permission" : {
+
+    },
+    "Require PIN when app resumes" : {
+
+    },
+    "Reset" : {
+
+    },
+    "Reset All Security Settings" : {
+
+    },
+    "Reset Security Settings" : {
+
+    },
+    "Resets all security settings to default values. Does not delete photos." : {
+
+    },
+    "Resolution" : {
+
+    },
+    "Sanitize File Name" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "heyooo"
+          }
+        }
+      }
+    },
+    "Sanitize Metadata" : {
+
+    },
+    "Save" : {
+
+    },
+    "Save Decoy Selection" : {
+
+    },
+    "Save Emergency PIN" : {
+
+    },
+    "Screen Recording Detected" : {
+
+    },
+    "Screenshot Captured" : {
+
+    },
+    "Secure" : {
+
+    },
+    "Security" : {
+
+    },
+    "Select Mask Type" : {
+
+    },
+    "Select Photos" : {
+
+    },
+    "Session Timeout" : {
+
+    },
+    "Set Emergency PIN" : {
+
+    },
+    "Set PIN" : {
+
+    },
+    "Set Up Security PIN" : {
+
+    },
+    "Settings" : {
+
+    },
+    "Share" : {
+
+    },
+    "Sharing Options" : {
+
+    },
+    "SnapSafe" : {
+
+    },
+    "Status" : {
+
+    },
+    "Tap anywhere on the image to add a custom box" : {
+
+    },
+    "Tap faces to select them for masking. Pinch to resize boxes." : {
+
+    },
+    "The camera app that minds its own business." : {
+
+    },
+    "Theme" : {
+
+    },
+    "Too Many Decoys" : {
+
+    },
+    "Unlock" : {
+
+    },
+    "Update PIN" : {
+
+    },
+    "When enabled, faces can be detected in photos for privacy protection" : {
+
+    },
+    "When enabled, location data will be embedded in newly captured photos. Location requires permission and GPS availability." : {
+
+    },
+    "When enabled, personal information will be removed from photos before sharing" : {
+
+    },
+    "You can select a maximum of %lld decoy photos. Please deselect some photos before saving." : {
+
+    },
+    "Your PIN will be required when opening the app and when it returns from background." : {
+
+    }
+  },
+  "version" : "1.0"
+}
