@@ -5,8 +5,8 @@
 //  Created by Bill Booth on 5/20/25.
 //
 
-import SwiftUI
 import Foundation
+import SwiftUI
 import UIKit
 
 struct FaceDetectionOverlay: View {
@@ -17,12 +17,12 @@ struct FaceDetectionOverlay: View {
     var onTap: (DetectedFace) -> Void
     var onCreateBox: (CGPoint) -> Void
     var onResize: (DetectedFace, CGFloat) -> Void
-    
+
     // State for face resizing
     @State private var isResizingBox = false
     @State private var selectedFaceForResize: DetectedFace? = nil
     @State private var currentResizeScale: CGFloat = 1.0
-    
+
     var body: some View {
         ZStack {
             // Add a gesture overlay to capture exact tap locations for adding boxes
@@ -37,7 +37,7 @@ struct FaceDetectionOverlay: View {
                             }
                     )
             }
-            
+
             // Overlay each detected face with a rectangle
             ForEach(faces) { face in
                 FaceBoxView(
@@ -45,7 +45,7 @@ struct FaceDetectionOverlay: View {
                     originalSize: originalSize,
                     displaySize: displaySize,
                     onTap: {
-                        if !isAddingBox && !isResizingBox {
+                        if !isAddingBox, !isResizingBox {
                             onTap(face)
                         }
                     }
@@ -59,7 +59,7 @@ struct FaceDetectionOverlay: View {
                                 selectedFaceForResize = face
                                 currentResizeScale = 1.0
                             }
-                            
+
                             // Only resize if this is the selected face
                             if let selectedFace = selectedFaceForResize, selectedFace.id == face.id {
                                 let delta = value / currentResizeScale
@@ -83,9 +83,9 @@ struct FaceDetectionOverlay_Previews: PreviewProvider {
     static var previews: some View {
         let faces = [
             DetectedFace(rect: CGRect(x: 50, y: 50, width: 100, height: 100)),
-            DetectedFace(rect: CGRect(x: 200, y: 150, width: 120, height: 120), isSelected: true)
+            DetectedFace(rect: CGRect(x: 200, y: 150, width: 120, height: 120), isSelected: true),
         ]
-        
+
         return ZStack {
             Color.gray
             FaceDetectionOverlay(

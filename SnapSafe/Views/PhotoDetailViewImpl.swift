@@ -1,12 +1,12 @@
 //
-//  PhotoDetailView.swift
+//  PhotoDetailViewImpl.swift
 //  SnapSafe
 //
 //  Created by Bill Booth on 5/18/25.
 //
 
-import SwiftUI
 import Foundation
+import SwiftUI
 import UIKit
 
 // This file is now a forwarder to the refactored PhotoDetailView

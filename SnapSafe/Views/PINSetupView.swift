@@ -14,7 +14,7 @@ struct PINSetupView: View {
     @State private var showError = false
     @State private var errorMessage = ""
     @Binding var isPINSetupComplete: Bool
-    
+
     var body: some View {
         NavigationView {
             VStack(spacing: 30) {
@@ -22,16 +22,16 @@ struct PINSetupView: View {
                     .font(.system(size: 70))
                     .foregroundColor(.blue)
                     .padding(.top, 50)
-                
+
                 Text("Set Up Security PIN")
                     .font(.largeTitle)
                     .bold()
-                
+
                 Text("Please create a 4-digit PIN to secure your photos")
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
-                
+
                 VStack(spacing: 20) {
                     SecureField("Enter 4-digit PIN", text: $pin)
                         .keyboardType(.numberPad)
@@ -45,13 +45,13 @@ struct PINSetupView: View {
                             if newValue.count > 4 {
                                 pin = String(newValue.prefix(4))
                             }
-                            
+
                             // Only allow numbers
-                            if !newValue.allSatisfy({ $0.isNumber }) {
-                                pin = newValue.filter { $0.isNumber }
+                            if !newValue.allSatisfy(\.isNumber) {
+                                pin = newValue.filter(\.isNumber)
                             }
                         }
-                    
+
                     SecureField("Confirm PIN", text: $confirmPin)
                         .keyboardType(.numberPad)
                         .textContentType(.oneTimeCode)
@@ -64,21 +64,21 @@ struct PINSetupView: View {
                             if newValue.count > 4 {
                                 confirmPin = String(newValue.prefix(4))
                             }
-                            
+
                             // Only allow numbers
-                            if !newValue.allSatisfy({ $0.isNumber }) {
-                                confirmPin = newValue.filter { $0.isNumber }
+                            if !newValue.allSatisfy(\.isNumber) {
+                                confirmPin = newValue.filter(\.isNumber)
                             }
                         }
                 }
-                
+
                 if showError {
                     Text(errorMessage)
                         .foregroundColor(.red)
                         .font(.callout)
                         .padding(.top, 5)
                 }
-                
+
                 Button(action: {
                     savePIN()
                 }) {
@@ -87,16 +87,16 @@ struct PINSetupView: View {
                         .padding()
                         .frame(width: 200)
                         .background(
-                            (pin.count == 4 && confirmPin.count == 4) ? 
+                            (pin.count == 4 && confirmPin.count == 4) ?
                                 Color.blue : Color.gray
                         )
                         .cornerRadius(10)
                 }
                 .disabled(pin.count != 4 || confirmPin.count != 4)
                 .padding(.top, 20)
-                
+
                 Spacer()
-                
+
                 Text("Your PIN will be required when opening the app and when it returns from background.")
                     .font(.caption)
                     .foregroundColor(.secondary)
@@ -110,7 +110,7 @@ struct PINSetupView: View {
             .screenCaptureProtected()
         }
     }
-    
+
     private func savePIN() {
         // Validate PIN
         if pin.count != 4 {
@@ -118,17 +118,17 @@ struct PINSetupView: View {
             errorMessage = "PIN must be 4 digits"
             return
         }
-        
+
         // Check if PINs match
         if pin != confirmPin {
             showError = true
             errorMessage = "PINs do not match"
             return
         }
-        
+
         // Save PIN
         pinManager.setPIN(pin)
-        
+
         // Signal completion
         isPINSetupComplete = true
     }

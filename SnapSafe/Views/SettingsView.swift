@@ -15,7 +15,7 @@ import SwiftUI
 struct SettingsView: View {
     // Appearance setting
     @AppStorage("appearanceMode") private var appearanceMode: AppearanceMode = .system
-    
+
     // Sharing options
     @State private var sanitizeFileName = true
     @State private var sanitizeMetadata = true
@@ -42,10 +42,10 @@ struct SettingsView: View {
     @State private var locationPermissionStatus = "Not Determined"
     @StateObject private var locationManager = LocationManager.shared
     @State private var includeLocationData = false
-    
+
     // PIN Manager
     @ObservedObject private var pinManager = PINManager.shared
-    
+
     @Environment(\.openURL) private var openURL
 
     // Dependency injections (commented until implementations are ready)
@@ -55,8 +55,6 @@ struct SettingsView: View {
     var body: some View {
         NavigationView {
             List {
-
-                
                 // SHARING SECTION
                 Section(header: Text("Sharing Options")) {
                     Toggle("Sanitize File Name", isOn: $sanitizeFileName)
@@ -105,7 +103,7 @@ struct SettingsView: View {
                     }
 
                     let permissionNotDetermined = locationManager.authorizationStatus == .notDetermined
-                    
+
                     Button {
                         if permissionNotDetermined {
                             locationManager.requestLocationPermission()
@@ -114,11 +112,11 @@ struct SettingsView: View {
                                 openURL(url)
                             }
                         }
-                        } label: {
-                            Text(permissionNotDetermined
-                                 ? "Request Location Permission"
-                                 : "Manage Permission in Settings")
-                        }
+                    } label: {
+                        Text(permissionNotDetermined
+                            ? "Request Location Permission"
+                            : "Manage Permission in Settings")
+                    }
 
                     Text("When enabled, location data will be embedded in newly captured photos. Location requires permission and GPS availability.")
                         .font(.caption)
@@ -133,7 +131,7 @@ struct SettingsView: View {
                         }
                     }
                     .pickerStyle(.menu)
-                    
+
                     Text("Choose how the app appears. System follows your device's appearance setting.")
                         .font(.caption)
                         .foregroundColor(.secondary)
@@ -179,7 +177,7 @@ struct SettingsView: View {
                             // TODO: Update auth manager
                             // authManager.isBiometricEnabled = newValue
                         }
-                        
+
                     Toggle("Require PIN when app resumes", isOn: $requirePINOnResume)
                         .onChange(of: requirePINOnResume) { _, newValue in
                             print("Require PIN on resume: \(newValue)")
@@ -198,18 +196,18 @@ struct SettingsView: View {
                             if newValue.count > 4 {
                                 appPIN = String(newValue.prefix(4))
                             }
-                            
+
                             // Only allow numbers
-                            if !newValue.allSatisfy({ $0.isNumber }) {
-                                appPIN = newValue.filter { $0.isNumber }
+                            if !newValue.allSatisfy(\.isNumber) {
+                                appPIN = newValue.filter(\.isNumber)
                             }
-                            
+
                             // Clear any previous errors when typing
                             if showPINError {
                                 showPINError = false
                             }
                         }
-                    
+
                     SecureField("Confirm New PIN", text: $confirmAppPIN)
                         .keyboardType(.numberPad)
                         .autocorrectionDisabled(true)
@@ -219,25 +217,25 @@ struct SettingsView: View {
                             if newValue.count > 4 {
                                 confirmAppPIN = String(newValue.prefix(4))
                             }
-                            
+
                             // Only allow numbers
-                            if !newValue.allSatisfy({ $0.isNumber }) {
-                                confirmAppPIN = newValue.filter { $0.isNumber }
+                            if !newValue.allSatisfy(\.isNumber) {
+                                confirmAppPIN = newValue.filter(\.isNumber)
                             }
-                            
+
                             // Clear any previous errors when typing
                             if showPINError {
                                 showPINError = false
                             }
                         }
-                    
+
                     if showPINError {
                         Text(pinErrorMessage)
                             .foregroundColor(.red)
                             .font(.caption)
                             .padding(.vertical, 5)
                     }
-                    
+
                     if showPINSuccess {
                         Text("PIN updated successfully!")
                             .foregroundColor(.green)
@@ -281,7 +279,6 @@ struct SettingsView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
-                
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
@@ -289,7 +286,7 @@ struct SettingsView: View {
             .onAppear {
                 // Initialize includeLocationData from the LocationManager
                 includeLocationData = locationManager.shouldIncludeLocationData
-                
+
                 // Initialize PIN on resume setting
                 requirePINOnResume = pinManager.requirePINOnResume
             }
@@ -339,39 +336,39 @@ struct SettingsView: View {
         // Reset any previous feedback
         showPINError = false
         showPINSuccess = false
-        
+
         // Validate PIN
         if appPIN.count != 4 {
             showPINError = true
             pinErrorMessage = "PIN must be 4 digits"
             return
         }
-        
+
         // Check if PINs match
         if appPIN != confirmAppPIN {
             showPINError = true
             pinErrorMessage = "PINs do not match"
             return
         }
-        
+
         // Update the PIN using PIN manager
         pinManager.setPIN(appPIN)
-        
+
         // Show success message
         showPINSuccess = true
-        
+
         // Clear the fields
         appPIN = ""
         confirmAppPIN = ""
-        
+
         // Clear success message after delay
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-            self.showPINSuccess = false
+            showPINSuccess = false
         }
-        
+
         print("App PIN has been updated")
     }
-    
+
     private func resetSecuritySettings() {
         // Reset all security settings to default values
         biometricEnabled = false

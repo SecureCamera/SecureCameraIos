@@ -5,11 +5,10 @@
 //  Created by Bill Booth on 5/26/25.
 //
 
-import XCTest
 @testable import SnapSafe
+import XCTest
 
 class PhotoFilterTests: XCTestCase {
-    
     func testPhotoFilterCases() {
         // Test all filter cases exist
         let allCases = PhotoFilter.allCases
@@ -19,7 +18,7 @@ class PhotoFilterTests: XCTestCase {
         XCTAssertTrue(allCases.contains(.edited))
         XCTAssertTrue(allCases.contains(.withLocation))
     }
-    
+
     func testPhotoFilterRawValues() {
         // Test raw string values
         XCTAssertEqual(PhotoFilter.all.rawValue, "All Photos")
@@ -27,7 +26,7 @@ class PhotoFilterTests: XCTestCase {
         XCTAssertEqual(PhotoFilter.edited.rawValue, "Edited Photos")
         XCTAssertEqual(PhotoFilter.withLocation.rawValue, "Photos with Location")
     }
-    
+
     func testPhotoFilterSystemImages() {
         // Test system image names
         XCTAssertEqual(PhotoFilter.all.systemImage, "photo.stack")

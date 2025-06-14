@@ -14,10 +14,10 @@ import UIKit
 struct PhotoDetailView_Impl: View {
     // ViewModel
     @StateObject private var viewModel: PhotoDetailViewModel
-    
+
     // Environment
     @Environment(\.dismiss) private var dismiss
-    
+
     // Initialize with a single photo
     init(photo: SecurePhoto, showFaceDetection: Bool, onDelete: ((SecurePhoto) -> Void)? = nil, onDismiss: (() -> Void)? = nil) {
         _viewModel = StateObject(wrappedValue: PhotoDetailViewModel(
@@ -27,7 +27,7 @@ struct PhotoDetailView_Impl: View {
             onDismiss: onDismiss
         ))
     }
-    
+
     // Initialize with multiple photos
     init(allPhotos: [SecurePhoto], initialIndex: Int, showFaceDetection: Bool, onDelete: ((SecurePhoto) -> Void)? = nil, onDismiss: (() -> Void)? = nil) {
         _viewModel = StateObject(wrappedValue: PhotoDetailViewModel(
@@ -38,14 +38,14 @@ struct PhotoDetailView_Impl: View {
             onDismiss: onDismiss
         ))
     }
-    
+
     var body: some View {
         GeometryReader { geometry in
             ZStack {
                 // Background color
                 Color.black.opacity(0.05)
                     .edgesIgnoringSafeArea(.all)
-                
+
                 VStack {
                     // Photo counter at the top if we have multiple photos
                     if !viewModel.allPhotos.isEmpty {
@@ -55,28 +55,28 @@ struct PhotoDetailView_Impl: View {
                             .padding(.top, 8)
                             .opacity(viewModel.isZoomed ? 0.5 : 1.0) // Fade when zoomed
                     }
-                    
+
                     Spacer()
-                    
+
                     // Zoom level indicator
                     ZoomLevelIndicator(
                         scale: viewModel.currentScale,
                         isVisible: viewModel.isZoomed
                     )
-                    
+
                     // Centered image display with appropriate orientation handling
                     ZoomableImageView(
                         image: viewModel.displayedImage,
                         geometrySize: geometry.size,
                         canGoToPrevious: viewModel.canGoToPrevious,
-                        canGoToNext:     viewModel.canGoToNext,
+                        canGoToNext: viewModel.canGoToNext,
                         onNavigatePrevious: viewModel.navigateToPrevious,
-                        onNavigateNext:     viewModel.navigateToNext,
+                        onNavigateNext: viewModel.navigateToNext,
                         onDismiss: {
                             viewModel.onDisappear()
                             dismiss()
                         },
-                        imageRotation:        viewModel.imageRotation,
+                        imageRotation: viewModel.imageRotation,
                         isFaceDetectionActive: viewModel.isFaceDetectionActive
                     ) {
                         // Face detection overlay
@@ -99,13 +99,13 @@ struct PhotoDetailView_Impl: View {
                                         let newX = centerX - newWidth / 2
                                         let newY = centerY - newHeight / 2
                                         let newRect = CGRect(x: newX, y: newY, width: newWidth, height: newHeight)
-                                        
+
                                         let resizedFace = DetectedFace(
                                             bounds: newRect,
                                             isSelected: face.isSelected,
                                             isUserCreated: face.isUserCreated
                                         )
-                                        
+
                                         var updatedFaces = viewModel.detectedFaces
                                         updatedFaces[index] = resizedFace
                                         viewModel.detectedFaces = updatedFaces
@@ -115,15 +115,15 @@ struct PhotoDetailView_Impl: View {
                         }
                     }
                     .frame(maxWidth: .infinity, maxHeight: geometry.size.height * 0.7)
-                    
+
                     Spacer()
-                    
+
                     // Processing indicator
                     if viewModel.processingFaces {
                         ProgressView("Detecting faces...")
                             .padding()
                     }
-                    
+
                     // Controls - conditionally show face detection controls or standard controls
                     if viewModel.isFaceDetectionActive {
                         FaceDetectionControlsView(
@@ -144,7 +144,7 @@ struct PhotoDetailView_Impl: View {
                             isAddingBox: false,
                             hasFacesSelected: viewModel.hasFacesSelected,
                             faceCount: viewModel.detectedFaces.count,
-                            selectedCount: viewModel.detectedFaces.filter({ $0.isSelected }).count
+                            selectedCount: viewModel.detectedFaces.count(where: { $0.isSelected })
                         )
                     } else {
                         PhotoControlsView(
@@ -154,9 +154,9 @@ struct PhotoDetailView_Impl: View {
                                 print("Share button pressed - showing share sheet")
                                 viewModel.sharePhoto()
                             },
-                            onDelete: { 
+                            onDelete: {
                                 print("Delete button pressed - showing confirmation")
-                                viewModel.showDeleteConfirmation = true 
+                                viewModel.showDeleteConfirmation = true
                             },
                             isZoomed: viewModel.isZoomed
                         )
@@ -215,7 +215,7 @@ struct PhotoDetailView_Impl: View {
                             viewModel.selectedMaskMode = .noise
                             viewModel.showBlurConfirmation = true
                         },
-                        .cancel()
+                        .cancel(),
                     ]
                 )
             }
@@ -227,6 +227,6 @@ struct PhotoDetailView_Impl: View {
             }
         }
     }
-    
+
     // No additional helpers needed now
 }

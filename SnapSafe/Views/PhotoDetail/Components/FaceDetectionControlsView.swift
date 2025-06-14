@@ -15,7 +15,7 @@ struct FaceDetectionControlsView: View {
     var hasFacesSelected: Bool
     var faceCount: Int
     var selectedCount: Int
-    
+
     var body: some View {
         VStack(spacing: 8) {
             HStack {
@@ -26,9 +26,9 @@ struct FaceDetectionControlsView: View {
                         .background(Color.gray)
                         .cornerRadius(8)
                 }
-                
+
                 Spacer()
-                
+
                 Button(action: onAddBox) {
                     Label("Add Box", systemImage: "plus.rectangle")
                         .foregroundColor(.white)
@@ -36,9 +36,9 @@ struct FaceDetectionControlsView: View {
                         .background(isAddingBox ? Color.green : Color.blue)
                         .cornerRadius(8)
                 }
-                
+
                 Spacer()
-                
+
                 Button(action: onMask) {
                     Label("Mask Faces", systemImage: "eye.slash")
                         .foregroundColor(.white)
@@ -49,7 +49,7 @@ struct FaceDetectionControlsView: View {
                 .disabled(!hasFacesSelected)
             }
             .padding(.horizontal)
-            
+
             if isAddingBox {
                 Text("Tap anywhere on the image to add a custom box")
                     .font(.caption)
@@ -61,7 +61,7 @@ struct FaceDetectionControlsView: View {
                     .foregroundColor(.secondary)
                     .padding(.horizontal)
             }
-            
+
             if faceCount == 0 {
                 Text("No faces detected")
                     .font(.callout)

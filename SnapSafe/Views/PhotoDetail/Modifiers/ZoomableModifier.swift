@@ -15,7 +15,7 @@ struct ZoomableModifier: ViewModifier {
     @State private var initialScale: CGFloat = 1.0
     var onZoomOut: () -> Void
     var onZoomChange: ((Bool) -> Void)? = nil
-    
+
     func body(content: Content) -> some View {
         content
             .scaleEffect(scale)
@@ -23,7 +23,7 @@ struct ZoomableModifier: ViewModifier {
             .gesture(makeZoomGesture())
             .gesture(makeDragGesture())
     }
-    
+
     // Create a pinch/zoom gesture
     private func makeZoomGesture() -> some Gesture {
         MagnificationGesture()
@@ -31,18 +31,18 @@ struct ZoomableModifier: ViewModifier {
                 // Calculate new scale relative to the starting scale
                 let delta = value / lastScale
                 lastScale = value
-                
+
                 let newScale = scale * delta
                 // Limit the scale to reasonable bounds
                 scale = min(max(newScale, 0.5), 6.0)
-                
+
                 // Call callback when zoom state changes
                 onZoomChange?(scale > 1.0)
             }
             .onEnded { _ in
                 // Reset the lastScale for the next gesture
                 lastScale = 1.0
-                
+
                 // If user zoomed out below threshold, trigger dismiss
                 if scale < 0.6 {
                     onZoomOut()
@@ -55,16 +55,16 @@ struct ZoomableModifier: ViewModifier {
                 }
             }
     }
-    
+
     // Create a drag gesture for panning
     private func makeDragGesture() -> some Gesture {
         DragGesture()
             .onChanged { value in
                 // Only enable drag when zoomed in
                 if scale > 1.0 {
-                    self.offset = CGSize(
-                        width: self.offset.width + value.translation.width,
-                        height: self.offset.height + value.translation.height
+                    offset = CGSize(
+                        width: offset.width + value.translation.width,
+                        height: offset.height + value.translation.height
                     )
                 }
             }

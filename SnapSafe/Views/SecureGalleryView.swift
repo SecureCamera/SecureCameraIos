@@ -21,24 +21,21 @@ struct EmptyGalleryView: View {
     }
 }
 
-
 // Gallery view to display the stored photos
 struct SecureGalleryView: View {
     @State private var photos: [SecurePhoto] = []
     @State private var selectedPhoto: SecurePhoto?
     @AppStorage("showFaceDetection") private var showFaceDetection = true // Using AppStorage to share with Settings
     @State private var isSelecting: Bool = false
-    @State private var selectedPhotoIds = Set<UUID>()
+    @State private var selectedPhotoIds = Set<String>()
     @State private var showDeleteConfirmation = false
-    @State private var isShowingImagePicker = false
-    @State private var importedImage: UIImage? // Legacy support
     @State private var pickerItems: [PhotosPickerItem] = []
     @State private var isImporting: Bool = false
     @State private var importProgress: Float = 0
-    
+
     // Filter state
     @State private var selectedFilter: PhotoFilter = .all
-    
+
     // Decoy selection mode
     @State private var isSelectingDecoys: Bool = false
     @State private var maxDecoys: Int = 10
@@ -47,7 +44,7 @@ struct SecureGalleryView: View {
 
     private let secureFileManager = SecureFileManager()
     @Environment(\.dismiss) private var dismiss
-    
+
     // Callback for dismissing the gallery
     let onDismiss: (() -> Void)?
 
@@ -68,30 +65,21 @@ struct SecureGalleryView: View {
     }
 
     // Computed property to get current decoy photo count
-    private var currentDecoyCount: Int {
-        photos.filter { $0.isDecoy }.count
-    }
-    
+//    private var currentDecoyCount: Int {
+//        photos.count(where: { $0.isDecoy })
+//    }
+
     // Computed property to get filtered photos
     private var filteredPhotos: [SecurePhoto] {
         switch selectedFilter {
         case .all:
-            return photos
+            photos
         case .imported:
-            return photos.filter { $0.metadata["imported"] as? Bool == true }
+            photos.filter { _ in false } // TODO: Add imported flag to PhotoMetadata
         case .edited:
-            return photos.filter { $0.metadata["isEdited"] as? Bool == true }
+            photos.filter { _ in false } // TODO: Add edited flag to PhotoMetadata
         case .withLocation:
-            return photos.filter { 
-                // Check for GPS data in metadata using Core Graphics constants
-                guard let gpsData = $0.metadata[String(kCGImagePropertyGPSDictionary)] as? [String: Any] else { return false }
-                
-                // Verify we have either latitude or longitude data
-                let hasLatitude = gpsData[String(kCGImagePropertyGPSLatitude)] != nil
-                let hasLongitude = gpsData[String(kCGImagePropertyGPSLongitude)] != nil
-                
-                return hasLatitude || hasLongitude
-            }
+            photos.filter { _ in false } // TODO: Add location data to PhotoMetadata
         }
     }
 
@@ -99,16 +87,16 @@ struct SecureGalleryView: View {
     private var selectedPhotos: [UIImage] {
         photos
             .filter { selectedPhotoIds.contains($0.id) }
-            .map { $0.fullImage }
+            .map(\.fullImage)
     }
 
     var body: some View {
         ZStack {
             Group {
                 if photos.isEmpty {
-                    EmptyGalleryView(onDismiss: { 
+                    EmptyGalleryView(onDismiss: {
                         onDismiss?()
-                        dismiss() 
+                        dismiss()
                     })
                 } else {
                     photosGridView
@@ -158,7 +146,7 @@ struct SecureGalleryView: View {
                     .foregroundColor(.blue)
                 }
             }
-            
+
             // Action buttons in the trailing position (simplified for top toolbar)
             ToolbarItem(placement: .navigationBarTrailing) {
                 HStack(spacing: 16) {
@@ -167,7 +155,7 @@ struct SecureGalleryView: View {
                         Text("\(selectedPhotoIds.count)/\(maxDecoys)")
                             .font(.caption)
                             .foregroundColor(selectedPhotoIds.count > maxDecoys ? .red : .secondary)
-                        
+
                         Button("Save") {
                             if selectedPhotoIds.count > maxDecoys {
                                 showDecoyLimitWarning = true
@@ -190,7 +178,7 @@ struct SecureGalleryView: View {
                             Button("Select Photos") {
                                 isSelecting = true
                             }
-                            
+
                             Menu("Filter Photos") {
                                 ForEach(PhotoFilter.allCases, id: \.self) { filter in
                                     Button(action: {
@@ -216,7 +204,7 @@ struct SecureGalleryView: View {
         .toolbar {
             // Bottom toolbar with main action buttons
             ToolbarItemGroup(placement: .bottomBar) {
-                if !isSelectingDecoys && !isSelecting {
+                if !isSelectingDecoys, !isSelecting {
                     // Normal mode: Import and Refresh buttons
                     PhotosPicker(selection: $pickerItems, matching: .images, photoLibrary: .shared()) {
                         Label("Import", systemImage: "square.and.arrow.down")
@@ -277,24 +265,24 @@ struct SecureGalleryView: View {
                             }
                         }
                     }
-                    
+
                     Spacer()
-                    
+
 //                    Button(action: loadPhotos) {
 //                        Label("Refresh", systemImage: "arrow.clockwise")
 //                    }
-                } else if isSelecting && hasSelection && !isSelectingDecoys {
+                } else if isSelecting, hasSelection, !isSelectingDecoys {
                     // Selection mode: Delete and Share buttons
-                    Button(action: { 
+                    Button(action: {
                         print("Delete button pressed in gallery view, selected photos: \(selectedPhotoIds.count)")
                         showDeleteConfirmation = true
                     }) {
                         Label("Delete", systemImage: "trash")
                             .foregroundColor(.red)
                     }
-                    
+
                     Spacer()
-                    
+
                     Button(action: shareSelectedPhotos) {
                         Label("Share", systemImage: "square.and.arrow.up")
                     }
@@ -308,74 +296,75 @@ struct SecureGalleryView: View {
             }
         }
         .fullScreenCover(item: $selectedPhoto) { photo in
-                // Find the index of the selected photo in the photos array
-                if let initialIndex = filteredPhotos.firstIndex(where: { $0.id == photo.id }) {
-                    EnhancedPhotoDetailView(
-                        allPhotos: filteredPhotos,
-                        initialIndex: initialIndex,
-                        showFaceDetection: showFaceDetection,
-                        onDelete: { _ in loadPhotos() },
-                        onDismiss: {
-                            // Clean up memory for all loaded full-size images when returning to gallery
-                            for photo in self.photos {
-                                photo.clearMemory(keepThumbnail: true)
-                            }
-                            // Trigger garbage collection
-                            MemoryManager.shared.checkMemoryUsage()
-                        }
-                    )
-                } else {
-                    // Fallback if photo not found in array
-                    PhotoDetailView(
-                        photo: photo,
-                        showFaceDetection: showFaceDetection,
-                        onDelete: { _ in loadPhotos() },
-                        onDismiss: {
+            // Find the index of the selected photo in the photos array
+            if let initialIndex = filteredPhotos.firstIndex(where: { $0.id == photo.id }) {
+                EnhancedPhotoDetailView(
+                    allPhotos: filteredPhotos,
+                    initialIndex: initialIndex,
+                    showFaceDetection: showFaceDetection,
+                    onDelete: { _ in loadPhotos() },
+                    onDismiss: {
+                        // Clean up memory for all loaded full-size images when returning to gallery
+                        for photo in photos {
                             photo.clearMemory(keepThumbnail: true)
-                            // Trigger garbage collection
-                            MemoryManager.shared.checkMemoryUsage()
                         }
-                    )
-                }
+                        // Trigger garbage collection
+                        MemoryManager.shared.checkMemoryUsage()
+                    }
+                )
+            } else {
+                // Fallback if photo not found in array
+                PhotoDetailView(
+                    photo: photo,
+                    showFaceDetection: showFaceDetection,
+                    onDelete: { _ in loadPhotos() },
+                    onDismiss: {
+                        photo.clearMemory(keepThumbnail: true)
+                        // Trigger garbage collection
+                        MemoryManager.shared.checkMemoryUsage()
+                    }
+                )
             }
-            .alert(
-                "Delete Photo\(selectedPhotoIds.count > 1 ? "s" : "")",
-                isPresented: $showDeleteConfirmation,
-                actions: {
-                    Button("Cancel", role: .cancel) {}
-                    Button("Delete", role: .destructive) {
-                        print("Delete confirmation button pressed, deleting \(selectedPhotoIds.count) photos")
-                        deleteSelectedPhotos()
-                    }
-                },
-                message: {
-                    Text("Are you sure you want to delete \(selectedPhotoIds.count) photo\(selectedPhotoIds.count > 1 ? "s" : "")? This action cannot be undone.")
-                }
-            )
-            .alert(
-                "Too Many Decoys",
-                isPresented: $showDecoyLimitWarning,
-                actions: {
-                    Button("OK", role: .cancel) {}
-                },
-                message: {
-                    Text("You can select a maximum of \(maxDecoys) decoy photos. Please deselect some photos before saving.")
-                }
-            )
-            .alert(
-                "Save Decoy Selection",
-                isPresented: $showDecoyConfirmation,
-                actions: {
-                    Button("Cancel", role: .cancel) {}
-                    Button("Save") {
-                        saveDecoySelections()
-                    }
-                },
-                message: {
-                    Text("Are you sure you want to save these \(selectedPhotoIds.count) photos as decoys? These will be shown when the emergency PIN is entered.")
-                }
-            )
         }
+        .alert(
+            "Delete Photo\(selectedPhotoIds.count > 1 ? "s" : "")",
+            isPresented: $showDeleteConfirmation,
+            actions: {
+                Button("Cancel", role: .cancel) {}
+                Button("Delete", role: .destructive) {
+                    print("Delete confirmation button pressed, deleting \(selectedPhotoIds.count) photos")
+                    deleteSelectedPhotos()
+                }
+            },
+            message: {
+                Text("Are you sure you want to delete \(selectedPhotoIds.count) photo\(selectedPhotoIds.count > 1 ? "s" : "")? This action cannot be undone.")
+            }
+        )
+        .alert(
+            "Too Many Decoys",
+            isPresented: $showDecoyLimitWarning,
+            actions: {
+                Button("OK", role: .cancel) {}
+            },
+            message: {
+                Text("You can select a maximum of \(maxDecoys) decoy photos. Please deselect some photos before saving.")
+            }
+        )
+        .alert(
+            "Save Decoy Selection",
+            isPresented: $showDecoyConfirmation,
+            actions: {
+                Button("Cancel", role: .cancel) {}
+                Button("Save") {
+                    saveDecoySelections()
+                }
+            },
+            message: {
+                Text("Are you sure you want to save these \(selectedPhotoIds.count) photos as decoys? These will be shown when the emergency PIN is entered.")
+            }
+        )
+    }
+
 //    }
 
     // Photo grid subview
@@ -413,7 +402,7 @@ struct SecureGalleryView: View {
         let filename = await withCheckedContinuation { continuation in
             DispatchQueue.global(qos: .userInitiated).async {
                 do {
-                    let filename = try self.secureFileManager.savePhoto(imageData, withMetadata: metadata)
+                    let filename = try secureFileManager.savePhoto(imageData, withMetadata: metadata)
                     continuation.resume(returning: filename)
                 } catch {
                     print("Error saving imported photo: \(error.localizedDescription)")
@@ -428,26 +417,26 @@ struct SecureGalleryView: View {
     }
 
     // Legacy method for backward compatibility
-    private func handleImportedImage() {
-        guard let image = importedImage else { return }
-
-        // Convert image to data
-        guard let imageData = image.jpegData(compressionQuality: 0.8) else {
-            print("Failed to convert image to data")
-            return
-        }
-
-        // Process the image data using the new method
-        Task {
-            await processImportedImageData(imageData)
-
-            // Reload photos to show the new one
-            DispatchQueue.main.async {
-                self.importedImage = nil
-                self.loadPhotos()
-            }
-        }
-    }
+//    private func handleImportedImage() {
+//        guard let image = importedImage else { return }
+//
+//        // Convert image to data
+//        guard let imageData = image.jpegData(compressionQuality: 0.8) else {
+//            print("Failed to convert image to data")
+//            return
+//        }
+//
+//        // Process the image data using the new method
+//        Task {
+//            await processImportedImageData(imageData)
+//
+//            // Reload photos to show the new one
+//            DispatchQueue.main.async {
+//                importedImage = nil
+//                loadPhotos()
+//            }
+//        }
+//    }
 
     // MARK: - Action methods
 
@@ -464,7 +453,7 @@ struct SecureGalleryView: View {
             selectedPhotoIds.remove(photo.id)
         } else {
             // If we're selecting decoys and already at the limit, don't allow more selections
-            if isSelectingDecoys && selectedPhotoIds.count >= maxDecoys {
+            if isSelectingDecoys, selectedPhotoIds.count >= maxDecoys {
                 showDecoyLimitWarning = true
                 return
             }
@@ -478,48 +467,83 @@ struct SecureGalleryView: View {
     }
 
     // Utility function to fix image orientation
-    private func fixImageOrientation(_ image: UIImage) -> UIImage {
-        // If the orientation is already correct, return the image as is
-        if image.imageOrientation == .up {
-            return image
-        }
-
-        // Create a new CGContext with proper orientation
-        UIGraphicsBeginImageContextWithOptions(image.size, false, image.scale)
-        image.draw(in: CGRect(origin: .zero, size: image.size))
-        let normalizedImage = UIGraphicsGetImageFromCurrentImageContext()!
-        UIGraphicsEndImageContext()
-
-        return normalizedImage
-    }
+//    private func fixImageOrientation(_ image: UIImage) -> UIImage {
+//        // If the orientation is already correct, return the image as is
+//        if image.imageOrientation == .up {
+//            return image
+//        }
+//
+//        // Create a new CGContext with proper orientation
+//        UIGraphicsBeginImageContextWithOptions(image.size, false, image.scale)
+//        image.draw(in: CGRect(origin: .zero, size: image.size))
+//        let normalizedImage = UIGraphicsGetImageFromCurrentImageContext()!
+//        UIGraphicsEndImageContext()
+//
+//        return normalizedImage
+//    }
 
     private func loadPhotos() {
         // Load photos in the background thread to avoid UI blocking
         DispatchQueue.global(qos: .userInitiated).async {
             do {
-                // Only load metadata and file URLs, not actual image data
-                let photoMetadata = try self.secureFileManager.loadAllPhotoMetadata()
+                // Load metadata and file URLs from legacy system
+                let photoMetadata = try secureFileManager.loadAllPhotoMetadata()
 
-                // Create photo objects that will load their images on demand
-                var loadedPhotos = photoMetadata.map { filename, metadata, fileURL in
-                    SecurePhoto(
-                        filename: filename,
-                        metadata: metadata,
-                        fileURL: fileURL
-                    )
+                // Convert legacy metadata to SecurePhoto objects
+                var loadedPhotos: [SecurePhoto] = []
+
+                for (filename, metadataDict, fileURL) in photoMetadata {
+                    do {
+                        // Load the unencrypted photo data from legacy system
+                        let imageData = try Data(contentsOf: fileURL)
+
+                        // Convert legacy metadata dictionary to PhotoMetadata struct
+                        let creationDate = Date(timeIntervalSince1970: metadataDict["creationDate"] as? TimeInterval ?? Date().timeIntervalSince1970)
+                        let modificationDate = Date(timeIntervalSince1970: metadataDict["modificationDate"] as? TimeInterval ?? Date().timeIntervalSince1970)
+                        let fileSize = metadataDict["fileSize"] as? Int ?? imageData.count
+                        let isDecoy = metadataDict["isDecoy"] as? Bool ?? false
+
+                        // Create PhotoMetadata struct
+                        let metadata = PhotoMetadata(
+                            id: filename,
+                            creationDate: creationDate,
+                            modificationDate: modificationDate,
+                            fileSize: fileSize,
+                            faces: [], // TODO: Load faces from metadata if available
+                            maskMode: .none, // TODO: Load mask mode from metadata if available
+                            isDecoy: isDecoy
+                        )
+
+                        // Create UIImage and generate thumbnail
+                        guard let image = UIImage(data: imageData) else {
+                            print("Invalid image data for \(filename)")
+                            continue
+                        }
+
+                        // Generate thumbnail
+                        let thumbnailSize = CGSize(width: 200, height: 200)
+                        let renderer = UIGraphicsImageRenderer(size: thumbnailSize)
+                        let thumbnail = renderer.image { _ in
+                            image.draw(in: CGRect(origin: .zero, size: thumbnailSize))
+                        }
+
+                        // Create SecurePhoto object with cached images (legacy system uses unencrypted data)
+                        let securePhoto = SecurePhoto(
+                            id: filename,
+                            encryptedData: Data(), // Empty since legacy system doesn't encrypt
+                            metadata: metadata,
+                            cachedImage: image,
+                            cachedThumbnail: thumbnail
+                        )
+
+                        loadedPhotos.append(securePhoto)
+                    } catch {
+                        print("Error loading photo \(filename): \(error.localizedDescription)")
+                    }
                 }
 
-                // We'll update on main thread after sorting
-
-                // Sort photos by creation date (oldest at top, newest at bottom)
-                loadedPhotos.sort { photo1, photo2 in
-                    // Get creation dates from metadata
-                    let date1 = photo1.metadata["creationDate"] as? Double ?? 0
-                    let date2 = photo2.metadata["creationDate"] as? Double ?? 0
-
-                    // Sort by date (descending - newest first, which is more typical for photo galleries)
-                    return date2 < date1
-                }
+                // Sort by creation date (newest first)
+                loadedPhotos.sort { $0.metadata.creationDate > $1.metadata.creationDate }
 
                 // Update UI on the main thread
                 DispatchQueue.main.async {
@@ -527,19 +551,19 @@ struct SecureGalleryView: View {
                     MemoryManager.shared.freeAllMemory()
 
                     // Update the photos array
-                    self.photos = loadedPhotos
+                    photos = loadedPhotos
 
                     // If in decoy selection mode, pre-select existing decoy photos
-                    if self.isSelectingDecoys {
+                    if isSelectingDecoys {
                         // Find and select all photos that are already marked as decoys
                         for photo in loadedPhotos {
                             if photo.isDecoy {
-                                self.selectedPhotoIds.insert(photo.id)
+                                selectedPhotoIds.insert(photo.id)
                             }
                         }
 
                         // Enable selection mode
-                        self.isSelecting = true
+                        isSelecting = true
                     }
 
                     // Register these photos with the memory manager
@@ -551,44 +575,44 @@ struct SecureGalleryView: View {
         }
     }
 
-    private func deletePhoto(_ photo: SecurePhoto) {
-        // Perform file deletion in background thread
-        DispatchQueue.global(qos: .userInitiated).async {
-            do {
-                try self.secureFileManager.deletePhoto(filename: photo.filename)
-
-                // Update UI on main thread
-                DispatchQueue.main.async {
-                    // Remove from the local array
-                    withAnimation {
-                        self.photos.removeAll { $0.id == photo.id }
-                        if self.selectedPhotoIds.contains(photo.id) {
-                            self.selectedPhotoIds.remove(photo.id)
-                        }
-                    }
-                }
-            } catch {
-                print("Error deleting photo: \(error.localizedDescription)")
-            }
-        }
-    }
+//    private func deletePhoto(_ photo: SecurePhoto) {
+//        // Perform file deletion in background thread
+//        DispatchQueue.global(qos: .userInitiated).async {
+//            do {
+//                try secureFileManager.deletePhoto(filename: photo.id)
+//
+//                // Update UI on main thread
+//                DispatchQueue.main.async {
+//                    // Remove from the local array
+//                    withAnimation {
+//                        photos.removeAll { $0.id == photo.id }
+//                        if selectedPhotoIds.contains(photo.id) {
+//                            selectedPhotoIds.remove(photo.id)
+//                        }
+//                    }
+//                }
+//            } catch {
+//                print("Error deleting photo: \(error.localizedDescription)")
+//            }
+//        }
+//    }
 
     private func deleteSelectedPhotos() {
         print("deleteSelectedPhotos() called")
-        
+
         // Create a local copy of the photos to delete
         let photosToDelete = selectedPhotoIds.compactMap { id in
             photos.first(where: { $0.id == id })
         }
-        
-        print("Will delete \(photosToDelete.count) photos: \(photosToDelete.map { $0.filename }.joined(separator: ", "))")
+
+        print("Will delete \(photosToDelete.count) photos: \(photosToDelete.map(\.id).joined(separator: ", "))")
 
         // Clear selection and exit selection mode immediately
         // for better UI responsiveness
         DispatchQueue.main.async {
             print("Clearing selection UI state")
-            self.selectedPhotoIds.removeAll()
-            self.isSelecting = false
+            selectedPhotoIds.removeAll()
+            isSelecting = false
         }
 
         // Process deletions in a background queue
@@ -600,12 +624,12 @@ struct SecureGalleryView: View {
             for photo in photosToDelete {
                 group.enter()
                 do {
-                    print("Attempting to delete: \(photo.filename)")
-                    try self.secureFileManager.deletePhoto(filename: photo.filename)
-                    print("Successfully deleted: \(photo.filename)")
+                    print("Attempting to delete: \(photo.id)")
+                    try secureFileManager.deletePhoto(filename: photo.id)
+                    print("Successfully deleted: \(photo.id)")
                     group.leave()
                 } catch {
-                    print("Error deleting photo \(photo.filename): \(error.localizedDescription)")
+                    print("Error deleting photo \(photo.id): \(error.localizedDescription)")
                     group.leave()
                 }
             }
@@ -613,23 +637,23 @@ struct SecureGalleryView: View {
             // After all deletions are complete, update the UI
             group.notify(queue: .main) {
                 print("All deletions complete, updating UI")
-                
+
                 // Count photos before removal
-                let initialCount = self.photos.count
-                
+                let initialCount = photos.count
+
                 // Remove deleted photos from our array
                 withAnimation {
-                    self.photos.removeAll { photo in
+                    photos.removeAll { photo in
                         let shouldRemove = photosToDelete.contains { $0.id == photo.id }
                         if shouldRemove {
-                            print("Removing photo \(photo.filename) from UI")
+                            print("Removing photo \(photo.id) from UI")
                         }
                         return shouldRemove
                     }
                 }
-                
+
                 // Verify removal
-                let finalCount = self.photos.count
+                let finalCount = photos.count
                 let removedCount = initialCount - finalCount
                 print("UI update complete: removed \(removedCount) photos. Gallery now has \(finalCount) photos.")
             }
@@ -640,18 +664,17 @@ struct SecureGalleryView: View {
     // Save selected photos as decoys
     private func saveDecoySelections() {
         // First, un-mark any previously tagged decoys that aren't currently selected
-        for photo in photos {
-            let isCurrentlySelected = selectedPhotoIds.contains(photo.id)
+//        for photo in photos {
+//            let isCurrentlySelected = selectedPhotoIds.contains(photo.id)
 
-            // If it's currently a decoy but not selected, unmark it
-            if photo.isDecoy && !isCurrentlySelected {
-                photo.setDecoyStatus(false)
-            }
-            // If it's selected but not a decoy, mark it
-            else if isCurrentlySelected && !photo.isDecoy {
-                photo.setDecoyStatus(true)
-            }
-        }
+        // TODO: Implement decoy status update with new repository pattern
+        // if photo.isDecoy && !isCurrentlySelected {
+        //     photo.setDecoyStatus(false)
+        // }
+        // else if isCurrentlySelected && !photo.isDecoy {
+        //     photo.setDecoyStatus(true)
+        // }
+//        }
 
         // Reset selection and exit decoy mode
         isSelectingDecoys = false
@@ -663,12 +686,11 @@ struct SecureGalleryView: View {
         dismiss()
     }
 
-
     private func shareSelectedPhotos() {
         // Get all the selected photos
         let images = selectedPhotos
         guard !images.isEmpty else { return }
-        
+
         // Find the root view controller
         guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
               let window = windowScene.windows.first,
@@ -677,16 +699,16 @@ struct SecureGalleryView: View {
             print("Could not find root view controller")
             return
         }
-        
+
         // Find the presented view controller to present from
         var currentController = rootViewController
         while let presented = currentController.presentedViewController {
             currentController = presented
         }
-        
+
         // Create and prepare temporary files with UUID filenames
         var filesToShare: [URL] = []
-        
+
         for image in images {
             if let imageData = image.jpegData(compressionQuality: 0.9) {
                 do {
@@ -698,7 +720,7 @@ struct SecureGalleryView: View {
                 }
             }
         }
-        
+
         // Share files if any were successfully prepared
         if !filesToShare.isEmpty {
             // Create a UIActivityViewController to share the files
@@ -706,14 +728,14 @@ struct SecureGalleryView: View {
                 activityItems: filesToShare,
                 applicationActivities: nil
             )
-            
+
             // For iPad support
             if let popover = activityViewController.popoverPresentationController {
                 popover.sourceView = window
                 popover.sourceRect = CGRect(x: window.bounds.midX, y: window.bounds.midY, width: 0, height: 0)
                 popover.permittedArrowDirections = []
             }
-            
+
             // Present the share sheet
             DispatchQueue.main.async {
                 currentController.present(activityViewController, animated: true) {
@@ -723,19 +745,19 @@ struct SecureGalleryView: View {
         } else {
             // Fallback to sharing just the images if file preparation failed for all
             print("Falling back to sharing images directly")
-            
+
             let activityViewController = UIActivityViewController(
                 activityItems: images,
                 applicationActivities: nil
             )
-            
+
             // For iPad support
             if let popover = activityViewController.popoverPresentationController {
                 popover.sourceView = window
                 popover.sourceRect = CGRect(x: window.bounds.midX, y: window.bounds.midY, width: 0, height: 0)
                 popover.permittedArrowDirections = []
             }
-            
+
             DispatchQueue.main.async {
                 currentController.present(activityViewController, animated: true, completion: nil)
             }

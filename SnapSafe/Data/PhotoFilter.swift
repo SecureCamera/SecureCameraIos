@@ -12,17 +12,17 @@ enum PhotoFilter: String, CaseIterable {
     case imported = "Imported Photos"
     case edited = "Edited Photos"
     case withLocation = "Photos with Location"
-    
+
     var systemImage: String {
         switch self {
         case .all:
-            return "photo.stack"
+            "photo.stack"
         case .imported:
-            return "square.and.arrow.down"
+            "square.and.arrow.down"
         case .edited:
-            return "pencil.circle"
+            "pencil.circle"
         case .withLocation:
-            return "location.circle"
+            "location.circle"
         }
     }
 }

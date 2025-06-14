@@ -5,8 +5,8 @@
 //  Created by Bill Booth on 5/20/25.
 //
 
-import SwiftUI
 import Foundation
+import SwiftUI
 import UIKit
 
 struct FaceBoxView: View {
@@ -14,12 +14,12 @@ struct FaceBoxView: View {
     let originalSize: CGSize
     let displaySize: CGSize
     var onTap: () -> Void
-    
+
     // Get the scaled rectangle based on the display size
     private var scaledRect: CGRect {
         face.scaledRect(originalSize: originalSize, displaySize: displaySize)
     }
-    
+
     var body: some View {
         ZStack {
             // Draw the rectangle border with color based on selection state
@@ -29,7 +29,7 @@ struct FaceBoxView: View {
                     width: scaledRect.width,
                     height: scaledRect.height
                 )
-            
+
             // Show resize handles for selected faces
             if face.isSelected {
                 Group {
@@ -38,17 +38,17 @@ struct FaceBoxView: View {
                         .fill(Color.white)
                         .frame(width: 12, height: 12)
                         .position(x: scaledRect.minX, y: scaledRect.minY)
-                    
+
                     Circle()
                         .fill(Color.white)
                         .frame(width: 12, height: 12)
                         .position(x: scaledRect.maxX, y: scaledRect.minY)
-                    
+
                     Circle()
                         .fill(Color.white)
                         .frame(width: 12, height: 12)
                         .position(x: scaledRect.minX, y: scaledRect.maxY)
-                    
+
                     Circle()
                         .fill(Color.white)
                         .frame(width: 12, height: 12)
@@ -77,13 +77,13 @@ struct FaceBoxView_Previews: PreviewProvider {
             rect: CGRect(x: 50, y: 50, width: 100, height: 100),
             isSelected: true
         )
-        
+
         return ZStack {
             Color.gray
             Image(systemName: "person.fill")
                 .resizable()
                 .frame(width: 200, height: 200)
-            
+
             FaceBoxView(
                 face: face,
                 originalSize: CGSize(width: 400, height: 400),

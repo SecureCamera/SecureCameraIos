@@ -1,5 +1,5 @@
 //
-//  Snap_SafeUITestsLaunchTests.swift
+//  SnapSafeUITestsLaunchTests.swift
 //  SnapSafeUITests
 //
 //  Created by Bill Booth on 5/2/25.
@@ -8,7 +8,6 @@
 import XCTest
 
 final class Snap_SafeUITestsLaunchTests: XCTestCase {
-
     override class var runsForEachTargetApplicationUIConfiguration: Bool {
         true
     }

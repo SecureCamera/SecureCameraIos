@@ -13,29 +13,29 @@ struct EnhancedPhotoDetailView: View {
     let showFaceDetection: Bool
     let onDelete: ((SecurePhoto) -> Void)?
     let onDismiss: (() -> Void)?
-    
+
     @Environment(\.dismiss) private var dismiss
     @State private var dragOffset: CGSize = .zero
     @State private var dismissProgress: CGFloat = 0
     @State private var isTabViewTransitioning: Bool = false
-    @State private var lastIndexChangeTime: Date = Date()
-    
+    @State private var lastIndexChangeTime: Date = .init()
+
     init(allPhotos: [SecurePhoto], initialIndex: Int, showFaceDetection: Bool, onDelete: ((SecurePhoto) -> Void)? = nil, onDismiss: (() -> Void)? = nil) {
         self.allPhotos = allPhotos
-        self._currentIndex = State(initialValue: initialIndex)
+        _currentIndex = State(initialValue: initialIndex)
         self.showFaceDetection = showFaceDetection
         self.onDelete = onDelete
         self.onDismiss = onDismiss
     }
-    
+
     var body: some View {
-        GeometryReader { geometry in
+        GeometryReader { _ in
             ZStack {
                 // Background that fades during dismiss
                 Color.black
                     .opacity(1.0 - dismissProgress * 0.8)
                     .edgesIgnoringSafeArea(.all)
-                
+
                 TabView(selection: $currentIndex) {
                     ForEach(Array(allPhotos.enumerated()), id: \.element.id) { index, photo in
                         PhotoDetailView_Impl(
@@ -55,22 +55,22 @@ struct EnhancedPhotoDetailView: View {
 //                    // Track when TabView transitions occur
 //                    isTabViewTransitioning = true
 //                    lastIndexChangeTime = Date()
-//                    
+//
 //                    // Reset any dismiss progress during navigation
 //                    withAnimation(.easeOut(duration: 0.2)) {
 //                        dragOffset = .zero
 //                        dismissProgress = 0
 //                    }
-//                    
+//
 //                    // Preload adjacent photos when index changes
 //                    preloadAdjacentPhotos(currentIndex: newIndex)
-//                    
+//
 //                     Clear transition state after a delay
 //                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
 //                        isTabViewTransitioning = false
 //                    }
 //                }
-                
+
                 // Photo counter overlay
                 VStack {
                     HStack {
@@ -86,14 +86,14 @@ struct EnhancedPhotoDetailView: View {
                         Spacer()
                     }
                     .padding(.top, 50)
-                    
+
                     Spacer()
                 }
             }
             .obscuredWhenInactive()
             .gesture(
                 DragGesture()
-                    .onChanged { value in
+                    .onChanged { _ in
                         // Bail out until the drag is clearly vertical
 //                        guard abs(value.translation.height) >
 //                              abs(value.translation.width) else { return }
@@ -102,7 +102,7 @@ struct EnhancedPhotoDetailView: View {
 //                        dismissProgress = min(value.translation.height /
 //                                              (geometry.size.height * 0.4), 1.0)
                     }
-                    .onEnded { value in
+                    .onEnded { _ in
                         // Same dominant-axis guard here *before* any threshold checks
 //                        guard abs(value.translation.height) >
 //                              abs(value.translation.width) else { return }
@@ -132,7 +132,7 @@ struct EnhancedPhotoDetailView: View {
             preloadAdjacentPhotos(currentIndex: currentIndex)
         }
     }
-    
+
     private func preloadAdjacentPhotos(currentIndex: Int) {
         // Preload previous photo
         if currentIndex > 0 {
@@ -141,7 +141,7 @@ struct EnhancedPhotoDetailView: View {
                 _ = previousPhoto.thumbnail
             }
         }
-        
+
         // Preload next photo
         if currentIndex < allPhotos.count - 1 {
             let nextPhoto = allPhotos[currentIndex + 1]

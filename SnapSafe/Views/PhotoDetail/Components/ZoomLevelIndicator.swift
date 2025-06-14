@@ -10,13 +10,13 @@ import SwiftUI
 struct ZoomLevelIndicator: View {
     let scale: CGFloat
     let isVisible: Bool
-    
+
     var body: some View {
         ZStack {
             Capsule()
                 .fill(Color.black.opacity(0.7))
                 .frame(width: 70, height: 30)
-            
+
             Text(String(format: "%.1fx", scale))
                 .font(.system(size: 14, weight: .bold))
                 .foregroundColor(.white)
