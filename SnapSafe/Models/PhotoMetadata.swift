@@ -27,20 +27,20 @@ struct PhotoMetadata: Codable, Equatable {
     }
 }
 
-struct PhotoPredicate {
-    let dateRange: ClosedRange<Date>?
-    let hasFaces: Bool?
-    let maskMode: MaskMode?
+//struct PhotoPredicate {
+//    let dateRange: ClosedRange<Date>?
+//    let hasFaces: Bool?
+//    let maskMode: MaskMode?
+//
+//    init(dateRange: ClosedRange<Date>? = nil, hasFaces: Bool? = nil, maskMode: MaskMode? = nil) {
+//        self.dateRange = dateRange
+//        self.hasFaces = hasFaces
+//        self.maskMode = maskMode
+//    }
+//}
 
-    init(dateRange: ClosedRange<Date>? = nil, hasFaces: Bool? = nil, maskMode: MaskMode? = nil) {
-        self.dateRange = dateRange
-        self.hasFaces = hasFaces
-        self.maskMode = maskMode
-    }
-}
-
-enum ExportFormat {
-    case jpeg(quality: CGFloat)
-    case png
-    case heic
-}
+//enum ExportFormat {
+//    case jpeg(quality: CGFloat)
+//    case png
+//    case heic
+//}

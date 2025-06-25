@@ -129,17 +129,14 @@ class SecurePhoto: Identifiable, Equatable {
         }
     }
 
-    // Computed property for backward compatibility
     var isDecoy: Bool {
         metadata.isDecoy
     }
 
-    // Computed property for backward compatibility - returns cached image if available
     var fullImage: UIImage {
         cachedImage ?? thumbnail
     }
 
-    // New repository-compatible initializer
     init(id: String, encryptedData: Data, metadata: PhotoMetadata, cachedImage: UIImage? = nil, cachedThumbnail: UIImage? = nil) {
         self.id = id
         self.encryptedData = encryptedData
@@ -148,7 +145,6 @@ class SecurePhoto: Identifiable, Equatable {
         self.cachedThumbnail = cachedThumbnail
     }
 
-    // Implement Equatable
     static func == (lhs: SecurePhoto, rhs: SecurePhoto) -> Bool {
         lhs.id == rhs.id
     }

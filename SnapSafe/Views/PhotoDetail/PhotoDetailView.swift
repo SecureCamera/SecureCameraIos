@@ -10,12 +10,9 @@ import ImageIO
 import SwiftUI
 import UIKit
 
-// Use a different name to avoid conflicts with the top-level typealias
 struct PhotoDetailView_Impl: View {
-    // ViewModel
     @StateObject private var viewModel: PhotoDetailViewModel
 
-    // Environment
     @Environment(\.dismiss) private var dismiss
 
     // Initialize with a single photo
@@ -42,7 +39,6 @@ struct PhotoDetailView_Impl: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                // Background color
                 Color.black.opacity(0.05)
                     .edgesIgnoringSafeArea(.all)
 

@@ -190,37 +190,36 @@ class SecureFileManager {
         return nil
     }
 
-    // Keep this for compatibility, but don't use it for loading the gallery
-    func loadAllPhotos() throws -> [(filename: String, data: Data, metadata: [String: Any])] {
-        let secureDirectory = try getSecureDirectory()
-        let contents = try fileManager.contentsOfDirectory(at: secureDirectory, includingPropertiesForKeys: nil)
-
-        var photos: [(filename: String, data: Data, metadata: [String: Any])] = []
-
-        for fileURL in contents {
-            if fileURL.pathExtension == "photo" {
-                let filename = fileURL.deletingPathExtension().lastPathComponent
-
-                // Load photo data
-                let photoData = try Data(contentsOf: fileURL)
-
-                // Try to load metadata if it exists
-                let metadataURL = secureDirectory.appendingPathComponent("\(filename).metadata")
-                var metadata: [String: Any] = [:]
-
-                if fileManager.fileExists(atPath: metadataURL.path) {
-                    let metadataData = try Data(contentsOf: metadataURL)
-                    if let loadedMetadata = try JSONSerialization.jsonObject(with: metadataData, options: []) as? [String: Any] {
-                        metadata = loadedMetadata
-                    }
-                }
-
-                photos.append((filename: filename, data: photoData, metadata: metadata))
-            }
-        }
-
-        return photos
-    }
+//    func loadAllPhotos() throws -> [(filename: String, data: Data, metadata: [String: Any])] {
+//        let secureDirectory = try getSecureDirectory()
+//        let contents = try fileManager.contentsOfDirectory(at: secureDirectory, includingPropertiesForKeys: nil)
+//
+//        var photos: [(filename: String, data: Data, metadata: [String: Any])] = []
+//
+//        for fileURL in contents {
+//            if fileURL.pathExtension == "photo" {
+//                let filename = fileURL.deletingPathExtension().lastPathComponent
+//
+//                // Load photo data
+//                let photoData = try Data(contentsOf: fileURL)
+//
+//                // Try to load metadata if it exists
+//                let metadataURL = secureDirectory.appendingPathComponent("\(filename).metadata")
+//                var metadata: [String: Any] = [:]
+//
+//                if fileManager.fileExists(atPath: metadataURL.path) {
+//                    let metadataData = try Data(contentsOf: metadataURL)
+//                    if let loadedMetadata = try JSONSerialization.jsonObject(with: metadataData, options: []) as? [String: Any] {
+//                        metadata = loadedMetadata
+//                    }
+//                }
+//
+//                photos.append((filename: filename, data: photoData, metadata: metadata))
+//            }
+//        }
+//
+//        return photos
+//    }
 
     // Load specific photo by filename
     func loadPhoto(filename: String) throws -> (data: Data, metadata: [String: Any]) {

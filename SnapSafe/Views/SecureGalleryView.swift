@@ -33,8 +33,6 @@ struct SecureGalleryView: View {
     @State private var isImporting: Bool = false
     @State private var importProgress: Float = 0
 
-    // Filter state
-    @State private var selectedFilter: PhotoFilter = .all
 
     // Decoy selection mode
     @State private var isSelectingDecoys: Bool = false
@@ -68,20 +66,6 @@ struct SecureGalleryView: View {
 //    private var currentDecoyCount: Int {
 //        photos.count(where: { $0.isDecoy })
 //    }
-
-    // Computed property to get filtered photos
-    private var filteredPhotos: [SecurePhoto] {
-        switch selectedFilter {
-        case .all:
-            photos
-        case .imported:
-            photos.filter { _ in false } // TODO: Add imported flag to PhotoMetadata
-        case .edited:
-            photos.filter { _ in false } // TODO: Add edited flag to PhotoMetadata
-        case .withLocation:
-            photos.filter { _ in false } // TODO: Add location data to PhotoMetadata
-        }
-    }
 
     // Get an array of selected photos for sharing
     private var selectedPhotos: [UIImage] {
@@ -123,7 +107,7 @@ struct SecureGalleryView: View {
                 )
             }
         }
-        .navigationTitle(isSelectingDecoys ? "Select Decoy Photos" : (selectedFilter == .all ? "Secure Gallery" : selectedFilter.rawValue))
+        .navigationTitle(isSelectingDecoys ? "Select Decoy Photos" : "Secure Gallery")
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
         .toolbar {
@@ -179,20 +163,6 @@ struct SecureGalleryView: View {
                                 isSelecting = true
                             }
 
-                            Menu("Filter Photos") {
-                                ForEach(PhotoFilter.allCases, id: \.self) { filter in
-                                    Button(action: {
-                                        selectedFilter = filter
-                                    }) {
-                                        HStack {
-                                            Text(filter.rawValue)
-                                            if selectedFilter == filter {
-                                                Image(systemName: "checkmark")
-                                            }
-                                        }
-                                    }
-                                }
-                            }
                         } label: {
                             Image(systemName: "ellipsis.circle")
                                 .foregroundColor(.blue)
@@ -297,9 +267,9 @@ struct SecureGalleryView: View {
         }
         .fullScreenCover(item: $selectedPhoto) { photo in
             // Find the index of the selected photo in the photos array
-            if let initialIndex = filteredPhotos.firstIndex(where: { $0.id == photo.id }) {
+            if let initialIndex = photos.firstIndex(where: { $0.id == photo.id }) {
                 EnhancedPhotoDetailView(
-                    allPhotos: filteredPhotos,
+                    allPhotos: photos,
                     initialIndex: initialIndex,
                     showFaceDetection: showFaceDetection,
                     onDelete: { _ in loadPhotos() },
@@ -365,13 +335,11 @@ struct SecureGalleryView: View {
         )
     }
 
-//    }
-
     // Photo grid subview
     private var photosGridView: some View {
         ScrollView {
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 10) {
-                ForEach(filteredPhotos) { photo in
+                ForEach(photos) { photo in
                     PhotoCell(
                         photo: photo,
                         isSelected: selectedPhotoIds.contains(photo.id),
