@@ -33,7 +33,6 @@ struct SecureGalleryView: View {
     @State private var isImporting: Bool = false
     @State private var importProgress: Float = 0
 
-
     // Decoy selection mode
     @State private var isSelectingDecoys: Bool = false
     @State private var maxDecoys: Int = 10
@@ -338,7 +337,11 @@ struct SecureGalleryView: View {
     // Photo grid subview
     private var photosGridView: some View {
         ScrollView {
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 10) {
+            LazyVGrid(columns: [
+                GridItem(.flexible(), spacing: 10),
+                GridItem(.flexible(), spacing: 10),
+                GridItem(.flexible(), spacing: 10),
+            ], spacing: 10) {
                 ForEach(photos) { photo in
                     PhotoCell(
                         photo: photo,

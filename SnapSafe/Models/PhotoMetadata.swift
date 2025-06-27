@@ -27,7 +27,7 @@ struct PhotoMetadata: Codable, Equatable {
     }
 }
 
-//struct PhotoPredicate {
+// struct PhotoPredicate {
 //    let dateRange: ClosedRange<Date>?
 //    let hasFaces: Bool?
 //    let maskMode: MaskMode?
@@ -37,10 +37,10 @@ struct PhotoMetadata: Codable, Equatable {
 //        self.hasFaces = hasFaces
 //        self.maskMode = maskMode
 //    }
-//}
+// }
 
-//enum ExportFormat {
+// enum ExportFormat {
 //    case jpeg(quality: CGFloat)
 //    case png
 //    case heic
-//}
+// }

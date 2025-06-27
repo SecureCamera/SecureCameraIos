@@ -18,17 +18,12 @@ struct PhotoCell: View {
     // Track whether this cell is visible in the viewport
     @State private var isVisible: Bool = false
 
-    // Cell size
-    private let cellSize: CGFloat = 100
-
     var body: some View {
         ZStack(alignment: .topTrailing) {
-            // Photo image that fills the entire cell
+            // Photo image that maintains aspect ratio
             Image(uiImage: photo.thumbnail)
                 .resizable()
-                .aspectRatio(contentMode: .fill) // Use .fill to cover the entire cell
-                .frame(width: cellSize, height: cellSize)
-                .clipped() // Clip any overflow
+                .aspectRatio(contentMode: .fit) // Use .fit to maintain aspect ratio
                 .cornerRadius(10)
                 .onTapGesture(perform: onTap)
                 .overlay(

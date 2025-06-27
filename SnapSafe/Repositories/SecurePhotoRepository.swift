@@ -150,7 +150,7 @@ class SecurePhoto: Identifiable, Equatable {
     }
 }
 
-//enum SecurePhotoError: Error, LocalizedError {
+// enum SecurePhotoError: Error, LocalizedError {
 //    case invalidImageData
 //    case decryptionFailed
 //
@@ -162,4 +162,4 @@ class SecurePhoto: Identifiable, Equatable {
 //            "Failed to decrypt image"
 //        }
 //    }
-//}
+// }
