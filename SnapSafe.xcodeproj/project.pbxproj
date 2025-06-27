@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 77;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -11,7 +11,6 @@
 		A91DBC552DE58191001F42ED /* DetectedFace.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC262DE58191001F42ED /* DetectedFace.swift */; };
 		A91DBC562DE58191001F42ED /* MaskMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC272DE58191001F42ED /* MaskMode.swift */; };
 		A91DBC572DE58191001F42ED /* MemoryManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC282DE58191001F42ED /* MemoryManager.swift */; };
-		A91DBC582DE58191001F42ED /* PhotoFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC292DE58191001F42ED /* PhotoFilter.swift */; };
 		A91DBC592DE58191001F42ED /* SecurePhoto.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC2A2DE58191001F42ED /* SecurePhoto.swift */; };
 		A91DBC5A2DE58191001F42ED /* FaceBoxView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC2E2DE58191001F42ED /* FaceBoxView.swift */; };
 		A91DBC5B2DE58191001F42ED /* FaceDetectionControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC2F2DE58191001F42ED /* FaceDetectionControlsView.swift */; };
@@ -47,6 +46,7 @@
 		A91DBC792DE58191001F42ED /* SnapSafeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC522DE58191001F42ED /* SnapSafeApp.swift */; };
 		A91DBC7A2DE58191001F42ED /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A91DBC2C2DE58191001F42ED /* Preview Assets.xcassets */; };
 		A91DBC7B2DE58191001F42ED /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A91DBC3F2DE58191001F42ED /* Assets.xcassets */; };
+		A9445CBB2DE7DD7B0038119B /* PhotoMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9445CBA2DE7DD7B0038119B /* PhotoMetadata.swift */; };
 		A9B3E0882DCF1D3C003F1ED3 /* Dependencies in Frameworks */ = {isa = PBXBuildFile; productRef = A9B3E0872DCF1D3C003F1ED3 /* Dependencies */; };
 		A9B3E08A2DCF1D3C003F1ED3 /* DependenciesTestSupport in Frameworks */ = {isa = PBXBuildFile; productRef = A9B3E0892DCF1D3C003F1ED3 /* DependenciesTestSupport */; };
 /* End PBXBuildFile section */
@@ -74,7 +74,6 @@
 		A91DBC262DE58191001F42ED /* DetectedFace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetectedFace.swift; sourceTree = "<group>"; };
 		A91DBC272DE58191001F42ED /* MaskMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MaskMode.swift; sourceTree = "<group>"; };
 		A91DBC282DE58191001F42ED /* MemoryManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryManager.swift; sourceTree = "<group>"; };
-		A91DBC292DE58191001F42ED /* PhotoFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoFilter.swift; sourceTree = "<group>"; };
 		A91DBC2A2DE58191001F42ED /* SecurePhoto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurePhoto.swift; sourceTree = "<group>"; };
 		A91DBC2C2DE58191001F42ED /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		A91DBC2E2DE58191001F42ED /* FaceBoxView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceBoxView.swift; sourceTree = "<group>"; };
@@ -110,23 +109,34 @@
 		A91DBC502DE58191001F42ED /* SecureGalleryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureGalleryView.swift; sourceTree = "<group>"; };
 		A91DBC512DE58191001F42ED /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		A91DBC522DE58191001F42ED /* SnapSafeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapSafeApp.swift; sourceTree = "<group>"; };
+		A9445CBA2DE7DD7B0038119B /* PhotoMetadata.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoMetadata.swift; sourceTree = "<group>"; };
 		A9DE37472DC5F34400679C2C /* SnapSafe.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SnapSafe.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A9DE37572DC5F34600679C2C /* SnapSafeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SnapSafeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A9DE37612DC5F34600679C2C /* SnapSafeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SnapSafeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
-/* Begin PBXGroup section */
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		A9445CBC2DE820E30038119B /* Repositories */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Repositories;
+			sourceTree = "<group>";
+		};
+		A9445CBD2DE8210A0038119B /* Data */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Data;
+			sourceTree = "<group>";
+		};
 		A9DE375A2DC5F34600679C2C /* SnapSafeTests */ = {
-			isa = PBXGroup;
+			isa = PBXFileSystemSynchronizedRootGroup;
 			path = SnapSafeTests;
 			sourceTree = "<group>";
 		};
 		A9DE37642DC5F34600679C2C /* SnapSafeUITests */ = {
-			isa = PBXGroup;
+			isa = PBXFileSystemSynchronizedRootGroup;
 			path = SnapSafeUITests;
 			sourceTree = "<group>";
 		};
-/* End PBXGroup section */
+/* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		A9DE37442DC5F34400679C2C /* Frameworks */ = {
@@ -161,8 +171,8 @@
 				A91DBC252DE58191001F42ED /* AppearanceMode.swift */,
 				A91DBC262DE58191001F42ED /* DetectedFace.swift */,
 				A91DBC272DE58191001F42ED /* MaskMode.swift */,
+				A91DBC432DE58191001F42ED /* CameraModel.swift */,
 				A91DBC282DE58191001F42ED /* MemoryManager.swift */,
-				A91DBC292DE58191001F42ED /* PhotoFilter.swift */,
 				A91DBC2A2DE58191001F42ED /* SecurePhoto.swift */,
 			);
 			path = Models;
@@ -222,6 +232,8 @@
 		A91DBC532DE58191001F42ED /* SnapSafe */ = {
 			isa = PBXGroup;
 			children = (
+				A9445CBD2DE8210A0038119B /* Data */,
+				A9445CBC2DE820E30038119B /* Repositories */,
 				A91DBC2B2DE58191001F42ED /* Models */,
 				A91DBC2D2DE58191001F42ED /* Preview Content */,
 				A91DBC3D2DE58191001F42ED /* Views */,
@@ -230,7 +242,6 @@
 				A91DBC402DE58191001F42ED /* AuthenticationOverlayView.swift */,
 				A91DBC412DE58191001F42ED /* AuthManager.swift */,
 				A91DBC422DE58191001F42ED /* CamControl.swift */,
-				A91DBC432DE58191001F42ED /* CameraModel.swift */,
 				A91DBC442DE58191001F42ED /* ContentView.swift */,
 				A91DBC452DE58191001F42ED /* EncryptionManager.swift */,
 				A91DBC462DE58191001F42ED /* FaceDetector.swift */,
@@ -253,6 +264,7 @@
 		A9DE373E2DC5F34400679C2C = {
 			isa = PBXGroup;
 			children = (
+				A9445CBA2DE7DD7B0038119B /* PhotoMetadata.swift */,
 				A91DBB422DE41BAE001F42ED /* SnapSafe.xctestplan */,
 				A91DBC532DE58191001F42ED /* SnapSafe */,
 				A9DE375A2DC5F34600679C2C /* SnapSafeTests */,
@@ -285,6 +297,10 @@
 			buildRules = (
 			);
 			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				A9445CBC2DE820E30038119B /* Repositories */,
+				A9445CBD2DE8210A0038119B /* Data */,
 			);
 			name = SnapSafe;
 			packageProductDependencies = (
@@ -423,7 +439,6 @@
 				A91DBC552DE58191001F42ED /* DetectedFace.swift in Sources */,
 				A91DBC562DE58191001F42ED /* MaskMode.swift in Sources */,
 				A91DBC572DE58191001F42ED /* MemoryManager.swift in Sources */,
-				A91DBC582DE58191001F42ED /* PhotoFilter.swift in Sources */,
 				A91DBC592DE58191001F42ED /* SecurePhoto.swift in Sources */,
 				A91DBC5A2DE58191001F42ED /* FaceBoxView.swift in Sources */,
 				A91DBC5B2DE58191001F42ED /* FaceDetectionControlsView.swift in Sources */,
@@ -433,6 +448,7 @@
 				A91DBC5F2DE58191001F42ED /* ZoomLevelIndicator.swift in Sources */,
 				A91DBC602DE58191001F42ED /* ZoomableModifier.swift in Sources */,
 				A91DBC612DE58191001F42ED /* EnhancedPhotoDetailView.swift in Sources */,
+				A9445CBB2DE7DD7B0038119B /* PhotoMetadata.swift in Sources */,
 				A91DBC622DE58191001F42ED /* ImageInfoView.swift in Sources */,
 				A91DBC632DE58191001F42ED /* PhotoDetail.swift in Sources */,
 				A91DBC642DE58191001F42ED /* PhotoDetailView.swift in Sources */,

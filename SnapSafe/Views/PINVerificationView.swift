@@ -13,21 +13,21 @@ struct PINVerificationView: View {
     @State private var showError = false
     @State private var attempts = 0
     @Binding var isAuthenticated: Bool
-    
+
     var body: some View {
         VStack(spacing: 30) {
             Image(systemName: "lock.shield")
                 .font(.system(size: 70))
                 .foregroundColor(.blue)
                 .padding(.top, 50)
-            
+
             Text("SnapSafe")
                 .font(.largeTitle)
                 .bold()
-            
+
             Text("Enter your PIN to continue")
                 .foregroundColor(.secondary)
-            
+
             SecureField("PIN", text: $pin)
                 .keyboardType(.numberPad)
                 .textContentType(.oneTimeCode)
@@ -40,25 +40,25 @@ struct PINVerificationView: View {
                     if newValue.count > 4 {
                         pin = String(newValue.prefix(4))
                     }
-                    
+
                     // Only allow numbers
-                    if !newValue.allSatisfy({ $0.isNumber }) {
-                        pin = newValue.filter { $0.isNumber }
+                    if !newValue.allSatisfy(\.isNumber) {
+                        pin = newValue.filter(\.isNumber)
                     }
-                    
+
                     // Auto-verify when 4 digits are entered
                     if newValue.count == 4 {
                         verifyPIN()
                     }
                 }
-            
+
             if showError {
                 Text("Invalid PIN. Please try again.")
                     .foregroundColor(.red)
                     .font(.callout)
                     .padding(.top, 5)
             }
-            
+
             Button(action: {
                 verifyPIN()
             }) {
@@ -71,7 +71,7 @@ struct PINVerificationView: View {
             }
             .disabled(pin.count != 4)
             .padding(.top, 20)
-            
+
             Spacer()
         }
         .onAppear {
@@ -81,23 +81,23 @@ struct PINVerificationView: View {
         .obscuredWhenInactive()
         .screenCaptureProtected()
     }
-    
+
     private func verifyPIN() {
         if pinManager.verifyPIN(pin) {
             // PIN is correct - prioritize setting authentication flag
             // to trigger immediate transition
             print("PIN correct, transitioning immediately")
-            
+
             // Update authentication state with high priority
             DispatchQueue.main.async(qos: .userInteractive) {
-                self.isAuthenticated = true
-                self.showError = false
-                
+                isAuthenticated = true
+                showError = false
+
                 // Update last active time after transition has started
-                self.pinManager.updateLastActiveTime()
-                
+                pinManager.updateLastActiveTime()
+
                 // Clear the PIN field for next time
-                self.pin = ""
+                pin = ""
             }
         } else {
             // PIN is incorrect
@@ -105,7 +105,7 @@ struct PINVerificationView: View {
             showError = true
             attempts += 1
             pin = ""
-            
+
             // Could add more sophisticated security measures here, like
             // temporary lockout after multiple failed attempts
         }

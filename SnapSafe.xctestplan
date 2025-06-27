@@ -9,12 +9,18 @@
     }
   ],
   "defaultOptions" : {
+    "addressSanitizer" : {
+      "detectStackUseAfterReturn" : true,
+      "enabled" : true
+    },
     "targetForVariableExpansion" : {
       "containerPath" : "container:SnapSafe.xcodeproj",
       "identifier" : "A9DE37462DC5F34400679C2C",
       "name" : "SnapSafe"
     },
-    "testExecutionOrdering" : "random"
+    "testExecutionOrdering" : "random",
+    "testRepetitionMode" : "retryOnFailure",
+    "undefinedBehaviorSanitizerEnabled" : true
   },
   "testTargets" : [
     {

@@ -1,16 +1,15 @@
 //
-//  Snap_SafeTests.swift
+//  SnapSafeTests.swift
 //  SnapSafeTests
 //
 //  Created by Bill Booth on 5/2/25.
 //
 
-import XCTest
 @testable import SnapSafe
+import XCTest
 
 /// Basic test class to verify test target is working
 class SnapSafeTests: XCTestCase {
-
     override func setUpWithError() throws {
         // Put setup code here. This method is called before the invocation of each test method in the class.
     }
@@ -27,9 +26,9 @@ class SnapSafeTests: XCTestCase {
 
     func testPerformanceExample() throws {
         // This is an example of a performance test case.
-        self.measure {
+        measure {
             // Put the code you want to measure the time of here.
-            let _ = Array(0...1000).map { $0 * 2 }
+            let _ = Array(0 ... 1000).map { $0 * 2 }
         }
     }
 }

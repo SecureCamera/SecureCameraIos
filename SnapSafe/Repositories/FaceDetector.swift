@@ -11,7 +11,6 @@ import Security
 import UIKit
 import Vision
 
-
 class FaceDetector {
     // Detect faces and return as DetectedFace objects
     func detectFaces(in image: UIImage, completion: @escaping ([DetectedFace]) -> Void) {
@@ -83,7 +82,7 @@ class FaceDetector {
     // Process faces with specified masking modes with memory optimizations
     func maskFaces(in image: UIImage, faces: [DetectedFace], modes: [MaskMode]) -> UIImage? {
         // Only process selected faces
-        let selectedFaces = faces.filter { $0.isSelected }
+        let selectedFaces = faces.filter(\.isSelected)
 
         if selectedFaces.isEmpty || modes.isEmpty {
             return image
@@ -119,6 +118,12 @@ class FaceDetector {
 
             // Apply the appropriate masking effect
             switch primaryMode {
+            case .none:
+                // For none, don't apply any masking (just restore original)
+                if let faceCGImage = workingImage.cgImage?.cropping(to: safeRect) {
+                    UIImage(cgImage: faceCGImage).draw(in: safeRect)
+                }
+
             case .blackout:
                 // For blackout, just fill with black
                 context.setFillColor(UIColor.black.cgColor)
@@ -216,27 +221,7 @@ class FaceDetector {
 
     // Blur faces with default blur mode
     func blurFaces(in image: UIImage, faces: [DetectedFace]) -> UIImage? {
-        return maskFaces(in: image, faces: faces, modes: [.blur])
-    }
-
-    // MARK: - Face Masking Implementations
-
-    // Blackout a region of the image
-    private func blackout(image: UIImage, rect: CGRect) -> UIImage? {
-        UIGraphicsBeginImageContextWithOptions(image.size, false, image.scale)
-        defer { UIGraphicsEndImageContext() }
-
-        image.draw(at: .zero)
-
-        guard let context = UIGraphicsGetCurrentContext() else {
-            return nil
-        }
-
-        // Fill the rect with black
-        context.setFillColor(UIColor.black.cgColor)
-        context.fill(rect)
-
-        return UIGraphicsGetImageFromCurrentImageContext()
+        maskFaces(in: image, faces: faces, modes: [.blur])
     }
 
     // Pixelate a region of the image
@@ -265,7 +250,7 @@ class FaceDetector {
         let smallImage = UIGraphicsGetImageFromCurrentImageContext()
         UIGraphicsEndImageContext()
 
-        guard var smallImage = smallImage else { return nil }
+        guard var smallImage else { return nil }
 
         // Step 2: Optionally add noise to the small image
         if addNoise {

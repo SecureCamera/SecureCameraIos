@@ -5,32 +5,32 @@
 //  Created by Bill Booth on 5/20/25.
 //
 
-import UIKit
 import SwiftUI
+import UIKit
 
 class PhotoDetailViewModel: ObservableObject {
     private var photo: SecurePhoto?
-    
+
     @Published var allPhotos: [SecurePhoto] = []
     @Published var currentIndex: Int = 0
-    
+
     // Callback handlers
     var onDelete: ((SecurePhoto) -> Void)?
     var onDismiss: (() -> Void)?
-    
+
     // UI state variables
     @Published var showDeleteConfirmation = false
     @Published var imageRotation: Double = 0
     @Published var offset: CGFloat = 0
     @Published var isSwiping: Bool = false
-    
+
     // Zoom and pan states
     @Published var currentScale: CGFloat = 1.0
     @Published var dragOffset: CGSize = .zero
     @Published var lastScale: CGFloat = 1.0
     @Published var isZoomed: Bool = false
     @Published var lastDragPosition: CGSize = .zero
-    
+
     // Face detection states
     @Published var isFaceDetectionActive = false
     @Published var detectedFaces: [DetectedFace] = []
@@ -39,34 +39,35 @@ class PhotoDetailViewModel: ObservableObject {
     @Published var showBlurConfirmation = false
     @Published var selectedMaskMode: MaskMode = .blur
     @Published var showMaskOptions = false
-    
+
     @Published var showImageInfo = false
-    
+
     @Published var imageFrameSize: CGSize = .zero
-    
+
     private let faceDetector = FaceDetector()
     private let secureFileManager = SecureFileManager()
-    
+
     let showFaceDetection: Bool
-    
+
     // MARK: - Initialization
-    
+
     init(photo: SecurePhoto, showFaceDetection: Bool, onDelete: ((SecurePhoto) -> Void)? = nil, onDismiss: (() -> Void)? = nil) {
         self.photo = photo
         self.showFaceDetection = showFaceDetection
         self.onDelete = onDelete
         self.onDismiss = onDismiss
     }
-    
+
     init(allPhotos: [SecurePhoto], initialIndex: Int, showFaceDetection: Bool, onDelete: ((SecurePhoto) -> Void)? = nil, onDismiss: (() -> Void)? = nil) {
         self.allPhotos = allPhotos
-        self.currentIndex = initialIndex
+        currentIndex = initialIndex
         self.showFaceDetection = showFaceDetection
         self.onDelete = onDelete
         self.onDismiss = onDismiss
     }
-    
+
     // MARK: - Computed Properties
+
     var currentPhoto: SecurePhoto {
         if !allPhotos.isEmpty {
             for (index, photo) in allPhotos.enumerated() {
@@ -81,15 +82,16 @@ class PhotoDetailViewModel: ObservableObject {
                 }
             }
             return allPhotos[currentIndex]
-        } else if let photo = photo {
+        } else if let photo {
             photo.isVisible = true
             return photo
         } else {
             // Should never happen but just in case
-            return SecurePhoto(filename: "", thumbnail: UIImage(), fullImage: UIImage(), metadata: [:])
+            let emptyMetadata = PhotoMetadata(id: UUID().uuidString, fileSize: 0)
+            return SecurePhoto(id: UUID().uuidString, encryptedData: Data(), metadata: emptyMetadata)
         }
     }
-    
+
     var displayedImage: UIImage {
         if isFaceDetectionActive, let modified = modifiedImage {
             return modified
@@ -101,73 +103,79 @@ class PhotoDetailViewModel: ObservableObject {
             return image
         }
     }
-    
+
     var canGoToPrevious: Bool {
         !allPhotos.isEmpty && currentIndex > 0
     }
-    
+
     var canGoToNext: Bool {
         !allPhotos.isEmpty && currentIndex < allPhotos.count - 1
     }
-    
+
     var hasFacesSelected: Bool {
         detectedFaces.contains { $0.isSelected }
     }
-    
+
     var maskActionTitle: String {
         switch selectedMaskMode {
+        case .none:
+            "No Masking"
         case .blur:
-            return "Blur Selected Faces"
+            "Blur Selected Faces"
         case .pixelate:
-            return "Pixelate Selected Faces"
+            "Pixelate Selected Faces"
         case .blackout:
-            return "Blackout Selected Faces"
+            "Blackout Selected Faces"
         case .noise:
-            return "Apply Noise to Selected Faces"
+            "Apply Noise to Selected Faces"
         }
     }
-    
+
     var maskActionVerb: String {
         switch selectedMaskMode {
+        case .none:
+            "remove masking from"
         case .blur:
-            return "blur"
+            "blur"
         case .pixelate:
-            return "pixelate"
+            "pixelate"
         case .blackout:
-            return "blackout"
+            "blackout"
         case .noise:
-            return "apply noise to"
+            "apply noise to"
         }
     }
-    
+
     var maskButtonLabel: String {
         switch selectedMaskMode {
+        case .none:
+            "No Masking"
         case .blur:
-            return "Blur Faces"
+            "Blur Faces"
         case .pixelate:
-            return "Pixelate Faces"
+            "Pixelate Faces"
         case .blackout:
-            return "Blackout Faces"
+            "Blackout Faces"
         case .noise:
-            return "Apply Noise"
+            "Apply Noise"
         }
     }
-    
+
     // MARK: - Face Detection Methods
-    
+
     func detectFaces() {
         withAnimation {
             isFaceDetectionActive = true
             processingFaces = true
         }
-        
+
         detectedFaces = []
         modifiedImage = nil
-        
+
         DispatchQueue.global(qos: .userInitiated).async {
             autoreleasepool {
                 let imageToProcess = self.currentPhoto.fullImage
-                
+
                 self.faceDetector.detectFaces(in: imageToProcess) { faces in
                     DispatchQueue.main.async {
                         withAnimation {
@@ -179,27 +187,27 @@ class PhotoDetailViewModel: ObservableObject {
             }
         }
     }
-    
+
     func toggleFaceSelection(_ face: DetectedFace) {
         if let index = detectedFaces.firstIndex(where: { $0.id == face.id }) {
-            let updatedFaces = detectedFaces
+            var updatedFaces = detectedFaces
             updatedFaces[index].isSelected.toggle()
             detectedFaces = updatedFaces
         }
     }
-    
+
     func applyFaceMasking() {
         withAnimation {
             processingFaces = true
         }
-        
+
         DispatchQueue.global(qos: .userInitiated).async {
             autoreleasepool {
                 let imageToProcess = self.currentPhoto.fullImage
                 let facesToMask = self.detectedFaces
                 let metadataCopy = self.currentPhoto.metadata
                 let maskMode = self.selectedMaskMode
-                
+
                 // Process the image
                 if let maskedImage = self.faceDetector.maskFaces(in: imageToProcess, faces: facesToMask, modes: [maskMode]) {
                     // Save the masked image to the file system
@@ -210,15 +218,15 @@ class PhotoDetailViewModel: ObservableObject {
                         print("Error creating JPEG data")
                         return
                     }
-                    
+
                     do {
-                        _ = try self.secureFileManager.savePhoto(imageData, withMetadata: metadataCopy, isEdited: true, originalFilename: self.currentPhoto.filename)
-                        
+                        _ = try self.secureFileManager.savePhoto(imageData, withMetadata: [:], isEdited: true, originalFilename: self.currentPhoto.id)
+
                         DispatchQueue.main.async {
                             withAnimation {
                                 self.modifiedImage = maskedImage
                                 self.processingFaces = false
-                                
+
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
                                     withAnimation {
                                         self.isFaceDetectionActive = false
@@ -243,44 +251,44 @@ class PhotoDetailViewModel: ObservableObject {
             }
         }
     }
-    
+
     // MARK: - Navigation Methods
-    
+
     func preloadAdjacentPhotos() {
         guard !allPhotos.isEmpty else { return }
-        
+
         // Preload previous photo if available
         if currentIndex > 0 {
             let prevIndex = currentIndex - 1
             let prevPhoto = allPhotos[prevIndex]
             prevPhoto.isVisible = true // Mark as visible for memory manager
-            
+
             // Access thumbnail to trigger load but in a background thread
             DispatchQueue.global(qos: .userInitiated).async {
                 _ = prevPhoto.thumbnail
             }
         }
-        
+
         // Preload next photo if available
         if currentIndex < allPhotos.count - 1 {
             let nextIndex = currentIndex + 1
             let nextPhoto = allPhotos[nextIndex]
             nextPhoto.isVisible = true // Mark as visible for memory manager
-            
+
             // Access thumbnail to trigger load but in a background thread
             DispatchQueue.global(qos: .userInitiated).async {
                 _ = nextPhoto.thumbnail
             }
         }
     }
-    
+
     func navigateToPrevious() {
         print("🟢 PhotoDetailViewModel: navigateToPrevious called")
         if canGoToPrevious {
             // Clean up memory by releasing the full-size image of the current photo
             // but keep the thumbnail for the gallery view
             allPhotos[currentIndex].clearMemory(keepThumbnail: true)
-            
+
             withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
                 currentIndex -= 1
                 // Reset rotation when changing photos
@@ -295,21 +303,21 @@ class PhotoDetailViewModel: ObservableObject {
                 offset = 0
                 isSwiping = false
             }
-            
+
             // Preload adjacent photos for smoother navigation
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                 self.preloadAdjacentPhotos()
             }
         }
     }
-    
+
     func navigateToNext() {
         print("🟢 PhotoDetailViewModel: navigateToNext called")
         if canGoToNext {
             // Clean up memory by releasing the full-size image of the current photo
             // but keep the thumbnail for the gallery view
             allPhotos[currentIndex].clearMemory(keepThumbnail: true)
-            
+
             withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
                 currentIndex += 1
                 // Reset rotation when changing photos
@@ -324,16 +332,16 @@ class PhotoDetailViewModel: ObservableObject {
                 offset = 0
                 isSwiping = false
             }
-            
+
             // Preload adjacent photos for smoother navigation
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                 self.preloadAdjacentPhotos()
             }
         }
     }
-    
+
     // MARK: - Image Manipulation
-    
+
     func resetZoomAndPan() {
         withAnimation(.spring()) {
             currentScale = 1.0
@@ -344,14 +352,14 @@ class PhotoDetailViewModel: ObservableObject {
         // Reset the last drag position outside of animation to avoid jumps
         lastDragPosition = .zero
     }
-    
+
     func rotateImage(direction: Double) {
         // Reset any zoom or panning when rotating
         resetZoomAndPan()
-        
+
         // Apply rotation
         imageRotation += direction
-        
+
         // Normalize to 0-360 range
         if imageRotation >= 360 {
             imageRotation -= 360
@@ -359,26 +367,26 @@ class PhotoDetailViewModel: ObservableObject {
             imageRotation += 360
         }
     }
-    
+
     // MARK: - Photo Management
-    
+
     func deletePhoto() {
         deleteCurrentPhoto()
     }
-    
+
     func deleteCurrentPhoto() {
         print("deleteCurrentPhoto called - starting deletion process")
         // Get the photo to delete
         let photoToDelete = currentPhoto
-        
+
         // Perform file deletion in a background thread
         DispatchQueue.global(qos: .userInitiated).async {
             do {
                 // Actually delete the file
-                print("Attempting to delete file: \(photoToDelete.filename)")
-                try self.secureFileManager.deletePhoto(filename: photoToDelete.filename)
+                print("Attempting to delete file: \(photoToDelete.id)")
+                try self.secureFileManager.deletePhoto(filename: photoToDelete.id)
                 print("File deletion successful")
-                
+
                 // All UI updates must happen on the main thread
                 DispatchQueue.main.async {
                     print("Calling onDelete callback")
@@ -386,14 +394,14 @@ class PhotoDetailViewModel: ObservableObject {
                     if let onDelete = self.onDelete {
                         onDelete(photoToDelete)
                     }
-                    
+
                     // If we're displaying multiple photos, we can navigate to next/previous
                     // instead of dismissing if there are still photos to display
-                    if !self.allPhotos.isEmpty && self.allPhotos.count > 1 {
+                    if !self.allPhotos.isEmpty, self.allPhotos.count > 1 {
                         // Remove the deleted photo from our local array
                         var updatedPhotos = self.allPhotos
                         updatedPhotos.remove(at: self.currentIndex)
-                        
+
                         if updatedPhotos.isEmpty {
                             // If no photos left, call dismiss handler
                             if let onDismiss = self.onDismiss {
@@ -404,7 +412,7 @@ class PhotoDetailViewModel: ObservableObject {
                             if self.currentIndex >= updatedPhotos.count {
                                 self.currentIndex = updatedPhotos.count - 1
                             }
-                            
+
                             // Update our photos array
                             self.allPhotos = updatedPhotos
                         }
@@ -417,7 +425,7 @@ class PhotoDetailViewModel: ObservableObject {
                 }
             } catch {
                 print("Error deleting photo: \(error.localizedDescription)")
-                
+
                 // Show error alert if needed - would be implemented with a published property
                 DispatchQueue.main.async {
                     // Here you could set an error state and show an alert
@@ -425,13 +433,13 @@ class PhotoDetailViewModel: ObservableObject {
             }
         }
     }
-    
+
     // MARK: - Sharing
-    
+
     func sharePhoto() {
         // Get the current photo image
         let image = displayedImage
-        
+
         // Find the root view controller
         guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
               let window = windowScene.windows.first,
@@ -440,34 +448,34 @@ class PhotoDetailViewModel: ObservableObject {
             print("Could not find root view controller")
             return
         }
-        
+
         // Find the presented view controller to present from
         var currentController = rootViewController
         while let presented = currentController.presentedViewController {
             currentController = presented
         }
-        
+
         // Convert image to data for sharing with UUID filename
         if let imageData = image.jpegData(compressionQuality: 0.9) {
             do {
                 // Prepare photo for sharing with UUID filename
                 let fileURL = try secureFileManager.preparePhotoForSharing(imageData: imageData)
-                
+
                 print("Sharing photo with UUID filename: \(fileURL.lastPathComponent)")
-                
+
                 // Create a UIActivityViewController to show the sharing options with the file
                 let activityViewController = UIActivityViewController(
                     activityItems: [fileURL],
                     applicationActivities: nil
                 )
-                
+
                 // For iPad support
                 if let popover = activityViewController.popoverPresentationController {
                     popover.sourceView = window
                     popover.sourceRect = CGRect(x: window.bounds.midX, y: window.bounds.midY, width: 0, height: 0)
                     popover.permittedArrowDirections = []
                 }
-                
+
                 // Present the share sheet
                 DispatchQueue.main.async {
                     currentController.present(activityViewController, animated: true) {
@@ -476,20 +484,20 @@ class PhotoDetailViewModel: ObservableObject {
                 }
             } catch {
                 print("Error preparing photo for sharing: \(error.localizedDescription)")
-                
+
                 // Fallback to sharing just the image if file preparation fails
                 let activityViewController = UIActivityViewController(
                     activityItems: [image],
                     applicationActivities: nil
                 )
-                
+
                 // For iPad support
                 if let popover = activityViewController.popoverPresentationController {
                     popover.sourceView = window
                     popover.sourceRect = CGRect(x: window.bounds.midX, y: window.bounds.midY, width: 0, height: 0)
                     popover.permittedArrowDirections = []
                 }
-                
+
                 DispatchQueue.main.async {
                     currentController.present(activityViewController, animated: true) {
                         print("Share sheet presented successfully (image fallback)")
@@ -502,14 +510,14 @@ class PhotoDetailViewModel: ObservableObject {
                 activityItems: [image],
                 applicationActivities: nil
             )
-            
+
             // For iPad support
             if let popover = activityViewController.popoverPresentationController {
                 popover.sourceView = window
                 popover.sourceRect = CGRect(x: window.bounds.midX, y: window.bounds.midY, width: 0, height: 0)
                 popover.permittedArrowDirections = []
             }
-            
+
             DispatchQueue.main.async {
                 currentController.present(activityViewController, animated: true) {
                     print("Share sheet presented successfully (image fallback)")
@@ -517,32 +525,32 @@ class PhotoDetailViewModel: ObservableObject {
             }
         }
     }
-    
+
     // MARK: - View Lifecycle
-    
+
     func onAppear() {
         // When the detail view appears, ensure it's properly registered with memory manager
         if !allPhotos.isEmpty {
             // Current photo should be visible
             allPhotos[currentIndex].isVisible = true
-            
+
             // Register all photos with the memory manager
             MemoryManager.shared.registerPhotos(allPhotos)
-            
+
             // Preload adjacent photos for smoother navigation
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                 self.preloadAdjacentPhotos()
             }
-        } else if let photo = photo {
+        } else if let photo {
             // Single photo case
             photo.isVisible = true
             MemoryManager.shared.registerPhotos([photo])
         }
     }
-    
+
     func onDisappear() {
         // Clean up when view disappears
-        if let onDismiss = onDismiss {
+        if let onDismiss {
             onDismiss()
         }
     }

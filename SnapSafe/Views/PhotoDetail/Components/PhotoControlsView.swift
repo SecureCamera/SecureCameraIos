@@ -13,7 +13,7 @@ struct PhotoControlsView: View {
     var onShare: () -> Void
     var onDelete: () -> Void
     var isZoomed: Bool
-    
+
     var body: some View {
         HStack(spacing: 30) {
             // Info button
@@ -26,7 +26,7 @@ struct PhotoControlsView: View {
                 }
                 .foregroundColor(.blue)
             }
-            
+
             // Obfuscate faces button
             Button(action: onObfuscate) {
                 VStack {
@@ -37,7 +37,7 @@ struct PhotoControlsView: View {
                 }
                 .foregroundColor(.blue)
             }
-            
+
             // Share button
             Button(action: onShare) {
                 VStack {
@@ -48,7 +48,7 @@ struct PhotoControlsView: View {
                 }
                 .foregroundColor(.blue)
             }
-            
+
             // Delete button
             Button(action: onDelete) {
                 VStack {

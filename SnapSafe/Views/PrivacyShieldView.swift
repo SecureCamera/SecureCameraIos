@@ -1,5 +1,5 @@
 //
-//  PrivacyShield.swift
+//  PrivacyShieldView.swift
 //  SnapSafe
 //
 //  Created by Bill Booth on 5/22/25.
@@ -15,24 +15,24 @@ struct PrivacyShield: View {
             Color.black
                 .opacity(0.98)
                 .edgesIgnoringSafeArea(.all)
-            
+
             VStack(spacing: 30) {
                 // App logo/icon
                 Image(systemName: "lock.shield.fill")
                     .font(.system(size: 100))
                     .foregroundColor(.white)
                     .padding(.top, 60)
-                
+
                 // App name
                 Text("SnapSafe")
                     .font(.system(size: 32, weight: .bold))
                     .foregroundColor(.white)
-                
+
                 // Privacy message
                 Text("The camera app that minds its own business.")
                     .font(.system(size: 20, weight: .medium))
                     .foregroundColor(.gray)
-                
+
                 Spacer()
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -50,7 +50,7 @@ struct ObscureWhenInactive: ViewModifier {
             // Main content that will be obscured when inactive
             content
                 .blur(radius: obscured ? 20 : 0)
-            
+
             // Privacy shield overlay
             if obscured {
                 PrivacyShield()
@@ -78,16 +78,13 @@ extension View {
 
 #Preview {
     ZStack {
-        // Sample background content
         VStack {
             Text("Sensitive Content")
                 .font(.largeTitle)
-            
+
             Image(systemName: "person.crop.square")
                 .font(.system(size: 100))
         }
-        
-        // Preview with privacy shield active
         PrivacyShield()
     }
 }

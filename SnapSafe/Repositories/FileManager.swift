@@ -13,7 +13,8 @@ import SwiftUI
 class SecureFileManager {
     private let fileManager = FileManager.default
 
-    // Get a secure directory that's not backed up to iCloud
+    // Directory isn't backed up. Local only.
+    // mechanism: set the "do not backup" attribute
     func getSecureDirectory() throws -> URL {
         guard let documentsDirectory = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first else {
             throw NSError(domain: "com.securecamera", code: -1, userInfo: nil)
@@ -24,7 +25,6 @@ class SecureFileManager {
         if !fileManager.fileExists(atPath: secureDirectory.path) {
             try fileManager.createDirectory(at: secureDirectory, withIntermediateDirectories: true, attributes: nil)
 
-            // Set the "do not backup" attribute
             var resourceValues = URLResourceValues()
             resourceValues.isExcludedFromBackup = true
             var secureDirectoryWithAttributes = secureDirectory
@@ -37,14 +37,14 @@ class SecureFileManager {
     // Save photo with UTC timestamp filename for better chronological sorting
     func savePhoto(_ photoData: Data, withMetadata metadata: [String: Any] = [:], isEdited: Bool = false, originalFilename: String? = nil) throws -> String {
         let secureDirectory = try getSecureDirectory()
-        
+
         // Generate UTC timestamp filename with microsecond precision + UUID suffix for uniqueness
         let dateFormatter = ISO8601DateFormatter()
         dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         let utcTimestamp = dateFormatter.string(from: Date())
             .replacingOccurrences(of: ":", with: "")
             .replacingOccurrences(of: "-", with: "")
-        
+
         // Add short UUID suffix to guarantee uniqueness for rapid saves
         let uuidSuffix = UUID().uuidString.prefix(8)
         let filename = "\(utcTimestamp)_\(uuidSuffix)"
@@ -59,13 +59,13 @@ class SecureFileManager {
         // Add creation date to metadata for sorting
         let now = Date()
         serializedMetadata["creationDate"] = now.timeIntervalSince1970
-        
+
         // Mark as edited if specified
         if isEdited {
             serializedMetadata["isEdited"] = true
-            
+
             // Link to original photo if provided
-            if let originalFilename = originalFilename {
+            if let originalFilename {
                 serializedMetadata["originalFilename"] = originalFilename
             }
         }
@@ -84,19 +84,19 @@ class SecureFileManager {
 
         return filename
     }
-    
+
     // Creates a temporary file for sharing with a UUID filename
     func preparePhotoForSharing(imageData: Data) throws -> URL {
         // Get temporary directory
         let tempDirectory = FileManager.default.temporaryDirectory
-        
+
         // Create UUID filename for sharing
         let uuid = UUID().uuidString
         let tempFileURL = tempDirectory.appendingPathComponent("\(uuid).jpg")
-        
+
         // Write the data to the temporary file
         try imageData.write(to: tempFileURL)
-        
+
         return tempFileURL
     }
 
@@ -190,37 +190,36 @@ class SecureFileManager {
         return nil
     }
 
-    // Keep this for compatibility, but don't use it for loading the gallery
-    func loadAllPhotos() throws -> [(filename: String, data: Data, metadata: [String: Any])] {
-        let secureDirectory = try getSecureDirectory()
-        let contents = try fileManager.contentsOfDirectory(at: secureDirectory, includingPropertiesForKeys: nil)
-
-        var photos: [(filename: String, data: Data, metadata: [String: Any])] = []
-
-        for fileURL in contents {
-            if fileURL.pathExtension == "photo" {
-                let filename = fileURL.deletingPathExtension().lastPathComponent
-
-                // Load photo data
-                let photoData = try Data(contentsOf: fileURL)
-
-                // Try to load metadata if it exists
-                let metadataURL = secureDirectory.appendingPathComponent("\(filename).metadata")
-                var metadata: [String: Any] = [:]
-
-                if fileManager.fileExists(atPath: metadataURL.path) {
-                    let metadataData = try Data(contentsOf: metadataURL)
-                    if let loadedMetadata = try JSONSerialization.jsonObject(with: metadataData, options: []) as? [String: Any] {
-                        metadata = loadedMetadata
-                    }
-                }
-
-                photos.append((filename: filename, data: photoData, metadata: metadata))
-            }
-        }
-
-        return photos
-    }
+//    func loadAllPhotos() throws -> [(filename: String, data: Data, metadata: [String: Any])] {
+//        let secureDirectory = try getSecureDirectory()
+//        let contents = try fileManager.contentsOfDirectory(at: secureDirectory, includingPropertiesForKeys: nil)
+//
+//        var photos: [(filename: String, data: Data, metadata: [String: Any])] = []
+//
+//        for fileURL in contents {
+//            if fileURL.pathExtension == "photo" {
+//                let filename = fileURL.deletingPathExtension().lastPathComponent
+//
+//                // Load photo data
+//                let photoData = try Data(contentsOf: fileURL)
+//
+//                // Try to load metadata if it exists
+//                let metadataURL = secureDirectory.appendingPathComponent("\(filename).metadata")
+//                var metadata: [String: Any] = [:]
+//
+//                if fileManager.fileExists(atPath: metadataURL.path) {
+//                    let metadataData = try Data(contentsOf: metadataURL)
+//                    if let loadedMetadata = try JSONSerialization.jsonObject(with: metadataData, options: []) as? [String: Any] {
+//                        metadata = loadedMetadata
+//                    }
+//                }
+//
+//                photos.append((filename: filename, data: photoData, metadata: metadata))
+//            }
+//        }
+//
+//        return photos
+//    }
 
     // Load specific photo by filename
     func loadPhoto(filename: String) throws -> (data: Data, metadata: [String: Any]) {
