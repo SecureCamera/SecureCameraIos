@@ -150,6 +150,44 @@ class SecurePhoto: Identifiable, Equatable {
     }
 }
 
+// MARK: - Repository Extensions for Gallery Operations
+
+extension SecurePhotoRepository {
+    // MARK: - Decoy Management
+
+    func updateDecoyStatus(for photoIds: Set<String>, isDecoy: Bool) -> Bool {
+        // TODO: Implement decoy status update functionality
+        // This will update the metadata for specified photos to mark them as decoys
+        print("Updating decoy status for \(photoIds.count) photos to: \(isDecoy)")
+        return true
+    }
+
+    func getDecoyPhotos() -> [SecurePhoto] {
+        // TODO: Implement method to retrieve only decoy photos
+        // This will filter photos where metadata.isDecoy == true
+        []
+    }
+
+    func validateDecoyLimit(currentSelection: Set<String>, maxDecoys: Int) -> Bool {
+        currentSelection.count <= maxDecoys
+    }
+}
+
+// MARK: - Repository Class
+
+class SecurePhotoRepository: ObservableObject {
+    static let shared = SecurePhotoRepository()
+
+    private let secureFileManager = SecureFileManager()
+
+    private init() {}
+
+    // MARK: - Core Repository Methods
+
+    // TODO: Implement core repository methods for encrypted photo management
+    // This will replace the current SecureFileManager usage in the view model
+}
+
 // enum SecurePhotoError: Error, LocalizedError {
 //    case invalidImageData
 //    case decryptionFailed
