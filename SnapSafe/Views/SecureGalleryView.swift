@@ -235,7 +235,7 @@ struct SecureGalleryView: View {
     }
 
     // MARK: - View Components
-    
+
     // Photo grid subview
     private var photosGridView: some View {
         ScrollView {
@@ -261,7 +261,7 @@ struct SecureGalleryView: View {
             .padding()
         }
     }
-    
+
     // Import progress overlay
     private var importProgressOverlay: some View {
         VStack {
@@ -283,7 +283,7 @@ struct SecureGalleryView: View {
     }
 
     // MARK: - Action Methods
-    
+
     private func handlePhotoTap(_ photo: SecurePhoto) {
         if viewModel.isSelecting {
             viewModel.togglePhotoSelection(photo, isSelectingDecoys: isSelectingDecoys)
@@ -295,7 +295,7 @@ struct SecureGalleryView: View {
     // Save selected photos as decoys
     private func saveDecoySelections() {
         viewModel.saveDecoySelections()
-        
+
         // Reset selection and exit decoy mode
         isSelectingDecoys = false
 

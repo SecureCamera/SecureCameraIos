@@ -11,6 +11,9 @@ import SwiftUI
 struct SnapSafeApp: App {
     @AppStorage("appearanceMode") private var appearanceMode: AppearanceMode = .system
 
+    // Initialize the privacy overlay manager on app launch
+    private let privacyOverlayManager = PrivacyOverlayManager.shared
+
     var body: some Scene {
         WindowGroup {
             ContentView()

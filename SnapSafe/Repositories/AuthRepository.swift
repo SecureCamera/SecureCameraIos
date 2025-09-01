@@ -1,5 +1,5 @@
 //
-//  AuthManager.swift
+//  AuthRepository.swift
 //  SnapSafe
 //
 //  Created by Bill Booth on 5/3/25.

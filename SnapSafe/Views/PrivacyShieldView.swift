@@ -5,6 +5,7 @@
 //  Created by Bill Booth on 5/22/25.
 //
 
+import Combine
 import SwiftUI
 
 /// Privacy shield to cover content when app is inactive
@@ -44,6 +45,7 @@ struct PrivacyShield: View {
 struct ObscureWhenInactive: ViewModifier {
     @Environment(\.scenePhase) private var phase
     @State private var obscured = false
+    @State private var lastStateChange = Date()
 
     func body(content: Content) -> some View {
         ZStack {
@@ -51,20 +53,53 @@ struct ObscureWhenInactive: ViewModifier {
             content
                 .blur(radius: obscured ? 20 : 0)
 
-            // Privacy shield overlay
-            if obscured {
-                PrivacyShield()
-                    .transition(.opacity)
+            // Privacy shield overlay - always present but conditionally opaque
+            PrivacyShield()
+                .opacity(obscured ? 1.0 : 0.0)
+                .allowsHitTesting(obscured)
+                .onChange(of: obscured) { _, newValue in
+                    print("PrivacyShield opacity changed - obscured: \(newValue), opacity: \(newValue ? 1.0 : 0.0)")
+                }
+        }
+        // Use system notifications as primary trigger - they're more reliable than scene phase
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
+            print("willResignActiveNotification received - setting obscured to true")
+            setObscuredState(true, source: "willResignActive")
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+            print("didBecomeActiveNotification received - setting obscured to false")
+            // Add small delay to prevent flicker when transitioning back to active
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                setObscuredState(false, source: "didBecomeActive")
             }
         }
+        // Keep scene phase as backup but with debouncing
         .onChange(of: phase) { _, newPhase in
-            // .inactive fires while the task-switcher is animating
-            // .background fires a moment later
             print("Scene phase changed to: \(newPhase)")
-            obscured = (newPhase != .active)
+            let shouldObscure = (newPhase != .active)
+
+            // Only update if enough time has passed since last change (debouncing)
+            let timeSinceLastChange = Date().timeIntervalSince(lastStateChange)
+            if timeSinceLastChange > 0.2 {
+                print("Scene phase backup trigger - setting obscured to: \(shouldObscure)")
+                setObscuredState(shouldObscure, source: "scenePhase")
+            } else {
+                print("Scene phase change ignored due to debouncing (last change \(timeSinceLastChange)s ago)")
+            }
         }
-        // Use quick animation for immediate shield appearance
-        .animation(.easeInOut(duration: 0.15), value: obscured)
+    }
+
+    private func setObscuredState(_ newState: Bool, source: String) {
+        Task { @MainActor in
+            if obscured != newState {
+                print("[\(source)] Changing obscured from \(obscured) to \(newState)")
+                obscured = newState
+                lastStateChange = Date()
+                print("[\(source)] Obscured state updated to: \(obscured)")
+            } else {
+                print("[\(source)] Obscured state already \(newState), no change needed")
+            }
+        }
     }
 }
 

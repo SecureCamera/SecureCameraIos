@@ -1,5 +1,5 @@
 //
-//  PINManager.swift
+//  PINRepository.swift
 //  SnapSafe
 //
 //  Created by Bill Booth on 5/22/25.

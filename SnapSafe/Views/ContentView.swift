@@ -159,7 +159,6 @@ struct ContentView: View {
         .animation(.easeInOut(duration: 0.1), value: isShutterAnimating)
         .sheet(isPresented: $isShowingSettings) {
             SettingsView()
-                .obscuredWhenInactive()
                 .screenCaptureProtected()
                 .handleAppState(isPresented: $isShowingSettings)
                 .withAuthenticationOverlay()
@@ -169,14 +168,11 @@ struct ContentView: View {
                 SecureGalleryView(onDismiss: {
                     isShowingGallery = false
                 })
-                .obscuredWhenInactive()
                 .screenCaptureProtected()
                 .handleAppState(isPresented: $isShowingGallery)
                 .withAuthenticationOverlay()
             }
         }
-        // Apply privacy shield when app is inactive (task switcher, control center, etc.)
-        .obscuredWhenInactive()
         // Protect against screen recording and screenshots
         .screenCaptureProtected()
         // Monitor PIN setup completion

@@ -11,88 +11,94 @@ import UIKit
 
 class SecurePhoto: Identifiable, Equatable {
     let id: String
-    let encryptedData: Data
+    let rawPhotoData: Data // Store original photo data for binary fidelity
     let metadata: PhotoMetadata
 
     // Memory tracking
     var isVisible: Bool = false
     private var lastAccessTime: Date = .init()
 
-    // Use lazy loading for images to reduce memory usage
-    private var _thumbnail: UIImage?
-    private var _fullImage: UIImage?
+    // Lazy-loaded image caches - generated from rawPhotoData on demand
+    private var _cachedFullImage: UIImage?
+    private var _cachedThumbnail: UIImage?
 
-    // Cache for decrypted images
-    var cachedImage: UIImage?
-    var cachedThumbnail: UIImage?
+    // MARK: - Image Access Properties
 
-    // Thumbnail is loaded on demand and cached
+    /// Full-size image loaded lazily from raw photo data
+    var fullImage: UIImage {
+        // Update last access time and mark as visible
+        lastAccessTime = Date()
+        isVisible = true
+
+        // Return cached image if available
+        if let cached = _cachedFullImage {
+            return cached
+        }
+
+        // Generate full image from raw data
+        guard let image = UIImage(data: rawPhotoData) else {
+            print("Failed to create UIImage from rawPhotoData for photo \(id)")
+            return UIImage(systemName: "photo") ?? UIImage()
+        }
+
+        // Cache the generated image
+        _cachedFullImage = image
+        MemoryManager.shared.reportFullImageLoaded()
+
+        return image
+    }
+
+    /// Thumbnail image loaded lazily and cached
     var thumbnail: UIImage {
         // Update last access time and mark as visible
         lastAccessTime = Date()
         isVisible = true
 
-        // Check for cached thumbnail first
-        if let cachedThumbnail {
-            return cachedThumbnail
+        // Return cached thumbnail if available
+        if let cached = _cachedThumbnail {
+            return cached
         }
 
-        if let legacyThumbnail = _thumbnail {
-            return legacyThumbnail
+        // Generate thumbnail from raw data
+        guard let fullSizeImage = UIImage(data: rawPhotoData) else {
+            print("Failed to create thumbnail from rawPhotoData for photo \(id)")
+            return UIImage(systemName: "photo") ?? UIImage()
         }
 
-        // Fallback to placeholder
-        return UIImage(systemName: "photo") ?? UIImage()
+        // Generate thumbnail with proper aspect ratio preservation
+        let maxThumbnailSize: CGFloat = 200
+        let originalSize = fullSizeImage.size
+        
+        // Calculate scale factor to fit within max size while preserving aspect ratio
+        let scale = min(maxThumbnailSize / originalSize.width, maxThumbnailSize / originalSize.height)
+        let thumbnailSize = CGSize(
+            width: originalSize.width * scale,
+            height: originalSize.height * scale
+        )
+        
+        let renderer = UIGraphicsImageRenderer(size: thumbnailSize)
+        let thumbnail = renderer.image { _ in
+            fullSizeImage.draw(in: CGRect(origin: .zero, size: thumbnailSize))
+        }
+
+        // Cache the generated thumbnail
+        _cachedThumbnail = thumbnail
+        MemoryManager.shared.reportThumbnailLoaded()
+
+        return thumbnail
     }
 
-    // Method to get thumbnail using decrypted data
-//    func thumbnail(from decryptedData: Data) -> UIImage? {
-//        // Check cache first
-//        if let cached = cachedThumbnail {
-//            return cached
-//        }
-//
-//        // Generate thumbnail from decrypted data
-//        guard let fullImage = UIImage(data: decryptedData) else {
-//            return nil
-//        }
-//
-//        // Generate thumbnail
-//        let thumbnailSize = CGSize(width: 200, height: 200)
-//        let renderer = UIGraphicsImageRenderer(size: thumbnailSize)
-//        let thumbnail = renderer.image { _ in
-//            fullImage.draw(in: CGRect(origin: .zero, size: thumbnailSize))
-//        }
-//
-//        // Cache the thumbnail
-//        cachedThumbnail = thumbnail
-//        return thumbnail
-//    }
+    // MARK: - Utility Methods
 
-    // Store decrypted image in cache
-//    func cacheDecryptedImage(_ decryptedData: Data) -> UIImage? {
-//        // Update last access time and mark as visible
-//        lastAccessTime = Date()
-//        isVisible = true
-//
-//        // Check cache first
-//        if let cached = cachedImage {
-//            return cached
-//        }
-//
-//        // Create image from decrypted data
-//        guard let image = UIImage(data: decryptedData) else {
-//            return nil
-//        }
-//
-//        // Cache the image
-//        cachedImage = image
-//
-//        // Notify memory manager
-//        MemoryManager.shared.reportFullImageLoaded()
-//
-//        return image
-//    }
+    /// Get the size of the raw photo data in bytes
+    var dataSizeBytes: Int {
+        rawPhotoData.count
+    }
+
+    /// Get a formatted string representation of the photo data size
+    var formattedDataSize: String {
+        ByteCountFormatter.string(fromByteCount: Int64(dataSizeBytes), countStyle: .file)
+    }
 
     // Mark as no longer visible in the UI
     func markAsInvisible() {
@@ -104,45 +110,59 @@ class SecurePhoto: Identifiable, Equatable {
         Date().timeIntervalSince(lastAccessTime)
     }
 
-    // Clear memory when no longer needed
+    // MARK: - Memory Management
+
+    /// Clear cached images to free memory
     func clearMemory(keepThumbnail: Bool = true) {
-        if cachedImage != nil {
-            cachedImage = nil
+        // Clear full image cache
+        if _cachedFullImage != nil {
+            _cachedFullImage = nil
             MemoryManager.shared.reportFullImageUnloaded()
         }
 
-        if _fullImage != nil {
-            _fullImage = nil
-            MemoryManager.shared.reportFullImageUnloaded()
-        }
-
-        if !keepThumbnail {
-            if cachedThumbnail != nil {
-                cachedThumbnail = nil
-                MemoryManager.shared.reportThumbnailUnloaded()
-            }
-
-            if _thumbnail != nil {
-                _thumbnail = nil
-                MemoryManager.shared.reportThumbnailUnloaded()
-            }
+        // Clear thumbnail cache if requested
+        if !keepThumbnail, _cachedThumbnail != nil {
+            _cachedThumbnail = nil
+            MemoryManager.shared.reportThumbnailUnloaded()
         }
     }
+
+    /// Force regenerate thumbnail from raw data (useful after photo edits)
+    func regenerateThumbnail() {
+        _cachedThumbnail = nil
+        // Next access to thumbnail property will regenerate it
+    }
+
+    /// Force regenerate full image from raw data
+    func regenerateFullImage() {
+        _cachedFullImage = nil
+        // Next access to fullImage property will regenerate it
+    }
+
+    // MARK: - Computed Properties
 
     var isDecoy: Bool {
         metadata.isDecoy
     }
 
-    var fullImage: UIImage {
-        cachedImage ?? thumbnail
+    // MARK: - Initialization
+
+    /// Initialize SecurePhoto with raw photo data
+    /// - Parameters:
+    ///   - id: Unique identifier for the photo
+    ///   - rawPhotoData: Original photo data for binary fidelity
+    ///   - metadata: Photo metadata including creation date, faces, etc.
+    init(id: String, rawPhotoData: Data, metadata: PhotoMetadata) {
+        self.id = id
+        self.rawPhotoData = rawPhotoData
+        self.metadata = metadata
     }
 
-    init(id: String, encryptedData: Data, metadata: PhotoMetadata, cachedImage: UIImage? = nil, cachedThumbnail: UIImage? = nil) {
-        self.id = id
-        self.encryptedData = encryptedData
-        self.metadata = metadata
-        self.cachedImage = cachedImage
-        self.cachedThumbnail = cachedThumbnail
+    /// Legacy initializer for backward compatibility during migration
+    /// - Note: This converts UIImage back to Data, prefer using rawPhotoData directly
+    convenience init(id: String, legacyImage: UIImage, metadata: PhotoMetadata) {
+        let imageData = legacyImage.jpegData(compressionQuality: 0.95) ?? Data()
+        self.init(id: id, rawPhotoData: imageData, metadata: metadata)
     }
 
     static func == (lhs: SecurePhoto, rhs: SecurePhoto) -> Bool {

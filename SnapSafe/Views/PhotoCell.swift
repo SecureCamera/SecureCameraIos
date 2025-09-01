@@ -20,10 +20,11 @@ struct PhotoCell: View {
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
-            // Photo image that maintains aspect ratio
+            // Photo image that fills the available space
             Image(uiImage: photo.thumbnail)
                 .resizable()
-                .aspectRatio(contentMode: .fit) // Use .fit to maintain aspect ratio
+                .aspectRatio(1.0, contentMode: .fill) // Square aspect ratio, fill to avoid gaps
+                .clipped()
                 .cornerRadius(10)
                 .onTapGesture(perform: onTap)
                 .overlay(

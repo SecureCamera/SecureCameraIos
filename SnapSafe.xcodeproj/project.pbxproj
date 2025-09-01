@@ -6,12 +6,26 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXAggregateTarget section */
+		A93DD0432DF7F3CB00D5DB42 /* Periphery */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = A93DD0442DF7F3CB00D5DB42 /* Build configuration list for PBXAggregateTarget "Periphery" */;
+			buildPhases = (
+				A93DD0472DF7F3FA00D5DB42 /* ShellScript */,
+			);
+			dependencies = (
+			);
+			name = Periphery;
+			packageProductDependencies = (
+			);
+			productName = Periphery;
+		};
+/* End PBXAggregateTarget section */
+
 /* Begin PBXBuildFile section */
 		A91DBC542DE58191001F42ED /* AppearanceMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC252DE58191001F42ED /* AppearanceMode.swift */; };
 		A91DBC552DE58191001F42ED /* DetectedFace.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC262DE58191001F42ED /* DetectedFace.swift */; };
 		A91DBC562DE58191001F42ED /* MaskMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC272DE58191001F42ED /* MaskMode.swift */; };
-		A91DBC572DE58191001F42ED /* MemoryManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC282DE58191001F42ED /* MemoryManager.swift */; };
-		A91DBC592DE58191001F42ED /* SecurePhoto.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC2A2DE58191001F42ED /* SecurePhoto.swift */; };
 		A91DBC5A2DE58191001F42ED /* FaceBoxView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC2E2DE58191001F42ED /* FaceBoxView.swift */; };
 		A91DBC5B2DE58191001F42ED /* FaceDetectionControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC2F2DE58191001F42ED /* FaceDetectionControlsView.swift */; };
 		A91DBC5C2DE58191001F42ED /* FaceDetectionOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC302DE58191001F42ED /* FaceDetectionOverlay.swift */; };
@@ -26,29 +40,26 @@
 		A91DBC652DE58191001F42ED /* PhotoDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC3B2DE58191001F42ED /* PhotoDetailViewModel.swift */; };
 		A91DBC662DE58191001F42ED /* AppStateCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC3E2DE58191001F42ED /* AppStateCoordinator.swift */; };
 		A91DBC672DE58191001F42ED /* AuthenticationOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC402DE58191001F42ED /* AuthenticationOverlayView.swift */; };
-		A91DBC682DE58191001F42ED /* AuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC412DE58191001F42ED /* AuthManager.swift */; };
-		A91DBC692DE58191001F42ED /* CamControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC422DE58191001F42ED /* CamControl.swift */; };
 		A91DBC6A2DE58191001F42ED /* CameraModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC432DE58191001F42ED /* CameraModel.swift */; };
 		A91DBC6B2DE58191001F42ED /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC442DE58191001F42ED /* ContentView.swift */; };
-		A91DBC6C2DE58191001F42ED /* EncryptionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC452DE58191001F42ED /* EncryptionManager.swift */; };
-		A91DBC6D2DE58191001F42ED /* FaceDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC462DE58191001F42ED /* FaceDetector.swift */; };
-		A91DBC6E2DE58191001F42ED /* FileManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC472DE58191001F42ED /* FileManager.swift */; };
-		A91DBC6F2DE58191001F42ED /* KeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC482DE58191001F42ED /* KeyManager.swift */; };
-		A91DBC702DE58191001F42ED /* LocationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC492DE58191001F42ED /* LocationManager.swift */; };
 		A91DBC712DE58191001F42ED /* PhotoDetailViewImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC4A2DE58191001F42ED /* PhotoDetailViewImpl.swift */; };
-		A91DBC722DE58191001F42ED /* PINManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC4B2DE58191001F42ED /* PINManager.swift */; };
 		A91DBC732DE58191001F42ED /* PINSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC4C2DE58191001F42ED /* PINSetupView.swift */; };
 		A91DBC742DE58191001F42ED /* PINVerificationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC4D2DE58191001F42ED /* PINVerificationView.swift */; };
-		A91DBC752DE58191001F42ED /* PrivacyShield.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC4E2DE58191001F42ED /* PrivacyShield.swift */; };
-		A91DBC762DE58191001F42ED /* ScreenCaptureManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC4F2DE58191001F42ED /* ScreenCaptureManager.swift */; };
+		A91DBC752DE58191001F42ED /* PrivacyShieldView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC4E2DE58191001F42ED /* PrivacyShieldView.swift */; };
 		A91DBC772DE58191001F42ED /* SecureGalleryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC502DE58191001F42ED /* SecureGalleryView.swift */; };
 		A91DBC782DE58191001F42ED /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC512DE58191001F42ED /* SettingsView.swift */; };
 		A91DBC792DE58191001F42ED /* SnapSafeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC522DE58191001F42ED /* SnapSafeApp.swift */; };
 		A91DBC7A2DE58191001F42ED /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A91DBC2C2DE58191001F42ED /* Preview Assets.xcassets */; };
 		A91DBC7B2DE58191001F42ED /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A91DBC3F2DE58191001F42ED /* Assets.xcassets */; };
-		A9445CBB2DE7DD7B0038119B /* PhotoMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9445CBA2DE7DD7B0038119B /* PhotoMetadata.swift */; };
+		A93DD0422DF7EFA900D5DB42 /* PhotoMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93DD0412DF7EFA900D5DB42 /* PhotoMetadata.swift */; };
 		A9B3E0882DCF1D3C003F1ED3 /* Dependencies in Frameworks */ = {isa = PBXBuildFile; productRef = A9B3E0872DCF1D3C003F1ED3 /* Dependencies */; };
 		A9B3E08A2DCF1D3C003F1ED3 /* DependenciesTestSupport in Frameworks */ = {isa = PBXBuildFile; productRef = A9B3E0892DCF1D3C003F1ED3 /* DependenciesTestSupport */; };
+		A9DEA9AD2DF94EAD0064A95F /* ScreenshotTakenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9DEA9AC2DF94EAD0064A95F /* ScreenshotTakenView.swift */; };
+		A9DEA9AF2DF94EE50064A95F /* ScreenRecordingBlockerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9DEA9AE2DF94EE50064A95F /* ScreenRecordingBlockerView.swift */; };
+		A9DEA9B12DF956610064A95F /* PhotoCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9DEA9B02DF956610064A95F /* PhotoCell.swift */; };
+		A9DEA9B52DF9579D0064A95F /* FocusIndicatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9DEA9B42DF9579D0064A95F /* FocusIndicatorView.swift */; };
+		A9DEA9B72DF957B50064A95F /* CameraView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9DEA9B62DF957B50064A95F /* CameraView.swift */; };
+		A9DEAA932E0E71FB0064A95F /* SecureGalleryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9DEAA922E0E71FB0064A95F /* SecureGalleryViewModel.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -73,8 +84,6 @@
 		A91DBC252DE58191001F42ED /* AppearanceMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppearanceMode.swift; sourceTree = "<group>"; };
 		A91DBC262DE58191001F42ED /* DetectedFace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetectedFace.swift; sourceTree = "<group>"; };
 		A91DBC272DE58191001F42ED /* MaskMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MaskMode.swift; sourceTree = "<group>"; };
-		A91DBC282DE58191001F42ED /* MemoryManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryManager.swift; sourceTree = "<group>"; };
-		A91DBC2A2DE58191001F42ED /* SecurePhoto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurePhoto.swift; sourceTree = "<group>"; };
 		A91DBC2C2DE58191001F42ED /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		A91DBC2E2DE58191001F42ED /* FaceBoxView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceBoxView.swift; sourceTree = "<group>"; };
 		A91DBC2F2DE58191001F42ED /* FaceDetectionControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceDetectionControlsView.swift; sourceTree = "<group>"; };
@@ -91,28 +100,25 @@
 		A91DBC3E2DE58191001F42ED /* AppStateCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStateCoordinator.swift; sourceTree = "<group>"; };
 		A91DBC3F2DE58191001F42ED /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A91DBC402DE58191001F42ED /* AuthenticationOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticationOverlayView.swift; sourceTree = "<group>"; };
-		A91DBC412DE58191001F42ED /* AuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthManager.swift; sourceTree = "<group>"; };
-		A91DBC422DE58191001F42ED /* CamControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CamControl.swift; sourceTree = "<group>"; };
 		A91DBC432DE58191001F42ED /* CameraModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraModel.swift; sourceTree = "<group>"; };
 		A91DBC442DE58191001F42ED /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		A91DBC452DE58191001F42ED /* EncryptionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EncryptionManager.swift; sourceTree = "<group>"; };
-		A91DBC462DE58191001F42ED /* FaceDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceDetector.swift; sourceTree = "<group>"; };
-		A91DBC472DE58191001F42ED /* FileManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileManager.swift; sourceTree = "<group>"; };
-		A91DBC482DE58191001F42ED /* KeyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyManager.swift; sourceTree = "<group>"; };
-		A91DBC492DE58191001F42ED /* LocationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationManager.swift; sourceTree = "<group>"; };
 		A91DBC4A2DE58191001F42ED /* PhotoDetailViewImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoDetailViewImpl.swift; sourceTree = "<group>"; };
-		A91DBC4B2DE58191001F42ED /* PINManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PINManager.swift; sourceTree = "<group>"; };
 		A91DBC4C2DE58191001F42ED /* PINSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PINSetupView.swift; sourceTree = "<group>"; };
 		A91DBC4D2DE58191001F42ED /* PINVerificationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PINVerificationView.swift; sourceTree = "<group>"; };
-		A91DBC4E2DE58191001F42ED /* PrivacyShield.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyShield.swift; sourceTree = "<group>"; };
-		A91DBC4F2DE58191001F42ED /* ScreenCaptureManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenCaptureManager.swift; sourceTree = "<group>"; };
+		A91DBC4E2DE58191001F42ED /* PrivacyShieldView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyShieldView.swift; sourceTree = "<group>"; };
 		A91DBC502DE58191001F42ED /* SecureGalleryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureGalleryView.swift; sourceTree = "<group>"; };
 		A91DBC512DE58191001F42ED /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		A91DBC522DE58191001F42ED /* SnapSafeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapSafeApp.swift; sourceTree = "<group>"; };
-		A9445CBA2DE7DD7B0038119B /* PhotoMetadata.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoMetadata.swift; sourceTree = "<group>"; };
+		A93DD0412DF7EFA900D5DB42 /* PhotoMetadata.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoMetadata.swift; sourceTree = "<group>"; };
 		A9DE37472DC5F34400679C2C /* SnapSafe.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SnapSafe.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A9DE37572DC5F34600679C2C /* SnapSafeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SnapSafeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A9DE37612DC5F34600679C2C /* SnapSafeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SnapSafeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A9DEA9AC2DF94EAD0064A95F /* ScreenshotTakenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotTakenView.swift; sourceTree = "<group>"; };
+		A9DEA9AE2DF94EE50064A95F /* ScreenRecordingBlockerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenRecordingBlockerView.swift; sourceTree = "<group>"; };
+		A9DEA9B02DF956610064A95F /* PhotoCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoCell.swift; sourceTree = "<group>"; };
+		A9DEA9B42DF9579D0064A95F /* FocusIndicatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusIndicatorView.swift; sourceTree = "<group>"; };
+		A9DEA9B62DF957B50064A95F /* CameraView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraView.swift; sourceTree = "<group>"; };
+		A9DEAA922E0E71FB0064A95F /* SecureGalleryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SecureGalleryViewModel.swift; path = ../Views/SecureGalleryViewModel.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -168,12 +174,12 @@
 		A91DBC2B2DE58191001F42ED /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				A9DEAA922E0E71FB0064A95F /* SecureGalleryViewModel.swift */,
 				A91DBC252DE58191001F42ED /* AppearanceMode.swift */,
 				A91DBC262DE58191001F42ED /* DetectedFace.swift */,
 				A91DBC272DE58191001F42ED /* MaskMode.swift */,
 				A91DBC432DE58191001F42ED /* CameraModel.swift */,
-				A91DBC282DE58191001F42ED /* MemoryManager.swift */,
-				A91DBC2A2DE58191001F42ED /* SecurePhoto.swift */,
+				A93DD0412DF7EFA900D5DB42 /* PhotoMetadata.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -225,6 +231,19 @@
 			isa = PBXGroup;
 			children = (
 				A91DBC3C2DE58191001F42ED /* PhotoDetail */,
+				A91DBC402DE58191001F42ED /* AuthenticationOverlayView.swift */,
+				A91DBC442DE58191001F42ED /* ContentView.swift */,
+				A9DEA9B62DF957B50064A95F /* CameraView.swift */,
+				A9DEA9B42DF9579D0064A95F /* FocusIndicatorView.swift */,
+				A9DEA9B02DF956610064A95F /* PhotoCell.swift */,
+				A91DBC4A2DE58191001F42ED /* PhotoDetailViewImpl.swift */,
+				A91DBC4C2DE58191001F42ED /* PINSetupView.swift */,
+				A91DBC4D2DE58191001F42ED /* PINVerificationView.swift */,
+				A9DEA9AC2DF94EAD0064A95F /* ScreenshotTakenView.swift */,
+				A9DEA9AE2DF94EE50064A95F /* ScreenRecordingBlockerView.swift */,
+				A91DBC502DE58191001F42ED /* SecureGalleryView.swift */,
+				A91DBC512DE58191001F42ED /* SettingsView.swift */,
+				A91DBC4E2DE58191001F42ED /* PrivacyShieldView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -239,23 +258,6 @@
 				A91DBC3D2DE58191001F42ED /* Views */,
 				A91DBC3E2DE58191001F42ED /* AppStateCoordinator.swift */,
 				A91DBC3F2DE58191001F42ED /* Assets.xcassets */,
-				A91DBC402DE58191001F42ED /* AuthenticationOverlayView.swift */,
-				A91DBC412DE58191001F42ED /* AuthManager.swift */,
-				A91DBC422DE58191001F42ED /* CamControl.swift */,
-				A91DBC442DE58191001F42ED /* ContentView.swift */,
-				A91DBC452DE58191001F42ED /* EncryptionManager.swift */,
-				A91DBC462DE58191001F42ED /* FaceDetector.swift */,
-				A91DBC472DE58191001F42ED /* FileManager.swift */,
-				A91DBC482DE58191001F42ED /* KeyManager.swift */,
-				A91DBC492DE58191001F42ED /* LocationManager.swift */,
-				A91DBC4A2DE58191001F42ED /* PhotoDetailViewImpl.swift */,
-				A91DBC4B2DE58191001F42ED /* PINManager.swift */,
-				A91DBC4C2DE58191001F42ED /* PINSetupView.swift */,
-				A91DBC4D2DE58191001F42ED /* PINVerificationView.swift */,
-				A91DBC4E2DE58191001F42ED /* PrivacyShield.swift */,
-				A91DBC4F2DE58191001F42ED /* ScreenCaptureManager.swift */,
-				A91DBC502DE58191001F42ED /* SecureGalleryView.swift */,
-				A91DBC512DE58191001F42ED /* SettingsView.swift */,
 				A91DBC522DE58191001F42ED /* SnapSafeApp.swift */,
 			);
 			path = SnapSafe;
@@ -264,7 +266,6 @@
 		A9DE373E2DC5F34400679C2C = {
 			isa = PBXGroup;
 			children = (
-				A9445CBA2DE7DD7B0038119B /* PhotoMetadata.swift */,
 				A91DBB422DE41BAE001F42ED /* SnapSafe.xctestplan */,
 				A91DBC532DE58191001F42ED /* SnapSafe */,
 				A9DE375A2DC5F34600679C2C /* SnapSafeTests */,
@@ -367,6 +368,9 @@
 				LastSwiftUpdateCheck = 1620;
 				LastUpgradeCheck = 1620;
 				TargetAttributes = {
+					A93DD0432DF7F3CB00D5DB42 = {
+						CreatedOnToolsVersion = 16.2;
+					};
 					A9DE37462DC5F34400679C2C = {
 						CreatedOnToolsVersion = 16.2;
 					};
@@ -400,6 +404,7 @@
 				A9DE37462DC5F34400679C2C /* SnapSafe */,
 				A9DE37562DC5F34600679C2C /* SnapSafeTests */,
 				A9DE37602DC5F34600679C2C /* SnapSafeUITests */,
+				A93DD0432DF7F3CB00D5DB42 /* Periphery */,
 			);
 		};
 /* End PBXProject section */
@@ -430,46 +435,61 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		A93DD0472DF7F3FA00D5DB42 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 12;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "periphery scan --format xcode --strict --project SnapSafe.xcodeproj --schemes SnapSafe\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		A9DE37432DC5F34400679C2C /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				A91DBC542DE58191001F42ED /* AppearanceMode.swift in Sources */,
+				A93DD0422DF7EFA900D5DB42 /* PhotoMetadata.swift in Sources */,
+				A9DEA9AF2DF94EE50064A95F /* ScreenRecordingBlockerView.swift in Sources */,
 				A91DBC552DE58191001F42ED /* DetectedFace.swift in Sources */,
 				A91DBC562DE58191001F42ED /* MaskMode.swift in Sources */,
-				A91DBC572DE58191001F42ED /* MemoryManager.swift in Sources */,
-				A91DBC592DE58191001F42ED /* SecurePhoto.swift in Sources */,
 				A91DBC5A2DE58191001F42ED /* FaceBoxView.swift in Sources */,
+				A9DEA9B72DF957B50064A95F /* CameraView.swift in Sources */,
 				A91DBC5B2DE58191001F42ED /* FaceDetectionControlsView.swift in Sources */,
 				A91DBC5C2DE58191001F42ED /* FaceDetectionOverlay.swift in Sources */,
 				A91DBC5D2DE58191001F42ED /* PhotoControlsView.swift in Sources */,
 				A91DBC5E2DE58191001F42ED /* ZoomableImageView.swift in Sources */,
 				A91DBC5F2DE58191001F42ED /* ZoomLevelIndicator.swift in Sources */,
 				A91DBC602DE58191001F42ED /* ZoomableModifier.swift in Sources */,
+				A9DEAA932E0E71FB0064A95F /* SecureGalleryViewModel.swift in Sources */,
 				A91DBC612DE58191001F42ED /* EnhancedPhotoDetailView.swift in Sources */,
-				A9445CBB2DE7DD7B0038119B /* PhotoMetadata.swift in Sources */,
 				A91DBC622DE58191001F42ED /* ImageInfoView.swift in Sources */,
 				A91DBC632DE58191001F42ED /* PhotoDetail.swift in Sources */,
 				A91DBC642DE58191001F42ED /* PhotoDetailView.swift in Sources */,
 				A91DBC652DE58191001F42ED /* PhotoDetailViewModel.swift in Sources */,
 				A91DBC662DE58191001F42ED /* AppStateCoordinator.swift in Sources */,
 				A91DBC672DE58191001F42ED /* AuthenticationOverlayView.swift in Sources */,
-				A91DBC682DE58191001F42ED /* AuthManager.swift in Sources */,
-				A91DBC692DE58191001F42ED /* CamControl.swift in Sources */,
+				A9DEA9AD2DF94EAD0064A95F /* ScreenshotTakenView.swift in Sources */,
 				A91DBC6A2DE58191001F42ED /* CameraModel.swift in Sources */,
 				A91DBC6B2DE58191001F42ED /* ContentView.swift in Sources */,
-				A91DBC6C2DE58191001F42ED /* EncryptionManager.swift in Sources */,
-				A91DBC6D2DE58191001F42ED /* FaceDetector.swift in Sources */,
-				A91DBC6E2DE58191001F42ED /* FileManager.swift in Sources */,
-				A91DBC6F2DE58191001F42ED /* KeyManager.swift in Sources */,
-				A91DBC702DE58191001F42ED /* LocationManager.swift in Sources */,
+				A9DEA9B12DF956610064A95F /* PhotoCell.swift in Sources */,
+				A9DEA9B52DF9579D0064A95F /* FocusIndicatorView.swift in Sources */,
 				A91DBC712DE58191001F42ED /* PhotoDetailViewImpl.swift in Sources */,
-				A91DBC722DE58191001F42ED /* PINManager.swift in Sources */,
 				A91DBC732DE58191001F42ED /* PINSetupView.swift in Sources */,
 				A91DBC742DE58191001F42ED /* PINVerificationView.swift in Sources */,
-				A91DBC752DE58191001F42ED /* PrivacyShield.swift in Sources */,
-				A91DBC762DE58191001F42ED /* ScreenCaptureManager.swift in Sources */,
+				A91DBC752DE58191001F42ED /* PrivacyShieldView.swift in Sources */,
 				A91DBC772DE58191001F42ED /* SecureGalleryView.swift in Sources */,
 				A91DBC782DE58191001F42ED /* SettingsView.swift in Sources */,
 				A91DBC792DE58191001F42ED /* SnapSafeApp.swift in Sources */,
@@ -506,6 +526,26 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		A93DD0452DF7F3CB00D5DB42 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = BP75F4S5N3;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		A93DD0462DF7F3CB00D5DB42 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = BP75F4S5N3;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
 		A9DE37692DC5F34600679C2C /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -770,6 +810,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		A93DD0442DF7F3CB00D5DB42 /* Build configuration list for PBXAggregateTarget "Periphery" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A93DD0452DF7F3CB00D5DB42 /* Debug */,
+				A93DD0462DF7F3CB00D5DB42 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		A9DE37422DC5F34400679C2C /* Build configuration list for PBXProject "SnapSafe" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

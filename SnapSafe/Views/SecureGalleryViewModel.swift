@@ -76,26 +76,17 @@ class SecureGalleryViewModel: ObservableObject {
                             isDecoy: isDecoy
                         )
 
-                        // Create UIImage and generate thumbnail
-                        guard let image = UIImage(data: imageData) else {
+                        // Validate that the image data is valid before creating SecurePhoto
+                        guard UIImage(data: imageData) != nil else {
                             print("Invalid image data for \(filename)")
                             continue
                         }
 
-                        // Generate thumbnail
-                        let thumbnailSize = CGSize(width: 200, height: 200)
-                        let renderer = UIGraphicsImageRenderer(size: thumbnailSize)
-                        let thumbnail = renderer.image { _ in
-                            image.draw(in: CGRect(origin: .zero, size: thumbnailSize))
-                        }
-
-                        // Create SecurePhoto object with cached images (legacy system uses unencrypted data)
+                        // Create SecurePhoto object with raw data for binary fidelity
                         let securePhoto = SecurePhoto(
                             id: filename,
-                            encryptedData: Data(), // Empty since legacy system doesn't encrypt
-                            metadata: metadata,
-                            cachedImage: image,
-                            cachedThumbnail: thumbnail
+                            rawPhotoData: imageData, // Store raw data directly
+                            metadata: metadata
                         )
 
                         loadedPhotos.append(securePhoto)

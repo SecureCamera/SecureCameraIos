@@ -6,6 +6,20 @@ The camera app that minds its own business.
 [![CodeQL Advanced](https://github.com/SecureCamera/SecureCameraIos/actions/workflows/codeql.yml/badge.svg)](https://github.com/SecureCamera/SecureCameraIos/actions/workflows/codeql.yml)
 [![codebeat badge](https://codebeat.co/badges/98126bc1-7ae9-4aed-be5c-21875c1999a1)](https://codebeat.co/projects/github-com-securecamera-securecameraios-main)
 
+# Build Info
+
+Run periphery:
+
+```
+periphery scan --format xcode --strict --project SnapSafe/SnapSafe.xcodeproj --schemes SnapSafe
+```
+
+Resolve package graph:
+
+```
+xcodebuild -list
+```
+
 # Recommended iOS Settings
 
 Apple provides a number of security features we can use on our devices to ensure the device is as secure as possible. This section outlines settings you can use to protect your device.

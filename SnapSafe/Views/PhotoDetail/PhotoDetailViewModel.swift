@@ -88,7 +88,7 @@ class PhotoDetailViewModel: ObservableObject {
         } else {
             // Should never happen but just in case
             let emptyMetadata = PhotoMetadata(id: UUID().uuidString, fileSize: 0)
-            return SecurePhoto(id: UUID().uuidString, encryptedData: Data(), metadata: emptyMetadata)
+            return SecurePhoto(id: UUID().uuidString, rawPhotoData: Data(), metadata: emptyMetadata)
         }
     }
 
