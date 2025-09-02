@@ -115,19 +115,6 @@
 		A9DE37612DC5F34600679C2C /* SnapSafeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SnapSafeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
-/* Begin PBXGroup section */
-		A9DE375A2DC5F34600679C2C /* SnapSafeTests */ = {
-			isa = PBXGroup;
-			path = SnapSafeTests;
-			sourceTree = "<group>";
-		};
-		A9DE37642DC5F34600679C2C /* SnapSafeUITests */ = {
-			isa = PBXGroup;
-			path = SnapSafeUITests;
-			sourceTree = "<group>";
-		};
-/* End PBXGroup section */
-
 /* Begin PBXFrameworksBuildPhase section */
 		A9DE37442DC5F34400679C2C /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
@@ -271,6 +258,20 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		A9DE375A2DC5F34600679C2C /* SnapSafeTests */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = SnapSafeTests;
+			sourceTree = "<group>";
+		};
+		A9DE37642DC5F34600679C2C /* SnapSafeUITests */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = SnapSafeUITests;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -307,9 +308,6 @@
 			dependencies = (
 				A9DE37592DC5F34600679C2C /* PBXTargetDependency */,
 			);
-			fileSystemSynchronizedGroups = (
-				A9DE375A2DC5F34600679C2C /* SnapSafeTests */,
-			);
 			name = SnapSafeTests;
 			packageProductDependencies = (
 				A9B3E0892DCF1D3C003F1ED3 /* DependenciesTestSupport */,
@@ -330,9 +328,6 @@
 			);
 			dependencies = (
 				A9DE37632DC5F34600679C2C /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				A9DE37642DC5F34600679C2C /* SnapSafeUITests */,
 			);
 			name = SnapSafeUITests;
 			packageProductDependencies = (
@@ -365,6 +360,7 @@
 				};
 			};
 			buildConfigurationList = A9DE37422DC5F34400679C2C /* Build configuration list for PBXProject "SnapSafe" */;
+			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -372,11 +368,9 @@
 				Base,
 			);
 			mainGroup = A9DE373E2DC5F34400679C2C;
-			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				A9B3E0862DCF1D3C003F1ED3 /* XCRemoteSwiftPackageReference "swift-dependencies" */,
 			);
-			preferredProjectObjectVersion = 77;
 			productRefGroup = A9DE37482DC5F34400679C2C /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
