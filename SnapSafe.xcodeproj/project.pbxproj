@@ -7,6 +7,16 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		660130A02E676F5B00D07E9C /* FactoryKit in Frameworks */ = {isa = PBXBuildFile; productRef = 6601309F2E676F5B00D07E9C /* FactoryKit */; };
+		660130A22E676F5B00D07E9C /* FactoryTesting in Frameworks */ = {isa = PBXBuildFile; productRef = 660130A12E676F5B00D07E9C /* FactoryTesting */; };
+		660130A92E67753600D07E9C /* AppDependencyInjection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 660130A82E67753600D07E9C /* AppDependencyInjection.swift */; };
+		660130BC2E67AD1D00D07E9C /* AuthorizationRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 660130B62E67AD1D00D07E9C /* AuthorizationRepository.swift */; };
+		660130BE2E67AD1D00D07E9C /* EncryptionScheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 660130B82E67AD1D00D07E9C /* EncryptionScheme.swift */; };
+		660130BF2E67AD1D00D07E9C /* HashedPin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 660130B92E67AD1D00D07E9C /* HashedPin.swift */; };
+		660130C02E67AD1D00D07E9C /* PassThroughEncryptionScheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 660130BA2E67AD1D00D07E9C /* PassThroughEncryptionScheme.swift */; };
+		660130C42E67AD2200D07E9C /* SettingsDataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 660130C12E67AD2200D07E9C /* SettingsDataSource.swift */; };
+		660130C52E67AD2200D07E9C /* UserDefaultsSettingsDataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 660130C22E67AD2200D07E9C /* UserDefaultsSettingsDataSource.swift */; };
+		660130C72E67AD3A00D07E9C /* DeviceInfoDataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 660130C62E67AD3A00D07E9C /* DeviceInfoDataSource.swift */; };
 		A91DBC542DE58191001F42ED /* AppearanceMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC252DE58191001F42ED /* AppearanceMode.swift */; };
 		A91DBC552DE58191001F42ED /* DetectedFace.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC262DE58191001F42ED /* DetectedFace.swift */; };
 		A91DBC562DE58191001F42ED /* MaskMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC272DE58191001F42ED /* MaskMode.swift */; };
@@ -69,6 +79,14 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		660130A82E67753600D07E9C /* AppDependencyInjection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDependencyInjection.swift; sourceTree = "<group>"; };
+		660130B62E67AD1D00D07E9C /* AuthorizationRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorizationRepository.swift; sourceTree = "<group>"; };
+		660130B82E67AD1D00D07E9C /* EncryptionScheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EncryptionScheme.swift; sourceTree = "<group>"; };
+		660130B92E67AD1D00D07E9C /* HashedPin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HashedPin.swift; sourceTree = "<group>"; };
+		660130BA2E67AD1D00D07E9C /* PassThroughEncryptionScheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PassThroughEncryptionScheme.swift; sourceTree = "<group>"; };
+		660130C12E67AD2200D07E9C /* SettingsDataSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsDataSource.swift; sourceTree = "<group>"; };
+		660130C22E67AD2200D07E9C /* UserDefaultsSettingsDataSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserDefaultsSettingsDataSource.swift; sourceTree = "<group>"; };
+		660130C62E67AD3A00D07E9C /* DeviceInfoDataSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceInfoDataSource.swift; sourceTree = "<group>"; };
 		A91DBB422DE41BAE001F42ED /* SnapSafe.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = SnapSafe.xctestplan; sourceTree = "<group>"; };
 		A91DBC252DE58191001F42ED /* AppearanceMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppearanceMode.swift; sourceTree = "<group>"; };
 		A91DBC262DE58191001F42ED /* DetectedFace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetectedFace.swift; sourceTree = "<group>"; };
@@ -120,6 +138,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				660130A02E676F5B00D07E9C /* FactoryKit in Frameworks */,
 				A9B3E0882DCF1D3C003F1ED3 /* Dependencies in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -128,6 +147,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				660130A22E676F5B00D07E9C /* FactoryTesting in Frameworks */,
 				A9B3E08A2DCF1D3C003F1ED3 /* DependenciesTestSupport in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -142,6 +162,27 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		660130BB2E67AD1D00D07E9C /* Security */ = {
+			isa = PBXGroup;
+			children = (
+				660130B62E67AD1D00D07E9C /* AuthorizationRepository.swift */,
+				660130B82E67AD1D00D07E9C /* EncryptionScheme.swift */,
+				660130B92E67AD1D00D07E9C /* HashedPin.swift */,
+				660130BA2E67AD1D00D07E9C /* PassThroughEncryptionScheme.swift */,
+				660130C62E67AD3A00D07E9C /* DeviceInfoDataSource.swift */,
+			);
+			path = Security;
+			sourceTree = "<group>";
+		};
+		660130C32E67AD2200D07E9C /* UserData */ = {
+			isa = PBXGroup;
+			children = (
+				660130C12E67AD2200D07E9C /* SettingsDataSource.swift */,
+				660130C22E67AD2200D07E9C /* UserDefaultsSettingsDataSource.swift */,
+			);
+			path = UserData;
+			sourceTree = "<group>";
+		};
 		A91DBC2B2DE58191001F42ED /* Models */ = {
 			isa = PBXGroup;
 			children = (
@@ -209,6 +250,8 @@
 		A91DBC532DE58191001F42ED /* SnapSafe */ = {
 			isa = PBXGroup;
 			children = (
+				660130BB2E67AD1D00D07E9C /* Security */,
+				660130C32E67AD2200D07E9C /* UserData */,
 				A91DBC2B2DE58191001F42ED /* Models */,
 				A91DBC2D2DE58191001F42ED /* Preview Content */,
 				A91DBC3D2DE58191001F42ED /* Views */,
@@ -233,6 +276,7 @@
 				A91DBC502DE58191001F42ED /* SecureGalleryView.swift */,
 				A91DBC512DE58191001F42ED /* SettingsView.swift */,
 				A91DBC522DE58191001F42ED /* SnapSafeApp.swift */,
+				660130A82E67753600D07E9C /* AppDependencyInjection.swift */,
 			);
 			path = SnapSafe;
 			sourceTree = "<group>";
@@ -290,6 +334,7 @@
 			name = SnapSafe;
 			packageProductDependencies = (
 				A9B3E0872DCF1D3C003F1ED3 /* Dependencies */,
+				6601309F2E676F5B00D07E9C /* FactoryKit */,
 			);
 			productName = SnapSafe;
 			productReference = A9DE37472DC5F34400679C2C /* SnapSafe.app */;
@@ -311,6 +356,7 @@
 			name = SnapSafeTests;
 			packageProductDependencies = (
 				A9B3E0892DCF1D3C003F1ED3 /* DependenciesTestSupport */,
+				660130A12E676F5B00D07E9C /* FactoryTesting */,
 			);
 			productName = SnapSafeTests;
 			productReference = A9DE37572DC5F34600679C2C /* SnapSafeTests.xctest */;
@@ -370,6 +416,7 @@
 			mainGroup = A9DE373E2DC5F34400679C2C;
 			packageReferences = (
 				A9B3E0862DCF1D3C003F1ED3 /* XCRemoteSwiftPackageReference "swift-dependencies" */,
+				6601309E2E676F5B00D07E9C /* XCRemoteSwiftPackageReference "Factory" */,
 			);
 			productRefGroup = A9DE37482DC5F34400679C2C /* Products */;
 			projectDirPath = "";
@@ -420,9 +467,12 @@
 				A91DBC582DE58191001F42ED /* PhotoFilter.swift in Sources */,
 				A91DBC592DE58191001F42ED /* SecurePhoto.swift in Sources */,
 				A91DBC5A2DE58191001F42ED /* FaceBoxView.swift in Sources */,
+				660130C42E67AD2200D07E9C /* SettingsDataSource.swift in Sources */,
+				660130C52E67AD2200D07E9C /* UserDefaultsSettingsDataSource.swift in Sources */,
 				A91DBC5B2DE58191001F42ED /* FaceDetectionControlsView.swift in Sources */,
 				A91DBC5C2DE58191001F42ED /* FaceDetectionOverlay.swift in Sources */,
 				A91DBC5D2DE58191001F42ED /* PhotoControlsView.swift in Sources */,
+				660130A92E67753600D07E9C /* AppDependencyInjection.swift in Sources */,
 				A91DBC5E2DE58191001F42ED /* ZoomableImageView.swift in Sources */,
 				A91DBC5F2DE58191001F42ED /* ZoomLevelIndicator.swift in Sources */,
 				A91DBC602DE58191001F42ED /* ZoomableModifier.swift in Sources */,
@@ -439,6 +489,7 @@
 				A91DBC6B2DE58191001F42ED /* ContentView.swift in Sources */,
 				A91DBC6C2DE58191001F42ED /* EncryptionManager.swift in Sources */,
 				A91DBC6D2DE58191001F42ED /* FaceDetector.swift in Sources */,
+				660130C72E67AD3A00D07E9C /* DeviceInfoDataSource.swift in Sources */,
 				A91DBC6E2DE58191001F42ED /* FileManager.swift in Sources */,
 				A91DBC6F2DE58191001F42ED /* KeyManager.swift in Sources */,
 				A91DBC702DE58191001F42ED /* LocationManager.swift in Sources */,
@@ -447,6 +498,10 @@
 				A91DBC732DE58191001F42ED /* PINSetupView.swift in Sources */,
 				A91DBC742DE58191001F42ED /* PINVerificationView.swift in Sources */,
 				A91DBC752DE58191001F42ED /* PrivacyShield.swift in Sources */,
+				660130BC2E67AD1D00D07E9C /* AuthorizationRepository.swift in Sources */,
+				660130BE2E67AD1D00D07E9C /* EncryptionScheme.swift in Sources */,
+				660130BF2E67AD1D00D07E9C /* HashedPin.swift in Sources */,
+				660130C02E67AD1D00D07E9C /* PassThroughEncryptionScheme.swift in Sources */,
 				A91DBC762DE58191001F42ED /* ScreenCaptureManager.swift in Sources */,
 				A91DBC772DE58191001F42ED /* SecureGalleryView.swift in Sources */,
 				A91DBC782DE58191001F42ED /* SettingsView.swift in Sources */,
@@ -787,6 +842,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		6601309E2E676F5B00D07E9C /* XCRemoteSwiftPackageReference "Factory" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/hmlongco/Factory.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.5.3;
+			};
+		};
 		A9B3E0862DCF1D3C003F1ED3 /* XCRemoteSwiftPackageReference "swift-dependencies" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/pointfreeco/swift-dependencies";
@@ -798,6 +861,16 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		6601309F2E676F5B00D07E9C /* FactoryKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 6601309E2E676F5B00D07E9C /* XCRemoteSwiftPackageReference "Factory" */;
+			productName = FactoryKit;
+		};
+		660130A12E676F5B00D07E9C /* FactoryTesting */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 6601309E2E676F5B00D07E9C /* XCRemoteSwiftPackageReference "Factory" */;
+			productName = FactoryTesting;
+		};
 		A9B3E0872DCF1D3C003F1ED3 /* Dependencies */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = A9B3E0862DCF1D3C003F1ED3 /* XCRemoteSwiftPackageReference "swift-dependencies" */;
