@@ -17,6 +17,10 @@ extension Container {
         self { DeviceInfoDataSource() }
     }
     
+    var pinCrypto: Factory<PinCrypto> {
+        self { PinCrypto() }.shared
+    }
+    
     var encryptionScheme: Factory<EncryptionScheme> {
         self { PassThroughEncryptionScheme() }.singleton
     }
