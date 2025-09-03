@@ -37,7 +37,7 @@ final class PinCrypto {
         )
 
         return HashedPin(
-            hash: digest.rawData.base64URLEncodedString(),
+            hash: digest.encodedData.base64URLEncodedString(),
             salt: salt.base64URLEncodedString()
         )
     }

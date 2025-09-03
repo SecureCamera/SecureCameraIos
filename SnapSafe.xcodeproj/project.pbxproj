@@ -17,10 +17,10 @@
 		660130C42E67AD2200D07E9C /* SettingsDataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 660130C12E67AD2200D07E9C /* SettingsDataSource.swift */; };
 		660130C52E67AD2200D07E9C /* UserDefaultsSettingsDataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 660130C22E67AD2200D07E9C /* UserDefaultsSettingsDataSource.swift */; };
 		660130C72E67AD3A00D07E9C /* DeviceInfoDataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 660130C62E67AD3A00D07E9C /* DeviceInfoDataSource.swift */; };
-		66A404C62E67EAAA0054FFE7 /* BCryptSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 66A404C52E67EAAA0054FFE7 /* BCryptSwift */; };
 		66A404C92E67EAF90054FFE7 /* Argon2Kit in Frameworks */ = {isa = PBXBuildFile; productRef = 66A404C82E67EAF90054FFE7 /* Argon2Kit */; };
 		66A404CB2E67EB7F0054FFE7 /* PinCrypto.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66A404CA2E67EB7F0054FFE7 /* PinCrypto.swift */; };
 		66A404CD2E67F0960054FFE7 /* DataExt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66A404CC2E67F0960054FFE7 /* DataExt.swift */; };
+		66A404D12E67F39F0054FFE7 /* PinCryptoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66A404D02E67F39F0054FFE7 /* PinCryptoTests.swift */; };
 		A91DBC542DE58191001F42ED /* AppearanceMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC252DE58191001F42ED /* AppearanceMode.swift */; };
 		A91DBC552DE58191001F42ED /* DetectedFace.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC262DE58191001F42ED /* DetectedFace.swift */; };
 		A91DBC562DE58191001F42ED /* MaskMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC272DE58191001F42ED /* MaskMode.swift */; };
@@ -93,6 +93,7 @@
 		660130C62E67AD3A00D07E9C /* DeviceInfoDataSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceInfoDataSource.swift; sourceTree = "<group>"; };
 		66A404CA2E67EB7F0054FFE7 /* PinCrypto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinCrypto.swift; sourceTree = "<group>"; };
 		66A404CC2E67F0960054FFE7 /* DataExt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataExt.swift; sourceTree = "<group>"; };
+		66A404D02E67F39F0054FFE7 /* PinCryptoTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinCryptoTests.swift; sourceTree = "<group>"; };
 		A91DBB422DE41BAE001F42ED /* SnapSafe.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = SnapSafe.xctestplan; sourceTree = "<group>"; };
 		A91DBC252DE58191001F42ED /* AppearanceMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppearanceMode.swift; sourceTree = "<group>"; };
 		A91DBC262DE58191001F42ED /* DetectedFace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetectedFace.swift; sourceTree = "<group>"; };
@@ -314,6 +315,7 @@
 		A9DE375A2DC5F34600679C2C /* SnapSafeTests */ = {
 			isa = PBXGroup;
 			children = (
+				66A404D02E67F39F0054FFE7 /* PinCryptoTests.swift */,
 			);
 			path = SnapSafeTests;
 			sourceTree = "<group>";
@@ -344,7 +346,6 @@
 			packageProductDependencies = (
 				A9B3E0872DCF1D3C003F1ED3 /* Dependencies */,
 				6601309F2E676F5B00D07E9C /* FactoryKit */,
-				66A404C52E67EAAA0054FFE7 /* BCryptSwift */,
 				66A404C82E67EAF90054FFE7 /* Argon2Kit */,
 			);
 			productName = SnapSafe;
@@ -408,6 +409,7 @@
 					};
 					A9DE37562DC5F34600679C2C = {
 						CreatedOnToolsVersion = 16.2;
+						LastSwiftMigration = 1640;
 						TestTargetID = A9DE37462DC5F34400679C2C;
 					};
 					A9DE37602DC5F34600679C2C = {
@@ -428,7 +430,6 @@
 			packageReferences = (
 				A9B3E0862DCF1D3C003F1ED3 /* XCRemoteSwiftPackageReference "swift-dependencies" */,
 				6601309E2E676F5B00D07E9C /* XCRemoteSwiftPackageReference "Factory" */,
-				66A404C42E67EAAA0054FFE7 /* XCRemoteSwiftPackageReference "BCryptSwift" */,
 				66A404C72E67EAF90054FFE7 /* XCRemoteSwiftPackageReference "Argon2Kit" */,
 			);
 			productRefGroup = A9DE37482DC5F34400679C2C /* Products */;
@@ -528,6 +529,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				66A404D12E67F39F0054FFE7 /* PinCryptoTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
