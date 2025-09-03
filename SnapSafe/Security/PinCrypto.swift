@@ -22,13 +22,13 @@ final class PinCrypto {
     }
 
     /// Hashes PIN bound to `deviceId` (pinBytes + deviceIdBytes), returning base64url-wrapped Argon2 **encoded** string + salt.
-    func hashPin(pin: String, deviceId: Data) throws -> HashedPin {
+    func hashPin(pin: String, deviceId: Data) -> HashedPin {
         let salt = Data.random(bytes: 16)
 
         var password = Data(pin.utf8)
         password.append(deviceId)
 
-        let digest = try Argon2.hash(
+        let digest = try! Argon2.hash(
             password: password,
             salt: salt,
             iterations: iterations,
@@ -43,7 +43,7 @@ final class PinCrypto {
     }
 
     /// Verifies `pin` against stored Argon2 **encoded** string (which we stored as base64url) using the same pin+deviceId binding.
-    func verifyPin(pin: String, stored: HashedPin, deviceId: Data) throws -> Bool {
+    func verifyPin(pin: String, stored: HashedPin, deviceId: Data) -> Bool {
         var password = Data(pin.utf8)
         password.append(deviceId)
 
@@ -54,6 +54,6 @@ final class PinCrypto {
             return false
         }
 
-        return try Argon2.verify(password: password, encodedHash: encodedData)
+        return try! Argon2.verify(password: password, encodedHash: encodedData)
     }
 }

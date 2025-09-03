@@ -25,6 +25,15 @@ extension Container {
         self { PassThroughEncryptionScheme() }.singleton
     }
     
+    var PinRepository: Factory<PinRepository> {
+        self { PinRepositoryImpl(
+            dataSource: self.settingsDataSource(),
+            encryptionScheme: self.encryptionScheme(),
+            deviceInfo: self.deviceInfoDataSource(),
+            pinCrypto: self.pinCrypto(),
+        ) }.singleton
+    }
+    
     var authenticationRepository: Factory<AuthorizationRepository> {
         self { AuthorizationRepository(
             settings: self.settingsDataSource(),
