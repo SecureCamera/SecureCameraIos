@@ -14,11 +14,11 @@ extension Container {
     }
     
     var deviceInfoDataSource: Factory<DeviceInfoDataSource> {
-        self { DeviceInfoDataSource() }
+        self { DeviceInfoDataSourceImpl() }
     }
     
     var pinCrypto: Factory<PinCrypto> {
-        self { PinCrypto() }.shared
+        self { PinCryptoImpl() }.shared
     }
     
     var encryptionScheme: Factory<EncryptionScheme> {

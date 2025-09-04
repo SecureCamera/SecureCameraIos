@@ -1,46 +1,49 @@
+import CryptoKit
 import Foundation
 import Security
-import CryptoKit
 
-
-class PinRepositoryImpl : PinRepository {
+class PinRepositoryImpl: PinRepository {
     private let dataSource: SettingsDataSource
     private let encryptionScheme: EncryptionScheme
     private let deviceInfo: DeviceInfoDataSource
     private let pinCrypto: PinCrypto
-    
+
     private static let PIN_KEY_ALIAS = "pin_key"
-    
-    init(dataSource: SettingsDataSource,
-         encryptionScheme: EncryptionScheme,
-         deviceInfo: DeviceInfoDataSource,
-         pinCrypto: PinCrypto) {
+
+    init(
+        dataSource: SettingsDataSource,
+        encryptionScheme: EncryptionScheme,
+        deviceInfo: DeviceInfoDataSource,
+        pinCrypto: PinCrypto
+    ) {
         self.dataSource = dataSource
         self.encryptionScheme = encryptionScheme
         self.deviceInfo = deviceInfo
         self.pinCrypto = pinCrypto
     }
-    
+
     func setAppPin(_ pin: String) async {
         let hashedPin = await hashPin(pin)
-        
+
         do {
-            let hashedPinData = try JSONEncoder().encode(hashedPin)
-            let cipheredHash = try await encryptionScheme.encryptWithKeyAlias(plain: hashedPinData, keyAlias: Self.PIN_KEY_ALIAS)
+            let hashedPinData = try jsonEncoder().encode(hashedPin)
+            let cipheredHash = try await encryptionScheme.encryptWithKeyAlias(
+                plain: hashedPinData, keyAlias: Self.PIN_KEY_ALIAS)
             let cipheredHashBase64 = cipheredHash.base64EncodedString()
-            
+
             await dataSource.setAppPin(cipheredPin: cipheredHashBase64)
         } catch {
             // Handle encoding/encryption errors silently
         }
     }
-    
+
     func getHashedPin() async -> HashedPin? {
         guard let cipheredPinBase64 = await dataSource.getCipheredPin(),
-              let cipheredPinData = Data(base64Encoded: cipheredPinBase64) else {
+            let cipheredPinData = Data(base64Encoded: cipheredPinBase64)
+        else {
             return nil
         }
-        
+
         do {
             let hashedPinData = try await encryptionScheme.decryptWithKeyAlias(
                 encrypted: cipheredPinData,
@@ -51,20 +54,21 @@ class PinRepositoryImpl : PinRepository {
             return nil
         }
     }
-    
+
     func verifySecurityPin(_ pin: String) async -> Bool {
         guard let storedHashedPin = await getHashedPin() else {
             return false
         }
         return await verifyPin(inputPin: pin, storedHash: storedHashedPin)
     }
-    
+
     func hashPin(_ pin: String) async -> HashedPin {
-        return await pinCrypto.hashPin(pin: pin, deviceId: deviceInfo.getDeviceIdentifier())
+        return await pinCrypto.hashPin(pin: pin, deviceId: await deviceInfo.getDeviceIdentifier())
     }
-    
+
     func verifyPin(inputPin: String, storedHash: HashedPin) async -> Bool {
-        return await pinCrypto.verifyPin(pin: inputPin, stored: storedHash, deviceId: deviceInfo.getDeviceIdentifier())
+        return await pinCrypto.verifyPin(
+            pin: inputPin, stored: storedHash, deviceId: await deviceInfo.getDeviceIdentifier())
     }
 
     func hasPoisonPillPin() async throws -> Bool {
@@ -78,31 +82,40 @@ class PinRepositoryImpl : PinRepository {
         guard let stored = await getHashedPoisonPillPin() else { return false }
         return await verifyPin(inputPin: pin, storedHash: stored)
     }
-    
+
     func setPoisonPillPin(_ pin: String) async {
         let hashedPin = await hashPin(pin)
-        
+
         do {
-            let hashedPinData = try JSONEncoder().encode(hashedPin)
-            let cipheredHashedPpp = try await encryptionScheme.encryptWithKeyAlias(plain: hashedPinData, keyAlias: Self.PIN_KEY_ALIAS)
+            let hashedPinData = try jsonEncoder().encode(hashedPin)
+
+            let jsonString = String(data: hashedPinData, encoding: .utf8)!
+            print(jsonString)
+            
+            let cipheredHashedPpp = try await encryptionScheme.encryptWithKeyAlias(
+                plain: hashedPinData, keyAlias: Self.PIN_KEY_ALIAS)
             let cipheredHashedPppBase64 = cipheredHashedPpp.base64EncodedString()
-            
+
             let plainPinData = pin.data(using: .utf8) ?? Data()
-            let cipheredPlainPpp = try await encryptionScheme.encryptWithKeyAlias(plain: plainPinData, keyAlias: Self.PIN_KEY_ALIAS)
+            let cipheredPlainPpp = try await encryptionScheme.encryptWithKeyAlias(
+                plain: plainPinData, keyAlias: Self.PIN_KEY_ALIAS)
             let cipheredPlainPppBase64 = cipheredPlainPpp.base64EncodedString()
-            
-            await dataSource.setPoisonPillPin(cipheredHashedPin: cipheredHashedPppBase64, cipheredPlainPin: cipheredPlainPppBase64)
+
+            await dataSource.setPoisonPillPin(
+                cipheredHashedPin: cipheredHashedPppBase64, cipheredPlainPin: cipheredPlainPppBase64
+            )
         } catch {
             // TODO: What do we want to do with encoding/encryption errors here?
         }
     }
-    
+
     func getPlainPoisonPillPin() async -> String? {
         guard let encryptedStoredPinBase64 = await dataSource.getPlainPoisonPillPin(),
-              let encryptedStoredPin = Data(base64Encoded: encryptedStoredPinBase64) else {
+            let encryptedStoredPin = Data(base64Encoded: encryptedStoredPinBase64)
+        else {
             return nil
         }
-        
+
         do {
             let decryptedData = try await encryptionScheme.decryptWithKeyAlias(
                 encrypted: encryptedStoredPin,
@@ -113,13 +126,14 @@ class PinRepositoryImpl : PinRepository {
             return nil
         }
     }
-    
+
     func getHashedPoisonPillPin() async -> HashedPin? {
         guard let encryptedPinBase64 = await dataSource.getHashedPoisonPillPin(),
-              let encryptedPinData = Data(base64Encoded: encryptedPinBase64) else {
+            let encryptedPinData = Data(base64Encoded: encryptedPinBase64)
+        else {
             return nil
         }
-        
+
         do {
             let storedPinData = try await encryptionScheme.decryptWithKeyAlias(
                 encrypted: encryptedPinData,
@@ -130,24 +144,27 @@ class PinRepositoryImpl : PinRepository {
             return nil
         }
     }
-    
+
     func activatePoisonPill() async {
         guard let poisonPillPin = await getHashedPoisonPillPin() else {
             return
         }
-        
+
         do {
-            let poisonPillPinData = try JSONEncoder().encode(poisonPillPin)
-            let ciphered = try await encryptionScheme.encryptWithKeyAlias(plain: poisonPillPinData, keyAlias: Self.PIN_KEY_ALIAS)
+            let poisonPillPinData = try jsonEncoder().encode(poisonPillPin)
+            let ciphered = try await encryptionScheme.encryptWithKeyAlias(
+                plain: poisonPillPinData,
+                keyAlias: Self.PIN_KEY_ALIAS,
+            )
             let cipheredBase64 = ciphered.base64EncodedString()
-            
+
             await dataSource.activatePoisonPill(ciphered: cipheredBase64)
             await removePoisonPillPin()
         } catch {
             // Handle encoding/encryption errors silently
         }
     }
-    
+
     func removePoisonPillPin() async {
         await dataSource.removePoisonPillPin()
     }

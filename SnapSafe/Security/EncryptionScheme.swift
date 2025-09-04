@@ -6,10 +6,11 @@
 //
 
 import Foundation
-
+import Mockable
 
 /// Encryption schemes used to encrypt and decrypt files.
 /// You can provide concrete implementations, e.g. Software / Hardware.
+@Mockable
 public protocol EncryptionScheme: Sendable {
     // MARK: - Encrypt to file (derived key in cache)
     /// Encrypts plaintext data and writes it to a file using the pre-derived key in cache.

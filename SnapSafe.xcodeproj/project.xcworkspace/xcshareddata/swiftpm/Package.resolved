@@ -1,5 +1,5 @@
 {
-  "originHash" : "3d29fa7e44c5ef7aa0ee70eb262508c02ab2d9ee8461ee4aba3b2f6d3d675d70",
+  "originHash" : "2c362d4fc3e30e5b8e7b039d777ac30ce7bb3c56c818ecb4f8ff797143279b52",
   "pins" : [
     {
       "identity" : "argon2kit",
@@ -26,6 +26,15 @@
       "state" : {
         "revision" : "ccc898f21992ebc130bc04cc197460a5ae230bcf",
         "version" : "2.5.3"
+      }
+    },
+    {
+      "identity" : "mockable",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Kolos65/Mockable",
+      "state" : {
+        "revision" : "ee133a696dce312da292b00d0944aafaa808eaca",
+        "version" : "0.4.0"
       }
     },
     {

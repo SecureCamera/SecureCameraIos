@@ -7,8 +7,10 @@
 
 import Foundation
 import Combine
+import Mockable
 
 
+@Mockable
 public protocol SettingsDataSource {
     // MARK: - Intro state
     /// Check if the user has completed the introduction

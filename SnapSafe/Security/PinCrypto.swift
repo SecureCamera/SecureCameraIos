@@ -5,13 +5,19 @@
 //  Created by Adam Brown on 9/2/25.
 //
 
-import Foundation
 import Argon2Kit
+import Foundation
+import Mockable
 
+@Mockable
+protocol PinCrypto {
+    func hashPin(pin: String, deviceId: Data) -> HashedPin
+    func verifyPin(pin: String, stored: HashedPin, deviceId: Data) -> Bool
+}
 
-final class PinCrypto {
+final class PinCryptoImpl: PinCrypto {
     static let DEFAULT_ITERATIONS: UInt32 = 5
-    static let DEFAULT_COST_KIB: UInt32   = 65_536 // 64 MiB
+    static let DEFAULT_COST_KIB: UInt32 = 65_536  // 64 MiB
 
     private let iterations: UInt32
     private let costKiB: UInt32
