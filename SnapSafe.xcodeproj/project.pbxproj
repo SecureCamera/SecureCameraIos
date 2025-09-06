@@ -245,7 +245,6 @@
 		667FF81D2E6C9DC200FB3E02 /* Screens */ = {
 			isa = PBXGroup;
 			children = (
-				667FF8272E6C9F8600FB3E02 /* Obfuscation */,
 				667FF8242E6C9E9200FB3E02 /* Views */,
 				667FF8232E6C9E6A00FB3E02 /* PinVerification */,
 				667FF8212E6C9E3400FB3E02 /* Camera */,
@@ -334,14 +333,6 @@
 			path = Location;
 			sourceTree = "<group>";
 		};
-		667FF8272E6C9F8600FB3E02 /* Obfuscation */ = {
-			isa = PBXGroup;
-			children = (
-				A91DBC462DE58191001F42ED /* FaceDetector.swift */,
-			);
-			path = Obfuscation;
-			sourceTree = "<group>";
-		};
 		669751312E6A63C50059C5F3 /* UseCases */ = {
 			isa = PBXGroup;
 			children = (
@@ -404,6 +395,7 @@
 				A91DBC3A2DE58191001F42ED /* PhotoDetailView.swift */,
 				A91DBC3B2DE58191001F42ED /* PhotoDetailViewModel.swift */,
 				A91DBC4A2DE58191001F42ED /* PhotoDetailViewImpl.swift */,
+				A91DBC462DE58191001F42ED /* FaceDetector.swift */,
 			);
 			path = PhotoDetail;
 			sourceTree = "<group>";
