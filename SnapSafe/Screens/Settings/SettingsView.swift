@@ -16,41 +16,13 @@ struct SettingsView: View {
     // Appearance setting
     @AppStorage("appearanceMode") private var appearanceMode: AppearanceMode = .system
     
-    // Sharing options
-    @State private var sanitizeFileName = true
-    @State private var sanitizeMetadata = true
-
-    // Privacy and detection options
-    @AppStorage("showFaceDetection") private var showFaceDetection = true
-
-    // Security settings
-    @State private var biometricEnabled = false
-    @State private var sessionTimeout = 5 // minutes
-    @State private var appPIN = ""
-    @State private var confirmAppPIN = ""
-    @State private var poisonPIN = ""
-    @State private var showResetConfirmation = false
-    @State private var requirePINOnResume: Bool = false
-    @State private var showPINError = false
-    @State private var pinErrorMessage = ""
-    @State private var showPINSuccess = false
-
-    // Decoy photos
-    @State private var isSelectingDecoys = false
-
-    // Location permissions
-    @State private var locationPermissionStatus = "Not Determined"
-    @StateObject private var locationManager = LocationManager.shared
-    @State private var includeLocationData = false
+    // ViewModel
+    @StateObject private var viewModel = SettingsViewModel()
     
-    // PIN Manager
-    @ObservedObject private var pinManager = PINManager.shared
+    // Location Manager (still needed for authorization status)
+    @StateObject private var locationManager = LocationManager.shared
     
     @Environment(\.openURL) private var openURL
-
-    // Dependency injections (commented until implementations are ready)
-    // private let authManager = AuthenticationManager()
-    // private let locationManager = CLLocationManager()
 
     var body: some View {
         NavigationView {
@@ -59,16 +31,14 @@ struct SettingsView: View {
                 
                 // SHARING SECTION
                 Section(header: Text("Sharing Options")) {
-                    Toggle("Sanitize File Name", isOn: $sanitizeFileName)
-                        .onChange(of: sanitizeFileName) { _, newValue in
-                            print("Sanitize file name: \(newValue)")
-                            // TODO: Update user preferences
+                    Toggle("Sanitize File Name", isOn: $viewModel.sanitizeFileName)
+                        .onChange(of: viewModel.sanitizeFileName) { _, newValue in
+                            viewModel.updateSanitizeFileName(newValue)
                         }
 
-                    Toggle("Sanitize Metadata", isOn: $sanitizeMetadata)
-                        .onChange(of: sanitizeMetadata) { _, newValue in
-                            print("Sanitize metadata: \(newValue)")
-                            // TODO: Update user preferences
+                    Toggle("Sanitize Metadata", isOn: $viewModel.sanitizeMetadata)
+                        .onChange(of: viewModel.sanitizeMetadata) { _, newValue in
+                            viewModel.updateSanitizeMetadata(newValue)
                         }
 
                     Text("When enabled, personal information will be removed from photos before sharing")
@@ -79,9 +49,9 @@ struct SettingsView: View {
 
                 // PRIVACY & DETECTION SECTION
                 Section(header: Text("Privacy & Detection")) {
-                    Toggle("Face Detection", isOn: $showFaceDetection)
-                        .onChange(of: showFaceDetection) { _, newValue in
-                            print("Face detection: \(newValue)")
+                    Toggle("Face Detection", isOn: $viewModel.showFaceDetection)
+                        .onChange(of: viewModel.showFaceDetection) { _, newValue in
+                            viewModel.updateFaceDetection(newValue)
                         }
 
                     Text("When enabled, faces can be detected in photos for privacy protection")
@@ -92,32 +62,22 @@ struct SettingsView: View {
 
                 // LOCATION SECTION
                 Section(header: Text("Location")) {
-                    Toggle("Include Location Data", isOn: $includeLocationData)
-                        .onChange(of: includeLocationData) { _, newValue in
-                            locationManager.setIncludeLocationData(newValue)
+                    Toggle("Include Location Data", isOn: $viewModel.includeLocationData)
+                        .onChange(of: viewModel.includeLocationData) { _, newValue in
+                            viewModel.updateIncludeLocationData(newValue)
                         }
 
                     HStack {
                         Text("Permission Status")
                         Spacer()
                         Text(locationManager.getAuthorizationStatusString())
-                            .foregroundColor(locationStatusColor)
+                            .foregroundColor(viewModel.locationStatusColor)
                     }
-
-                    let permissionNotDetermined = locationManager.authorizationStatus == .notDetermined
                     
                     Button {
-                        if permissionNotDetermined {
-                            locationManager.requestLocationPermission()
-                        } else {
-                            if let url = URL(string: UIApplication.openSettingsURLString) {
-                                openURL(url)
-                            }
-                        }
+                        viewModel.requestLocationPermission()
                         } label: {
-                            Text(permissionNotDetermined
-                                 ? "Request Location Permission"
-                                 : "Manage Permission in Settings")
+                            Text(viewModel.locationPermissionButtonText)
                         }
 
                     Text("When enabled, location data will be embedded in newly captured photos. Location requires permission and GPS availability.")
@@ -143,7 +103,7 @@ struct SettingsView: View {
                 // DECOY PHOTOS SECTION
                 Section(header: Text("Decoy Photos")) {
                     Button("Mark Decoys") {
-                        isSelectingDecoys = true
+                        viewModel.startSelectingDecoys()
                     }
 
                     Text("Decoy photos will be shown when emergency PIN is entered")
@@ -161,84 +121,54 @@ struct SettingsView: View {
                             .foregroundColor(.green)
                     }
 
-                    Picker("Session Timeout", selection: $sessionTimeout) {
+                    Picker("Session Timeout", selection: $viewModel.sessionTimeout) {
                         Text("1 minute").tag(1)
                         Text("5 minutes").tag(5)
                         Text("15 minutes").tag(15)
                         Text("30 minutes").tag(30)
                         Text("Never").tag(0)
                     }
-                    .onChange(of: sessionTimeout) { _, newValue in
-                        print("Session timeout changed to \(newValue) minutes")
-                        // TODO: Update user preferences
+                    .onChange(of: viewModel.sessionTimeout) { _, newValue in
+                        viewModel.updateSessionTimeout(newValue)
                     }
 
-                    Toggle("Biometric Authentication", isOn: $biometricEnabled)
-                        .onChange(of: biometricEnabled) { _, newValue in
-                            print("Biometric auth: \(newValue)")
-                            // TODO: Update auth manager
-                            // authManager.isBiometricEnabled = newValue
+                    Toggle("Biometric Authentication", isOn: $viewModel.biometricEnabled)
+                        .onChange(of: viewModel.biometricEnabled) { _, newValue in
+                            viewModel.updateBiometricEnabled(newValue)
                         }
                         
-                    Toggle("Require PIN when app resumes", isOn: $requirePINOnResume)
-                        .onChange(of: requirePINOnResume) { _, newValue in
-                            print("Require PIN on resume: \(newValue)")
-                            pinManager.setRequirePINOnResume(newValue)
+                    Toggle("Require PIN when app resumes", isOn: $viewModel.requirePINOnResume)
+                        .onChange(of: viewModel.requirePINOnResume) { _, newValue in
+                            viewModel.updateRequirePINOnResume(newValue)
                         }
                 }
 
                 // APP PIN SECTION
                 Section(header: Text("App PIN"), footer: Text("Enter a new 4-digit PIN twice to change your app security PIN")) {
-                    SecureField("New PIN (4 digits)", text: $appPIN)
+                    SecureField("New PIN (4 digits)", text: $viewModel.appPIN)
                         .keyboardType(.numberPad)
                         .autocorrectionDisabled(true)
                         .textContentType(.oneTimeCode) // Prevents keychain suggestions
-                        .onChange(of: appPIN) { _, newValue in
-                            // Limit to 4 digits
-                            if newValue.count > 4 {
-                                appPIN = String(newValue.prefix(4))
-                            }
-                            
-                            // Only allow numbers
-                            if !newValue.allSatisfy({ $0.isNumber }) {
-                                appPIN = newValue.filter { $0.isNumber }
-                            }
-                            
-                            // Clear any previous errors when typing
-                            if showPINError {
-                                showPINError = false
-                            }
+                        .onChange(of: viewModel.appPIN) { _, newValue in
+                            viewModel.updateAppPIN(newValue)
                         }
                     
-                    SecureField("Confirm New PIN", text: $confirmAppPIN)
+                    SecureField("Confirm New PIN", text: $viewModel.confirmAppPIN)
                         .keyboardType(.numberPad)
                         .autocorrectionDisabled(true)
                         .textContentType(.oneTimeCode)
-                        .onChange(of: confirmAppPIN) { _, newValue in
-                            // Limit to 4 digits
-                            if newValue.count > 4 {
-                                confirmAppPIN = String(newValue.prefix(4))
-                            }
-                            
-                            // Only allow numbers
-                            if !newValue.allSatisfy({ $0.isNumber }) {
-                                confirmAppPIN = newValue.filter { $0.isNumber }
-                            }
-                            
-                            // Clear any previous errors when typing
-                            if showPINError {
-                                showPINError = false
-                            }
+                        .onChange(of: viewModel.confirmAppPIN) { _, newValue in
+                            viewModel.updateConfirmAppPIN(newValue)
                         }
                     
-                    if showPINError {
-                        Text(pinErrorMessage)
+                    if viewModel.showPINError {
+                        Text(viewModel.pinErrorMessage)
                             .foregroundColor(.red)
                             .font(.caption)
                             .padding(.vertical, 5)
                     }
                     
-                    if showPINSuccess {
+                    if viewModel.showPINSuccess {
                         Text("PIN updated successfully!")
                             .foregroundColor(.green)
                             .font(.caption)
@@ -246,33 +176,29 @@ struct SettingsView: View {
                     }
 
                     Button("Update PIN") {
-                        resetAppPIN()
+                        viewModel.resetAppPIN()
                     }
-                    .disabled(appPIN.isEmpty || confirmAppPIN.isEmpty)
+                    .disabled(viewModel.isUpdatePINButtonDisabled)
                 }
 
                 // EMERGENCY ERASURE SECTION (POISON PILL)
                 Section(header: Text("Emergency Erasure"), footer: Text("If this PIN is entered, all photos will be immediately deleted")) {
-                    SecureField("Set Emergency PIN", text: $poisonPIN)
+                    SecureField("Set Emergency PIN", text: $viewModel.poisonPIN)
                         .keyboardType(.numberPad)
                         .autocorrectionDisabled(true)
                         .textContentType(.oneTimeCode) // Prevents keychain suggestions
 
                     Button("Save Emergency PIN") {
-                        if !poisonPIN.isEmpty {
-                            print("Setting poison PIN")
-                            // authManager.setPoisonPIN(poisonPIN)
-                            poisonPIN = ""
-                        }
+                        viewModel.saveEmergencyPIN()
                     }
                     .foregroundColor(.red)
-                    .disabled(poisonPIN.isEmpty)
+                    .disabled(viewModel.isSaveEmergencyPINDisabled)
                 }
 
                 // SECURITY RESET SECTION
                 Section {
                     Button("Reset All Security Settings") {
-                        showResetConfirmation = true
+                        viewModel.showSecurityResetConfirmation()
                     }
                     .foregroundColor(.red)
 
@@ -287,103 +213,37 @@ struct SettingsView: View {
             .navigationBarTitleDisplayMode(.inline)
             .preferredColorScheme(appearanceMode.colorScheme)
             .onAppear {
-                // Initialize includeLocationData from the LocationManager
-                includeLocationData = locationManager.shouldIncludeLocationData
-                
-                // Initialize PIN on resume setting
-                requirePINOnResume = pinManager.requirePINOnResume
+                viewModel.onAppear()
             }
-            .alert(isPresented: $showResetConfirmation) {
+            .onChange(of: viewModel.shouldOpenSettings) { _, shouldOpen in
+                if shouldOpen {
+                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                        openURL(url)
+                    }
+                    viewModel.shouldOpenSettings = false
+                }
+            }
+            .alert(isPresented: $viewModel.showResetConfirmation) {
                 Alert(
                     title: Text("Reset Security Settings"),
                     message: Text("Are you sure you want to reset all security settings to default? This action cannot be undone."),
                     primaryButton: .destructive(Text("Reset")) {
-                        resetSecuritySettings()
+                        viewModel.resetSecuritySettings()
                     },
                     secondaryButton: .cancel()
                 )
             }
-            .fullScreenCover(isPresented: $isSelectingDecoys) {
+            .fullScreenCover(isPresented: $viewModel.isSelectingDecoys) {
                 // Reset the selection flag when the sheet is dismissed
-                isSelectingDecoys = false
+                viewModel.stopSelectingDecoys()
             } content: {
                 NavigationView {
                     // Initialize SecureGalleryView in decoy selection mode
                     SecureGalleryView(selectingDecoys: true, onDismiss: {
-                        isSelectingDecoys = false
+                        viewModel.stopSelectingDecoys()
                     })
                 }
             }
         }
-    }
-
-    // MARK: - Helper Properties
-
-    private var locationStatusColor: Color {
-        switch locationManager.authorizationStatus {
-        case .authorizedWhenInUse, .authorizedAlways:
-            return .green
-        case .denied, .restricted:
-            return .red
-        case .notDetermined:
-            return .orange
-        @unknown default:
-            return .gray
-        }
-    }
-
-    // MARK: - Helper Methods
-
-    /// Reset or change the app PIN
-    private func resetAppPIN() {
-        // Reset any previous feedback
-        showPINError = false
-        showPINSuccess = false
-        
-        // Validate PIN
-        if appPIN.count != 4 {
-            showPINError = true
-            pinErrorMessage = "PIN must be 4 digits"
-            return
-        }
-        
-        // Check if PINs match
-        if appPIN != confirmAppPIN {
-            showPINError = true
-            pinErrorMessage = "PINs do not match"
-            return
-        }
-        
-        // Update the PIN using PIN manager
-        pinManager.setPIN(appPIN)
-        
-        // Show success message
-        showPINSuccess = true
-        
-        // Clear the fields
-        appPIN = ""
-        confirmAppPIN = ""
-        
-        // Clear success message after delay
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-            self.showPINSuccess = false
-        }
-        
-        print("App PIN has been updated")
-    }
-    
-    private func resetSecuritySettings() {
-        // Reset all security settings to default values
-        biometricEnabled = false
-        sessionTimeout = 5
-        appPIN = ""
-        confirmAppPIN = ""
-        poisonPIN = ""
-        showPINError = false
-        showPINSuccess = false
-
-        // In a real implementation:
-        // authManager.resetSecuritySettings()
-        print("Security settings have been reset")
     }
 }

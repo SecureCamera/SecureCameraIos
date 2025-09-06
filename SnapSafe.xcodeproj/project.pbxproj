@@ -26,6 +26,7 @@
 		667FF81B2E6C9D1800FB3E02 /* GalleryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF81A2E6C9D1400FB3E02 /* GalleryView.swift */; };
 		667FF8292E6CAE1000FB3E02 /* CombineExt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF8282E6CAE0C00FB3E02 /* CombineExt.swift */; };
 		667FF82B2E6CB78000FB3E02 /* getRotationAngle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF82A2E6CB1C400FB3E02 /* getRotationAngle.swift */; };
+		667FF82D2E6CC06900FB3E02 /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF82C2E6CC06900FB3E02 /* SettingsViewModel.swift */; };
 		669751302E69789F0059C5F3 /* TestUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6697512F2E69789A0059C5F3 /* TestUtils.swift */; };
 		669751332E6A63D30059C5F3 /* AuthorizePinUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 669751322E6A63D30059C5F3 /* AuthorizePinUseCase.swift */; };
 		669751352E6A64330059C5F3 /* CreatePinUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 669751342E6A642A0059C5F3 /* CreatePinUseCase.swift */; };
@@ -116,6 +117,7 @@
 		667FF81A2E6C9D1400FB3E02 /* GalleryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GalleryView.swift; sourceTree = "<group>"; };
 		667FF8282E6CAE0C00FB3E02 /* CombineExt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CombineExt.swift; sourceTree = "<group>"; };
 		667FF82A2E6CB1C400FB3E02 /* getRotationAngle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = getRotationAngle.swift; sourceTree = "<group>"; };
+		667FF82C2E6CC06900FB3E02 /* SettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
 		6697512F2E69789A0059C5F3 /* TestUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestUtils.swift; sourceTree = "<group>"; };
 		669751322E6A63D30059C5F3 /* AuthorizePinUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorizePinUseCase.swift; sourceTree = "<group>"; };
 		669751342E6A642A0059C5F3 /* CreatePinUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatePinUseCase.swift; sourceTree = "<group>"; };
@@ -276,6 +278,7 @@
 		667FF8202E6C9E1F00FB3E02 /* Settings */ = {
 			isa = PBXGroup;
 			children = (
+				667FF82C2E6CC06900FB3E02 /* SettingsViewModel.swift */,
 				A91DBC512DE58191001F42ED /* SettingsView.swift */,
 			);
 			path = Settings;
@@ -614,6 +617,7 @@
 				667FF82B2E6CB78000FB3E02 /* getRotationAngle.swift in Sources */,
 				A91DBC542DE58191001F42ED /* AppearanceMode.swift in Sources */,
 				A91DBC552DE58191001F42ED /* DetectedFace.swift in Sources */,
+				667FF82D2E6CC06900FB3E02 /* SettingsViewModel.swift in Sources */,
 				A91DBC562DE58191001F42ED /* MaskMode.swift in Sources */,
 				A91DBC572DE58191001F42ED /* MemoryManager.swift in Sources */,
 				A91DBC582DE58191001F42ED /* PhotoFilter.swift in Sources */,
