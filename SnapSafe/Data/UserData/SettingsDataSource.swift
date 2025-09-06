@@ -14,7 +14,7 @@ import Mockable
 public protocol SettingsDataSource {
     // MARK: - Intro state
     /// Check if the user has completed the introduction
-    var hasCompletedIntro: AnyPublisher<Bool?, Never> { get }
+    var hasCompletedIntro: AnyPublisher<Bool, Never> { get }
 
     // MARK: - Sanitize file name
     /// Get the sanitized file name preference

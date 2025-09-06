@@ -7,6 +7,7 @@
 
 import SwiftUI
 import Combine
+import FactoryKit
 
 /// Coordinator to manage app state transitions and handle authentication
 class AppStateCoordinator: ObservableObject {
@@ -18,8 +19,8 @@ class AppStateCoordinator: ObservableObject {
     @Published var wasInBackground = false
     @Published var dismissAllSheets = false
     
-    // Reference to PIN Manager
-    private let pinManager = PINManager.shared
+    private let authorizationRepo = Container.shared.authorizationRepository()
+    private let settings = Container.shared.settingsDataSource()
     
     // Subscriptions to manage cleanup
     private var cancellables = Set<AnyCancellable>()
@@ -35,7 +36,9 @@ class AppStateCoordinator: ObservableObject {
         
         NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)
             .sink { [weak self] _ in
-                self?.handleWillEnterForeground()
+                Task {
+                    await self?.handleWillEnterForeground()
+                }
             }
             .store(in: &cancellables)
         
@@ -49,9 +52,11 @@ class AppStateCoordinator: ObservableObject {
     }
     
     /// Handle when app will enter foreground
-    func handleWillEnterForeground() {
+    func handleWillEnterForeground() async {
         print("App will enter foreground, wasInBackground: \(wasInBackground)")
-        if wasInBackground && pinManager.isPINSet && pinManager.requirePINOnResume {
+        let didIntro = await settings.hasCompletedIntro.firstValue(or: false)
+        let isAuthed  = await authorizationRepo.isAuthorized.firstValue(or: false)
+        if wasInBackground && didIntro && isAuthed {
             // Need to dismiss any open sheets and show authentication
             print("Requiring authentication after background")
             dismissAllSheets = true
@@ -63,7 +68,7 @@ class AppStateCoordinator: ObservableObject {
         }
         
         // Update last active time
-        pinManager.updateLastActiveTime()
+        authorizationRepo.keepAliveSession()
     }
     
     /// Reset authentication state

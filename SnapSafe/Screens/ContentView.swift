@@ -226,16 +226,17 @@ struct ContentView: View {
         // Scene phase monitoring for background/foreground transitions
         .onChange(of: scenePhase) { _, newPhase in
             print("ContentView scene phase changed to: \(newPhase)")
-            
-            if newPhase == .active {
-                // App is becoming active - let coordinator handle this
-                appStateCoordinator.handleWillEnterForeground()
-            } else if newPhase == .background {
-                // App is going to background - let coordinator handle this
-                appStateCoordinator.handleDidEnterBackground()
-            } else if newPhase == .inactive {
-                // Transitional state
-                print("App becoming inactive")
+            Task {
+                if newPhase == .active {
+                    // App is becoming active - let coordinator handle this
+                    await appStateCoordinator.handleWillEnterForeground()
+                } else if newPhase == .background {
+                    // App is going to background - let coordinator handle this
+                    appStateCoordinator.handleDidEnterBackground()
+                } else if newPhase == .inactive {
+                    // Transitional state
+                    print("App becoming inactive")
+                }
             }
         }
         // Monitor authentication state from coordinator

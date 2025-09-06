@@ -36,14 +36,14 @@ public enum Defaults {
 
 public final class UserDefaultsSettingsDataSource: SettingsDataSource {
     // MARK: - Combine subjects (reflect stored values)
-    private let hasCompletedIntroSubject: CurrentValueSubject<Bool?, Never>
+    private let hasCompletedIntroSubject: CurrentValueSubject<Bool, Never>
     private let sanitizeFileNameSubject: CurrentValueSubject<Bool, Never>
     private let sanitizeMetadataSubject: CurrentValueSubject<Bool, Never>
     private let sessionTimeoutSubject: CurrentValueSubject<Int64, Never>
 
 
     // MARK: - Public publishers
-    public var hasCompletedIntro: AnyPublisher<Bool?, Never> { hasCompletedIntroSubject.eraseToAnyPublisher() }
+    public var hasCompletedIntro: AnyPublisher<Bool, Never> { hasCompletedIntroSubject.eraseToAnyPublisher() }
     public var sanitizeFileName: AnyPublisher<Bool, Never> { sanitizeFileNameSubject.eraseToAnyPublisher() }
     public var sanitizeMetadata: AnyPublisher<Bool, Never> { sanitizeMetadataSubject.eraseToAnyPublisher() }
     public var sessionTimeout: AnyPublisher<Int64, Never> { sessionTimeoutSubject.eraseToAnyPublisher() }
@@ -84,8 +84,8 @@ public final class UserDefaultsSettingsDataSource: SettingsDataSource {
         }
 
         // Initialize subjects from stored values (still using local `store`)
-        let introStored: Bool? = {
-            if store.object(forKey: PrefKeys.hasCompletedIntro.rawValue) == nil { return nil }
+        let introStored: Bool = {
+            if store.object(forKey: PrefKeys.hasCompletedIntro.rawValue) == nil { return false }
             return store.bool(forKey: PrefKeys.hasCompletedIntro.rawValue)
         }()
 
@@ -166,7 +166,7 @@ public final class UserDefaultsSettingsDataSource: SettingsDataSource {
         defaults.set(Defaults.sanitizeMetadata, forKey: PrefKeys.sanitizeMetadata.rawValue)
 
         // Emit changes
-        hasCompletedIntroSubject.send(nil)
+        hasCompletedIntroSubject.send(false)
         sanitizeFileNameSubject.send(Defaults.sanitizeFileName)
         sanitizeMetadataSubject.send(Defaults.sanitizeMetadata)
         // Leave sessionTimeout as-is (not a security concern)
