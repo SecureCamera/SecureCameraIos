@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftUI
+import FactoryKit
 
 @MainActor
 final class PINVerificationViewModel: ObservableObject {
@@ -18,7 +19,11 @@ final class PINVerificationViewModel: ObservableObject {
     
     // MARK: - Dependencies
     
-    private let pinManager = PINManager.shared
+    @Injected(\.authorizationRepository)
+    private var authorizationRepository: AuthorizationRepository
+    
+    @Injected(\.authorizedPinUseCase)
+    private var authorizePinUseCase: AuthorizePinUseCase
     
     // MARK: - Callbacks
     
@@ -43,7 +48,7 @@ final class PINVerificationViewModel: ObservableObject {
     
     func onAppear() {
         // Update last active time when view appears
-        pinManager.updateLastActiveTime()
+        authorizationRepository.keepAliveSession()
     }
     
     func updatePIN(_ newValue: String) {
@@ -59,15 +64,11 @@ final class PINVerificationViewModel: ObservableObject {
         }
         
         pin = filteredValue
-        
-        // Auto-verify when 4 digits are entered
-        if filteredValue.count == 4 {
-            verifyPIN()
-        }
     }
     
-    func verifyPIN() {
-        if pinManager.verifyPIN(pin) {
+    func verifyPIN() async {
+        let hashedPin = await authorizePinUseCase.authorizePin(pin)
+        if hashedPin != nil {
             // PIN is correct - prioritize setting authentication flag
             // to trigger immediate transition
             print("PIN correct, transitioning immediately")
@@ -75,9 +76,6 @@ final class PINVerificationViewModel: ObservableObject {
             // Update authentication state with high priority
             Task { @MainActor in
                 self.showError = false
-                
-                // Update last active time after transition has started
-                self.pinManager.updateLastActiveTime()
                 
                 // Clear the PIN field for next time
                 self.pin = ""
@@ -100,7 +98,9 @@ final class PINVerificationViewModel: ObservableObject {
     }
     
     func unlockButtonTapped() {
-        verifyPIN()
+        Task {
+            await verifyPIN()
+        }
     }
     
     // MARK: - Private Methods
