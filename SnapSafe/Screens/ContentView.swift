@@ -162,7 +162,7 @@ struct ContentView: View {
             }
         }
         .onReceive(settings.hasCompletedIntro) { completed in
-            hasCompletedIntro = completed ?? false
+            hasCompletedIntro = completed
         }
         .animation(.easeInOut(duration: 0.1), value: isShutterAnimating)
         .sheet(isPresented: $isShowingSettings) {
@@ -299,58 +299,5 @@ struct ContentView: View {
         @unknown default:
             return "bolt.badge.a"
         }
-    }
-}
-
-// Authentication view for the initial screen
-struct AuthenticationView: View {
-    @Binding var isAuthenticated: Bool
-    @State private var pin = ""
-//    private let authManager = AuthenticationManager()
-
-    var body: some View {
-        EmptyView()
-//        VStack(spacing: 20) {
-//            Image(systemName: "lock.shield")
-//                .font(.system(size: 70))
-//                .foregroundColor(.blue)
-//                .padding(.bottom, 30)
-//
-//            Text("Secure Camera")
-//                .font(.largeTitle)
-//                .bold()
-//
-//            Text("Enter your device PIN to continue")
-//                .foregroundColor(.secondary)
-//
-//            // Simulated PIN entry UI
-//            // In a real app, we'd use the device authentication
-//            SecureField("PIN", text: $pin)
-//                .keyboardType(.numberPad)
-//                .padding()
-//                .background(RoundedRectangle(cornerRadius: 8).stroke(Color.gray, lineWidth: 1))
-//                .padding(.horizontal, 50)
-//
-//            Button(action: {
-//                // Authenticate with device PIN
-//                authManager.authenticate(withMethod: .devicePIN) { success in
-//                    if success {
-//                        isAuthenticated = true
-//                    } else {
-//                        // Handle failed authentication
-//                        pin = ""
-//                    }
-//                }
-//            }) {
-//                Text("Unlock")
-//                    .foregroundColor(.white)
-//                    .padding()
-//                    .frame(width: 200)
-//                    .background(Color.blue)
-//                    .cornerRadius(10)
-//            }
-//            .padding(.top, 30)
-//        }
-//        .padding()
     }
 }
