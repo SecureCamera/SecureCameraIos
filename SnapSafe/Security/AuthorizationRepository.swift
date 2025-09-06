@@ -18,6 +18,7 @@ public final class AuthorizationRepository {
     // MARK: - Dependencies
     private let appSettings: SettingsDataSource
     private let encryptionScheme: EncryptionScheme
+    private let clock: Clock
 
     // MARK: - Auth state (StateFlow<Boolean> -> Combine)
     @Published private var isAuthorizedValue: Bool = false
@@ -33,9 +34,11 @@ public final class AuthorizationRepository {
     public init(
         settings: SettingsDataSource,
         encryptionScheme: EncryptionScheme,
+        clock: Clock
     ) {
         self.appSettings = settings
         self.encryptionScheme = encryptionScheme
+        self.clock = clock
     }
 
     // MARK: - Security reset
@@ -60,7 +63,7 @@ public final class AuthorizationRepository {
         let newCount = current + 1
         await setFailedAttempts(newCount)
 
-        let nowMs = Int64(Date().timeIntervalSince1970 * 1000.0)
+        let nowMs = Int64(clock.now.timeIntervalSince1970 * 1000.0)
         await appSettings.setLastFailedAttemptTimestamp(nowMs)
 
         return newCount
@@ -83,7 +86,7 @@ public final class AuthorizationRepository {
         // Cap to something reasonable if you later raise MAX_FAILED_ATTEMPTS.
         let backoffSeconds = Int(pow(2.0, Double(failedAttempts))) // e.g., 1,2,4,8,...,1024
 
-        let nowMs = Int64(Date().timeIntervalSince1970 * 1000.0)
+        let nowMs = Int64(clock.now.timeIntervalSince1970 * 1000.0)
         let elapsedSeconds = Int((nowMs - lastFailed) / 1000)
         let remaining = backoffSeconds - elapsedSeconds
 
@@ -110,7 +113,7 @@ public final class AuthorizationRepository {
     /// Marks the session as authorized and updates the last authentication time.
     /// Also starts session monitoring.
     public func authorizeSession() {
-        lastAuthTime = Date()
+        lastAuthTime = clock.now
         isAuthorizedValue = true
     }
 
@@ -118,7 +121,7 @@ public final class AuthorizationRepository {
     /// without requiring re-authentication.
     public func keepAliveSession() {
         if isAuthorizedValue {
-            lastKeepAlive = Date()
+            lastKeepAlive = clock.now
         }
     }
 
@@ -127,11 +130,10 @@ public final class AuthorizationRepository {
         guard isAuthorizedValue else { return false }
 
         let timeoutMs = await appSettings.getSessionTimeout() // Int64 (ms)
-        let now = Date()
 
         // Prefer the keep-alive time if present; else the last auth time
         let pivot: Date = (lastKeepAlive > .distantPast) ? lastKeepAlive : lastAuthTime
-        let elapsedMs = now.timeIntervalSince(pivot) * 1000.0
+        let elapsedMs = clock.now.timeIntervalSince(pivot) * 1000.0
         let sessionValid = elapsedMs < Double(timeoutMs)
 
         if !sessionValid {

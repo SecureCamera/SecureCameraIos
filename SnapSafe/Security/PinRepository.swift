@@ -5,7 +5,9 @@
 //  Created by Adam Brown on 9/2/25.
 //
 
+import Mockable
 
+@Mockable
 public protocol PinRepository {
     // MARK: - Core PIN APIs
 

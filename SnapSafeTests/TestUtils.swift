@@ -7,6 +7,8 @@
 
 
 import XCTest
+import SnapSafe
+import Combine
 
 func XCTAssertFalseAsync(
     _ expression: @autoclosure () async throws -> Bool,
@@ -26,4 +28,66 @@ func XCTAssertTrueAsync(
 ) async rethrows {
     let value = try await expression()
     XCTAssertTrue(value, message(), file: file, line: line)
+}
+
+func XCTAssertEqualAsync<T: Equatable>(
+    _ lhs: @autoclosure () async throws -> T,
+    _ rhs: @autoclosure () async throws -> T,
+    _ message: @autoclosure () -> String = "",
+    file: StaticString = #filePath,
+    line: UInt = #line
+) async rethrows {
+    let lv = try await lhs()
+    let rv = try await rhs()
+    XCTAssertEqual(lv, rv, message(), file: file, line: line)
+}
+
+func XCTAssertGreaterThanAsync<T: Comparable>(
+    _ expression: @autoclosure () async throws -> T,
+    _ expected: @autoclosure () -> T,
+    _ message: @autoclosure () -> String = "",
+    file: StaticString = #filePath,
+    line: UInt = #line
+) async rethrows {
+    let value = try await expression()
+    XCTAssertGreaterThan(value, expected(), message(), file: file, line: line)
+}
+
+final class TestClock: Clock {
+    var fixed: Date
+    init(_ start: Date = Date(timeIntervalSince1970: 1)) { self.fixed = start }
+    var now: Date { fixed }
+    func advance(by seconds: TimeInterval) { fixed.addTimeInterval(seconds) }
+}
+
+extension Publisher where Failure == Never {
+    func firstValue(timeout: TimeInterval = 1.0) -> Output {
+        let exp = XCTestExpectation(description: "Await first publisher value")
+        var result: Output!
+        let cancellable = self.first().sink { value in
+            result = value
+            exp.fulfill()
+        }
+        let waiter = XCTWaiter()
+        _ = waiter.wait(for: [exp], timeout: timeout)
+        _ = cancellable // keep alive
+        return result
+    }
+}
+
+// MARK: - UserDefaults Testing Helpers
+
+extension UserDefaults {
+    /// Creates an in-memory UserDefaults instance for testing
+    /// Each call creates a fresh, isolated instance with no persistent storage
+    static func inMemoryForTesting() -> UserDefaults {
+        // Create a unique suite name using a UUID to ensure isolation
+        let suiteName = "test-suite-\(UUID().uuidString)"
+        let userDefaults = UserDefaults(suiteName: suiteName)!
+        
+        // Clear any existing data (shouldn't be any, but just to be safe)
+        userDefaults.removePersistentDomain(forName: suiteName)
+        
+        return userDefaults
+    }
 }

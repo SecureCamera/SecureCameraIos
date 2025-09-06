@@ -58,19 +58,16 @@ public final class UserDefaultsSettingsDataSource: SettingsDataSource {
     private let jsonEncoder = JSONEncoder()
 
     // MARK: - Init
-    /// - Parameter suiteName: pass `nil` to use `.standard`, or inject a suite for tests.
+    /// - Parameter userDefaults: UserDefaults instance to use. Defaults to `.standard`.
+    /// - Parameter sanitizeFileNameDefault: Default value for sanitize file name setting
+    /// - Parameter sanitizeMetadataDefault: Default value for sanitize metadata setting
     public init(
-        suiteName: String? = nil,
+        userDefaults: UserDefaults = .standard,
         sanitizeFileNameDefault: Bool = Defaults.sanitizeFileName,
-        sanitizeMetadataDefault: Bool = Defaults.sanitizeMetadata,
+        sanitizeMetadataDefault: Bool = Defaults.sanitizeMetadata
     ) {
         // Use a local store so we don't touch `self` yet
-        let store: UserDefaults
-        if let suiteName {
-            store = UserDefaults(suiteName: suiteName) ?? .standard
-        } else {
-            store = .standard
-        }
+        let store = userDefaults
 
         self.sanitizeFileNameDefault = sanitizeFileNameDefault
         self.sanitizeMetadataDefault = sanitizeMetadataDefault

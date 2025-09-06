@@ -9,6 +9,10 @@ import Foundation
 import FactoryKit
 
 extension Container {
+    var clock: Factory<Clock> {
+         self { SystemClock() }
+    }
+    
     var settingsDataSource: Factory<SettingsDataSource> {
          self { UserDefaultsSettingsDataSource() }
     }
@@ -25,7 +29,7 @@ extension Container {
         self { PassThroughEncryptionScheme() }.singleton
     }
     
-    var PinRepository: Factory<PinRepository> {
+    var pinRepository: Factory<PinRepository> {
         self { PinRepositoryImpl(
             dataSource: self.settingsDataSource(),
             encryptionScheme: self.encryptionScheme(),
@@ -34,10 +38,29 @@ extension Container {
         ) }.singleton
     }
     
-    var authenticationRepository: Factory<AuthorizationRepository> {
+    var authorizationRepository: Factory<AuthorizationRepository> {
         self { AuthorizationRepository(
             settings: self.settingsDataSource(),
-            encryptionScheme: self.encryptionScheme()
+            encryptionScheme: self.encryptionScheme(),
+            clock: self.clock(),
         ) }.singleton
+    }
+    
+    var authorizedPinUseCase: Factory<AuthorizePinUseCase> {
+            self { AuthorizePinUseCase(
+                authRepository: self.authorizationRepository(),
+                pinRepository: self.pinRepository(),
+            )
+        }
+    }
+    
+    var createPinUseCase: Factory<CreatePinUseCase> {
+        self { CreatePinUseCase(
+            authorizationRepository: self.authorizationRepository(),
+            encryptionScheme: self.encryptionScheme(),
+            pinRepository: self.pinRepository(),
+            settingsDataSource: self.settingsDataSource(),
+            authorizePinUseCase: self.authorizedPinUseCase(),
+        ) }
     }
 }

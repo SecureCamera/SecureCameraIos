@@ -10,8 +10,12 @@ import CoreGraphics
 import ImageIO
 import PhotosUI
 import SwiftUI
+import FactoryKit
 
-struct ContentView: View {
+
+struct ContentView: View { 
+    @Injected(\.settingsDataSource) var settings: SettingsDataSource
+    
     @StateObject private var cameraModel = CameraModel()
     @StateObject private var locationManager = LocationManager.shared
     @ObservedObject private var pinManager = PINManager.shared
@@ -21,6 +25,7 @@ struct ContentView: View {
     @State private var isAuthenticated = false
     @State private var isPINSetupComplete = false
     @State private var isShutterAnimating = false
+    @State private var hasCompletedIntro: Bool = false
     @Environment(\.scenePhase) private var scenePhase
     @ObservedObject private var screenCaptureManager = ScreenCaptureManager.shared
     
@@ -29,7 +34,7 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            if !pinManager.isPINSet {
+            if hasCompletedIntro == false {
                 // First time setup - show PIN setup screen
                 PINSetupView(isPINSetupComplete: $isPINSetupComplete)
             } else if !isAuthenticated || appStateCoordinator.needsAuthentication {
@@ -156,6 +161,9 @@ struct ContentView: View {
                 }
             }
         }
+        .onReceive(settings.hasCompletedIntro) { completed in
+            hasCompletedIntro = completed ?? false
+        }
         .animation(.easeInOut(duration: 0.1), value: isShutterAnimating)
         .sheet(isPresented: $isShowingSettings) {
             SettingsView()
@@ -191,10 +199,10 @@ struct ContentView: View {
             }
         }
         .onAppear {
-            print("ContentView appeared - PIN is set: \(pinManager.isPINSet), require PIN on resume: \(pinManager.requirePINOnResume)")
+            print("ContentView appeared - PIN is set: \(hasCompletedIntro), require PIN on resume: \(pinManager.requirePINOnResume)")
             
             // Check if PIN is set, and only auto-authenticate if PIN check is not required
-            if pinManager.isPINSet {
+            if hasCompletedIntro {
                 // Only auto-authenticate if PIN verification is not required
                 isAuthenticated = !pinManager.requirePINOnResume
                 print("PIN is set, auto-authentication set to: \(isAuthenticated)")
