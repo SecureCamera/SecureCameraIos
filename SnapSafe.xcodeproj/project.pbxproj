@@ -25,6 +25,7 @@
 		667FF8192E6C9CF600FB3E02 /* UIImageExt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF8182E6C9CF400FB3E02 /* UIImageExt.swift */; };
 		667FF81B2E6C9D1800FB3E02 /* GalleryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF81A2E6C9D1400FB3E02 /* GalleryView.swift */; };
 		667FF8292E6CAE1000FB3E02 /* CombineExt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF8282E6CAE0C00FB3E02 /* CombineExt.swift */; };
+		667FF82B2E6CB78000FB3E02 /* getRotationAngle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF82A2E6CB1C400FB3E02 /* getRotationAngle.swift */; };
 		669751302E69789F0059C5F3 /* TestUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6697512F2E69789A0059C5F3 /* TestUtils.swift */; };
 		669751332E6A63D30059C5F3 /* AuthorizePinUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 669751322E6A63D30059C5F3 /* AuthorizePinUseCase.swift */; };
 		669751352E6A64330059C5F3 /* CreatePinUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 669751342E6A642A0059C5F3 /* CreatePinUseCase.swift */; };
@@ -114,6 +115,7 @@
 		667FF8182E6C9CF400FB3E02 /* UIImageExt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIImageExt.swift; sourceTree = "<group>"; };
 		667FF81A2E6C9D1400FB3E02 /* GalleryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GalleryView.swift; sourceTree = "<group>"; };
 		667FF8282E6CAE0C00FB3E02 /* CombineExt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CombineExt.swift; sourceTree = "<group>"; };
+		667FF82A2E6CB1C400FB3E02 /* getRotationAngle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = getRotationAngle.swift; sourceTree = "<group>"; };
 		6697512F2E69789A0059C5F3 /* TestUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestUtils.swift; sourceTree = "<group>"; };
 		669751322E6A63D30059C5F3 /* AuthorizePinUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorizePinUseCase.swift; sourceTree = "<group>"; };
 		669751342E6A642A0059C5F3 /* CreatePinUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatePinUseCase.swift; sourceTree = "<group>"; };
@@ -231,6 +233,7 @@
 				66DE21CE2E69750600AC94DA /* Json.swift */,
 				667FF80F2E6A9EE600FB3E02 /* Clock.swift */,
 				66A404CC2E67F0960054FFE7 /* DataExt.swift */,
+				667FF82A2E6CB1C400FB3E02 /* getRotationAngle.swift */,
 			);
 			path = Util;
 			sourceTree = "<group>";
@@ -608,6 +611,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				667FF82B2E6CB78000FB3E02 /* getRotationAngle.swift in Sources */,
 				A91DBC542DE58191001F42ED /* AppearanceMode.swift in Sources */,
 				A91DBC552DE58191001F42ED /* DetectedFace.swift in Sources */,
 				A91DBC562DE58191001F42ED /* MaskMode.swift in Sources */,
