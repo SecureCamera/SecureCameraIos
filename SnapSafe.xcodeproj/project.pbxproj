@@ -28,6 +28,7 @@
 		667FF82B2E6CB78000FB3E02 /* getRotationAngle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF82A2E6CB1C400FB3E02 /* getRotationAngle.swift */; };
 		667FF82D2E6CC06900FB3E02 /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF82C2E6CC06900FB3E02 /* SettingsViewModel.swift */; };
 		667FF82F2E6CC33B00FB3E02 /* SecureGalleryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF82E2E6CC33B00FB3E02 /* SecureGalleryViewModel.swift */; };
+		667FF8312E6CD94500FB3E02 /* PINVerificationViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF8302E6CD94500FB3E02 /* PINVerificationViewModel.swift */; };
 		669751302E69789F0059C5F3 /* TestUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6697512F2E69789A0059C5F3 /* TestUtils.swift */; };
 		669751332E6A63D30059C5F3 /* AuthorizePinUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 669751322E6A63D30059C5F3 /* AuthorizePinUseCase.swift */; };
 		669751352E6A64330059C5F3 /* CreatePinUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 669751342E6A642A0059C5F3 /* CreatePinUseCase.swift */; };
@@ -120,6 +121,7 @@
 		667FF82A2E6CB1C400FB3E02 /* getRotationAngle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = getRotationAngle.swift; sourceTree = "<group>"; };
 		667FF82C2E6CC06900FB3E02 /* SettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
 		667FF82E2E6CC33B00FB3E02 /* SecureGalleryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureGalleryViewModel.swift; sourceTree = "<group>"; };
+		667FF8302E6CD94500FB3E02 /* PINVerificationViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PINVerificationViewModel.swift; sourceTree = "<group>"; };
 		6697512F2E69789A0059C5F3 /* TestUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestUtils.swift; sourceTree = "<group>"; };
 		669751322E6A63D30059C5F3 /* AuthorizePinUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorizePinUseCase.swift; sourceTree = "<group>"; };
 		669751342E6A642A0059C5F3 /* CreatePinUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatePinUseCase.swift; sourceTree = "<group>"; };
@@ -299,6 +301,7 @@
 		667FF8232E6C9E6A00FB3E02 /* PinVerification */ = {
 			isa = PBXGroup;
 			children = (
+				667FF8302E6CD94500FB3E02 /* PINVerificationViewModel.swift */,
 				A91DBC4D2DE58191001F42ED /* PINVerificationView.swift */,
 			);
 			path = PinVerification;
@@ -630,6 +633,7 @@
 				667FF8292E6CAE1000FB3E02 /* CombineExt.swift in Sources */,
 				667FF8152E6BB00900FB3E02 /* PINSetupViewModel.swift in Sources */,
 				667FF8192E6C9CF600FB3E02 /* UIImageExt.swift in Sources */,
+				667FF8312E6CD94500FB3E02 /* PINVerificationViewModel.swift in Sources */,
 				A91DBC5F2DE58191001F42ED /* ZoomLevelIndicator.swift in Sources */,
 				66DE21CF2E69750C00AC94DA /* Json.swift in Sources */,
 				66A404D32E67FD720054FFE7 /* PinRepository.swift in Sources */,
