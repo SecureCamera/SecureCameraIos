@@ -9,6 +9,8 @@ import Combine
 import CoreLocation
 import Foundation
 import SwiftUI
+import FactoryKit
+
 
 @MainActor
 final class SettingsViewModel: ObservableObject {
@@ -22,13 +24,11 @@ final class SettingsViewModel: ObservableObject {
     @Published var showFaceDetection = true
     
     // Security settings
-    @Published var biometricEnabled = false
     @Published var sessionTimeout = 5 // minutes
     @Published var appPIN = ""
     @Published var confirmAppPIN = ""
     @Published var poisonPIN = ""
     @Published var showResetConfirmation = false
-    @Published var requirePINOnResume: Bool = false
     @Published var showPINError = false
     @Published var pinErrorMessage = ""
     @Published var showPINSuccess = false
@@ -43,8 +43,10 @@ final class SettingsViewModel: ObservableObject {
     
     // MARK: - Dependencies
     
+    @Injected(\.authorizationRepository)
+    private var authorizationRepository: AuthorizationRepository
+    
     private let locationManager = LocationManager.shared
-    private let pinManager = PINManager.shared
     private var cancellables = Set<AnyCancellable>()
     
     // MARK: - Initialization
@@ -59,7 +61,6 @@ final class SettingsViewModel: ObservableObject {
     /// Initialize values when the view appears
     func onAppear() {
         includeLocationData = locationManager.shouldIncludeLocationData
-        requirePINOnResume = pinManager.requirePINOnResume
     }
     
     /// Update sanitize file name setting
@@ -106,20 +107,6 @@ final class SettingsViewModel: ObservableObject {
         // TODO: Update user preferences
     }
     
-    /// Update biometric authentication setting
-    func updateBiometricEnabled(_ newValue: Bool) {
-        biometricEnabled = newValue
-        print("Biometric auth: \(newValue)")
-        // TODO: Update auth manager
-    }
-    
-    /// Update require PIN on resume setting
-    func updateRequirePINOnResume(_ newValue: Bool) {
-        requirePINOnResume = newValue
-        print("Require PIN on resume: \(newValue)")
-        pinManager.setRequirePINOnResume(newValue)
-    }
-    
     /// Update app PIN input with validation
     func updateAppPIN(_ newValue: String) {
         // Limit to 4 digits
@@ -163,42 +150,43 @@ final class SettingsViewModel: ObservableObject {
     }
     
     /// Reset or change the app PIN
+    /// TODO: We will need to implement Key rotation, but it untill we do, we cant just change the PIN
     func resetAppPIN() {
         // Reset any previous feedback
-        showPINError = false
-        showPINSuccess = false
-        
-        // Validate PIN
-        if appPIN.count != 4 {
-            showPINError = true
-            pinErrorMessage = "PIN must be 4 digits"
-            return
-        }
-        
-        // Check if PINs match
-        if appPIN != confirmAppPIN {
-            showPINError = true
-            pinErrorMessage = "PINs do not match"
-            return
-        }
-        
-        // Update the PIN using PIN manager
-        pinManager.setPIN(appPIN)
-        
-        // Show success message
-        showPINSuccess = true
-        
-        // Clear the fields
-        appPIN = ""
-        confirmAppPIN = ""
-        
-        // Clear success message after delay
-        Task {
-            try await Task.sleep(nanoseconds: 3_000_000_000) // 3 seconds
-            showPINSuccess = false
-        }
-        
-        print("App PIN has been updated")
+//        showPINError = false
+//        showPINSuccess = false
+//        
+//        // Validate PIN
+//        if appPIN.count != 4 {
+//            showPINError = true
+//            pinErrorMessage = "PIN must be 4 digits"
+//            return
+//        }
+//        
+//        // Check if PINs match
+//        if appPIN != confirmAppPIN {
+//            showPINError = true
+//            pinErrorMessage = "PINs do not match"
+//            return
+//        }
+//        
+//        // Update the PIN using PIN manager
+//        //pinManager.setPIN(appPIN)
+//        
+//        // Show success message
+//        showPINSuccess = true
+//        
+//        // Clear the fields
+//        appPIN = ""
+//        confirmAppPIN = ""
+//        
+//        // Clear success message after delay
+//        Task {
+//            try await Task.sleep(nanoseconds: 3_000_000_000) // 3 seconds
+//            showPINSuccess = false
+//        }
+//        
+//        print("App PIN has been updated")
     }
     
     /// Start decoy selection process
@@ -227,7 +215,6 @@ final class SettingsViewModel: ObservableObject {
     
     /// Reset all security settings to default values
     func resetSecuritySettings() {
-        biometricEnabled = false
         sessionTimeout = 5
         appPIN = ""
         confirmAppPIN = ""

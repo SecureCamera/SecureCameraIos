@@ -131,55 +131,46 @@ struct SettingsView: View {
                     .onChange(of: viewModel.sessionTimeout) { _, newValue in
                         viewModel.updateSessionTimeout(newValue)
                     }
-
-                    Toggle("Biometric Authentication", isOn: $viewModel.biometricEnabled)
-                        .onChange(of: viewModel.biometricEnabled) { _, newValue in
-                            viewModel.updateBiometricEnabled(newValue)
-                        }
-                        
-                    Toggle("Require PIN when app resumes", isOn: $viewModel.requirePINOnResume)
-                        .onChange(of: viewModel.requirePINOnResume) { _, newValue in
-                            viewModel.updateRequirePINOnResume(newValue)
-                        }
                 }
 
                 // APP PIN SECTION
-                Section(header: Text("App PIN"), footer: Text("Enter a new 4-digit PIN twice to change your app security PIN")) {
-                    SecureField("New PIN (4 digits)", text: $viewModel.appPIN)
-                        .keyboardType(.numberPad)
-                        .autocorrectionDisabled(true)
-                        .textContentType(.oneTimeCode) // Prevents keychain suggestions
-                        .onChange(of: viewModel.appPIN) { _, newValue in
-                            viewModel.updateAppPIN(newValue)
-                        }
-                    
-                    SecureField("Confirm New PIN", text: $viewModel.confirmAppPIN)
-                        .keyboardType(.numberPad)
-                        .autocorrectionDisabled(true)
-                        .textContentType(.oneTimeCode)
-                        .onChange(of: viewModel.confirmAppPIN) { _, newValue in
-                            viewModel.updateConfirmAppPIN(newValue)
-                        }
-                    
-                    if viewModel.showPINError {
-                        Text(viewModel.pinErrorMessage)
-                            .foregroundColor(.red)
-                            .font(.caption)
-                            .padding(.vertical, 5)
-                    }
-                    
-                    if viewModel.showPINSuccess {
-                        Text("PIN updated successfully!")
-                            .foregroundColor(.green)
-                            .font(.caption)
-                            .padding(.vertical, 5)
-                    }
-
-                    Button("Update PIN") {
-                        viewModel.resetAppPIN()
-                    }
-                    .disabled(viewModel.isUpdatePINButtonDisabled)
-                }
+                // TODO: changing your PIN ammounts to key rotation, which is not implemented yet
+//                Section(header: Text("App PIN"), footer: Text("Enter a new 4-digit PIN twice to change your app security PIN")) {
+//                    SecureField("New PIN (4 digits)", text: $viewModel.appPIN)
+//                        .keyboardType(.numberPad)
+//                        .autocorrectionDisabled(true)
+//                        .textContentType(.oneTimeCode) // Prevents keychain suggestions
+//                        .onChange(of: viewModel.appPIN) { _, newValue in
+//                            viewModel.updateAppPIN(newValue)
+//                        }
+//                    
+//                    SecureField("Confirm New PIN", text: $viewModel.confirmAppPIN)
+//                        .keyboardType(.numberPad)
+//                        .autocorrectionDisabled(true)
+//                        .textContentType(.oneTimeCode)
+//                        .onChange(of: viewModel.confirmAppPIN) { _, newValue in
+//                            viewModel.updateConfirmAppPIN(newValue)
+//                        }
+//                    
+//                    if viewModel.showPINError {
+//                        Text(viewModel.pinErrorMessage)
+//                            .foregroundColor(.red)
+//                            .font(.caption)
+//                            .padding(.vertical, 5)
+//                    }
+//                    
+//                    if viewModel.showPINSuccess {
+//                        Text("PIN updated successfully!")
+//                            .foregroundColor(.green)
+//                            .font(.caption)
+//                            .padding(.vertical, 5)
+//                    }
+//
+//                    Button("Update PIN") {
+//                        viewModel.resetAppPIN()
+//                    }
+//                    .disabled(viewModel.isUpdatePINButtonDisabled)
+//                }
 
                 // EMERGENCY ERASURE SECTION (POISON PILL)
                 Section(header: Text("Emergency Erasure"), footer: Text("If this PIN is entered, all photos will be immediately deleted")) {

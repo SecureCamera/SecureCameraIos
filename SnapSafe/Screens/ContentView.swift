@@ -15,17 +15,17 @@ import FactoryKit
 
 struct ContentView: View { 
     @Injected(\.settingsDataSource) var settings: SettingsDataSource
+    @Injected(\.authorizationRepository) var authorizationRepository: AuthorizationRepository
     
     @StateObject private var cameraModel = CameraModel()
     @StateObject private var locationManager = LocationManager.shared
-    @ObservedObject private var pinManager = PINManager.shared
     @ObservedObject private var appStateCoordinator = AppStateCoordinator.shared
     @State private var isShowingSettings = false
     @State private var isShowingGallery = false
-    @State private var isAuthenticated = false
     @State private var isPINSetupComplete = false
     @State private var isShutterAnimating = false
     @State private var hasCompletedIntro: Bool = false
+    @State private var isAuthenticated: Bool = false
     @Environment(\.scenePhase) private var scenePhase
     @ObservedObject private var screenCaptureManager = ScreenCaptureManager.shared
     
@@ -39,7 +39,7 @@ struct ContentView: View {
                 PINSetupView(isPINSetupComplete: $isPINSetupComplete)
             } else if !isAuthenticated || appStateCoordinator.needsAuthentication {
                 // PIN verification screen
-                PINVerificationView(isAuthenticated: $isAuthenticated)
+                PINVerificationView()
                     .onChange(of: isAuthenticated) { _, authenticated in
                         if authenticated {
                             // Reset the coordinator's auth state when authenticated
@@ -164,6 +164,9 @@ struct ContentView: View {
         .onReceive(settings.hasCompletedIntro) { completed in
             hasCompletedIntro = completed
         }
+        .onReceive(authorizationRepository.isAuthorized) { authorized in
+            isAuthenticated = authorized
+        }
         .animation(.easeInOut(duration: 0.1), value: isShutterAnimating)
         .sheet(isPresented: $isShowingSettings) {
             SettingsView()
@@ -191,7 +194,6 @@ struct ContentView: View {
         .onChange(of: isPINSetupComplete) { _, completed in
             if completed {
                 print("PIN setup complete, authenticating user")
-                isAuthenticated = true
                 // Reset flag to avoid issues on subsequent launches
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                     isPINSetupComplete = false
@@ -199,15 +201,13 @@ struct ContentView: View {
             }
         }
         .onAppear {
-            print("ContentView appeared - PIN is set: \(hasCompletedIntro), require PIN on resume: \(pinManager.requirePINOnResume)")
+            print("ContentView appeared - PIN is set: \(hasCompletedIntro), is authorized: \(isAuthenticated)")
             
-            // Check if PIN is set, and only auto-authenticate if PIN check is not required
+            // Check session validity if PIN setup is complete
             if hasCompletedIntro {
-                // Only auto-authenticate if PIN verification is not required
-                isAuthenticated = !pinManager.requirePINOnResume
-                print("PIN is set, auto-authentication set to: \(isAuthenticated)")
-            } else {
-                print("PIN is not set, showing PIN setup screen")
+                Task {
+                    await authorizationRepository.checkSessionValidity()
+                }
             }
             
             // Start monitoring orientation changes
@@ -242,8 +242,8 @@ struct ContentView: View {
         // Monitor authentication state from coordinator
         .onChange(of: appStateCoordinator.needsAuthentication) { _, needsAuth in
             if needsAuth {
-                // Force re-authentication
-                isAuthenticated = false
+                // Revoke authorization through the repository
+                authorizationRepository.revokeAuthorization()
             }
         }
         // Monitor dismiss all sheets signal

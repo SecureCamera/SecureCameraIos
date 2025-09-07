@@ -9,7 +9,6 @@ import SwiftUI
 
 struct PINVerificationView: View {
     @StateObject private var viewModel = PINVerificationViewModel()
-    @Binding var isAuthenticated: Bool
     
     var body: some View {
         VStack(spacing: 30) {
@@ -60,15 +59,6 @@ struct PINVerificationView: View {
         }
         .onAppear {
             viewModel.onAppear()
-            
-            // Set up ViewModel callbacks
-            viewModel.onAuthenticationSuccess = {
-                isAuthenticated = true
-            }
-            
-            viewModel.onAuthenticationFailure = {
-                isAuthenticated = false
-            }
         }
         .obscuredWhenInactive()
         .screenCaptureProtected()
@@ -76,5 +66,5 @@ struct PINVerificationView: View {
 }
 
 #Preview {
-    PINVerificationView(isAuthenticated: .constant(false))
+    PINVerificationView()
 }

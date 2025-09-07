@@ -25,10 +25,6 @@ final class PINVerificationViewModel: ObservableObject {
     @Injected(\.authorizedPinUseCase)
     private var authorizePinUseCase: AuthorizePinUseCase
     
-    // MARK: - Callbacks
-    
-    var onAuthenticationSuccess: (() -> Void)?
-    var onAuthenticationFailure: (() -> Void)?
     
     // MARK: - Computed Properties
     
@@ -69,28 +65,19 @@ final class PINVerificationViewModel: ObservableObject {
     func verifyPIN() async {
         let hashedPin = await authorizePinUseCase.authorizePin(pin)
         if hashedPin != nil {
-            // PIN is correct - prioritize setting authentication flag
-            // to trigger immediate transition
-            print("PIN correct, transitioning immediately")
+            // PIN is correct - AuthorizationRepository will automatically update isAuthorized
+            print("PIN correct, authentication handled by AuthorizationRepository")
             
-            // Update authentication state with high priority
-            Task { @MainActor in
-                self.showError = false
-                
-                // Clear the PIN field for next time
-                self.pin = ""
-                
-                // Notify success
-                self.onAuthenticationSuccess?()
-            }
+            // Update UI state
+            showError = false
+            
+            // Clear the PIN field for next time
+            pin = ""
         } else {
             // PIN is incorrect
             showError = true
             attempts += 1
             pin = ""
-            
-            // Notify failure
-            onAuthenticationFailure?()
             
             // Could add more sophisticated security measures here, like
             // temporary lockout after multiple failed attempts

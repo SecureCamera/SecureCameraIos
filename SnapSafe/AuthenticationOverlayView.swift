@@ -19,14 +19,7 @@ struct AuthenticationOverlayView: View {
                 .opacity(0.98)
                 .edgesIgnoringSafeArea(.all)
             
-            // PIN verification view
-            PINVerificationView(isAuthenticated: $isAuthenticated)
-                .onChange(of: isAuthenticated) { _, authenticated in
-                    if authenticated {
-                        // Signal that authentication is complete
-                        appStateCoordinator.authenticationComplete()
-                    }
-                }
+            PINVerificationView()
         }
         .transition(.opacity.animation(.easeInOut(duration: 0.2)))
     }

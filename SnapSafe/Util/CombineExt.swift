@@ -40,3 +40,21 @@ extension Publisher {
         }
     }
 }
+
+func runBlocking<T>(_ work: @escaping () async throws -> T) rethrows -> T {
+    let semaphore = DispatchSemaphore(value: 0)
+    var result: Result<T, Error>!
+    
+    Task {
+        do {
+            let value = try await work()
+            result = .success(value)
+        } catch {
+            result = .failure(error)
+        }
+        semaphore.signal()
+    }
+    
+    semaphore.wait()
+    return try! result.get()
+}
