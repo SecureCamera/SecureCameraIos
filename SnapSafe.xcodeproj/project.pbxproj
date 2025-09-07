@@ -29,6 +29,8 @@
 		667FF82D2E6CC06900FB3E02 /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF82C2E6CC06900FB3E02 /* SettingsViewModel.swift */; };
 		667FF82F2E6CC33B00FB3E02 /* SecureGalleryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF82E2E6CC33B00FB3E02 /* SecureGalleryViewModel.swift */; };
 		667FF8312E6CD94500FB3E02 /* PINVerificationViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF8302E6CD94500FB3E02 /* PINVerificationViewModel.swift */; };
+		667FF8332E6D0FF800FB3E02 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF8322E6D0FF800FB3E02 /* ContentView.swift */; };
+		667FF8352E6D101300FB3E02 /* AppNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF8342E6D101300FB3E02 /* AppNavigation.swift */; };
 		669751302E69789F0059C5F3 /* TestUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6697512F2E69789A0059C5F3 /* TestUtils.swift */; };
 		669751332E6A63D30059C5F3 /* AuthorizePinUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 669751322E6A63D30059C5F3 /* AuthorizePinUseCase.swift */; };
 		669751352E6A64330059C5F3 /* CreatePinUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 669751342E6A642A0059C5F3 /* CreatePinUseCase.swift */; };
@@ -120,6 +122,8 @@
 		667FF82C2E6CC06900FB3E02 /* SettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
 		667FF82E2E6CC33B00FB3E02 /* SecureGalleryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureGalleryViewModel.swift; sourceTree = "<group>"; };
 		667FF8302E6CD94500FB3E02 /* PINVerificationViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PINVerificationViewModel.swift; sourceTree = "<group>"; };
+		667FF8322E6D0FF800FB3E02 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		667FF8342E6D101300FB3E02 /* AppNavigation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppNavigation.swift; sourceTree = "<group>"; };
 		6697512F2E69789A0059C5F3 /* TestUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestUtils.swift; sourceTree = "<group>"; };
 		669751322E6A63D30059C5F3 /* AuthorizePinUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorizePinUseCase.swift; sourceTree = "<group>"; };
 		669751342E6A642A0059C5F3 /* CreatePinUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatePinUseCase.swift; sourceTree = "<group>"; };
@@ -243,6 +247,7 @@
 		667FF81D2E6C9DC200FB3E02 /* Screens */ = {
 			isa = PBXGroup;
 			children = (
+				667FF8322E6D0FF800FB3E02 /* ContentView.swift */,
 				667FF8242E6C9E9200FB3E02 /* Views */,
 				667FF8232E6C9E6A00FB3E02 /* PinVerification */,
 				667FF8212E6C9E3400FB3E02 /* Camera */,
@@ -402,6 +407,7 @@
 		A91DBC532DE58191001F42ED /* SnapSafe */ = {
 			isa = PBXGroup;
 			children = (
+				667FF8342E6D101300FB3E02 /* AppNavigation.swift */,
 				A91DBC3E2DE58191001F42ED /* AppStateCoordinator.swift */,
 				A91DBC402DE58191001F42ED /* AuthenticationOverlayView.swift */,
 				A91DBC472DE58191001F42ED /* FileManager.swift */,
@@ -632,6 +638,7 @@
 				66DE21CF2E69750C00AC94DA /* Json.swift in Sources */,
 				66A404D32E67FD720054FFE7 /* PinRepository.swift in Sources */,
 				A91DBC602DE58191001F42ED /* ZoomableModifier.swift in Sources */,
+				667FF8332E6D0FF800FB3E02 /* ContentView.swift in Sources */,
 				A91DBC612DE58191001F42ED /* EnhancedPhotoDetailView.swift in Sources */,
 				667FF82F2E6CC33B00FB3E02 /* SecureGalleryViewModel.swift in Sources */,
 				667FF81B2E6C9D1800FB3E02 /* PhotoCell.swift in Sources */,
@@ -645,6 +652,7 @@
 				A91DBC672DE58191001F42ED /* AuthenticationOverlayView.swift in Sources */,
 				A91DBC692DE58191001F42ED /* CamControl.swift in Sources */,
 				A91DBC6A2DE58191001F42ED /* CameraModel.swift in Sources */,
+				667FF8352E6D101300FB3E02 /* AppNavigation.swift in Sources */,
 				A91DBC6B2DE58191001F42ED /* ContentView.swift in Sources */,
 				A91DBC6D2DE58191001F42ED /* FaceDetector.swift in Sources */,
 				660130C72E67AD3A00D07E9C /* DeviceInfoDataSource.swift in Sources */,

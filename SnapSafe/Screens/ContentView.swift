@@ -19,9 +19,8 @@ struct ContentView: View {
     
     @StateObject private var cameraModel = CameraModel()
     @StateObject private var locationManager = LocationManager.shared
+    @StateObject private var navigationState = AppNavigationState()
     @ObservedObject private var appStateCoordinator = AppStateCoordinator.shared
-    @State private var isShowingSettings = false
-    @State private var isShowingGallery = false
     @State private var isPINSetupComplete = false
     @State private var isShutterAnimating = false
     @State private var hasCompletedIntro: Bool = false
@@ -33,20 +32,21 @@ struct ContentView: View {
     @State private var deviceOrientation = UIDevice.current.orientation
 
     var body: some View {
-        ZStack {
-            if hasCompletedIntro == false {
-                // First time setup - show PIN setup screen
-                PINSetupView(isPINSetupComplete: $isPINSetupComplete)
-            } else if !isAuthenticated || appStateCoordinator.needsAuthentication {
-                // PIN verification screen
-                PINVerificationView()
-                    .onChange(of: isAuthenticated) { _, authenticated in
-                        if authenticated {
-                            // Reset the coordinator's auth state when authenticated
-                            appStateCoordinator.authenticationComplete()
+        NavigationStack(path: $navigationState.navigationPath) {
+            ZStack {
+                if hasCompletedIntro == false {
+                    // First time setup - show PIN setup screen
+                    PINSetupView(isPINSetupComplete: $isPINSetupComplete)
+                } else if !isAuthenticated || appStateCoordinator.needsAuthentication {
+                    // PIN verification screen
+                    PINVerificationView()
+                        .onChange(of: isAuthenticated) { _, authenticated in
+                            if authenticated {
+                                // Reset the coordinator's auth state when authenticated
+                                appStateCoordinator.authenticationComplete()
+                            }
                         }
-                    }
-            } else {
+                } else {
                 // Camera view - now contains both the camera preview and focus indicator
                 CameraView(cameraModel: cameraModel)
                     .edgesIgnoringSafeArea(.all)
@@ -119,7 +119,7 @@ struct ContentView: View {
 
                     HStack {
                         Button(action: {
-                            isShowingGallery = true
+                            navigationState.presentFullScreenCover(.gallery)
                         }) {
                             Image(systemName: "photo.on.rectangle")
                                 .font(.system(size: 24))
@@ -146,7 +146,7 @@ struct ContentView: View {
 
                         Spacer()
                         Button(action: {
-                            isShowingSettings = true
+                            navigationState.presentSheet(.settings)
                         }) {
                             Image(systemName: "gear")
                                 .font(.system(size: 24))
@@ -160,7 +160,12 @@ struct ContentView: View {
                     .padding(.bottom)
                 }
             }
+            }
+            .navigationDestination(for: AppDestination.self) { destination in
+                navigationDestinationView(for: destination)
+            }
         }
+        .handleAppNavigation(navigationState: navigationState)
         .onReceive(settings.hasCompletedIntro) { completed in
             hasCompletedIntro = completed
         }
@@ -168,24 +173,6 @@ struct ContentView: View {
             isAuthenticated = authorized
         }
         .animation(.easeInOut(duration: 0.1), value: isShutterAnimating)
-        .sheet(isPresented: $isShowingSettings) {
-            SettingsView()
-                .obscuredWhenInactive()
-                .screenCaptureProtected()
-                .handleAppState(isPresented: $isShowingSettings)
-                .withAuthenticationOverlay()
-        }
-        .fullScreenCover(isPresented: $isShowingGallery) {
-            NavigationView {
-                SecureGalleryView(onDismiss: {
-                    isShowingGallery = false
-                })
-                .obscuredWhenInactive()
-                .screenCaptureProtected()
-                .handleAppState(isPresented: $isShowingGallery)
-                .withAuthenticationOverlay()
-            }
-        }
         // Apply privacy shield when app is inactive (task switcher, control center, etc.)
         .obscuredWhenInactive()
         // Protect against screen recording and screenshots
@@ -249,15 +236,36 @@ struct ContentView: View {
         // Monitor dismiss all sheets signal
         .onChange(of: appStateCoordinator.dismissAllSheets) { _, shouldDismiss in
             if shouldDismiss {
-                // Dismiss all sheets
-                isShowingSettings = false
-                isShowingGallery = false
+                // Dismiss all navigation
+                navigationState.dismissAll()
                 
                 // Reset flag after a short delay
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     appStateCoordinator.resetAuthenticationState()
                 }
             }
+        }
+    }
+
+    @ViewBuilder
+    private func navigationDestinationView(for destination: AppDestination) -> some View {
+        switch destination {
+        case .settings:
+            SettingsView()
+                .handleAppState(isPresented: .constant(true))
+                .withAuthenticationOverlay()
+        case .gallery:
+            SecureGalleryView(onDismiss: {
+                navigationState.dismissFullScreenCover()
+            })
+            .handleAppState(isPresented: .constant(true))
+            .withAuthenticationOverlay()
+        case .pinSetup:
+            PINSetupView(isPINSetupComplete: $isPINSetupComplete)
+        case .pinVerification:
+            PINVerificationView()
+        case .camera:
+            EmptyView() // Camera is handled in main view
         }
     }
 
