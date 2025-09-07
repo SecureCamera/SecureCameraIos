@@ -8,6 +8,7 @@
 import Foundation
 import FactoryKit
 
+
 extension Container {
     var clock: Factory<Clock> {
          self { SystemClock() }
@@ -62,5 +63,10 @@ extension Container {
             settingsDataSource: self.settingsDataSource(),
             authorizePinUseCase: self.authorizedPinUseCase(),
         ) }
+    }
+    
+    @MainActor
+    var appNavigation: Factory<AppNavigationState> {
+        self { @MainActor in AppNavigationState() }.singleton
     }
 }

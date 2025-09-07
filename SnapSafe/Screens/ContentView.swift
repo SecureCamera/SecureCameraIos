@@ -18,9 +18,10 @@ struct ContentView: View {
     @StateObject private var locationManager = LocationManager.shared
     @ObservedObject private var appStateCoordinator = AppStateCoordinator.shared
     @Environment(\.scenePhase) private var scenePhase
+    @EnvironmentObject private var nav: AppNavigationState
 
     var body: some View {
-        NavigationStack(path: $viewModel.navigationState.navigationPath) {
+        NavigationStack(path: $nav.navigationPath) {
             // Root view - navigation destinations will be pushed onto this
             Color.clear
                 .navigationBarHidden(true)
@@ -35,18 +36,12 @@ struct ContentView: View {
                         }
                 }
         }
-        .sheet(item: Binding(
-            get: { viewModel.navigationState.presentedSheet },
-            set: { _ in viewModel.navigationState.dismissSheet() }
-        )) { destination in
+        .sheet(item: $nav.presentedSheet) { destination in
             navigationDestinationView(for: destination, isPINSetupComplete: $viewModel.isPINSetupComplete)
                 .obscuredWhenInactive()
                 .screenCaptureProtected()
         }
-        .fullScreenCover(item: Binding(
-            get: { viewModel.navigationState.presentedFullScreenCover },
-            set: { _ in viewModel.navigationState.dismissFullScreenCover() }
-        )) { destination in
+        .fullScreenCover(item: $nav.presentedFullScreenCover) { destination in
             navigationDestinationView(for: destination, isPINSetupComplete: $viewModel.isPINSetupComplete)
                 .obscuredWhenInactive()
                 .screenCaptureProtected()
@@ -75,7 +70,7 @@ struct ContentView: View {
                 .withAuthenticationOverlay()
         case .gallery:
             SecureGalleryView(onDismiss: {
-                viewModel.navigationState.dismissFullScreenCover()
+                nav.dismissFullScreenCover()
             })
             .handleAppState(isPresented: .constant(true))
             .withAuthenticationOverlay()
@@ -84,10 +79,7 @@ struct ContentView: View {
         case .pinVerification:
             PINVerificationView()
         case .camera:
-            CameraContainerView(
-                cameraModel: viewModel.cameraModel,
-                navigationState: viewModel.navigationState
-            )
+            CameraContainerView()
         }
     }
 }

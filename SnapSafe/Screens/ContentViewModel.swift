@@ -12,15 +12,11 @@ import FactoryKit
 @MainActor
 final class ContentViewModel: ObservableObject {
     // MARK: - Published Properties
+    private let navigationState = Container.shared.appNavigation()
     
     @Published var isPINSetupComplete = false
     @Published var hasCompletedIntro: Bool = false
     @Published var isAuthenticated: Bool = false
-    
-    // MARK: - State Objects (passed to view)
-    
-    @Published var cameraModel = CameraModel()
-    @Published var navigationState = AppNavigationState()
     
     // MARK: - Dependencies
     

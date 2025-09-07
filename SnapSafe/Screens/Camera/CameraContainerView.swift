@@ -9,8 +9,8 @@ import AVFoundation
 import SwiftUI
 
 struct CameraContainerView: View {
-    @ObservedObject var cameraModel: CameraModel
-    @ObservedObject var navigationState: AppNavigationState
+    @StateObject private var viewModel = CameraContainerViewModel()
+    @EnvironmentObject private var nav: AppNavigationState
     
     // Local camera UI state
     @State private var isShutterAnimating = false
@@ -18,8 +18,7 @@ struct CameraContainerView: View {
     
     var body: some View {
         ZStack {
-            // Camera view - now contains both the camera preview and focus indicator
-            CameraView(cameraModel: cameraModel)
+            CameraView(cameraModel: viewModel.cameraModel)
                 .edgesIgnoringSafeArea(.all)
 
             // Shutter animation overlay
@@ -52,16 +51,16 @@ struct CameraContainerView: View {
 
                     // Flash control button - disabled for front camera
                     Button(action: {
-                        toggleFlashMode()
+                        viewModel.toggleFlashMode()
                     }) {
-                        Image(systemName: flashIcon(for: cameraModel.flashMode))
+                        Image(systemName: viewModel.flashIcon(for: viewModel.cameraModel.flashMode))
                             .font(.system(size: 20))
-                            .foregroundColor(cameraModel.cameraPosition == .front ? .gray : .white)
+                            .foregroundColor(viewModel.cameraModel.cameraPosition == .front ? .gray : .white)
                             .padding(12)
                             .background(Color.black.opacity(0.6))
                             .clipShape(Circle())
                     }
-                    .disabled(cameraModel.cameraPosition == .front)
+                    .disabled(viewModel.cameraModel.cameraPosition == .front)
                     .padding(.top, 16)
                     .padding(.trailing, 16)
                 }
@@ -74,13 +73,13 @@ struct CameraContainerView: View {
                         .fill(Color.black.opacity(0.6))
                         .frame(width: 80, height: 30)
 
-                    Text(String(format: "%.1fx", cameraModel.zoomFactor))
+                    Text(String(format: "%.1fx", viewModel.cameraModel.zoomFactor))
                         .font(.system(size: 14, weight: .bold))
                         .foregroundColor(.white)
                 }
                 // Show for all zoom levels (including 0.5x for wide angle)
-                .opacity(cameraModel.zoomFactor != 1.0 ? 1.0 : 0.0)
-                .animation(.easeInOut, value: cameraModel.zoomFactor)
+                .opacity(viewModel.cameraModel.zoomFactor != 1.0 ? 1.0 : 0.0)
+                .animation(.easeInOut, value: viewModel.cameraModel.zoomFactor)
                 .padding(.bottom, 10)
                 // Rotate the zoom indicator based on device orientation
                 .rotationEffect(Utils.getRotationAngle())
@@ -90,7 +89,7 @@ struct CameraContainerView: View {
 
                 HStack {
                     Button(action: {
-                        navigationState.presentFullScreenCover(.gallery)
+                        nav.presentFullScreenCover(.gallery)
                     }) {
                         Image(systemName: "photo.on.rectangle")
                             .font(.system(size: 24))
@@ -106,7 +105,7 @@ struct CameraContainerView: View {
                     // Capture button
                     Button(action: {
                         triggerShutterEffect()
-                        cameraModel.capturePhoto()
+                        viewModel.capturePhoto()
                     }) {
                         Circle()
                             .strokeBorder(Color.white, lineWidth: 4)
@@ -117,7 +116,7 @@ struct CameraContainerView: View {
 
                     Spacer()
                     Button(action: {
-                        navigationState.presentSheet(.settings)
+                        nav.presentSheet(.settings)
                     }) {
                         Image(systemName: "gear")
                             .font(.system(size: 24))
@@ -157,36 +156,8 @@ struct CameraContainerView: View {
         }
     }
 
-    private func toggleFlashMode() {
-        switch cameraModel.flashMode {
-        case .auto:
-            cameraModel.flashMode = .on
-        case .on:
-            cameraModel.flashMode = .off
-        case .off:
-            cameraModel.flashMode = .auto
-        @unknown default:
-            cameraModel.flashMode = .auto
-        }
-    }
-    
     // Toggle between front and back cameras
     private func toggleCameraPosition() {
-        // Toggle between front and back cameras
-        let newPosition: AVCaptureDevice.Position = (cameraModel.cameraPosition == .back) ? .front : .back
-        cameraModel.switchCamera(to: newPosition)
-    }
-
-    private func flashIcon(for mode: AVCaptureDevice.FlashMode) -> String {
-        switch mode {
-        case .auto:
-            return "bolt.badge.a"
-        case .on:
-            return "bolt"
-        case .off:
-            return "bolt.slash"
-        @unknown default:
-            return "bolt.badge.a"
-        }
+        viewModel.toggleCameraPosition()
     }
 }
