@@ -38,7 +38,7 @@ struct EnhancedPhotoDetailView: View {
                 
                 TabView(selection: $currentIndex) {
                     ForEach(Array(allPhotos.enumerated()), id: \.element.id) { index, photo in
-                        PhotoDetailView_Impl(
+                        PhotoDetailView(
                             photo: photo,
                             showFaceDetection: showFaceDetection,
                             onDelete: onDelete,

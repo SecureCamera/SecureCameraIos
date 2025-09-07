@@ -25,7 +25,7 @@ struct ContentView: View {
             Color.clear
                 .navigationBarHidden(true)
                 .navigationDestination(for: AppDestination.self) { destination in
-                    navigationDestinationView(for: destination, isPINSetupComplete: $viewModel.isPINSetupComplete)
+                    viewModel.navigationDestinationView(for: destination, isPINSetupComplete: $viewModel.isPINSetupComplete)
                         .navigationBarHidden(true)
                         .onChange(of: viewModel.isAuthenticated) { _, authenticated in
                             // Handle authentication changes for PIN verification
@@ -39,7 +39,7 @@ struct ContentView: View {
             get: { viewModel.navigationState.presentedSheet },
             set: { _ in viewModel.navigationState.dismissSheet() }
         )) { destination in
-            navigationDestinationView(for: destination, isPINSetupComplete: $viewModel.isPINSetupComplete)
+            viewModel.navigationDestinationView(for: destination, isPINSetupComplete: $viewModel.isPINSetupComplete)
                 .obscuredWhenInactive()
                 .screenCaptureProtected()
         }
@@ -47,7 +47,7 @@ struct ContentView: View {
             get: { viewModel.navigationState.presentedFullScreenCover },
             set: { _ in viewModel.navigationState.dismissFullScreenCover() }
         )) { destination in
-            navigationDestinationView(for: destination, isPINSetupComplete: $viewModel.isPINSetupComplete)
+            viewModel.navigationDestinationView(for: destination, isPINSetupComplete: $viewModel.isPINSetupComplete)
                 .obscuredWhenInactive()
                 .screenCaptureProtected()
         }
@@ -61,33 +61,6 @@ struct ContentView: View {
         // Scene phase monitoring for background/foreground transitions
         .onChange(of: scenePhase) { _, newPhase in
             viewModel.handleScenePhaseChange(newPhase)
-        }
-    }
-    
-    // MARK: - Navigation Destination Views
-    
-    @ViewBuilder
-    private func navigationDestinationView(for destination: AppDestination, isPINSetupComplete: Binding<Bool>) -> some View {
-        switch destination {
-        case .settings:
-            SettingsView()
-                .handleAppState(isPresented: .constant(true))
-                .withAuthenticationOverlay()
-        case .gallery:
-            SecureGalleryView(onDismiss: {
-                viewModel.navigationState.dismissFullScreenCover()
-            })
-            .handleAppState(isPresented: .constant(true))
-            .withAuthenticationOverlay()
-        case .pinSetup:
-            PINSetupView(isPINSetupComplete: isPINSetupComplete)
-        case .pinVerification:
-            PINVerificationView()
-        case .camera:
-            CameraContainerView(
-                cameraModel: viewModel.cameraModel,
-                navigationState: viewModel.navigationState
-            )
         }
     }
 }

@@ -11,7 +11,7 @@ import SwiftUI
 import UIKit
 
 // Use a different name to avoid conflicts with the top-level typealias
-struct PhotoDetailView_Impl: View {
+struct PhotoDetailView: View {
     // ViewModel
     @StateObject private var viewModel: PhotoDetailViewModel
     

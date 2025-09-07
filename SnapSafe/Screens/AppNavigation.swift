@@ -64,49 +64,6 @@ final class AppNavigationState: ObservableObject {
     }
 }
 
-// MARK: - Navigation Extensions
-
-extension View {
-    func handleAppNavigation(navigationState: AppNavigationState) -> some View {
-        self
-            .sheet(item: Binding(
-                get: { navigationState.presentedSheet },
-                set: { _ in navigationState.dismissSheet() }
-            )) { destination in
-                navigationDestination(for: destination)
-                    .obscuredWhenInactive()
-                    .screenCaptureProtected()
-            }
-            .fullScreenCover(item: Binding(
-                get: { navigationState.presentedFullScreenCover },
-                set: { _ in navigationState.dismissFullScreenCover() }
-            )) { destination in
-                navigationDestination(for: destination)
-                    .obscuredWhenInactive()
-                    .screenCaptureProtected()
-            }
-    }
-    
-    @ViewBuilder
-    private func navigationDestination(for destination: AppDestination) -> some View {
-        switch destination {
-        case .settings:
-            SettingsView()
-        case .gallery:
-            NavigationStack {
-                SecureGalleryView(onDismiss: {
-                    // This will be handled by the parent view
-                })
-            }
-        case .pinSetup:
-            PINSetupView(isPINSetupComplete: .constant(false))
-        case .pinVerification:
-            PINVerificationView()
-        case .camera:
-            EmptyView() // Camera is handled in main view
-        }
-    }
-}
 
 // MARK: - AppDestination Identifiable Conformance
 
