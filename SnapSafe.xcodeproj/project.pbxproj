@@ -72,7 +72,7 @@
 		A91DBC6B2DE58191001F42ED /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC442DE58191001F42ED /* ContentView.swift */; };
 		A91DBC6D2DE58191001F42ED /* FaceDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC462DE58191001F42ED /* FaceDetector.swift */; };
 		A91DBC6E2DE58191001F42ED /* FileManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC472DE58191001F42ED /* FileManager.swift */; };
-		A91DBC702DE58191001F42ED /* LocationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC492DE58191001F42ED /* LocationManager.swift */; };
+		A91DBC702DE58191001F42ED /* LocationRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC492DE58191001F42ED /* LocationRepository.swift */; };
 		A91DBC732DE58191001F42ED /* PINSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC4C2DE58191001F42ED /* PINSetupView.swift */; };
 		A91DBC742DE58191001F42ED /* PINVerificationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC4D2DE58191001F42ED /* PINVerificationView.swift */; };
 		A91DBC752DE58191001F42ED /* PrivacyShield.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC4E2DE58191001F42ED /* PrivacyShield.swift */; };
@@ -167,7 +167,7 @@
 		A91DBC442DE58191001F42ED /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A91DBC462DE58191001F42ED /* FaceDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceDetector.swift; sourceTree = "<group>"; };
 		A91DBC472DE58191001F42ED /* FileManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileManager.swift; sourceTree = "<group>"; };
-		A91DBC492DE58191001F42ED /* LocationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationManager.swift; sourceTree = "<group>"; };
+		A91DBC492DE58191001F42ED /* LocationRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationRepository.swift; sourceTree = "<group>"; };
 		A91DBC4C2DE58191001F42ED /* PINSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PINSetupView.swift; sourceTree = "<group>"; };
 		A91DBC4D2DE58191001F42ED /* PINVerificationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PINVerificationView.swift; sourceTree = "<group>"; };
 		A91DBC4E2DE58191001F42ED /* PrivacyShield.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyShield.swift; sourceTree = "<group>"; };
@@ -341,7 +341,7 @@
 		667FF8262E6C9F6B00FB3E02 /* Location */ = {
 			isa = PBXGroup;
 			children = (
-				A91DBC492DE58191001F42ED /* LocationManager.swift */,
+				A91DBC492DE58191001F42ED /* LocationRepository.swift */,
 			);
 			path = Location;
 			sourceTree = "<group>";
@@ -667,7 +667,7 @@
 				A91DBC6E2DE58191001F42ED /* FileManager.swift in Sources */,
 				669751332E6A63D30059C5F3 /* AuthorizePinUseCase.swift in Sources */,
 				66A404CB2E67EB7F0054FFE7 /* PinCrypto.swift in Sources */,
-				A91DBC702DE58191001F42ED /* LocationManager.swift in Sources */,
+				A91DBC702DE58191001F42ED /* LocationRepository.swift in Sources */,
 				A91DBC732DE58191001F42ED /* PINSetupView.swift in Sources */,
 				669751352E6A64330059C5F3 /* CreatePinUseCase.swift in Sources */,
 				A91DBC742DE58191001F42ED /* PINVerificationView.swift in Sources */,

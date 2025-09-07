@@ -76,4 +76,8 @@ extension Container {
             settings: self.settingsDataSource(),
         ) }.singleton
     }
+    
+    var locationRepository: Factory<LocationRepository> {
+        self { LocationRepository() }.singleton
+    }
 }

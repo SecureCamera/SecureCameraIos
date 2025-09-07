@@ -11,16 +11,13 @@ import CoreLocation
 import Foundation
 import ImageIO
 
-class LocationManager: NSObject, ObservableObject {
+class LocationRepository: NSObject, ObservableObject {
     private let locationManager = CLLocationManager()
 
     // Published properties that can be observed by SwiftUI views
     @Published var authorizationStatus: CLAuthorizationStatus = .notDetermined
     @Published var lastLocation: CLLocation?
     @Published var shouldIncludeLocationData: Bool = false
-
-    // Singleton instance for app-wide access
-    static let shared = LocationManager()
 
     override init() {
         super.init()
@@ -125,7 +122,7 @@ class LocationManager: NSObject, ObservableObject {
 
 // MARK: - CLLocationManagerDelegate
 
-extension LocationManager: CLLocationManagerDelegate {
+extension LocationRepository: CLLocationManagerDelegate {
     // Called when the authorization status changes
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         authorizationStatus = manager.authorizationStatus

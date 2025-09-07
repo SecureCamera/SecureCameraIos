@@ -9,6 +9,8 @@ import CoreGraphics
 import Foundation
 import ImageIO
 import SwiftUI
+import FactoryKit
+
 
 class SecureFileManager {
     private let fileManager = FileManager.default
@@ -71,7 +73,7 @@ class SecureFileManager {
         }
 
         // Add location data if enabled and available
-        if let locationMetadata = LocationManager.shared.getCurrentLocationMetadata() {
+        if let locationMetadata = Container.shared.locationRepository().getCurrentLocationMetadata() {
             for (key, value) in locationMetadata {
                 serializedMetadata[key] = value
             }

@@ -8,6 +8,7 @@
 import Combine
 import CoreLocation
 import SwiftUI
+import FactoryKit
 
 @_exported import Foundation
 
@@ -19,7 +20,7 @@ struct SettingsView: View {
     @StateObject private var viewModel = SettingsViewModel()
     
     // Location Manager (still needed for authorization status)
-    @StateObject private var locationManager = LocationManager.shared
+    @InjectedObject(\.locationRepository) private var locationRepository: LocationRepository
     
     @Environment(\.openURL) private var openURL
 
@@ -69,7 +70,7 @@ struct SettingsView: View {
                     HStack {
                         Text("Permission Status")
                         Spacer()
-                        Text(locationManager.getAuthorizationStatusString())
+                        Text(locationRepository.getAuthorizationStatusString())
                             .foregroundColor(viewModel.locationStatusColor)
                     }
                     

@@ -46,7 +46,9 @@ final class SettingsViewModel: ObservableObject {
     @Injected(\.authorizationRepository)
     private var authorizationRepository: AuthorizationRepository
     
-    private let locationManager = LocationManager.shared
+    @Injected(\.locationRepository)
+    private var locationManager: LocationRepository
+    
     private var cancellables = Set<AnyCancellable>()
     
     // MARK: - Initialization
