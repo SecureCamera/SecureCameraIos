@@ -27,7 +27,7 @@ struct ContentView: View {
                 .navigationBarHidden(true)
                 .navigationDestination(for: AppDestination.self) { destination in
                     navigationDestinationView(for: destination, isPINSetupComplete: $viewModel.isPINSetupComplete)
-                        .navigationBarHidden(true)
+                        .navigationBarHidden(destination != .gallery)
                         .onChange(of: viewModel.isAuthenticated) { _, authenticated in
                             // Handle authentication changes for PIN verification
                             if destination == .pinVerification {

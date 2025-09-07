@@ -45,7 +45,8 @@ struct SecureGalleryView: View {
 
 
     var body: some View {
-        ZStack {
+        NavigationStack {
+            ZStack {
             Group {
                 if viewModel.photos.isEmpty {
                     EmptyGalleryView(onDismiss: { 
@@ -79,7 +80,6 @@ struct SecureGalleryView: View {
         }
         .navigationTitle(viewModel.navigationTitle)
         .navigationBarTitleDisplayMode(.inline)
-        .navigationBarBackButtonHidden(true)
         .toolbar {
             // Back button in the leading position
             ToolbarItem(placement: .navigationBarLeading) {
@@ -146,8 +146,7 @@ struct SecureGalleryView: View {
                     }
                 }
             }
-        }
-        .toolbar {
+            
             // Bottom toolbar with main action buttons
             ToolbarItemGroup(placement: .bottomBar) {
                 if !viewModel.isSelectingDecoys && !viewModel.isSelecting {
@@ -249,6 +248,7 @@ struct SecureGalleryView: View {
                     Text(viewModel.decoyConfirmationMessage)
                 }
             )
+        }
         }
 
     // Photo grid subview
