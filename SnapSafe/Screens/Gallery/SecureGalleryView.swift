@@ -124,21 +124,6 @@ struct SecureGalleryView: View {
                             Button("Select Photos") {
                                 viewModel.startSelecting()
                             }
-                            
-                            Menu("Filter Photos") {
-                                ForEach(PhotoFilter.allCases, id: \.self) { filter in
-                                    Button(action: {
-                                        viewModel.updateFilter(filter)
-                                    }) {
-                                        HStack {
-                                            Text(filter.rawValue)
-                                            if viewModel.selectedFilter == filter {
-                                                Image(systemName: "checkmark")
-                                            }
-                                        }
-                                    }
-                                }
-                            }
                         } label: {
                             Image(systemName: "ellipsis.circle")
                                 .foregroundColor(.blue)
@@ -187,9 +172,9 @@ struct SecureGalleryView: View {
         }
         .fullScreenCover(item: $viewModel.selectedPhoto) { photo in
                 // Find the index of the selected photo in the photos array
-                if let initialIndex = viewModel.filteredPhotos.firstIndex(where: { $0.id == photo.id }) {
+                if let initialIndex = viewModel.photos.firstIndex(where: { $0.id == photo.id }) {
                     EnhancedPhotoDetailView(
-                        allPhotos: viewModel.filteredPhotos,
+                        allPhotos: viewModel.photos,
                         initialIndex: initialIndex,
                         showFaceDetection: showFaceDetection,
                         onDelete: { _ in viewModel.onAppear() },
@@ -255,7 +240,7 @@ struct SecureGalleryView: View {
     private var photosGridView: some View {
         ScrollView {
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 10) {
-                ForEach(viewModel.filteredPhotos) { photo in
+                ForEach(viewModel.photos) { photo in
                     PhotoCell(
                         photo: photo,
                         isSelected: viewModel.selectedPhotoIds.contains(photo.id),

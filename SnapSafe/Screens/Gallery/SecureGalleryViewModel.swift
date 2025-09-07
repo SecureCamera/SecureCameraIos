@@ -25,9 +25,6 @@ final class SecureGalleryViewModel: ObservableObject {
     @Published var isImporting: Bool = false
     @Published var importProgress: Float = 0
     
-    // Filter state
-    @Published var selectedFilter: PhotoFilter = .all
-    
     // Decoy selection mode
     @Published var isSelectingDecoys: Bool = false
     @Published var maxDecoys: Int = 10
@@ -56,28 +53,6 @@ final class SecureGalleryViewModel: ObservableObject {
         photos.filter { $0.isDecoy }.count
     }
     
-    var filteredPhotos: [SecurePhoto] {
-        switch selectedFilter {
-        case .all:
-            return photos
-        case .imported:
-            return photos.filter { $0.metadata["imported"] as? Bool == true }
-        case .edited:
-            return photos.filter { $0.metadata["isEdited"] as? Bool == true }
-        case .withLocation:
-            return photos.filter { 
-                // Check for GPS data in metadata using Core Graphics constants
-                guard let gpsData = $0.metadata[String(kCGImagePropertyGPSDictionary)] as? [String: Any] else { return false }
-                
-                // Verify we have either latitude or longitude data
-                let hasLatitude = gpsData[String(kCGImagePropertyGPSLatitude)] != nil
-                let hasLongitude = gpsData[String(kCGImagePropertyGPSLongitude)] != nil
-                
-                return hasLatitude || hasLongitude
-            }
-        }
-    }
-    
     var selectedPhotos: [UIImage] {
         photos
             .filter { selectedPhotoIds.contains($0.id) }
@@ -87,10 +62,8 @@ final class SecureGalleryViewModel: ObservableObject {
     var navigationTitle: String {
         if isSelectingDecoys {
             return "Select Decoy Photos"
-        } else if selectedFilter == .all {
-            return "Secure Gallery"
         } else {
-            return selectedFilter.rawValue
+            return "Secure Gallery"
         }
     }
     
@@ -167,10 +140,6 @@ final class SecureGalleryViewModel: ObservableObject {
     func cancelSelecting() {
         isSelecting = false
         selectedPhotoIds.removeAll()
-    }
-    
-    func updateFilter(_ filter: PhotoFilter) {
-        selectedFilter = filter
     }
     
     func exitDecoyMode() {
