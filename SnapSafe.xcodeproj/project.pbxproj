@@ -34,6 +34,13 @@
 		667FF83B2E6D142200FB3E02 /* ContentViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF83A2E6D142200FB3E02 /* ContentViewModel.swift */; };
 		667FF83D2E6D16C700FB3E02 /* CameraContainerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF83C2E6D16C700FB3E02 /* CameraContainerView.swift */; };
 		667FF8412E6D356D00FB3E02 /* CameraContainerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF8402E6D356D00FB3E02 /* CameraContainerViewModel.swift */; };
+		667FF8462E6E2E5300FB3E02 /* ThumbnailCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF8452E6E2E5300FB3E02 /* ThumbnailCache.swift */; };
+		667FF8472E6E2E5300FB3E02 /* SecureImageRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF8442E6E2E5300FB3E02 /* SecureImageRepository.swift */; };
+		667FF8492E6E2F6300FB3E02 /* PhotoDef.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF8482E6E2F6300FB3E02 /* PhotoDef.swift */; };
+		667FF84B2E6E2F6C00FB3E02 /* PhotoMetaData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF84A2E6E2F6C00FB3E02 /* PhotoMetaData.swift */; };
+		667FF84D2E6E373000FB3E02 /* SecureImageRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF84C2E6E373000FB3E02 /* SecureImageRepositoryTests.swift */; };
+		667FF8502E6E387A00FB3E02 /* FakeThumbnailCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF84F2E6E387900FB3E02 /* FakeThumbnailCache.swift */; };
+		667FF8522E6E388D00FB3E02 /* FakeEncryptionScheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF8512E6E388C00FB3E02 /* FakeEncryptionScheme.swift */; };
 		669751302E69789F0059C5F3 /* TestUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6697512F2E69789A0059C5F3 /* TestUtils.swift */; };
 		669751332E6A63D30059C5F3 /* AuthorizePinUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 669751322E6A63D30059C5F3 /* AuthorizePinUseCase.swift */; };
 		669751352E6A64330059C5F3 /* CreatePinUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 669751342E6A642A0059C5F3 /* CreatePinUseCase.swift */; };
@@ -129,6 +136,13 @@
 		667FF83A2E6D142200FB3E02 /* ContentViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentViewModel.swift; sourceTree = "<group>"; };
 		667FF83C2E6D16C700FB3E02 /* CameraContainerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraContainerView.swift; sourceTree = "<group>"; };
 		667FF8402E6D356D00FB3E02 /* CameraContainerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraContainerViewModel.swift; sourceTree = "<group>"; };
+		667FF8442E6E2E5300FB3E02 /* SecureImageRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureImageRepository.swift; sourceTree = "<group>"; };
+		667FF8452E6E2E5300FB3E02 /* ThumbnailCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailCache.swift; sourceTree = "<group>"; };
+		667FF8482E6E2F6300FB3E02 /* PhotoDef.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoDef.swift; sourceTree = "<group>"; };
+		667FF84A2E6E2F6C00FB3E02 /* PhotoMetaData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoMetaData.swift; sourceTree = "<group>"; };
+		667FF84C2E6E373000FB3E02 /* SecureImageRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureImageRepositoryTests.swift; sourceTree = "<group>"; };
+		667FF84F2E6E387900FB3E02 /* FakeThumbnailCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FakeThumbnailCache.swift; sourceTree = "<group>"; };
+		667FF8512E6E388C00FB3E02 /* FakeEncryptionScheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FakeEncryptionScheme.swift; sourceTree = "<group>"; };
 		6697512F2E69789A0059C5F3 /* TestUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestUtils.swift; sourceTree = "<group>"; };
 		669751322E6A63D30059C5F3 /* AuthorizePinUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorizePinUseCase.swift; sourceTree = "<group>"; };
 		669751342E6A642A0059C5F3 /* CreatePinUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatePinUseCase.swift; sourceTree = "<group>"; };
@@ -328,6 +342,7 @@
 		667FF8252E6C9EAD00FB3E02 /* Data */ = {
 			isa = PBXGroup;
 			children = (
+				667FF8422E6E2DEA00FB3E02 /* SecureImage */,
 				667FF8262E6C9F6B00FB3E02 /* Location */,
 				660130C32E67AD2200D07E9C /* UserData */,
 				669751312E6A63C50059C5F3 /* UseCases */,
@@ -346,6 +361,24 @@
 			path = Location;
 			sourceTree = "<group>";
 		};
+		667FF8422E6E2DEA00FB3E02 /* SecureImage */ = {
+			isa = PBXGroup;
+			children = (
+				667FF8442E6E2E5300FB3E02 /* SecureImageRepository.swift */,
+				667FF8452E6E2E5300FB3E02 /* ThumbnailCache.swift */,
+			);
+			path = SecureImage;
+			sourceTree = "<group>";
+		};
+		667FF84E2E6E387100FB3E02 /* Util */ = {
+			isa = PBXGroup;
+			children = (
+				667FF8512E6E388C00FB3E02 /* FakeEncryptionScheme.swift */,
+				667FF84F2E6E387900FB3E02 /* FakeThumbnailCache.swift */,
+			);
+			path = Util;
+			sourceTree = "<group>";
+		};
 		669751312E6A63C50059C5F3 /* UseCases */ = {
 			isa = PBXGroup;
 			children = (
@@ -358,6 +391,8 @@
 		A91DBC2B2DE58191001F42ED /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				667FF84A2E6E2F6C00FB3E02 /* PhotoMetaData.swift */,
+				667FF8482E6E2F6300FB3E02 /* PhotoDef.swift */,
 				A91DBC252DE58191001F42ED /* AppearanceMode.swift */,
 				A91DBC262DE58191001F42ED /* DetectedFace.swift */,
 				A91DBC272DE58191001F42ED /* MaskMode.swift */,
@@ -452,6 +487,8 @@
 		A9DE375A2DC5F34600679C2C /* SnapSafeTests */ = {
 			isa = PBXGroup;
 			children = (
+				667FF84E2E6E387100FB3E02 /* Util */,
+				667FF84C2E6E373000FB3E02 /* SecureImageRepositoryTests.swift */,
 				667FF8112E6BA7F200FB3E02 /* AuthorizePinUseCaseTests.swift */,
 				667FF80D2E6A9D2A00FB3E02 /* AuthorizationRepositoryTests.swift */,
 				6697512F2E69789A0059C5F3 /* TestUtils.swift */,
@@ -625,6 +662,8 @@
 				667FF82D2E6CC06900FB3E02 /* SettingsViewModel.swift in Sources */,
 				A91DBC562DE58191001F42ED /* MaskMode.swift in Sources */,
 				A91DBC572DE58191001F42ED /* MemoryManager.swift in Sources */,
+				667FF8462E6E2E5300FB3E02 /* ThumbnailCache.swift in Sources */,
+				667FF8472E6E2E5300FB3E02 /* SecureImageRepository.swift in Sources */,
 				A91DBC582DE58191001F42ED /* PhotoFilter.swift in Sources */,
 				667FF8412E6D356D00FB3E02 /* CameraContainerViewModel.swift in Sources */,
 				A91DBC592DE58191001F42ED /* SecurePhoto.swift in Sources */,
@@ -658,6 +697,7 @@
 				66A404D52E6800840054FFE7 /* PinRepositoryImpl.swift in Sources */,
 				A91DBC662DE58191001F42ED /* AppStateCoordinator.swift in Sources */,
 				A91DBC672DE58191001F42ED /* AuthenticationOverlayView.swift in Sources */,
+				667FF8492E6E2F6300FB3E02 /* PhotoDef.swift in Sources */,
 				A91DBC692DE58191001F42ED /* CamControl.swift in Sources */,
 				A91DBC6A2DE58191001F42ED /* CameraModel.swift in Sources */,
 				667FF8352E6D101300FB3E02 /* AppNavigation.swift in Sources */,
@@ -677,6 +717,7 @@
 				660130BF2E67AD1D00D07E9C /* HashedPin.swift in Sources */,
 				660130C02E67AD1D00D07E9C /* PassThroughEncryptionScheme.swift in Sources */,
 				A91DBC762DE58191001F42ED /* ScreenCaptureManager.swift in Sources */,
+				667FF84B2E6E2F6C00FB3E02 /* PhotoMetaData.swift in Sources */,
 				667FF83B2E6D142200FB3E02 /* ContentViewModel.swift in Sources */,
 				A91DBC772DE58191001F42ED /* SecureGalleryView.swift in Sources */,
 				A91DBC782DE58191001F42ED /* SettingsView.swift in Sources */,
@@ -690,8 +731,11 @@
 			files = (
 				667FF8122E6BA7F200FB3E02 /* AuthorizePinUseCaseTests.swift in Sources */,
 				66A404D12E67F39F0054FFE7 /* PinCryptoTests.swift in Sources */,
+				667FF8502E6E387A00FB3E02 /* FakeThumbnailCache.swift in Sources */,
 				667FF80E2E6A9D3000FB3E02 /* AuthorizationRepositoryTests.swift in Sources */,
+				667FF8522E6E388D00FB3E02 /* FakeEncryptionScheme.swift in Sources */,
 				669751302E69789F0059C5F3 /* TestUtils.swift in Sources */,
+				667FF84D2E6E373000FB3E02 /* SecureImageRepositoryTests.swift in Sources */,
 				66A404D72E694A450054FFE7 /* PinRepositoryTest.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

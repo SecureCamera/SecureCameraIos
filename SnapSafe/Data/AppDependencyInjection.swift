@@ -80,4 +80,17 @@ extension Container {
     var locationRepository: Factory<LocationRepository> {
         self { LocationRepository() }.singleton
     }
+    
+    @MainActor
+    var thumbnailCache: Factory<ThumbnailCache> {
+        self { @MainActor in ThumbnailCache() }.singleton
+    }
+    
+    @MainActor
+    var secureImageRepository: Factory<SecureImageRepository> {
+        self { @MainActor in SecureImageRepository(
+            thumbnailCache: self.thumbnailCache(),
+            encryptionScheme: self.encryptionScheme()
+        ) }.singleton
+    }
 }
