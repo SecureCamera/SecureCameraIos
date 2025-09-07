@@ -9,7 +9,6 @@ import Combine
 import CoreLocation
 import SwiftUI
 
-// Add PINManager
 @_exported import Foundation
 
 struct SettingsView: View {
