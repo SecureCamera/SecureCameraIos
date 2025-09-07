@@ -16,7 +16,7 @@ import FactoryKit
 struct ContentView: View { 
     @StateObject private var viewModel = ContentViewModel()
     @StateObject private var locationManager = LocationManager.shared
-    @ObservedObject private var appStateCoordinator = AppStateCoordinator.shared
+    @InjectedObject(\.appStateCoordinator) private var appStateCoordinator: AppStateCoordinator
     @Environment(\.scenePhase) private var scenePhase
     @EnvironmentObject private var nav: AppNavigationState
 

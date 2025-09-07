@@ -10,22 +10,27 @@ import Combine
 import FactoryKit
 
 /// Coordinator to manage app state transitions and handle authentication
+@available(*, deprecated, message: "Migrate to using Authorization Repository directly?")
 class AppStateCoordinator: ObservableObject {
-    // Singleton instance
-    static let shared = AppStateCoordinator()
+    
+    private let authorizationRepo: AuthorizationRepository
+    private let settings: SettingsDataSource
     
     // Published properties
     @Published var needsAuthentication = false
     @Published var wasInBackground = false
     @Published var dismissAllSheets = false
     
-    private let authorizationRepo = Container.shared.authorizationRepository()
-    private let settings = Container.shared.settingsDataSource()
-    
     // Subscriptions to manage cleanup
     private var cancellables = Set<AnyCancellable>()
     
-    private init() {
+    init(
+        authorizationRepo: AuthorizationRepository,
+        settings: SettingsDataSource
+    ) {
+        self.authorizationRepo = authorizationRepo
+        self.settings = settings
+        
         // Listen for scene phase notifications via NotificationCenter as a backup mechanism
         // This ensures we catch transitions even in modal sheets
         NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification)
@@ -87,7 +92,7 @@ class AppStateCoordinator: ObservableObject {
 
 /// ViewModifier to handle app state transitions
 struct AppStateHandler: ViewModifier {
-    @ObservedObject private var coordinator = AppStateCoordinator.shared
+    @ObservedObject private var coordinator: AppStateCoordinator = Container.shared.appStateCoordinator()
     @Binding var isPresented: Bool
     
     func body(content: Content) -> some View {

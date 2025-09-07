@@ -69,4 +69,11 @@ extension Container {
     var appNavigation: Factory<AppNavigationState> {
         self { @MainActor in AppNavigationState() }.singleton
     }
+    
+    var appStateCoordinator: Factory<AppStateCoordinator> {
+        self { AppStateCoordinator(
+            authorizationRepo: self.authorizationRepository(),
+            settings: self.settingsDataSource(),
+        ) }.singleton
+    }
 }

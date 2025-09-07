@@ -26,8 +26,10 @@ final class ContentViewModel: ObservableObject {
     @Injected(\.authorizationRepository) 
     private var authorizationRepository: AuthorizationRepository
     
+    @Injected(\.appStateCoordinator)
+    private var appStateCoordinator: AppStateCoordinator
+    
     private let locationManager = LocationManager.shared
-    private let appStateCoordinator = AppStateCoordinator.shared
     private let screenCaptureManager = ScreenCaptureManager.shared
     
     private var cancellables = Set<AnyCancellable>()

@@ -6,12 +6,13 @@
 //
 
 import SwiftUI
+import FactoryKit
 
 /// A fullscreen overlay that forces PIN authentication
 struct AuthenticationOverlayView: View {
-    @ObservedObject private var appStateCoordinator = AppStateCoordinator.shared
-    @State private var isAuthenticated = false
-    
+    @InjectedObject(\.appStateCoordinator)
+    private var appStateCoordinator: AppStateCoordinator
+
     var body: some View {
         ZStack {
             // Full screen cover with dark background
@@ -27,8 +28,9 @@ struct AuthenticationOverlayView: View {
 
 /// ViewModifier to add authentication overlay when needed
 struct AuthenticationOverlay: ViewModifier {
-    @ObservedObject private var appStateCoordinator = AppStateCoordinator.shared
-    
+    @InjectedObject(\.appStateCoordinator)
+    private var appStateCoordinator: AppStateCoordinator
+ 
     func body(content: Content) -> some View {
         ZStack {
             // Main content

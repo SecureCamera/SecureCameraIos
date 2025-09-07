@@ -28,5 +28,4 @@ public protocol PinRepository {
     func getHashedPoisonPillPin() async -> HashedPin?
     func activatePoisonPill() async
     func removePoisonPillPin() async
-
 }
