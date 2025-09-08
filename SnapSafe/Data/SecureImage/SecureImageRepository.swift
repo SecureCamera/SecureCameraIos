@@ -116,7 +116,7 @@ public class SecureImageRepository {
     /// Applies metadata to an image
     private func applyImageMetadata(
         _ imageData: Data,
-        location: CLLocationCoordinate2D?,
+        location: CLLocation?,
         applyRotation: Bool,
         rotationDegrees: Int
     ) -> Data {
@@ -146,10 +146,10 @@ public class SecureImageRepository {
         // Add GPS location if available
         if let location = location {
             let gpsInfo: [String: Any] = [
-                kCGImagePropertyGPSLatitude as String: abs(location.latitude),
-                kCGImagePropertyGPSLatitudeRef as String: location.latitude >= 0 ? "N" : "S",
-                kCGImagePropertyGPSLongitude as String: abs(location.longitude),
-                kCGImagePropertyGPSLongitudeRef as String: location.longitude >= 0 ? "E" : "W"
+                kCGImagePropertyGPSLatitude as String: abs(location.coordinate.latitude),
+                kCGImagePropertyGPSLatitudeRef as String: location.coordinate.latitude >= 0 ? "N" : "S",
+                kCGImagePropertyGPSLongitude as String: abs(location.coordinate.longitude),
+                kCGImagePropertyGPSLongitudeRef as String: location.coordinate.longitude >= 0 ? "E" : "W"
             ]
             properties[kCGImagePropertyGPSDictionary as String] = gpsInfo
         }
@@ -173,7 +173,7 @@ public class SecureImageRepository {
     /// Saves a captured image to the gallery
     func saveImage(
         _ image: CapturedImage,
-        location: CLLocationCoordinate2D?,
+        location: CLLocation?,
         applyRotation: Bool,
         quality: CGFloat = 0.9
     ) async throws -> PhotoDef {

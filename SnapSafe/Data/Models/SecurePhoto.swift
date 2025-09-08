@@ -7,11 +7,11 @@
 
 import UIKit
 
-class SecurePhoto: Identifiable, Equatable {
-    let id = UUID()
-    let filename: String
-    var metadata: [String: Any]
-    let fileURL: URL
+public class SecurePhoto: Identifiable, Equatable {
+    public let id = UUID()
+    public let filename: String
+    public var metadata: [String: Any]
+    public let fileURL: URL
 
     // Memory tracking
     var isVisible: Bool = false
@@ -228,7 +228,7 @@ class SecurePhoto: Identifiable, Equatable {
     }
 
     // Implement Equatable
-    static func == (lhs: SecurePhoto, rhs: SecurePhoto) -> Bool {
+    public static func == (lhs: SecurePhoto, rhs: SecurePhoto) -> Bool {
         // Compare by id and filename
         return lhs.id == rhs.id && lhs.filename == rhs.filename
     }

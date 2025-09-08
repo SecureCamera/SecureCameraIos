@@ -34,7 +34,12 @@ final class SecureGalleryViewModel: ObservableObject {
     
     // MARK: - Dependencies
     
-    private let secureFileManager = SecureFileManager()
+    @Injected(\.secureImageRepository)
+    private var secureImageRepository: SecureImageRepository
+    
+    @Injected(\.clock)
+    private var clock: Clock
+    
     private var cancellables = Set<AnyCancellable>()
     
     @InjectedObject(\.securityOverlayViewModel) 
@@ -47,6 +52,7 @@ final class SecureGalleryViewModel: ObservableObject {
     
     init(selectingDecoys: Bool = false) {
         self.isSelectingDecoys = selectingDecoys
+        
         setupObservers()
     }
     
@@ -244,7 +250,8 @@ final class SecureGalleryViewModel: ObservableObject {
             for photo in photosToDelete {
                 do {
                     print("Attempting to delete: \(photo.filename)")
-                    try await self.secureFileManager.deletePhoto(filename: photo.filename)
+                    let photoDef = mapToPhotoDef(photo)
+                    await self.secureImageRepository.deleteImage(photoDef)
                     print("Successfully deleted: \(photo.filename)")
                 } catch {
                     print("Error deleting photo \(photo.filename): \(error.localizedDescription)")
@@ -323,13 +330,14 @@ final class SecureGalleryViewModel: ObservableObject {
         
         for image in images {
             if let imageData = image.jpegData(compressionQuality: 0.9) {
-                do {
-                    let fileURL = try secureFileManager.preparePhotoForSharing(imageData: imageData)
-                    filesToShare.append(fileURL)
-                    print("Prepared file for sharing: \(fileURL.lastPathComponent)")
-                } catch {
-                    print("Error preparing photo for sharing: \(error.localizedDescription)")
-                }
+                // TODO: Implement photo sharing
+//                do {
+//                    let fileURL = try secureFileManager.preparePhotoForSharing(imageData: imageData)
+//                    filesToShare.append(fileURL)
+//                    print("Prepared file for sharing: \(fileURL.lastPathComponent)")
+//                } catch {
+//                    print("Error preparing photo for sharing: \(error.localizedDescription)")
+//                }
             }
         }
         
@@ -432,15 +440,11 @@ final class SecureGalleryViewModel: ObservableObject {
             
             do {
                 // Only load metadata and file URLs, not actual image data
-                let photoMetadata = try self.secureFileManager.loadAllPhotoMetadata()
+                let photoMetadata = await self.secureImageRepository.getPhotos()
 
                 // Create photo objects that will load their images on demand
-                var loadedPhotos = photoMetadata.map { filename, metadata, fileURL in
-                    SecurePhoto(
-                        filename: filename,
-                        metadata: metadata,
-                        fileURL: fileURL
-                    )
+                var loadedPhotos = photoMetadata.map { photoDef in
+                    mapToSecurePhoto(photoDef)
                 }
 
                 // Sort photos by creation date (oldest at top, newest at bottom)
@@ -495,8 +499,17 @@ final class SecureGalleryViewModel: ObservableObject {
         let filename = await withCheckedContinuation { continuation in
             Task.detached {
                 do {
-                    let filename = try self.secureFileManager.savePhoto(imageData, withMetadata: metadata)
-                    continuation.resume(returning: filename)
+                    let image = UIImage(data: imageData)!
+                    let capturedImage = await CapturedImage(
+                        sensorBitmap: image, timestamp: self.clock.now, rotationDegrees: 0
+                    )
+                    // TODO: We should extract some info out of the existing meta data
+                    let newDef = try await self.secureImageRepository.saveImage(
+                        capturedImage,
+                        location: nil,
+                        applyRotation: true
+                    )
+                    continuation.resume(returning: newDef.photoName)
                 } catch {
                     print("Error saving imported photo: \(error.localizedDescription)")
                     continuation.resume(returning: "")
@@ -537,7 +550,8 @@ final class SecureGalleryViewModel: ObservableObject {
             guard let self = self else { return }
             
             do {
-                try await self.secureFileManager.deletePhoto(filename: photo.filename)
+                let photoDef = mapToPhotoDef(photo)
+                await self.secureImageRepository.deleteImage(photoDef)
 
                 // Update UI on main thread
                 await MainActor.run {

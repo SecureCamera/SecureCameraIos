@@ -66,7 +66,8 @@
 		A91DBC652DE58191001F42ED /* PhotoDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC3B2DE58191001F42ED /* PhotoDetailViewModel.swift */; };
 		A91DBC672DE58191001F42ED /* AuthenticationOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC402DE58191001F42ED /* AuthenticationOverlayView.swift */; };
 		A91DBC692DE58191001F42ED /* CamControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC422DE58191001F42ED /* CamControl.swift */; };
-		A91DBC6A2DE58191001F42ED /* CameraModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC432DE58191001F42ED /* CameraModel.swift */; };
+		A91DBC6A2DE58191001F42ED /* CameraViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC432DE58191001F42ED /* CameraViewModel.swift */; };
+		A91DBC6B2DE58191001F42ED /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC442DE58191001F42ED /* ContentView.swift */; };
 		A91DBC6D2DE58191001F42ED /* FaceDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC462DE58191001F42ED /* FaceDetector.swift */; };
 		A91DBC6E2DE58191001F42ED /* FileManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC472DE58191001F42ED /* FileManager.swift */; };
 		A91DBC702DE58191001F42ED /* LocationRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC492DE58191001F42ED /* LocationRepository.swift */; };
@@ -164,7 +165,8 @@
 		A91DBC3F2DE58191001F42ED /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A91DBC402DE58191001F42ED /* AuthenticationOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticationOverlayView.swift; sourceTree = "<group>"; };
 		A91DBC422DE58191001F42ED /* CamControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CamControl.swift; sourceTree = "<group>"; };
-		A91DBC432DE58191001F42ED /* CameraModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraModel.swift; sourceTree = "<group>"; };
+		A91DBC432DE58191001F42ED /* CameraViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraViewModel.swift; sourceTree = "<group>"; };
+		A91DBC442DE58191001F42ED /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A91DBC462DE58191001F42ED /* FaceDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceDetector.swift; sourceTree = "<group>"; };
 		A91DBC472DE58191001F42ED /* FileManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileManager.swift; sourceTree = "<group>"; };
 		A91DBC492DE58191001F42ED /* LocationRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationRepository.swift; sourceTree = "<group>"; };
@@ -310,7 +312,7 @@
 				667FF8402E6D356D00FB3E02 /* CameraContainerViewModel.swift */,
 				667FF83C2E6D16C700FB3E02 /* CameraContainerView.swift */,
 				667FF8162E6C9C9900FB3E02 /* CameraView.swift */,
-				A91DBC432DE58191001F42ED /* CameraModel.swift */,
+				A91DBC432DE58191001F42ED /* CameraViewModel.swift */,
 				A91DBC422DE58191001F42ED /* CamControl.swift */,
 			);
 			path = Camera;
@@ -681,7 +683,7 @@
 				66A404D52E6800840054FFE7 /* PinRepositoryImpl.swift in Sources */,
 				A91DBC672DE58191001F42ED /* AuthenticationOverlayView.swift in Sources */,
 				A91DBC692DE58191001F42ED /* CamControl.swift in Sources */,
-				A91DBC6A2DE58191001F42ED /* CameraModel.swift in Sources */,
+				A91DBC6A2DE58191001F42ED /* CameraViewModel.swift in Sources */,
 				667FF8352E6D101300FB3E02 /* AppNavigation.swift in Sources */,
 				A91DBC6D2DE58191001F42ED /* FaceDetector.swift in Sources */,
 				660130C72E67AD3A00D07E9C /* DeviceInfoDataSource.swift in Sources */,

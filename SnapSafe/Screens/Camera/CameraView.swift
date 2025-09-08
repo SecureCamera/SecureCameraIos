@@ -15,7 +15,7 @@ import FactoryKit
 
 // SwiftUI wrapper for the camera preview
 struct CameraView: View {
-    @ObservedObject var cameraModel: CameraModel
+    @ObservedObject var cameraModel: CameraViewModel
     
     // Add a slightly darker background to emphasize the capture area
     let backgroundOpacity: Double = 0.2
@@ -86,7 +86,7 @@ struct FocusIndicatorView: View {
 
 // UIViewRepresentable for camera preview
 struct CameraPreviewView: UIViewRepresentable {
-    @ObservedObject var cameraModel: CameraModel
+    @ObservedObject var cameraModel: CameraViewModel
     var viewSize: CGSize // Store the parent view's size for coordinate conversion
     
     // Standard photo aspect ratio is 4:3
@@ -390,6 +390,7 @@ struct CameraPreviewView: UIViewRepresentable {
     }
 
     // Coordinator for handling UIKit gestures
+    @MainActor
     class Coordinator: NSObject {
         var parent: CameraPreviewView
         private var initialScale: CGFloat = 1.0

@@ -6,9 +6,11 @@
 //
 import AVFoundation
 import SwiftUI
+import FactoryKit
 
 // Camera model that handles the AVFoundation functionality
-class CameraModel: NSObject, ObservableObject {
+@MainActor
+class CameraViewModel: NSObject, ObservableObject {
     
     // MARK: - Debug/Simulator Detection
     private var isRunningInSimulator: Bool {
@@ -33,6 +35,15 @@ class CameraModel: NSObject, ObservableObject {
     private var currentDevice: AVCaptureDevice?
     private var wideAngleDevice: AVCaptureDevice?
     private var ultraWideDevice: AVCaptureDevice?
+    
+    @Injected(\.secureImageRepository)
+    private var secureImageRepository: SecureImageRepository
+    
+    @Injected(\.clock)
+    private var clock: Clock
+    
+    @Injected(\.locationRepository)
+    private var locationRepository: LocationRepository
     
     enum CameraLensType {
         case ultraWide   // 0.5x zoom
@@ -96,8 +107,6 @@ class CameraModel: NSObject, ObservableObject {
         }
     }
     
-    private let secureFileManager = SecureFileManager()
-    
     // Initialize camera with delayed permission check to prevent race conditions
     override init() {
         super.init()
@@ -110,11 +119,9 @@ class CameraModel: NSObject, ObservableObject {
             object: nil
         )
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-                guard let self = self else { return }
-                self.checkPermissions()
-            }
+        Task {
+            try await Task.sleep(for: .milliseconds(100))
+            await checkPermissions()
         }
     }
     
@@ -130,14 +137,15 @@ class CameraModel: NSObject, ObservableObject {
         resetZoomLevel()
     }
     
-    func checkPermissions() {
+    func checkPermissions() async {
         #if DEBUG && targetEnvironment(simulator)
         if isRunningInSimulator {
-            DispatchQueue.main.async {
+            await MainActor.run {
                 self.isPermissionGranted = true
             }
-            DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + 0.2) {
-                self.setupCamera()
+            Task {
+                try await Task.sleep(for: .milliseconds(200))
+                await setupCamera()
             }
             return
         }
@@ -145,30 +153,31 @@ class CameraModel: NSObject, ObservableObject {
         
         switch AVCaptureDevice.authorizationStatus(for: .video) {
         case .authorized:
-            DispatchQueue.main.async {
+            await MainActor.run {
                 self.isPermissionGranted = true
             }
-            DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + 0.2) {
-                self.setupCamera()
+            Task {
+                try await Task.sleep(for: .milliseconds(200))
+                await setupCamera()
             }
         case .notDetermined:
-            AVCaptureDevice.requestAccess(for: .video) { status in
-                if status {
-                    DispatchQueue.main.async {
-                        self.isPermissionGranted = true
-                    }
-                    DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + 0.2) {
-                        self.setupCamera()
-                    }
-                } else {
-                    DispatchQueue.main.async {
-                        self.isPermissionGranted = false
-                        self.alert = true
-                    }
+            let status = await AVCaptureDevice.requestAccess(for: .video)
+            if status {
+                await MainActor.run {
+                    self.isPermissionGranted = true
+                }
+                Task {
+                    try await Task.sleep(for: .milliseconds(200))
+                    await setupCamera()
+                }
+            } else {
+                await MainActor.run {
+                    self.isPermissionGranted = false
+                    self.alert = true
                 }
             }
         default:
-            DispatchQueue.main.async {
+            await MainActor.run {
                 self.isPermissionGranted = false
                 self.alert = true
             }
@@ -187,10 +196,10 @@ class CameraModel: NSObject, ObservableObject {
         return AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: position)
     }
     
-    func setupCamera() {
+    func setupCamera() async {
         #if DEBUG && targetEnvironment(simulator)
         if isRunningInSimulator {
-            setupSimulatorMockCamera()
+            await setupSimulatorMockCamera()
             return
         }
         #endif
@@ -214,7 +223,7 @@ class CameraModel: NSObject, ObservableObject {
                 device = ultraWideDevice
             } else {
                 device = wideAngleDevice
-                DispatchQueue.main.async {
+                await MainActor.run {
                     self.currentLensType = .wideAngle
                 }
             }
@@ -269,7 +278,7 @@ class CameraModel: NSObject, ObservableObject {
             
             session.commitConfiguration()
             
-            DispatchQueue.main.async {
+            await MainActor.run {
                 self.minZoom = minZoomValue
                 self.maxZoom = maxZoomValue
                 self.zoomFactor = defaultZoomValue
@@ -286,10 +295,10 @@ class CameraModel: NSObject, ObservableObject {
     
     #if DEBUG && targetEnvironment(simulator)
     // MARK: - Simulator Mock Camera Setup
-    private func setupSimulatorMockCamera() {
+    private func setupSimulatorMockCamera() async {
         print("Setting up mock camera for simulator")
         
-        DispatchQueue.main.async {
+        await MainActor.run {
             self.minZoom = 0.5
             self.maxZoom = 10.0
             self.zoomFactor = 1.0
@@ -299,7 +308,7 @@ class CameraModel: NSObject, ObservableObject {
         createMockPhotos()
     }
     
-    private func captureMockPhoto() {
+    private func captureMockPhoto() async {
         print("Capturing mock photo in simulator")
         
         // Create a simple colored image for testing
@@ -338,7 +347,7 @@ class CameraModel: NSObject, ObservableObject {
         }
         
         // Update recent image
-        DispatchQueue.main.async {
+        await MainActor.run {
             self.recentImage = mockImage
         }
         
@@ -347,7 +356,7 @@ class CameraModel: NSObject, ObservableObject {
     }
     
     private func createMockPhotos() {
-        DispatchQueue.global(qos: .background).async {
+        Task {
             // Create a few sample photos for the gallery
             let sampleTexts = [
                 "Sample Photo 1\nLandscape",
@@ -380,17 +389,23 @@ class CameraModel: NSObject, ObservableObject {
                 text.draw(in: textRect, withAttributes: attributes)
                 
                 if let mockImage = UIGraphicsGetImageFromCurrentImageContext(),
-                   let imageData = mockImage.jpegData(compressionQuality: 0.8) {
+                   let _ = mockImage.jpegData(compressionQuality: 0.8) {
                     
-                    let metadata: [String: Any] = [
-                        "creationDate": Date().timeIntervalSince1970 - Double(index * 3600), // Stagger by hours
-                        "cameraPosition": "back",
-                        "isLandscape": isLandscape,
-                        "mockPhoto": true
-                    ]
+                    let locationTaken = self.locationRepository.lastLocation
+                    let timestamp = clock.now - Double(index * 3600)
+                    let rotation = if isLandscape { 90 } else { 0 }
                     
                     do {
-                        _ = try self.secureFileManager.savePhoto(imageData, withMetadata: metadata)
+                        let photo = CapturedImage(
+                            sensorBitmap: mockImage,
+                            timestamp: timestamp,
+                            rotationDegrees: rotation
+                        )
+                        _ = try await secureImageRepository.saveImage(
+                            photo,
+                            location: locationTaken,
+                            applyRotation: true)
+
                         print("Created mock photo \(index + 1)")
                     } catch {
                         print("Error creating mock photo: \(error)")
@@ -403,17 +418,26 @@ class CameraModel: NSObject, ObservableObject {
     }
     
     private func saveMockPhoto(_ imageData: Data) {
-        DispatchQueue.global(qos: .userInitiated).async {
-            let metadata: [String: Any] = [
-                "creationDate": Date().timeIntervalSince1970,
-                "cameraPosition": self.cameraPosition == .front ? "front" : "back",
-                "isLandscape": false, // Mock photos are portrait by default
-                "mockPhoto": true
-            ]
+        Task(priority: .userInitiated) { [weak self] in
             
+            let locationTaken = self?.locationRepository.lastLocation
+            let timestamp = self!.clock.now
+            let rotation = 0//if isLandscape { 90 } else { 0 }
+            
+            let mockImage = UIImage(data: imageData)
             do {
-                let filename = try self.secureFileManager.savePhoto(imageData, withMetadata: metadata)
-                print("Mock photo saved successfully: \(filename)")
+                let photo = CapturedImage(
+                    sensorBitmap: mockImage!,
+                    timestamp: timestamp,
+                    rotationDegrees: rotation
+                )
+                let newPhotoDef = try await self!.secureImageRepository.saveImage(
+                    photo,
+                    location: locationTaken,
+                    applyRotation: true
+                )
+                
+                print("Mock photo saved successfully: \(newPhotoDef.photoName)")
             } catch {
                 print("Error saving mock photo: \(error.localizedDescription)")
             }
@@ -472,7 +496,9 @@ class CameraModel: NSObject, ObservableObject {
     func capturePhoto() {
         #if DEBUG && targetEnvironment(simulator)
         if isRunningInSimulator {
-            captureMockPhoto()
+            Task {
+                await captureMockPhoto()
+            }
             return
         }
         #endif
@@ -520,7 +546,7 @@ class CameraModel: NSObject, ObservableObject {
     }
     
     // Smooth zoom with lens-specific adjustments and auto mode restoration
-    func zoom(factor: CGFloat) {
+    func zoom(factor: CGFloat) async {
         guard let device = currentDevice else { return }
         
         do {
@@ -549,7 +575,7 @@ class CameraModel: NSObject, ObservableObject {
                 device.videoZoomFactor = smoothedZoom
                 let userFacingZoom = max(0.5, min(newZoomFactor, maxZoom))
                 
-                DispatchQueue.main.async {
+                await MainActor.run {
                     self.zoomFactor = userFacingZoom
                 }
             } else {
@@ -561,7 +587,7 @@ class CameraModel: NSObject, ObservableObject {
                 
                 device.videoZoomFactor = smoothedZoom
                 
-                DispatchQueue.main.async {
+                await MainActor.run {
                     self.zoomFactor = smoothedZoom
                 }
             }
@@ -645,7 +671,9 @@ class CameraModel: NSObject, ObservableObject {
                 }
             }
             
-            zoom(factor: newZoomFactor)
+            Task {
+                await zoom(factor: newZoomFactor)
+            }
         }
     }
     
@@ -738,11 +766,11 @@ class CameraModel: NSObject, ObservableObject {
         
         isConfiguring = true
         
-        DispatchQueue.main.async {
+        Task { @MainActor in
             self.currentLensType = lensType
         }
         
-        DispatchQueue.global(qos: .userInteractive).async { [weak self] in
+        Task(priority: .userInitiated) { [weak self] in
             guard let self = self else { return }
             
             // Capture current white balance settings for smooth transition
@@ -826,7 +854,8 @@ class CameraModel: NSObject, ObservableObject {
                         device.setWhiteBalanceModeLocked(with: normalizedGains) { _ in }
                     } else {
                         device.setWhiteBalanceModeLocked(with: normalizedGains) { _ in
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            Task { @MainActor in
+                                try await Task.sleep(for: .milliseconds(500))
                                 do {
                                     try device.lockForConfiguration()
                                     if device.isWhiteBalanceModeSupported(previousWhiteBalanceMode) {
@@ -863,7 +892,7 @@ class CameraModel: NSObject, ObservableObject {
                 self.prepareZeroShutterLagCapture()
                 
                 if !self.session.isRunning {
-                    DispatchQueue.global(qos: .userInteractive).async {
+                    Task(priority: .userInitiated) {
                         self.session.startRunning()
                     }
                 }
@@ -879,7 +908,7 @@ class CameraModel: NSObject, ObservableObject {
     }
     
     // Switch between front and back cameras with clean white balance reset
-    func switchCamera(to position: AVCaptureDevice.Position) {
+    func switchCamera(to position: AVCaptureDevice.Position) async {
         guard !isConfiguring else { return }
         
         if position == cameraPosition && currentDevice != nil {
@@ -888,19 +917,19 @@ class CameraModel: NSObject, ObservableObject {
         
         isConfiguring = true
         
-        DispatchQueue.main.async {
+        await MainActor.run {
             self.cameraPosition = position
         }
         
         let currentLensTypeSnapshot = currentLensType
         
         if position == .front && currentLensTypeSnapshot == .ultraWide {
-            DispatchQueue.main.async {
+            await MainActor.run {
                 self.currentLensType = .wideAngle
             }
         }
         
-        DispatchQueue.global(qos: .userInteractive).async { [weak self] in
+        Task(priority: .userInitiated) { [weak self] in
             guard let self = self else { return }
             self.session.beginConfiguration()
             
@@ -930,7 +959,7 @@ class CameraModel: NSObject, ObservableObject {
                 } else {
                     device = wideAngleDevice
                     if position == .front {
-                        DispatchQueue.main.async {
+                        await MainActor.run {
                             self.currentLensType = .wideAngle
                         }
                     }
@@ -979,12 +1008,12 @@ class CameraModel: NSObject, ObservableObject {
                 self.configurePhotoOutputForMaxQuality()
                 self.prepareZeroShutterLagCapture()
                 
-                DispatchQueue.main.async {
+                await MainActor.run {
                     self.zoomFactor = 1.0
                 }
                 
                 if !self.session.isRunning {
-                    DispatchQueue.global(qos: .userInteractive).async {
+                    Task(priority: .userInitiated) {
                         self.session.startRunning()
                     }
                 }
@@ -1001,11 +1030,13 @@ class CameraModel: NSObject, ObservableObject {
     
     // Convert device coordinates to view coordinates for UI display
     func showFocusIndicator(on viewPoint: CGPoint) {
-        DispatchQueue.main.async {
+        Task { @MainActor in
             self.focusIndicatorPoint = viewPoint
             self.showingFocusIndicator = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                withAnimation(.easeOut(duration: 0.3)) { self.showingFocusIndicator = false }
+            
+            try await Task.sleep(for: .seconds(1.5))
+            withAnimation(.easeOut(duration: 0.3)) { 
+                self.showingFocusIndicator = false 
             }
         }
     }
@@ -1014,7 +1045,7 @@ class CameraModel: NSObject, ObservableObject {
     func resetZoomLevel() {
         #if DEBUG && targetEnvironment(simulator)
         if isRunningInSimulator {
-            DispatchQueue.main.async {
+            Task { @MainActor in
                 self.zoomFactor = 1.0
             }
             return
@@ -1023,13 +1054,13 @@ class CameraModel: NSObject, ObservableObject {
         
         guard let device = currentDevice else { return }
         
-        DispatchQueue.global(qos: .userInitiated).async {
+        Task(priority: .userInitiated) {
             do {
                 try device.lockForConfiguration()
                 device.videoZoomFactor = 1.0
                 device.unlockForConfiguration()
                 
-                DispatchQueue.main.async {
+                await MainActor.run {
                     self.zoomFactor = 1.0
                 }
             } catch {
@@ -1039,7 +1070,7 @@ class CameraModel: NSObject, ObservableObject {
     }
 }
     // Photo capture delegate with metadata preservation and secure storage
-    extension CameraModel: AVCapturePhotoCaptureDelegate {
+    extension CameraViewModel: AVCapturePhotoCaptureDelegate {
     func photoOutput(_: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
         if let error = error {
             print("Error capturing photo: \(error.localizedDescription)")
@@ -1054,7 +1085,7 @@ class CameraModel: NSObject, ObservableObject {
         savePhoto(imageData)
 
         if let image = UIImage(data: imageData) {
-            DispatchQueue.main.async {
+            Task { @MainActor in
                 self.recentImage = image
             }
         }
@@ -1073,7 +1104,7 @@ class CameraModel: NSObject, ObservableObject {
             if let cgImage = context.createCGImage(ciImage, from: ciImage.extent) {
                 let previewImage = UIImage(cgImage: cgImage)
                 
-                DispatchQueue.main.async {
+                Task { @MainActor in
                     self.recentImage = previewImage
                 }
             }
@@ -1097,7 +1128,7 @@ class CameraModel: NSObject, ObservableObject {
 
     // Save photo with metadata extraction and secure storage
     private func savePhoto(_ imageData: Data) {
-        DispatchQueue.global(qos: .userInitiated).async {
+        Task(priority: .userInitiated) { [weak self] in
             var metadata: [String: Any] = [:]
 
             if let source = CGImageSourceCreateWithData(imageData as CFData, nil),
@@ -1117,7 +1148,7 @@ class CameraModel: NSObject, ObservableObject {
                 }
                 
                 metadata["originalOrientation"] = exifOrientation
-                metadata["cameraPosition"] = self.cameraPosition == .front ? "front" : "back"
+                //metadata["cameraPosition"] = self.cameraPosition == .front ? "front" : "back"
                 
                 // Determine landscape orientation based on dimensions and rotation
                 if let pixelWidth = metadata[String(kCGImagePropertyPixelWidth)] as? Int,
@@ -1133,9 +1164,24 @@ class CameraModel: NSObject, ObservableObject {
                 }
             }
             
+            let timestamp = self?.clock.now
+            let rotation = 0
+            let photo = UIImage(data: imageData)
+            
+            let image = CapturedImage(
+                sensorBitmap: photo!,
+                timestamp: timestamp!,
+                rotationDegrees: rotation
+            )
+            let locationTaken = self?.locationRepository.lastLocation ?? nil
+            
             do {
-                let filename = try self.secureFileManager.savePhoto(imageData, withMetadata: metadata)
-                print("Photo saved successfully with timestamp filename: \(filename)")
+                let photoDef = try await self?.secureImageRepository.saveImage(
+                    image,
+                    location: locationTaken,
+                    applyRotation: true
+                )
+                print("Photo saved successfully with timestamp filename: \(photoDef?.photoName)")
             } catch {
                 print("Error saving photo: \(error.localizedDescription)")
             }

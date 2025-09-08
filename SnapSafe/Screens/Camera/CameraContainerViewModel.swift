@@ -13,7 +13,7 @@ import Combine
 final class CameraContainerViewModel: ObservableObject {
     // MARK: - Published Properties
     
-    @Published var cameraModel = CameraModel()
+    @Published var cameraModel = CameraViewModel()
     @Published var currentFlashMode: AVCaptureDevice.FlashMode = .auto
     
     // MARK: - Private Properties
@@ -72,11 +72,13 @@ final class CameraContainerViewModel: ObservableObject {
     }
     
     func toggleCameraPosition() {
-        let newPosition: AVCaptureDevice.Position = (cameraModel.cameraPosition == .back) ? .front : .back
-        cameraModel.switchCamera(to: newPosition)
-        
-        // Sync flash mode state after camera switch
-        currentFlashMode = cameraModel.flashMode
+        Task {
+            let newPosition: AVCaptureDevice.Position = (cameraModel.cameraPosition == .back) ? .front : .back
+            await cameraModel.switchCamera(to: newPosition)
+
+        	// Sync flash mode state after camera switch
+        	currentFlashMode = cameraModel.flashMode
+        }
     }
     
     func flashIcon(for mode: AVCaptureDevice.FlashMode) -> String {

@@ -11,12 +11,21 @@ import CoreLocation
 import ImageIO
 import Photos
 import UIKit
+import FactoryKit
 
 class SecureCameraController: UIViewController, AVCapturePhotoCaptureDelegate {
     private var captureSession: AVCaptureSession!
     private var photoOutput: AVCapturePhotoOutput!
     private var previewLayer: AVCaptureVideoPreviewLayer!
-//    private let encryptionManager = EncryptionManager()
+
+    @Injected(\.locationRepository)
+    private var locationRepository: LocationRepository
+    
+    @Injected(\.secureImageRepository)
+    private var secureImageRepository: SecureImageRepository
+    
+    @Injected(\.clock)
+    private var clock: Clock
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -151,7 +160,7 @@ class SecureCameraController: UIViewController, AVCapturePhotoCaptureDelegate {
         }
     }
 
-    private func processAndSecurePhoto(_ photoData: Data) {
+    private func processAndSecurePhoto(_ photoData: Data) async {
         // Extract EXIF data before encryption
         if let image = UIImage(data: photoData),
            let _ = image.cgImage,
@@ -162,9 +171,18 @@ class SecureCameraController: UIViewController, AVCapturePhotoCaptureDelegate {
 
             // Save the photo without encryption for now
             do {
-                // In a real implementation, we would encrypt the data first
-                let secureFileManager = SecureFileManager()
-                _ = try secureFileManager.savePhoto(photoData, withMetadata: processedEXIF)
+                let image = UIImage(data: photoData)!
+                let capturedImage = CapturedImage(
+                    sensorBitmap: image,
+                    timestamp: self.clock.now,
+                    rotationDegrees: 0
+                )
+                
+                let _ = try await self.secureImageRepository.saveImage(
+                    capturedImage,
+                    location: self.locationRepository.lastLocation,
+                    applyRotation: true
+                )
             } catch {
                 // Handle save error
                 print("Error saving photo: \(error.localizedDescription)")
