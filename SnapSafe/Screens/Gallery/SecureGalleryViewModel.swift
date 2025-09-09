@@ -40,6 +40,9 @@ final class SecureGalleryViewModel: ObservableObject {
     @Injected(\.clock)
     private var clock: Clock
     
+    @Injected(\.addDecoyPhotoUseCase)
+    private var addDecoyPhotoUseCase: AddDecoyPhotoUseCase
+    
     private var cancellables = Set<AnyCancellable>()
     
     @InjectedObject(\.securityOverlayViewModel) 
@@ -285,24 +288,27 @@ final class SecureGalleryViewModel: ObservableObject {
     }
     
     func saveDecoySelections() {
-        // First, un-mark any previously tagged decoys that aren't currently selected
-        for photo in photos {
-            let isCurrentlySelected = selectedPhotoIds.contains(photo.id)
-
-            // If it's currently a decoy but not selected, unmark it
-            if photo.isDecoy && !isCurrentlySelected {
-                photo.setDecoyStatus(false)
+        Task {
+            // First, un-mark any previously tagged decoys that aren't currently selected
+            for photo in photos {
+                let isCurrentlySelected = selectedPhotoIds.contains(photo.id)
+                
+                let selectedPhotoDef = mapToPhotoDef(photo)
+                // If it's currently a decoy but not selected, unmark it
+                if photo.isDecoy && !isCurrentlySelected {
+                    _ = await addDecoyPhotoUseCase.addDecoyPhoto(photoDef: selectedPhotoDef)
+                }
+                // If it's selected but not a decoy, mark it
+                else if isCurrentlySelected && !photo.isDecoy {
+                    secureImageRepository.removeDecoyPhoto(selectedPhotoDef)
+                }
             }
-            // If it's selected but not a decoy, mark it
-            else if isCurrentlySelected && !photo.isDecoy {
-                photo.setDecoyStatus(true)
-            }
+            
+            // Reset selection and exit decoy mode
+            isSelectingDecoys = false
+            isSelecting = false
+            selectedPhotoIds.removeAll()
         }
-
-        // Reset selection and exit decoy mode
-        isSelectingDecoys = false
-        isSelecting = false
-        selectedPhotoIds.removeAll()
     }
     
     func shareSelectedPhotos() {

@@ -34,6 +34,11 @@
 		667FF83B2E6D142200FB3E02 /* ContentViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF83A2E6D142200FB3E02 /* ContentViewModel.swift */; };
 		667FF83D2E6D16C700FB3E02 /* CameraContainerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF83C2E6D16C700FB3E02 /* CameraContainerView.swift */; };
 		667FF8412E6D356D00FB3E02 /* CameraContainerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF8402E6D356D00FB3E02 /* CameraContainerViewModel.swift */; };
+		667FF8542E6F9FBF00FB3E02 /* AddDecoyPhotoUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF8532E6F9FBD00FB3E02 /* AddDecoyPhotoUseCase.swift */; };
+		667FF8562E6FA01F00FB3E02 /* InvalidateSessionUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF8552E6FA01000FB3E02 /* InvalidateSessionUseCase.swift */; };
+		667FF8582E6FA04100FB3E02 /* PinStrengthCheckUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF8572E6FA03100FB3E02 /* PinStrengthCheckUseCase.swift */; };
+		667FF85A2E6FA09900FB3E02 /* RemovePoisonPillIUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF8592E6FA06800FB3E02 /* RemovePoisonPillIUseCase.swift */; };
+		667FF85C2E6FA0C100FB3E02 /* SecurityResetUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF85B2E6FA0BF00FB3E02 /* SecurityResetUseCase.swift */; };
 		669751302E69789F0059C5F3 /* TestUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6697512F2E69789A0059C5F3 /* TestUtils.swift */; };
 		669751332E6A63D30059C5F3 /* AuthorizePinUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 669751322E6A63D30059C5F3 /* AuthorizePinUseCase.swift */; };
 		669751352E6A64330059C5F3 /* CreatePinUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 669751342E6A642A0059C5F3 /* CreatePinUseCase.swift */; };
@@ -133,6 +138,11 @@
 		667FF83A2E6D142200FB3E02 /* ContentViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentViewModel.swift; sourceTree = "<group>"; };
 		667FF83C2E6D16C700FB3E02 /* CameraContainerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraContainerView.swift; sourceTree = "<group>"; };
 		667FF8402E6D356D00FB3E02 /* CameraContainerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraContainerViewModel.swift; sourceTree = "<group>"; };
+		667FF8532E6F9FBD00FB3E02 /* AddDecoyPhotoUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddDecoyPhotoUseCase.swift; sourceTree = "<group>"; };
+		667FF8552E6FA01000FB3E02 /* InvalidateSessionUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InvalidateSessionUseCase.swift; sourceTree = "<group>"; };
+		667FF8572E6FA03100FB3E02 /* PinStrengthCheckUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinStrengthCheckUseCase.swift; sourceTree = "<group>"; };
+		667FF8592E6FA06800FB3E02 /* RemovePoisonPillIUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemovePoisonPillIUseCase.swift; sourceTree = "<group>"; };
+		667FF85B2E6FA0BF00FB3E02 /* SecurityResetUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurityResetUseCase.swift; sourceTree = "<group>"; };
 		6697512F2E69789A0059C5F3 /* TestUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestUtils.swift; sourceTree = "<group>"; };
 		669751322E6A63D30059C5F3 /* AuthorizePinUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorizePinUseCase.swift; sourceTree = "<group>"; };
 		669751342E6A642A0059C5F3 /* CreatePinUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatePinUseCase.swift; sourceTree = "<group>"; };
@@ -360,6 +370,11 @@
 		669751312E6A63C50059C5F3 /* UseCases */ = {
 			isa = PBXGroup;
 			children = (
+				667FF85B2E6FA0BF00FB3E02 /* SecurityResetUseCase.swift */,
+				667FF8592E6FA06800FB3E02 /* RemovePoisonPillIUseCase.swift */,
+				667FF8572E6FA03100FB3E02 /* PinStrengthCheckUseCase.swift */,
+				667FF8552E6FA01000FB3E02 /* InvalidateSessionUseCase.swift */,
+				667FF8532E6F9FBD00FB3E02 /* AddDecoyPhotoUseCase.swift */,
 				669751342E6A642A0059C5F3 /* CreatePinUseCase.swift */,
 				669751322E6A63D30059C5F3 /* AuthorizePinUseCase.swift */,
 			);
@@ -642,6 +657,7 @@
 				667FF82B2E6CB78000FB3E02 /* getRotationAngle.swift in Sources */,
 				A91DBC542DE58191001F42ED /* AppearanceMode.swift in Sources */,
 				A9E6B6992E6E47E700BB6F19 /* PhotoDef.swift in Sources */,
+				667FF8562E6FA01F00FB3E02 /* InvalidateSessionUseCase.swift in Sources */,
 				667FF83D2E6D16C700FB3E02 /* CameraContainerView.swift in Sources */,
 				A91DBC552DE58191001F42ED /* DetectedFace.swift in Sources */,
 				667FF82D2E6CC06900FB3E02 /* SettingsViewModel.swift in Sources */,
@@ -674,6 +690,8 @@
 				667FF81B2E6C9D1800FB3E02 /* PhotoCell.swift in Sources */,
 				A91DBC622DE58191001F42ED /* ImageInfoView.swift in Sources */,
 				A91DBC632DE58191001F42ED /* PhotoDetail.swift in Sources */,
+				667FF8542E6F9FBF00FB3E02 /* AddDecoyPhotoUseCase.swift in Sources */,
+				667FF8582E6FA04100FB3E02 /* PinStrengthCheckUseCase.swift in Sources */,
 				A9E6B6B12E6EAE3500BB6F19 /* SecurityOverlayView.swift in Sources */,
 				66A404CD2E67F0960054FFE7 /* DataExt.swift in Sources */,
 				A9E6B6962E6E47B500BB6F19 /* ThumbnailCache.swift in Sources */,
@@ -682,6 +700,7 @@
 				A91DBC652DE58191001F42ED /* PhotoDetailViewModel.swift in Sources */,
 				66A404D52E6800840054FFE7 /* PinRepositoryImpl.swift in Sources */,
 				A91DBC672DE58191001F42ED /* AuthenticationOverlayView.swift in Sources */,
+				667FF85A2E6FA09900FB3E02 /* RemovePoisonPillIUseCase.swift in Sources */,
 				A91DBC692DE58191001F42ED /* CamControl.swift in Sources */,
 				A91DBC6A2DE58191001F42ED /* CameraViewModel.swift in Sources */,
 				667FF8352E6D101300FB3E02 /* AppNavigation.swift in Sources */,
@@ -697,6 +716,7 @@
 				A91DBC742DE58191001F42ED /* PINVerificationView.swift in Sources */,
 				A91DBC752DE58191001F42ED /* PrivacyShield.swift in Sources */,
 				660130BC2E67AD1D00D07E9C /* AuthorizationRepository.swift in Sources */,
+				667FF85C2E6FA0C100FB3E02 /* SecurityResetUseCase.swift in Sources */,
 				660130BE2E67AD1D00D07E9C /* EncryptionScheme.swift in Sources */,
 				660130BF2E67AD1D00D07E9C /* HashedPin.swift in Sources */,
 				660130C02E67AD1D00D07E9C /* PassThroughEncryptionScheme.swift in Sources */,

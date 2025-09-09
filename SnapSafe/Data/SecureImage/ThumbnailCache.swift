@@ -27,6 +27,10 @@ class ThumbnailCache {
         cache.removeObject(forKey: photoDef.photoName as NSString)
     }
     
+    func clearThumbnail(_ photoName: String) {
+        cache.removeObject(forKey: photoName as NSString)
+    }
+    
     func clear() {
         cache.removeAllObjects()
     }

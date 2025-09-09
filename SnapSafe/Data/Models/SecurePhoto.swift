@@ -108,25 +108,6 @@ public class SecurePhoto: Identifiable, Equatable {
         return metadata["isDecoy"] as? Bool ?? false
     }
 
-    // Function to mark/unmark as decoy
-    func setDecoyStatus(_ isDecoy: Bool) {
-        metadata["isDecoy"] = isDecoy
-
-        // Save updated metadata back to disk
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            guard let self = self else { return }
-            do {
-                let secureFileManager = SecureFileManager()
-                let metadataURL = try secureFileManager.getSecureDirectory().appendingPathComponent("\(filename).metadata")
-                let metadataData = try JSONSerialization.data(withJSONObject: metadata, options: [])
-                try metadataData.write(to: metadataURL)
-                print("Updated decoy status for photo: \(filename)")
-            } catch {
-                print("Error updating decoy status: \(error.localizedDescription)")
-            }
-        }
-    }
-
     // Thumbnail is loaded on demand and cached
     var thumbnail: UIImage {
         // Update last access time and mark as visible (always do this when thumbnail is accessed)

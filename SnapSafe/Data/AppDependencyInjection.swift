@@ -92,4 +92,13 @@ extension Container {
             encryptionScheme: self.encryptionScheme()
         ) }.singleton
     }
+    
+    @MainActor
+    var addDecoyPhotoUseCase: Factory<AddDecoyPhotoUseCase> {
+        self { @MainActor in AddDecoyPhotoUseCase(
+            pinRepository: self.pinRepository(),
+            encryptionScheme: self.encryptionScheme(),
+            imageRepository: self.secureImageRepository()
+        ) }
+    }
 }

@@ -8,8 +8,8 @@
 import Foundation
 import UIKit
 import CoreLocation
-import ImageIO
 import UniformTypeIdentifiers
+import ImageIO
 
 @MainActor
 public class SecureImageRepository {
@@ -23,7 +23,7 @@ public class SecureImageRepository {
     
     // MARK: - Dependencies
     
-    private let thumbnailCache: ThumbnailCache
+    let thumbnailCache: ThumbnailCache
     private let encryptionScheme: EncryptionScheme
     
     // MARK: - Initialization
@@ -490,6 +490,139 @@ public class SecureImageRepository {
         }
     }
     
+    // MARK: - Update Operations
+    
+    /// Updates an existing image with new image data while preserving EXIF metadata
+    func updateImage(_ photoDef: PhotoDef, newImageData: Data) async throws {
+        // Load existing image to extract EXIF metadata
+        let existingImageData = try await decryptJpg(photoDef)
+        let existingMetadata = extractEXIFMetadata(from: existingImageData)
+        
+        // Process the new image with preserved EXIF metadata
+        let processedData = try processImageWithEXIFMetadata(
+            imageData: newImageData,
+            preservedEXIFMetadata: existingMetadata,
+            filename: photoDef.photoName
+        )
+        
+        // Save the updated image
+        try await encryptionScheme.encryptToFile(plain: processedData, targetFile: photoDef.photoFile)
+        
+        // Clear thumbnail cache to force regeneration
+        thumbnailCache.clearThumbnail(photoDef.photoName)
+        let thumbnailFile = getThumbnailFile(photoDef)
+        try? FileManager.default.removeItem(at: thumbnailFile)
+    }
+    
+    /// Creates a copy of an image with optional modifications
+    func saveImageCopy(_ photoDef: PhotoDef, modifiedImageData: Data? = nil) async throws -> PhotoDef {
+        let galleryDir = getGalleryDirectory()
+        let copyName = Self.generateCopyName(in: galleryDir, originalName: photoDef.photoName)
+        let copyPhotoDef = PhotoDef(photoName: copyName, photoFormat: photoDef.photoFormat, photoFile: galleryDir.appendingPathComponent(copyName))
+        
+        let imageDataToSave: Data
+        if let modifiedData = modifiedImageData {
+            imageDataToSave = modifiedData
+        } else {
+            // Use original image data
+            imageDataToSave = try await decryptJpg(photoDef)
+        }
+        
+        // Extract EXIF metadata from source image to preserve it
+        let sourceImageData = try await decryptJpg(photoDef)
+        let sourceEXIFMetadata = extractEXIFMetadata(from: sourceImageData)
+        
+        // Process with preserved EXIF metadata
+        let processedData = try processImageWithEXIFMetadata(
+            imageData: imageDataToSave,
+            preservedEXIFMetadata: sourceEXIFMetadata,
+            filename: copyPhotoDef.photoName
+        )
+        
+        // Save the copy
+        try await encryptionScheme.encryptToFile(plain: processedData, targetFile: copyPhotoDef.photoFile)
+        
+        return copyPhotoDef
+    }
+    
+    // MARK: - Private Helper Methods
+    
+    /// Extracts EXIF metadata from image data
+    private func extractEXIFMetadata(from imageData: Data) -> [String: Any] {
+        var exifMetadata: [String: Any] = [:]
+        
+        guard let imageSource = CGImageSourceCreateWithData(imageData as CFData, nil),
+              let imageProperties = CGImageSourceCopyPropertiesAtIndex(imageSource, 0, nil) as? [String: Any] else {
+            return exifMetadata
+        }
+        
+        // Preserve orientation
+        if let orientation = imageProperties[kCGImagePropertyOrientation as String] as? Int {
+            exifMetadata[kCGImagePropertyOrientation as String] = orientation
+        }
+        
+        // Preserve EXIF data
+        if let exifDict = imageProperties[kCGImagePropertyExifDictionary as String] as? [String: Any] {
+            exifMetadata[kCGImagePropertyExifDictionary as String] = exifDict
+        }
+        
+        // Preserve TIFF data
+        if let tiffDict = imageProperties[kCGImagePropertyTIFFDictionary as String] as? [String: Any] {
+            exifMetadata[kCGImagePropertyTIFFDictionary as String] = tiffDict
+        }
+        
+        // Preserve GPS data
+        if let gpsDict = imageProperties[kCGImagePropertyGPSDictionary as String] as? [String: Any] {
+            exifMetadata[kCGImagePropertyGPSDictionary as String] = gpsDict
+        }
+        
+        return exifMetadata
+    }
+    
+    /// Processes image data while preserving EXIF metadata
+    private func processImageWithEXIFMetadata(
+        imageData: Data,
+        preservedEXIFMetadata: [String: Any],
+        filename: String
+    ) throws -> Data {
+        guard let image = UIImage(data: imageData) else {
+            throw ImageRepositoryError.invalidImageData
+        }
+        
+        // Convert to JPEG with quality
+        guard let jpegData = image.jpegData(compressionQuality: 0.9) else {
+            throw ImageRepositoryError.compressionFailed
+        }
+        
+        // If no EXIF metadata to preserve, return the processed image
+        if preservedEXIFMetadata.isEmpty {
+            return jpegData
+        }
+        
+        // Create image destination to write JPEG with preserved metadata
+        let mutableData = NSMutableData(data: jpegData)
+        let type = UTType.jpeg.identifier as CFString
+        guard let destination = CGImageDestinationCreateWithData(mutableData as CFMutableData, type, 1, nil) else {
+            return jpegData
+        }
+        
+        // Create image source from processed JPEG
+        guard let source = CGImageSourceCreateWithData(jpegData as CFData, nil),
+              let cgImage = CGImageSourceCreateImageAtIndex(source, 0, nil) else {
+            return jpegData
+        }
+        
+        // Add the image with preserved EXIF metadata
+        CGImageDestinationAddImage(destination, cgImage, preservedEXIFMetadata as CFDictionary)
+        
+        if CGImageDestinationFinalize(destination) {
+            return mutableData as Data
+        }
+        
+        // Fallback to original processed image if metadata preservation fails
+        return jpegData
+    }
+    
     // MARK: - Helper Methods
     
     static func generateCopyName(in directory: URL, originalName: String) -> String {
@@ -507,6 +640,91 @@ public class SecureImageRepository {
         
         return candidate
     }
+
+
+    struct PhotoMetaData {
+        let name: String
+        let resolution: Size
+        let dateTaken: Date
+        let location: GpsCoordinates?
+        let orientation: TiffOrientation?
+    }
+
+    // MARK: - Main API
+
+    @MainActor
+    func getPhotoMetaData(_ photoDef: PhotoDef) async throws -> PhotoMetaData {
+        let name = photoDef.photoName
+        let dateTaken: Date = photoDef.dateTaken() ?? Date(timeIntervalSince1970: 0)
+        
+        var orientation: TiffOrientation? = nil
+        var coords: GpsCoordinates? = nil
+        var size = Size(width: 0, height: 0)
+        
+        // Your decryptor should return the JPG bytes as Data
+        let jpgBytes = try await decryptJpg(photoDef: photoDef)
+        
+        if let md = readImageMetadata(fromJPEGData: jpgBytes) {
+            orientation = md.orientation
+            coords = md.gps
+            size = Size(width: md.width ?? 0, height: md.height ?? 0)
+        }
+        
+        return PhotoMetaData(
+            name: name,
+            resolution: size,
+            dateTaken: dateTaken,
+            location: coords,
+            orientation: orientation
+        )
+    }
+
+    // MARK: - Decrypt (stub; replace with your implementation)
+
+    func decryptJpg(photoDef: PhotoDef) async throws -> Data {
+        return try! await encryptionScheme.decryptFile(photoDef.photoFile)
+    }
+
+    // MARK: - ImageIO helpers
+
+    private func readImageMetadata(fromJPEGData data: Data) -> ParsedImageMetadata? {
+        guard let src = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
+        let props = CGImageSourceCopyPropertiesAtIndex(src, 0, nil) as? [CFString: Any]
+        
+        let pixelWidth = (props?[kCGImagePropertyPixelWidth] as? NSNumber)?.intValue
+        let pixelHeight = (props?[kCGImagePropertyPixelHeight] as? NSNumber)?.intValue
+        
+        var orientation: TiffOrientation? = nil
+        if let tiff = props?[kCGImagePropertyTIFFDictionary] as? [CFString: Any],
+           let ori = (tiff[kCGImagePropertyTIFFOrientation] as? NSNumber)?.intValue,
+           let mapped = TiffOrientation(rawValue: ori) {
+            orientation = mapped
+        } else if let ori = (props?[kCGImagePropertyOrientation] as? NSNumber)?.intValue,
+                  let mapped = TiffOrientation(rawValue: ori) {
+            // Some writers put orientation at the top level
+            orientation = mapped
+        }
+        
+        var gpsCoords: GpsCoordinates? = nil
+        if let gps = props?[kCGImagePropertyGPSDictionary] as? [CFString: Any] {
+            if let lat = gps[kCGImagePropertyGPSLatitude] as? NSNumber,
+               let latRef = gps[kCGImagePropertyGPSLatitudeRef] as? String,
+               let lon = gps[kCGImagePropertyGPSLongitude] as? NSNumber,
+               let lonRef = gps[kCGImagePropertyGPSLongitudeRef] as? String {
+                let latSign = (latRef.uppercased() == "S") ? -1.0 : 1.0
+                let lonSign = (lonRef.uppercased() == "W") ? -1.0 : 1.0
+                gpsCoords = GpsCoordinates(latitude: lat.doubleValue * latSign,
+                                           longitude: lon.doubleValue * lonSign)
+            }
+        }
+        
+        return ParsedImageMetadata(
+            width: pixelWidth,
+            height: pixelHeight,
+            orientation: orientation,
+            gps: gpsCoords
+        )
+    }
 }
 
 // MARK: - Errors
@@ -516,4 +734,28 @@ enum ImageRepositoryError: Error {
     case invalidImageData
     case encryptionFailed
     case decryptionFailed
+}
+
+// MARK: - Metadata
+
+private struct ParsedImageMetadata {
+    let width: Int?
+    let height: Int?
+    let orientation: TiffOrientation?
+    let gps: GpsCoordinates?
+}
+
+struct Size {
+    let width: Int
+    let height: Int
+}
+
+enum TiffOrientation: Int {
+    case up = 1, upMirrored = 2, down = 3, downMirrored = 4
+    case leftMirrored = 5, right = 6, rightMirrored = 7, left = 8
+}
+
+struct GpsCoordinates {
+    let latitude: Double
+    let longitude: Double
 }

@@ -10,6 +10,7 @@ import SwiftUI
 import FactoryKit
 import Combine
 
+@MainActor
 class PhotoDetailViewModel: ObservableObject {
     private var photo: SecurePhoto?
     
@@ -47,7 +48,12 @@ class PhotoDetailViewModel: ObservableObject {
     @Published var imageFrameSize: CGSize = .zero
     
     private let faceDetector = FaceDetector()
-    private let secureFileManager = SecureFileManager()
+    
+    @Injected(\.secureImageRepository)
+    private var secureImageRepository: SecureImageRepository
+    
+    @Injected(\.clock)
+    private var clock: Clock
     
     // MARK: - Dependencies
     
@@ -177,7 +183,7 @@ class PhotoDetailViewModel: ObservableObject {
         detectedFaces = []
         modifiedImage = nil
         
-        DispatchQueue.global(qos: .userInitiated).async {
+        Task(priority: .userInitiated) {
             autoreleasepool {
                 let imageToProcess = self.currentPhoto.fullImage
                 
@@ -206,53 +212,52 @@ class PhotoDetailViewModel: ObservableObject {
             processingFaces = true
         }
         
-        DispatchQueue.global(qos: .userInitiated).async {
-            autoreleasepool {
-                let imageToProcess = self.currentPhoto.fullImage
-                let facesToMask = self.detectedFaces
-                let metadataCopy = self.currentPhoto.metadata
-                let maskMode = self.selectedMaskMode
-                
-                // Process the image
-                if let maskedImage = self.faceDetector.maskFaces(in: imageToProcess, faces: facesToMask, modes: [maskMode]) {
-                    // Save the masked image to the file system
-                    guard let imageData = maskedImage.jpegData(compressionQuality: 0.9) else {
-                        DispatchQueue.main.async {
-                            self.processingFaces = false
-                        }
-                        print("Error creating JPEG data")
-                        return
-                    }
-                    
-                    do {
-                        _ = try self.secureFileManager.savePhoto(imageData, withMetadata: metadataCopy, isEdited: true, originalFilename: self.currentPhoto.filename)
-                        
-                        DispatchQueue.main.async {
-                            withAnimation {
-                                self.modifiedImage = maskedImage
-                                self.processingFaces = false
-                                
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                                    withAnimation {
-                                        self.isFaceDetectionActive = false
-                                        self.detectedFaces = []
-                                        self.modifiedImage = nil
-                                    }
-                                }
-                            }
-                        }
-                    } catch {
-                        DispatchQueue.main.async {
-                            self.processingFaces = false
-                        }
-                        print("Error saving masked photo: \(error.localizedDescription)")
-                    }
-                } else {
+        Task(priority: .userInitiated) {
+            let imageToProcess = self.currentPhoto.fullImage
+            let facesToMask = self.detectedFaces
+            let metadataCopy = self.currentPhoto.metadata
+            let maskMode = self.selectedMaskMode
+            
+            // Process the image
+            if let maskedImage = self.faceDetector.maskFaces(in: imageToProcess, faces: facesToMask, modes: [maskMode]) {
+                // Save the masked image to the file system
+                guard let imageData = maskedImage.jpegData(compressionQuality: 0.9) else {
                     DispatchQueue.main.async {
                         self.processingFaces = false
                     }
-                    print("Error creating masked image")
+                    print("Error creating JPEG data")
+                    return
                 }
+                
+                do {
+                    let photoDef = mapToPhotoDef(self.photo!)
+                    try await self.secureImageRepository.updateImage(photoDef, newImageData: imageData)
+                    
+                    DispatchQueue.main.async {
+                        withAnimation {
+                            self.modifiedImage = maskedImage
+                            self.processingFaces = false
+                            
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                                withAnimation {
+                                    self.isFaceDetectionActive = false
+                                    self.detectedFaces = []
+                                    self.modifiedImage = nil
+                                }
+                            }
+                        }
+                    }
+                } catch {
+                    DispatchQueue.main.async {
+                        self.processingFaces = false
+                    }
+                    print("Error saving masked photo: \(error.localizedDescription)")
+                }
+            } else {
+                DispatchQueue.main.async {
+                    self.processingFaces = false
+                }
+                print("Error creating masked image")
             }
         }
     }
@@ -269,7 +274,7 @@ class PhotoDetailViewModel: ObservableObject {
             prevPhoto.isVisible = true // Mark as visible for memory manager
             
             // Access thumbnail to trigger load but in a background thread
-            DispatchQueue.global(qos: .userInitiated).async {
+            Task(priority: .userInitiated) {
                 _ = prevPhoto.thumbnail
             }
         }
@@ -281,7 +286,7 @@ class PhotoDetailViewModel: ObservableObject {
             nextPhoto.isVisible = true // Mark as visible for memory manager
             
             // Access thumbnail to trigger load but in a background thread
-            DispatchQueue.global(qos: .userInitiated).async {
+            Task(priority: .userInitiated) {
                 _ = nextPhoto.thumbnail
             }
         }
@@ -385,55 +390,46 @@ class PhotoDetailViewModel: ObservableObject {
         let photoToDelete = currentPhoto
         
         // Perform file deletion in a background thread
-        DispatchQueue.global(qos: .userInitiated).async {
-            do {
-                // Actually delete the file
-                print("Attempting to delete file: \(photoToDelete.filename)")
-                try self.secureFileManager.deletePhoto(filename: photoToDelete.filename)
-                print("File deletion successful")
+        Task(priority: .userInitiated) {
+            // Actually delete the file
+            print("Attempting to delete file: \(photoToDelete.filename)")
+            self.secureImageRepository.deleteImage(mapToPhotoDef(photoToDelete))
+            print("File deletion successful")
+            
+            // All UI updates must happen on the main thread
+            await MainActor.run {
+                print("Calling onDelete callback")
+                // Notify the parent view about the deletion
+                if let onDelete = self.onDelete {
+                    onDelete(photoToDelete)
+                }
                 
-                // All UI updates must happen on the main thread
-                DispatchQueue.main.async {
-                    print("Calling onDelete callback")
-                    // Notify the parent view about the deletion
-                    if let onDelete = self.onDelete {
-                        onDelete(photoToDelete)
-                    }
+                // If we're displaying multiple photos, we can navigate to next/previous
+                // instead of dismissing if there are still photos to display
+                if !self.allPhotos.isEmpty && self.allPhotos.count > 1 {
+                    // Remove the deleted photo from our local array
+                    var updatedPhotos = self.allPhotos
+                    updatedPhotos.remove(at: self.currentIndex)
                     
-                    // If we're displaying multiple photos, we can navigate to next/previous
-                    // instead of dismissing if there are still photos to display
-                    if !self.allPhotos.isEmpty && self.allPhotos.count > 1 {
-                        // Remove the deleted photo from our local array
-                        var updatedPhotos = self.allPhotos
-                        updatedPhotos.remove(at: self.currentIndex)
-                        
-                        if updatedPhotos.isEmpty {
-                            // If no photos left, call dismiss handler
-                            if let onDismiss = self.onDismiss {
-                                onDismiss()
-                            }
-                        } else {
-                            // Adjust the current index if necessary
-                            if self.currentIndex >= updatedPhotos.count {
-                                self.currentIndex = updatedPhotos.count - 1
-                            }
-                            
-                            // Update our photos array
-                            self.allPhotos = updatedPhotos
-                        }
-                    } else {
-                        // Single photo case, call dismiss handler
+                    if updatedPhotos.isEmpty {
+                        // If no photos left, call dismiss handler
                         if let onDismiss = self.onDismiss {
                             onDismiss()
                         }
+                    } else {
+                        // Adjust the current index if necessary
+                        if self.currentIndex >= updatedPhotos.count {
+                            self.currentIndex = updatedPhotos.count - 1
+                        }
+                        
+                        // Update our photos array
+                        self.allPhotos = updatedPhotos
                     }
-                }
-            } catch {
-                print("Error deleting photo: \(error.localizedDescription)")
-                
-                // Show error alert if needed - would be implemented with a published property
-                DispatchQueue.main.async {
-                    // Here you could set an error state and show an alert
+                } else {
+                    // Single photo case, call dismiss handler
+                    if let onDismiss = self.onDismiss {
+                        onDismiss()
+                    }
                 }
             }
         }
