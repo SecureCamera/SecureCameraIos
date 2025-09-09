@@ -9,6 +9,8 @@ import SwiftUI
 
 struct PINVerificationView: View {
     @StateObject private var viewModel = PINVerificationViewModel()
+    @FocusState private var isPINFieldFocused: Bool
+    @Environment(\.scenePhase) private var scenePhase
     
     var body: some View {
         VStack(spacing: 30) {
@@ -31,6 +33,7 @@ struct PINVerificationView: View {
                 .padding()
                 .background(RoundedRectangle(cornerRadius: 8).stroke(Color.gray, lineWidth: 1))
                 .padding(.horizontal, 50)
+                .focused($isPINFieldFocused)
                 .onChange(of: viewModel.pin) { _, newValue in
                     viewModel.updatePIN(newValue)
                 }
@@ -59,6 +62,12 @@ struct PINVerificationView: View {
         }
         .onAppear {
             viewModel.onAppear()
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            // Dismiss keyboard when app goes to background or inactive
+            if newPhase == .background || newPhase == .inactive {
+                isPINFieldFocused = false
+            }
         }
         .obscuredWhenInactive()
         .screenCaptureProtected()
