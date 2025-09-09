@@ -6,8 +6,13 @@
 //
 
 import UIKit
+import FactoryKit
 
 public class SecurePhoto: Identifiable, Equatable {
+    
+    @Injected(\.secureImageRepository)
+    private var secureImageRepository: SecureImageRepository
+    
     public let id = UUID()
     public let filename: String
     public var metadata: [String: Any]
@@ -120,7 +125,8 @@ public class SecurePhoto: Identifiable, Equatable {
 
         // Load thumbnail if needed
         do {
-            if let thumb = try secureFileManager.loadPhotoThumbnail(from: fileURL) {
+            let photoDef = mapToPhotoDef(self)
+            if let thumb = runBlocking({ await self.secureImageRepository.readThumbnail(photoDef) }) {
                 // Store the loaded thumbnail (with its original orientation)
                 _thumbnail = thumb
                 
@@ -148,8 +154,9 @@ public class SecurePhoto: Identifiable, Equatable {
 
         // Load full image if needed
         do {
-            let (data, _) = try secureFileManager.loadPhoto(filename: filename)
-            if let img = UIImage(data: data) {
+            let photoDef = mapToPhotoDef(self)
+            
+            if let img = runBlocking({ try? await self.secureImageRepository.readImage(photoDef) }) {
                 // Store the image with its original orientation
                 _fullImage = img
 
@@ -209,11 +216,8 @@ public class SecurePhoto: Identifiable, Equatable {
     }
 
     // Implement Equatable
-    public static func == (lhs: SecurePhoto, rhs: SecurePhoto) -> Bool {
+    nonisolated public static func == (lhs: SecurePhoto, rhs: SecurePhoto) -> Bool {
         // Compare by id and filename
         return lhs.id == rhs.id && lhs.filename == rhs.filename
     }
-
-    // Shared file manager instance
-    private let secureFileManager = SecureFileManager()
 }

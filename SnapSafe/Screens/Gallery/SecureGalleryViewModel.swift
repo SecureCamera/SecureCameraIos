@@ -591,20 +591,3 @@ final class SecureGalleryViewModel: ObservableObject {
         return normalizedImage
     }
 }
-
-// MARK: - Extensions for async support
-
-extension SecureFileManager {
-    func deletePhoto(filename: String) async throws {
-        try await withCheckedThrowingContinuation { continuation in
-            DispatchQueue.global(qos: .userInitiated).async {
-                do {
-                    try self.deletePhoto(filename: filename)
-                    continuation.resume()
-                } catch {
-                    continuation.resume(throwing: error)
-                }
-            }
-        }
-    }
-}
