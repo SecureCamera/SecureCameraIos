@@ -119,14 +119,11 @@ struct SecureGalleryView: View {
                         }
                         .foregroundColor(.red)
                     } else {
-                        // Context menu with Select and Filter options
-                        Menu {
-                            Button("Select Photos") {
-                                viewModel.startSelecting()
-                            }
+                        Button {
+                            viewModel.startSelecting()
                         } label: {
-                            Image(systemName: "ellipsis.circle")
-                                .foregroundColor(.blue)
+                            Label("Select Photos", systemImage: "ellipsis.circle")
+                                .background(.blue)
                         }
                     }
                 }
