@@ -70,12 +70,11 @@ extension Container {
         self { @MainActor in AppNavigationState() }.singleton
     }
     
-    var appStateCoordinator: Factory<AppStateCoordinator> {
-        self { AppStateCoordinator(
-            authorizationRepo: self.authorizationRepository(),
-            settings: self.settingsDataSource(),
-        ) }.singleton
+    @MainActor
+    var securityOverlayViewModel: Factory<SecurityOverlayViewModel> {
+        self { @MainActor in SecurityOverlayViewModel() }.singleton
     }
+    
     
     var locationRepository: Factory<LocationRepository> {
         self { LocationRepository() }.singleton

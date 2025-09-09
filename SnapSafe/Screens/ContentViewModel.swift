@@ -26,8 +26,8 @@ final class ContentViewModel: ObservableObject {
     @Injected(\.authorizationRepository) 
     private var authorizationRepository: AuthorizationRepository
     
-    @Injected(\.appStateCoordinator)
-    private var appStateCoordinator: AppStateCoordinator
+    @Injected(\.securityOverlayViewModel)
+    private var securityViewModel: SecurityOverlayViewModel
     
     @Injected(\.locationRepository)
     private var locationManager: LocationRepository
@@ -75,29 +75,11 @@ final class ContentViewModel: ObservableObject {
         }
     }
     
-    func handleScenePhaseChange(_ newPhase: ScenePhase) {
-        print("ContentView scene phase changed to: \(newPhase)")
-        Task {
-            switch newPhase {
-            case .active:
-                // App is becoming active - let coordinator handle this
-                await appStateCoordinator.handleWillEnterForeground()
-            case .background:
-                // App is going to background - let coordinator handle this
-                appStateCoordinator.handleDidEnterBackground()
-            case .inactive:
-                // Transitional state
-                print("App becoming inactive")
-            @unknown default:
-                break
-            }
-        }
-    }
     
     func handleAuthenticationChange(_ authenticated: Bool) {
         if authenticated {
-            // Reset the coordinator's auth state when authenticated
-            appStateCoordinator.authenticationComplete()
+            // Reset the security overlay auth state when authenticated
+            securityViewModel.authenticationComplete()
         }
     }
     
@@ -106,7 +88,7 @@ final class ContentViewModel: ObservableObject {
     var currentRootDestination: AppDestination {
         if hasCompletedIntro == false {
             return .pinSetup
-        } else if !isAuthenticated || appStateCoordinator.needsAuthentication {
+        } else if !isAuthenticated {
             return .pinVerification
         } else {
             return .camera
@@ -143,32 +125,5 @@ final class ContentViewModel: ObservableObject {
             }
             .store(in: &cancellables)
         
-        // Monitor authentication state from coordinator
-        appStateCoordinator.$needsAuthentication
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] needsAuth in
-                if needsAuth {
-                    // Revoke authorization through the repository
-                    self?.authorizationRepository.revokeAuthorization()
-                }
-            }
-            .store(in: &cancellables)
-        
-        // Monitor dismiss all sheets signal
-        appStateCoordinator.$dismissAllSheets
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] shouldDismiss in
-                if shouldDismiss {
-                    // Dismiss all navigation
-                    self?.navigationState.dismissAll()
-                    
-                    // Reset flag after a short delay
-                    Task {
-                        try await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
-                        self?.appStateCoordinator.resetAuthenticationState()
-                    }
-                }
-            }
-            .store(in: &cancellables)
     }
 }

@@ -8,11 +8,9 @@
 import SwiftUI
 import FactoryKit
 
+/// DEPRECATED: Use SecurityOverlayView with .securityManaged() modifier instead
 /// A fullscreen overlay that forces PIN authentication
 struct AuthenticationOverlayView: View {
-    @InjectedObject(\.appStateCoordinator)
-    private var appStateCoordinator: AppStateCoordinator
-
     var body: some View {
         ZStack {
             // Full screen cover with dark background
@@ -26,10 +24,11 @@ struct AuthenticationOverlayView: View {
     }
 }
 
+/// DEPRECATED: Use SecurityOverlayView with .securityManaged() modifier instead
 /// ViewModifier to add authentication overlay when needed
 struct AuthenticationOverlay: ViewModifier {
-    @InjectedObject(\.appStateCoordinator)
-    private var appStateCoordinator: AppStateCoordinator
+    @InjectedObject(\.securityOverlayViewModel)
+    private var securityViewModel: SecurityOverlayViewModel
  
     func body(content: Content) -> some View {
         ZStack {
@@ -37,16 +36,18 @@ struct AuthenticationOverlay: ViewModifier {
             content
             
             // Authentication overlay when needed
-            if appStateCoordinator.needsAuthentication {
+            if securityViewModel.currentOverlayState == .requiresAuthentication {
                 AuthenticationOverlayView()
             }
         }
     }
 }
 
+// DEPRECATED: Use .securityManaged() instead
 // Extension to make the modifier easier to use
 extension View {
     /// Add authentication overlay that will appear when authentication is required
+    /// DEPRECATED: Use .securityManaged() modifier instead for unified security management
     func withAuthenticationOverlay() -> some View {
         modifier(AuthenticationOverlay())
     }

@@ -64,11 +64,9 @@
 		A91DBC632DE58191001F42ED /* PhotoDetail.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC392DE58191001F42ED /* PhotoDetail.swift */; };
 		A91DBC642DE58191001F42ED /* PhotoDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC3A2DE58191001F42ED /* PhotoDetailView.swift */; };
 		A91DBC652DE58191001F42ED /* PhotoDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC3B2DE58191001F42ED /* PhotoDetailViewModel.swift */; };
-		A91DBC662DE58191001F42ED /* AppStateCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC3E2DE58191001F42ED /* AppStateCoordinator.swift */; };
 		A91DBC672DE58191001F42ED /* AuthenticationOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC402DE58191001F42ED /* AuthenticationOverlayView.swift */; };
 		A91DBC692DE58191001F42ED /* CamControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC422DE58191001F42ED /* CamControl.swift */; };
 		A91DBC6A2DE58191001F42ED /* CameraModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC432DE58191001F42ED /* CameraModel.swift */; };
-		A91DBC6B2DE58191001F42ED /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC442DE58191001F42ED /* ContentView.swift */; };
 		A91DBC6D2DE58191001F42ED /* FaceDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC462DE58191001F42ED /* FaceDetector.swift */; };
 		A91DBC6E2DE58191001F42ED /* FileManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC472DE58191001F42ED /* FileManager.swift */; };
 		A91DBC702DE58191001F42ED /* LocationRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC492DE58191001F42ED /* LocationRepository.swift */; };
@@ -87,6 +85,8 @@
 		A9E6B6972E6E47B500BB6F19 /* SecureImageRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9E6B6932E6E47B500BB6F19 /* SecureImageRepository.swift */; };
 		A9E6B6992E6E47E700BB6F19 /* PhotoDef.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9E6B6982E6E47E700BB6F19 /* PhotoDef.swift */; };
 		A9E6B69B2E6E487400BB6F19 /* PhotoMetaData.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9E6B69A2E6E487400BB6F19 /* PhotoMetaData.swift */; };
+		A9E6B6AF2E6EAD3D00BB6F19 /* SecurityOverlayViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9E6B6AE2E6EAD3D00BB6F19 /* SecurityOverlayViewModel.swift */; };
+		A9E6B6B12E6EAE3500BB6F19 /* SecurityOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9E6B6B02E6EAE3500BB6F19 /* SecurityOverlayView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -161,12 +161,10 @@
 		A91DBC392DE58191001F42ED /* PhotoDetail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoDetail.swift; sourceTree = "<group>"; };
 		A91DBC3A2DE58191001F42ED /* PhotoDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoDetailView.swift; sourceTree = "<group>"; };
 		A91DBC3B2DE58191001F42ED /* PhotoDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoDetailViewModel.swift; sourceTree = "<group>"; };
-		A91DBC3E2DE58191001F42ED /* AppStateCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStateCoordinator.swift; sourceTree = "<group>"; };
 		A91DBC3F2DE58191001F42ED /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A91DBC402DE58191001F42ED /* AuthenticationOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticationOverlayView.swift; sourceTree = "<group>"; };
 		A91DBC422DE58191001F42ED /* CamControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CamControl.swift; sourceTree = "<group>"; };
 		A91DBC432DE58191001F42ED /* CameraModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraModel.swift; sourceTree = "<group>"; };
-		A91DBC442DE58191001F42ED /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A91DBC462DE58191001F42ED /* FaceDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceDetector.swift; sourceTree = "<group>"; };
 		A91DBC472DE58191001F42ED /* FileManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileManager.swift; sourceTree = "<group>"; };
 		A91DBC492DE58191001F42ED /* LocationRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationRepository.swift; sourceTree = "<group>"; };
@@ -184,6 +182,8 @@
 		A9E6B6942E6E47B500BB6F19 /* ThumbnailCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailCache.swift; sourceTree = "<group>"; };
 		A9E6B6982E6E47E700BB6F19 /* PhotoDef.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoDef.swift; sourceTree = "<group>"; };
 		A9E6B69A2E6E487400BB6F19 /* PhotoMetaData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoMetaData.swift; sourceTree = "<group>"; };
+		A9E6B6AE2E6EAD3D00BB6F19 /* SecurityOverlayViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurityOverlayViewModel.swift; sourceTree = "<group>"; };
+		A9E6B6B02E6EAE3500BB6F19 /* SecurityOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurityOverlayView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -258,6 +258,8 @@
 			isa = PBXGroup;
 			children = (
 				667FF83A2E6D142200FB3E02 /* ContentViewModel.swift */,
+				A9E6B6AE2E6EAD3D00BB6F19 /* SecurityOverlayViewModel.swift */,
+				A9E6B6B02E6EAE3500BB6F19 /* SecurityOverlayView.swift */,
 				667FF8322E6D0FF800FB3E02 /* ContentView.swift */,
 				667FF8242E6C9E9200FB3E02 /* Views */,
 				667FF8232E6C9E6A00FB3E02 /* PinVerification */,
@@ -266,7 +268,6 @@
 				667FF81F2E6C9E0B00FB3E02 /* Gallery */,
 				667FF81E2E6C9DCB00FB3E02 /* PinSetup */,
 				A91DBC3C2DE58191001F42ED /* PhotoDetail */,
-				A91DBC442DE58191001F42ED /* ContentView.swift */,
 				A91DBC4E2DE58191001F42ED /* PrivacyShield.swift */,
 				A91DBC402DE58191001F42ED /* AuthenticationOverlayView.swift */,
 				667FF8342E6D101300FB3E02 /* AppNavigation.swift */,
@@ -423,7 +424,6 @@
 		A91DBC532DE58191001F42ED /* SnapSafe */ = {
 			isa = PBXGroup;
 			children = (
-				A91DBC3E2DE58191001F42ED /* AppStateCoordinator.swift */,
 				A91DBC472DE58191001F42ED /* FileManager.swift */,
 				A91DBC4F2DE58191001F42ED /* ScreenCaptureManager.swift */,
 				A91DBC522DE58191001F42ED /* SnapSafeApp.swift */,
@@ -670,24 +670,24 @@
 				667FF81B2E6C9D1800FB3E02 /* PhotoCell.swift in Sources */,
 				A91DBC622DE58191001F42ED /* ImageInfoView.swift in Sources */,
 				A91DBC632DE58191001F42ED /* PhotoDetail.swift in Sources */,
+				A9E6B6B12E6EAE3500BB6F19 /* SecurityOverlayView.swift in Sources */,
 				66A404CD2E67F0960054FFE7 /* DataExt.swift in Sources */,
 				A9E6B6962E6E47B500BB6F19 /* ThumbnailCache.swift in Sources */,
 				A9E6B6972E6E47B500BB6F19 /* SecureImageRepository.swift in Sources */,
 				A91DBC642DE58191001F42ED /* PhotoDetailView.swift in Sources */,
 				A91DBC652DE58191001F42ED /* PhotoDetailViewModel.swift in Sources */,
 				66A404D52E6800840054FFE7 /* PinRepositoryImpl.swift in Sources */,
-				A91DBC662DE58191001F42ED /* AppStateCoordinator.swift in Sources */,
 				A91DBC672DE58191001F42ED /* AuthenticationOverlayView.swift in Sources */,
 				A91DBC692DE58191001F42ED /* CamControl.swift in Sources */,
 				A91DBC6A2DE58191001F42ED /* CameraModel.swift in Sources */,
 				667FF8352E6D101300FB3E02 /* AppNavigation.swift in Sources */,
-				A91DBC6B2DE58191001F42ED /* ContentView.swift in Sources */,
 				A91DBC6D2DE58191001F42ED /* FaceDetector.swift in Sources */,
 				660130C72E67AD3A00D07E9C /* DeviceInfoDataSource.swift in Sources */,
 				A91DBC6E2DE58191001F42ED /* FileManager.swift in Sources */,
 				669751332E6A63D30059C5F3 /* AuthorizePinUseCase.swift in Sources */,
 				66A404CB2E67EB7F0054FFE7 /* PinCrypto.swift in Sources */,
 				A91DBC702DE58191001F42ED /* LocationRepository.swift in Sources */,
+				A9E6B6AF2E6EAD3D00BB6F19 /* SecurityOverlayViewModel.swift in Sources */,
 				A91DBC732DE58191001F42ED /* PINSetupView.swift in Sources */,
 				669751352E6A64330059C5F3 /* CreatePinUseCase.swift in Sources */,
 				A91DBC742DE58191001F42ED /* PINVerificationView.swift in Sources */,

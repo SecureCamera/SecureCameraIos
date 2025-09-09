@@ -25,6 +25,9 @@ final class PINVerificationViewModel: ObservableObject {
     @Injected(\.authorizedPinUseCase)
     private var authorizePinUseCase: AuthorizePinUseCase
     
+    @Injected(\.securityOverlayViewModel)
+    private var securityViewModel: SecurityOverlayViewModel
+    
     
     // MARK: - Computed Properties
     
@@ -67,6 +70,9 @@ final class PINVerificationViewModel: ObservableObject {
         if hashedPin != nil {
             // PIN is correct - AuthorizationRepository will automatically update isAuthorized
             print("PIN correct, authentication handled by AuthorizationRepository")
+            
+            // Notify SecurityOverlayViewModel that authentication is complete
+            securityViewModel.authenticationComplete()
             
             // Update UI state
             showError = false
