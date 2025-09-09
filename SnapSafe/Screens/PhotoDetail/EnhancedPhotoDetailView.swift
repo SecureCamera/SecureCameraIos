@@ -90,7 +90,7 @@ struct EnhancedPhotoDetailView: View {
                     Spacer()
                 }
             }
-            .obscuredWhenInactive()
+            .securityManaged()
             .gesture(
                 DragGesture()
                     .onChanged { value in
