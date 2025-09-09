@@ -184,6 +184,7 @@
 		A9E6B69A2E6E487400BB6F19 /* PhotoMetaData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoMetaData.swift; sourceTree = "<group>"; };
 		A9E6B6AE2E6EAD3D00BB6F19 /* SecurityOverlayViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurityOverlayViewModel.swift; sourceTree = "<group>"; };
 		A9E6B6B02E6EAE3500BB6F19 /* SecurityOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurityOverlayView.swift; sourceTree = "<group>"; };
+		A9E6B6B22E700C0900BB6F19 /* Signing.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Signing.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -444,6 +445,7 @@
 				A91DBC532DE58191001F42ED /* SnapSafe */,
 				A9DE375A2DC5F34600679C2C /* SnapSafeTests */,
 				A9DE37642DC5F34600679C2C /* SnapSafeUITests */,
+				A9E6B6B22E700C0900BB6F19 /* Signing.xcconfig */,
 			);
 			sourceTree = "<group>";
 		};
@@ -860,13 +862,15 @@
 		};
 		A9DE376C2DC5F34600679C2C /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = A9E6B6B22E700C0900BB6F19 /* Signing.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"SnapSafe/Preview Content\"";
-				DEVELOPMENT_TEAM = 8P3G3HT4J5;
+				DEVELOPMENT_TEAM = BP75F4S5N3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Snap-Safe-Info.plist";
@@ -887,6 +891,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = snapsafe.SnapSafe;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				"SWIFT_ACTIVE_COMPILATION_CONDITIONS[arch=*]" = "$(inherited) MOCKING";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -899,10 +904,11 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"SnapSafe/Preview Content\"";
-				DEVELOPMENT_TEAM = 8P3G3HT4J5;
+				DEVELOPMENT_TEAM = BP75F4S5N3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Snap-Safe-Info.plist";
@@ -923,6 +929,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = snapsafe.SnapSafe;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -935,7 +942,7 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 8P3G3HT4J5;
+				DEVELOPMENT_TEAM = BP75F4S5N3;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
 				MARKETING_VERSION = 1.0;
@@ -954,7 +961,7 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 8P3G3HT4J5;
+				DEVELOPMENT_TEAM = BP75F4S5N3;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
 				MARKETING_VERSION = 1.0;
@@ -972,7 +979,7 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 8P3G3HT4J5;
+				DEVELOPMENT_TEAM = BP75F4S5N3;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "snapsafe.Snap-SafeUITests";
@@ -989,7 +996,7 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 8P3G3HT4J5;
+				DEVELOPMENT_TEAM = BP75F4S5N3;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "snapsafe.Snap-SafeUITests";
