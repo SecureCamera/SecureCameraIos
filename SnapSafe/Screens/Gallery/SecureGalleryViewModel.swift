@@ -9,6 +9,7 @@ import Foundation
 import PhotosUI
 import SwiftUI
 import Combine
+import FactoryKit
 
 @MainActor
 final class SecureGalleryViewModel: ObservableObject {
@@ -35,6 +36,9 @@ final class SecureGalleryViewModel: ObservableObject {
     
     private let secureFileManager = SecureFileManager()
     private var cancellables = Set<AnyCancellable>()
+    
+    @InjectedObject(\.securityOverlayViewModel) 
+    private var securityViewModel: SecurityOverlayViewModel
     
     // MARK: - Initialization
     
@@ -382,8 +386,33 @@ final class SecureGalleryViewModel: ObservableObject {
     
     // MARK: - Private Methods
     
+    private func dismissAllAlerts() {
+        // Dismiss all active alert states
+        showDeleteConfirmation = false
+        showDecoyLimitWarning = false
+        showDecoyConfirmation = false
+    }
+    
     private func setupObservers() {
-        // Add any necessary observers
+        // Monitor security overlay dismissAllAlerts to dismiss any active alerts
+        securityViewModel.$dismissAllAlerts
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] shouldDismiss in
+                if shouldDismiss {
+                    self?.dismissAllAlerts()
+                }
+            }
+            .store(in: &cancellables)
+            
+        // Monitor security overlay state changes to dismiss alerts when privacy shield appears
+        securityViewModel.$currentOverlayState
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] overlayState in
+                if overlayState == .privacyShield {
+                    self?.dismissAllAlerts()
+                }
+            }
+            .store(in: &cancellables)
     }
     
     private func loadPhotos() {

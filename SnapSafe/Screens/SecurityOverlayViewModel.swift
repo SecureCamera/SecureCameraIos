@@ -35,6 +35,7 @@ final class SecurityOverlayViewModel: ObservableObject {
 
     @Published public var currentOverlayState: SecurityOverlayState = .normal
     @Published public var dismissAllSheets: Bool = false
+    @Published public var dismissAllAlerts: Bool = false
 
     // MARK: - Private Properties
 
@@ -75,7 +76,14 @@ final class SecurityOverlayViewModel: ObservableObject {
                 handleDidEnterBackground()
             case .inactive:
                 isInactive = true
+                // Dismiss any active alerts before showing privacy shield
+                dismissAllAlerts = true
                 updateOverlayState() // Show privacy shield for task switcher
+                
+                // Reset dismiss flag after a brief delay
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    self.dismissAllAlerts = false
+                }
             @unknown default:
                 break
             }
@@ -90,6 +98,7 @@ final class SecurityOverlayViewModel: ObservableObject {
 
     func resetState() {
         dismissAllSheets = false
+        dismissAllAlerts = false
         wasInBackground = false
         needsAuthenticationAfterBackground = false
         isInactive = false

@@ -139,6 +139,7 @@ struct SecurityManagement: ViewModifier {
             // Security overlay
             if securityViewModel.currentOverlayState != .normal {
                 SecurityOverlayView(state: securityViewModel.currentOverlayState)
+                    .zIndex(1000) // Ensure security overlay appears above alerts
             }
             
             // Screenshot notification (from ScreenCaptureManager)
