@@ -28,3 +28,10 @@ Settings → Face ID & Passcode (or Touch ID & Passcode) → Allow Access When L
 ```
 
 Verify the setting is **disabled** (the default).
+
+# Contributing
+
+## Code Formatting
+Use swiftformat to do this.
+
+`swiftformat --swiftversion 6.0.3 .`
