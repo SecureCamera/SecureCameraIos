@@ -51,9 +51,10 @@ struct CameraContainerView: View {
 
                     // Flash control button - disabled for front camera
                     Button(action: {
+                        print("Flash button tapped, current mode: \(viewModel.currentFlashMode)")
                         viewModel.toggleFlashMode()
                     }) {
-                        Image(systemName: viewModel.flashIcon(for: viewModel.cameraModel.flashMode))
+                        Image(systemName: viewModel.flashIcon(for: viewModel.currentFlashMode))
                             .font(.system(size: 20))
                             .foregroundColor(viewModel.cameraModel.cameraPosition == .front ? .gray : .white)
                             .padding(12)
@@ -61,6 +62,7 @@ struct CameraContainerView: View {
                             .clipShape(Circle())
                     }
                     .disabled(viewModel.cameraModel.cameraPosition == .front)
+                    .buttonStyle(PlainButtonStyle())
                     .padding(.top, 16)
                     .padding(.trailing, 16)
                 }

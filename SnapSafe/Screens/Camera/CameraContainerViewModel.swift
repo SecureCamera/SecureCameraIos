@@ -14,11 +14,17 @@ final class CameraContainerViewModel: ObservableObject {
     // MARK: - Published Properties
     
     @Published var cameraModel = CameraModel()
+    @Published var currentFlashMode: AVCaptureDevice.FlashMode = .auto
+    
+    // MARK: - Private Properties
+    
+    private var isTogglingFlash = false
     
     // MARK: - Initialization
     
     init() {
-        // Any initialization logic for camera container
+        // Initialize flash mode from camera model
+        currentFlashMode = cameraModel.flashMode
     }
     
     // MARK: - Public Methods
@@ -28,21 +34,49 @@ final class CameraContainerViewModel: ObservableObject {
     }
     
     func toggleFlashMode() {
-        switch cameraModel.flashMode {
+        // Prevent rapid consecutive toggles
+        guard !isTogglingFlash else { 
+            print("Flash toggle ignored - already in progress")
+            return 
+        }
+        
+        isTogglingFlash = true
+        
+        let currentMode = currentFlashMode
+        let newMode: AVCaptureDevice.FlashMode
+        
+        switch currentMode {
         case .auto:
-            cameraModel.flashMode = .on
+            newMode = .on
         case .on:
-            cameraModel.flashMode = .off
+            newMode = .off
         case .off:
-            cameraModel.flashMode = .auto
+            newMode = .auto
         @unknown default:
-            cameraModel.flashMode = .auto
+            newMode = .auto
+        }
+        
+        print("Flash mode cycling: \(currentMode) -> \(newMode)")
+        
+        // Update both the UI state and camera model immediately
+        objectWillChange.send() // Force UI update
+        currentFlashMode = newMode
+        cameraModel.flashMode = newMode
+        
+        print("Flash mode updated to: \(currentFlashMode)")
+        
+        // Re-enable toggling after a brief delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            self.isTogglingFlash = false
         }
     }
     
     func toggleCameraPosition() {
         let newPosition: AVCaptureDevice.Position = (cameraModel.cameraPosition == .back) ? .front : .back
         cameraModel.switchCamera(to: newPosition)
+        
+        // Sync flash mode state after camera switch
+        currentFlashMode = cameraModel.flashMode
     }
     
     func flashIcon(for mode: AVCaptureDevice.FlashMode) -> String {
