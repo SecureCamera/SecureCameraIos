@@ -7,6 +7,8 @@
 
 import UIKit
 import SwiftUI
+import FactoryKit
+import Combine
 
 class PhotoDetailViewModel: ObservableObject {
     private var photo: SecurePhoto?
@@ -47,6 +49,15 @@ class PhotoDetailViewModel: ObservableObject {
     private let faceDetector = FaceDetector()
     private let secureFileManager = SecureFileManager()
     
+    // MARK: - Dependencies
+    
+    @InjectedObject(\.securityOverlayViewModel) 
+    private var securityViewModel: SecurityOverlayViewModel
+    private var cancellables = Set<AnyCancellable>()
+    
+    // Track currently presented activity controller for dismissal
+    private weak var currentActivityController: UIActivityViewController?
+    
     let showFaceDetection: Bool
     
     // MARK: - Initialization
@@ -56,6 +67,7 @@ class PhotoDetailViewModel: ObservableObject {
         self.showFaceDetection = showFaceDetection
         self.onDelete = onDelete
         self.onDismiss = onDismiss
+        setupSecurityObservers()
     }
     
     init(allPhotos: [SecurePhoto], initialIndex: Int, showFaceDetection: Bool, onDelete: ((SecurePhoto) -> Void)? = nil, onDismiss: (() -> Void)? = nil) {
@@ -64,6 +76,7 @@ class PhotoDetailViewModel: ObservableObject {
         self.showFaceDetection = showFaceDetection
         self.onDelete = onDelete
         self.onDismiss = onDismiss
+        setupSecurityObservers()
     }
     
     // MARK: - Computed Properties
@@ -468,7 +481,8 @@ class PhotoDetailViewModel: ObservableObject {
                     popover.permittedArrowDirections = []
                 }
                 
-                // Present the share sheet
+                // Store reference and present the share sheet
+                currentActivityController = activityViewController
                 DispatchQueue.main.async {
                     currentController.present(activityViewController, animated: true) {
                         print("Share sheet presented successfully")
@@ -490,6 +504,8 @@ class PhotoDetailViewModel: ObservableObject {
                     popover.permittedArrowDirections = []
                 }
                 
+                // Store reference and present the share sheet
+                currentActivityController = activityViewController
                 DispatchQueue.main.async {
                     currentController.present(activityViewController, animated: true) {
                         print("Share sheet presented successfully (image fallback)")
@@ -510,6 +526,8 @@ class PhotoDetailViewModel: ObservableObject {
                 popover.permittedArrowDirections = []
             }
             
+            // Store reference and present the share sheet
+            currentActivityController = activityViewController
             DispatchQueue.main.async {
                 currentController.present(activityViewController, animated: true) {
                     print("Share sheet presented successfully (image fallback)")
@@ -545,5 +563,41 @@ class PhotoDetailViewModel: ObservableObject {
         if let onDismiss = onDismiss {
             onDismiss()
         }
+    }
+    
+    // MARK: - Private Methods
+    
+    private func setupSecurityObservers() {
+        // Monitor security overlay dismissAllAlerts to dismiss any active alerts
+        securityViewModel.$dismissAllAlerts
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] shouldDismiss in
+                if shouldDismiss {
+                    self?.dismissAllAlerts()
+                }
+            }
+            .store(in: &cancellables)
+            
+        // Monitor security overlay state changes to dismiss alerts when privacy shield appears
+        securityViewModel.$currentOverlayState
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] overlayState in
+                if overlayState == .privacyShield {
+                    self?.dismissAllAlerts()
+                }
+            }
+            .store(in: &cancellables)
+    }
+    
+    private func dismissAllAlerts() {
+        // Dismiss all active alert states
+        showDeleteConfirmation = false
+        showBlurConfirmation = false
+        showMaskOptions = false
+        showImageInfo = false
+        
+        // Dismiss any currently presented activity controller (iOS export dialog)
+        currentActivityController?.dismiss(animated: false, completion: nil)
+        currentActivityController = nil
     }
 }

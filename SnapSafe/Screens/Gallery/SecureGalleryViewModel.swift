@@ -40,6 +40,9 @@ final class SecureGalleryViewModel: ObservableObject {
     @InjectedObject(\.securityOverlayViewModel) 
     private var securityViewModel: SecurityOverlayViewModel
     
+    // Track currently presented activity controller for dismissal
+    private weak var currentActivityController: UIActivityViewController?
+    
     // MARK: - Initialization
     
     init(selectingDecoys: Bool = false) {
@@ -345,7 +348,8 @@ final class SecureGalleryViewModel: ObservableObject {
                 popover.permittedArrowDirections = []
             }
             
-            // Present the share sheet
+            // Store reference and present the share sheet
+            currentActivityController = activityViewController
             currentController.present(activityViewController, animated: true) {
                 print("Share sheet presented successfully for \(filesToShare.count) files")
             }
@@ -365,6 +369,8 @@ final class SecureGalleryViewModel: ObservableObject {
                 popover.permittedArrowDirections = []
             }
             
+            // Store reference and present the share sheet
+            currentActivityController = activityViewController
             currentController.present(activityViewController, animated: true, completion: nil)
         }
     }
@@ -391,6 +397,10 @@ final class SecureGalleryViewModel: ObservableObject {
         showDeleteConfirmation = false
         showDecoyLimitWarning = false
         showDecoyConfirmation = false
+        
+        // Dismiss any currently presented activity controller (iOS export dialog)
+        currentActivityController?.dismiss(animated: false, completion: nil)
+        currentActivityController = nil
     }
     
     private func setupObservers() {
