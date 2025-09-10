@@ -26,61 +26,6 @@ public class SecurePhoto: Identifiable, Equatable {
     private var _thumbnail: UIImage?
     private var _fullImage: UIImage?
     
-    // Track if the photo is in landscape orientation (width > height)
-    private var _isLandscape: Bool?
-    
-    // Computed property to check if the photo is in landscape orientation
-    var isLandscape: Bool {
-        // Check if we have orientation info in metadata (always check metadata first)
-        if let isLandscape = metadata["isLandscape"] as? Bool {
-            return isLandscape
-        }
-        
-        // If we've already calculated the orientation from image dimensions, return cached value
-        if let cachedOrientation = _isLandscape {
-            return cachedOrientation
-        }
-        
-        // Check the orientation value
-        let orientation = originalOrientation.rawValue
-        
-        // Orientations 5-8 are 90/270 degree rotations (landscape)
-        // For these, we need to swap width/height for comparison
-        let isRotated = orientation >= 5 && orientation <= 8
-        
-        // Otherwise, load the full image and determine orientation by dimensions
-        let image = fullImage
-        let isLandscape: Bool
-        
-        if isRotated {
-            // For rotated images, swap width/height for comparison
-            isLandscape = image.size.height > image.size.width
-        } else {
-            // For normal orientation, compare directly
-            isLandscape = image.size.width > image.size.height
-        }
-        
-        // Cache the result (only cache calculated values, not metadata values)
-        _isLandscape = isLandscape
-        
-        return isLandscape
-    }
-    
-    // Helper to get the correct dimensions for display based on orientation
-    func frameSizeForDisplay(cellSize: CGFloat = 100) -> (width: CGFloat, height: CGFloat) {
-        let orientation = originalOrientation.rawValue
-        let isRotated = orientation >= 5 && orientation <= 8
-        
-        // For landscape photos or rotated portrait photos (which become landscape)
-        if (isLandscape && !isRotated) || (!isLandscape && isRotated) {
-            return (width: cellSize, height: cellSize * (thumbnail.size.height / thumbnail.size.width))
-        } 
-        // For portrait photos or rotated landscape photos (which become portrait)
-        else {
-            return (width: cellSize * (thumbnail.size.width / thumbnail.size.height), height: cellSize)
-        }
-    }
-    
     // Original orientation of the image from EXIF data
     var originalOrientation: UIImage.Orientation {
         // First check for our stored orientation in metadata
@@ -114,7 +59,7 @@ public class SecurePhoto: Identifiable, Equatable {
     }
 
     // Thumbnail is loaded on demand and cached
-    var thumbnail: UIImage {
+    func thumbnail() async -> UIImage {
         // Update last access time and mark as visible (always do this when thumbnail is accessed)
         lastAccessTime = Date()
         isVisible = true
@@ -124,18 +69,14 @@ public class SecurePhoto: Identifiable, Equatable {
         }
 
         // Load thumbnail if needed
-        do {
-            let photoDef = mapToPhotoDef(self)
-            if let thumb = runBlocking({ await self.secureImageRepository.readThumbnail(photoDef) }) {
-                // Store the loaded thumbnail (with its original orientation)
-                _thumbnail = thumb
-                
-                // Return the thumbnail, respecting its orientation
-                // Note: We don't normalize the orientation here to preserve the original aspect ratio
-                return thumb
-            }
-        } catch {
-            print("Error loading thumbnail: \(error)")
+        let photoDef = mapToPhotoDef(self)
+        if let thumb = await self.secureImageRepository.readThumbnail(photoDef) {
+            // Store the loaded thumbnail (with its original orientation)
+            _thumbnail = thumb
+            
+            // Return the thumbnail, respecting its orientation
+            // Note: We don't normalize the orientation here to preserve the original aspect ratio
+            return thumb
         }
 
         // Fallback to placeholder
@@ -143,7 +84,7 @@ public class SecurePhoto: Identifiable, Equatable {
     }
 
     // Full image is loaded on demand
-    var fullImage: UIImage {
+    func fullImage() async -> UIImage {
         // Update last access time and mark as visible (always do this when fullImage is accessed)
         lastAccessTime = Date()
         isVisible = true
@@ -153,25 +94,21 @@ public class SecurePhoto: Identifiable, Equatable {
         }
 
         // Load full image if needed
-        do {
-            let photoDef = mapToPhotoDef(self)
-            
-            if let img = runBlocking({ try? await self.secureImageRepository.readImage(photoDef) }) {
-                // Store the image with its original orientation
-                _fullImage = img
+        let photoDef = mapToPhotoDef(self)
+        
+        if let img = try? await self.secureImageRepository.readImage(photoDef) {
+            // Store the image with its original orientation
+            _fullImage = img
 
-                // When we load a full image, notify the memory manager
-                MemoryManager.shared.reportFullImageLoaded()
+            // When we load a full image, notify the memory manager
+            MemoryManager.shared.reportFullImageLoaded()
 
-                // Return the image with its original orientation preserved
-                return img
-            }
-        } catch {
-            print("Error loading full image: \(error)")
+            // Return the image with its original orientation preserved
+            return img
         }
 
         // Fallback to thumbnail
-        return thumbnail
+        return await thumbnail()
     }
 
     // Mark as no longer visible in the UI

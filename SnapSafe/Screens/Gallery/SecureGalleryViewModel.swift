@@ -69,10 +69,14 @@ final class SecureGalleryViewModel: ObservableObject {
         photos.filter { $0.isDecoy }.count
     }
     
-    var selectedPhotos: [UIImage] {
-        photos
-            .filter { selectedPhotoIds.contains($0.id) }
-            .map { $0.fullImage }
+    func selectedPhotos() async -> [UIImage] {
+        let selected = photos.filter { selectedPhotoIds.contains($0.id) }
+        var result: [UIImage] = []
+        for photo in selected {
+            let img = await photo.fullImage()
+            result.append(img)
+        }
+        return result
     }
     
     var navigationTitle: String {
@@ -313,39 +317,39 @@ final class SecureGalleryViewModel: ObservableObject {
     
     func shareSelectedPhotos() {
         // Get all the selected photos
-        let images = selectedPhotos
-        guard !images.isEmpty else { return }
-        
-        // Find the root view controller
-        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-              let window = windowScene.windows.first,
-              let rootViewController = window.rootViewController
-        else {
-            print("Could not find root view controller")
-            return
-        }
-        
-        // Find the presented view controller to present from
-        var currentController = rootViewController
-        while let presented = currentController.presentedViewController {
-            currentController = presented
-        }
-        
-        // Create and prepare temporary files with UUID filenames
-        var filesToShare: [URL] = []
-        
-        for image in images {
-            if let imageData = image.jpegData(compressionQuality: 0.9) {
-                // TODO: Implement photo sharing
-//                do {
-//                    let fileURL = try secureFileManager.preparePhotoForSharing(imageData: imageData)
-//                    filesToShare.append(fileURL)
-//                    print("Prepared file for sharing: \(fileURL.lastPathComponent)")
-//                } catch {
-//                    print("Error preparing photo for sharing: \(error.localizedDescription)")
-//                }
-            }
-        }
+//        let images = selectedPhotos
+//        guard !images.isEmpty else { return }
+//        
+//        // Find the root view controller
+//        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+//              let window = windowScene.windows.first,
+//              let rootViewController = window.rootViewController
+//        else {
+//            print("Could not find root view controller")
+//            return
+//        }
+//        
+//        // Find the presented view controller to present from
+//        var currentController = rootViewController
+//        while let presented = currentController.presentedViewController {
+//            currentController = presented
+//        }
+//        
+//        // Create and prepare temporary files with UUID filenames
+//        var filesToShare: [URL] = []
+//        
+//        for image in images {
+//            if let imageData = image.jpegData(compressionQuality: 0.9) {
+//                // TODO: Implement photo sharing
+////                do {
+////                    let fileURL = try secureFileManager.preparePhotoForSharing(imageData: imageData)
+////                    filesToShare.append(fileURL)
+////                    print("Prepared file for sharing: \(fileURL.lastPathComponent)")
+////                } catch {
+////                    print("Error preparing photo for sharing: \(error.localizedDescription)")
+////                }
+//            }
+//        }
         
         // Share files if any were successfully prepared
         if !filesToShare.isEmpty {

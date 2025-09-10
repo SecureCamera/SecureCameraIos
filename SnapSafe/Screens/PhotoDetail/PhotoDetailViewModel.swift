@@ -12,13 +12,15 @@ import Combine
 
 @MainActor
 class PhotoDetailViewModel: ObservableObject {
-    private var photo: SecurePhoto?
+    @Published var photoFiles: [PhotoDef] = []
+    private var singlePhotoFile: PhotoDef?
     
-    @Published var allPhotos: [SecurePhoto] = []
     @Published var currentIndex: Int = 0
+    @Published var currentImage: UIImage?
+    @Published var isImageLoading: Bool = false
     
     // Callback handlers
-    var onDelete: ((SecurePhoto) -> Void)?
+    var onDelete: ((PhotoDef) -> Void)?
     var onDismiss: (() -> Void)?
     
     // UI state variables
@@ -68,44 +70,39 @@ class PhotoDetailViewModel: ObservableObject {
     
     // MARK: - Initialization
     
-    init(photo: SecurePhoto, showFaceDetection: Bool, onDelete: ((SecurePhoto) -> Void)? = nil, onDismiss: (() -> Void)? = nil) {
-        self.photo = photo
+    init(photo: SecurePhoto, showFaceDetection: Bool, onDelete: ((PhotoDef) -> Void)? = nil, onDismiss: (() -> Void)? = nil) {
+        self.singlePhotoFile = mapToPhotoDef(photo)
         self.showFaceDetection = showFaceDetection
         self.onDelete = onDelete
         self.onDismiss = onDismiss
         setupSecurityObservers()
+        
+        // Load the image immediately
+        Task {
+            await loadCurrentImage()
+        }
     }
     
-    init(allPhotos: [SecurePhoto], initialIndex: Int, showFaceDetection: Bool, onDelete: ((SecurePhoto) -> Void)? = nil, onDismiss: (() -> Void)? = nil) {
-        self.allPhotos = allPhotos
+    init(allPhotos: [SecurePhoto], initialIndex: Int, showFaceDetection: Bool, onDelete: ((PhotoDef) -> Void)? = nil, onDismiss: (() -> Void)? = nil) {
+        self.photoFiles = mapToPhotoDefs(allPhotos)
         self.currentIndex = initialIndex
         self.showFaceDetection = showFaceDetection
         self.onDelete = onDelete
         self.onDismiss = onDismiss
         setupSecurityObservers()
+        
+        // Load the current image immediately
+        Task {
+            await loadCurrentImage()
+        }
     }
     
     // MARK: - Computed Properties
-    var currentPhoto: SecurePhoto {
-        if !allPhotos.isEmpty {
-            for (index, photo) in allPhotos.enumerated() {
-                if index == currentIndex {
-                    photo.isVisible = true
-                } else {
-                    // Mark photos far from current as invisible for memory management
-                    let distance = abs(index - currentIndex)
-                    if distance > 3 {
-                        photo.markAsInvisible()
-                    }
-                }
-            }
-            return allPhotos[currentIndex]
-        } else if let photo = photo {
-            photo.isVisible = true
-            return photo
+    var currentPhotoDef: PhotoDef? {
+        if !photoFiles.isEmpty {
+            return photoFiles[currentIndex]
         } else {
-            // Should never happen but just in case
-            return SecurePhoto(filename: "", thumbnail: UIImage(), fullImage: UIImage(), metadata: [:])
+            return singlePhotoFile
         }
     }
     
@@ -113,20 +110,39 @@ class PhotoDetailViewModel: ObservableObject {
         if isFaceDetectionActive, let modified = modifiedImage {
             return modified
         } else {
-            let image = currentPhoto.fullImage
-            DispatchQueue.main.async {
+            return currentImage ?? UIImage(systemName: "photo")!
+        }
+    }
+    
+    // MARK: - Image Loading
+    
+    private func loadCurrentImage() async {
+        guard let photoDef = currentPhotoDef else { return }
+        
+        isImageLoading = true
+        
+        do {
+            let image = try await secureImageRepository.readImage(photoDef)
+            await MainActor.run {
+                self.currentImage = image
+                self.isImageLoading = false
                 MemoryManager.shared.checkMemoryUsage()
             }
-            return image
+        } catch {
+            print("Error loading image: \(error)")
+            await MainActor.run {
+                self.currentImage = UIImage(systemName: "photo")
+                self.isImageLoading = false
+            }
         }
     }
     
     var canGoToPrevious: Bool {
-        !allPhotos.isEmpty && currentIndex > 0
+        !photoFiles.isEmpty && currentIndex > 0
     }
     
     var canGoToNext: Bool {
-        !allPhotos.isEmpty && currentIndex < allPhotos.count - 1
+        !photoFiles.isEmpty && currentIndex < photoFiles.count - 1
     }
     
     var hasFacesSelected: Bool {
@@ -175,6 +191,8 @@ class PhotoDetailViewModel: ObservableObject {
     // MARK: - Face Detection Methods
     
     func detectFaces() {
+        guard let imageToProcess = currentImage else { return }
+        
         withAnimation {
             isFaceDetectionActive = true
             processingFaces = true
@@ -184,15 +202,11 @@ class PhotoDetailViewModel: ObservableObject {
         modifiedImage = nil
         
         Task(priority: .userInitiated) {
-            autoreleasepool {
-                let imageToProcess = self.currentPhoto.fullImage
-                
-                self.faceDetector.detectFaces(in: imageToProcess) { faces in
-                    DispatchQueue.main.async {
-                        withAnimation {
-                            self.detectedFaces = faces
-                            self.processingFaces = false
-                        }
+            self.faceDetector.detectFaces(in: imageToProcess) { faces in
+                DispatchQueue.main.async {
+                    withAnimation {
+                        self.detectedFaces = faces
+                        self.processingFaces = false
                     }
                 }
             }
@@ -208,14 +222,15 @@ class PhotoDetailViewModel: ObservableObject {
     }
     
     func applyFaceMasking() {
+        guard let imageToProcess = currentImage,
+              let currentPhotoDef = currentPhotoDef else { return }
+        
         withAnimation {
             processingFaces = true
         }
         
         Task(priority: .userInitiated) {
-            let imageToProcess = self.currentPhoto.fullImage
             let facesToMask = self.detectedFaces
-            let metadataCopy = self.currentPhoto.metadata
             let maskMode = self.selectedMaskMode
             
             // Process the image
@@ -230,11 +245,11 @@ class PhotoDetailViewModel: ObservableObject {
                 }
                 
                 do {
-                    let photoDef = mapToPhotoDef(self.photo!)
-                    try await self.secureImageRepository.updateImage(photoDef, newImageData: imageData)
+                    try await self.secureImageRepository.updateImage(currentPhotoDef, newImageData: imageData)
                     
                     DispatchQueue.main.async {
                         withAnimation {
+                            self.currentImage = maskedImage
                             self.modifiedImage = maskedImage
                             self.processingFaces = false
                             
@@ -265,29 +280,27 @@ class PhotoDetailViewModel: ObservableObject {
     // MARK: - Navigation Methods
     
     func preloadAdjacentPhotos() {
-        guard !allPhotos.isEmpty else { return }
+        guard !photoFiles.isEmpty else { return }
         
         // Preload previous photo if available
         if currentIndex > 0 {
             let prevIndex = currentIndex - 1
-            let prevPhoto = allPhotos[prevIndex]
-            prevPhoto.isVisible = true // Mark as visible for memory manager
+            let prevPhotoDef = photoFiles[prevIndex]
             
-            // Access thumbnail to trigger load but in a background thread
+            // Preload thumbnail in background
             Task(priority: .userInitiated) {
-                _ = prevPhoto.thumbnail
+                _ = try? await secureImageRepository.readThumbnail(prevPhotoDef)
             }
         }
         
         // Preload next photo if available
-        if currentIndex < allPhotos.count - 1 {
+        if currentIndex < photoFiles.count - 1 {
             let nextIndex = currentIndex + 1
-            let nextPhoto = allPhotos[nextIndex]
-            nextPhoto.isVisible = true // Mark as visible for memory manager
+            let nextPhotoDef = photoFiles[nextIndex]
             
-            // Access thumbnail to trigger load but in a background thread
+            // Preload thumbnail in background
             Task(priority: .userInitiated) {
-                _ = nextPhoto.thumbnail
+                _ = try? await secureImageRepository.readThumbnail(nextPhotoDef)
             }
         }
     }
@@ -295,10 +308,6 @@ class PhotoDetailViewModel: ObservableObject {
     func navigateToPrevious() {
         print("🟢 PhotoDetailViewModel: navigateToPrevious called")
         if canGoToPrevious {
-            // Clean up memory by releasing the full-size image of the current photo
-            // but keep the thumbnail for the gallery view
-            allPhotos[currentIndex].clearMemory(keepThumbnail: true)
-            
             withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
                 currentIndex -= 1
                 // Reset rotation when changing photos
@@ -314,6 +323,11 @@ class PhotoDetailViewModel: ObservableObject {
                 isSwiping = false
             }
             
+            // Load the new current image
+            Task {
+                await loadCurrentImage()
+            }
+            
             // Preload adjacent photos for smoother navigation
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                 self.preloadAdjacentPhotos()
@@ -324,10 +338,6 @@ class PhotoDetailViewModel: ObservableObject {
     func navigateToNext() {
         print("🟢 PhotoDetailViewModel: navigateToNext called")
         if canGoToNext {
-            // Clean up memory by releasing the full-size image of the current photo
-            // but keep the thumbnail for the gallery view
-            allPhotos[currentIndex].clearMemory(keepThumbnail: true)
-            
             withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
                 currentIndex += 1
                 // Reset rotation when changing photos
@@ -341,6 +351,11 @@ class PhotoDetailViewModel: ObservableObject {
                 // Reset any navigation offsets
                 offset = 0
                 isSwiping = false
+            }
+            
+            // Load the new current image
+            Task {
+                await loadCurrentImage()
             }
             
             // Preload adjacent photos for smoother navigation
@@ -386,14 +401,14 @@ class PhotoDetailViewModel: ObservableObject {
     
     func deleteCurrentPhoto() {
         print("deleteCurrentPhoto called - starting deletion process")
-        // Get the photo to delete
-        let photoToDelete = currentPhoto
+        
+        guard let photoDefToDelete = currentPhotoDef else { return }
         
         // Perform file deletion in a background thread
         Task(priority: .userInitiated) {
             // Actually delete the file
-            print("Attempting to delete file: \(photoToDelete.filename)")
-            self.secureImageRepository.deleteImage(mapToPhotoDef(photoToDelete))
+            print("Attempting to delete file: \(photoDefToDelete.photoName)")
+            self.secureImageRepository.deleteImage(photoDefToDelete)
             print("File deletion successful")
             
             // All UI updates must happen on the main thread
@@ -401,29 +416,30 @@ class PhotoDetailViewModel: ObservableObject {
                 print("Calling onDelete callback")
                 // Notify the parent view about the deletion
                 if let onDelete = self.onDelete {
-                    onDelete(photoToDelete)
+                    onDelete(photoDefToDelete)
                 }
                 
                 // If we're displaying multiple photos, we can navigate to next/previous
                 // instead of dismissing if there are still photos to display
-                if !self.allPhotos.isEmpty && self.allPhotos.count > 1 {
+                if !self.photoFiles.isEmpty && self.photoFiles.count > 1 {
                     // Remove the deleted photo from our local array
-                    var updatedPhotos = self.allPhotos
-                    updatedPhotos.remove(at: self.currentIndex)
+                    self.photoFiles.remove(at: self.currentIndex)
                     
-                    if updatedPhotos.isEmpty {
+                    if self.photoFiles.isEmpty {
                         // If no photos left, call dismiss handler
                         if let onDismiss = self.onDismiss {
                             onDismiss()
                         }
                     } else {
                         // Adjust the current index if necessary
-                        if self.currentIndex >= updatedPhotos.count {
-                            self.currentIndex = updatedPhotos.count - 1
+                        if self.currentIndex >= self.photoFiles.count {
+                            self.currentIndex = self.photoFiles.count - 1
                         }
                         
-                        // Update our photos array
-                        self.allPhotos = updatedPhotos
+                        // Load the new current image
+                        Task {
+                            await self.loadCurrentImage()
+                        }
                     }
                 } else {
                     // Single photo case, call dismiss handler
@@ -535,22 +551,9 @@ class PhotoDetailViewModel: ObservableObject {
     // MARK: - View Lifecycle
     
     func onAppear() {
-        // When the detail view appears, ensure it's properly registered with memory manager
-        if !allPhotos.isEmpty {
-            // Current photo should be visible
-            allPhotos[currentIndex].isVisible = true
-            
-            // Register all photos with the memory manager
-            MemoryManager.shared.registerPhotos(allPhotos)
-            
-            // Preload adjacent photos for smoother navigation
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                self.preloadAdjacentPhotos()
-            }
-        } else if let photo = photo {
-            // Single photo case
-            photo.isVisible = true
-            MemoryManager.shared.registerPhotos([photo])
+        // Preload adjacent photos for smoother navigation
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            self.preloadAdjacentPhotos()
         }
     }
     

@@ -11,222 +11,162 @@ import ImageIO
 
 // View for displaying image metadata
 struct ImageInfoView: View {
-    let photo: SecurePhoto
+    @StateObject private var viewModel: ImageInfoViewModel
     @Environment(\.dismiss) private var dismiss
     
-    // Helper function to format bytes to readable size
-    private func formatFileSize(bytes: Int) -> String {
-        let formatter = ByteCountFormatter()
-        formatter.allowedUnits = [.useKB, .useMB]
-        formatter.countStyle = .file
-        return formatter.string(fromByteCount: Int64(bytes))
-    }
-    
-    // Helper to format date
-    private func formatDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .medium
-        return formatter.string(from: date)
-    }
-    
-    // Helper to interpret orientation
-    private func orientationString(from value: Int) -> String {
-        switch value {
-        case 1: return "Normal"
-        case 3: return "Rotated 180°"
-        case 6: return "Rotated 90° CW"
-        case 8: return "Rotated 90° CCW"
-        default: return "Unknown (\(value))"
-        }
-    }
-    
-    // Extract location data from EXIF
-    private func locationString(from metadata: [String: Any]) -> String {
-        if let gpsData = metadata[String(kCGImagePropertyGPSDictionary)] as? [String: Any] {
-            var locationParts: [String] = []
-            
-            // Extract latitude
-            if let latitudeRef = gpsData[String(kCGImagePropertyGPSLatitudeRef)] as? String,
-               let latitude = gpsData[String(kCGImagePropertyGPSLatitude)] as? Double
-            {
-                let latDirection = latitudeRef == "N" ? "N" : "S"
-                locationParts.append(String(format: "%.6f°%@", latitude, latDirection))
-            }
-            
-            // Extract longitude
-            if let longitudeRef = gpsData[String(kCGImagePropertyGPSLongitudeRef)] as? String,
-               let longitude = gpsData[String(kCGImagePropertyGPSLongitude)] as? Double
-            {
-                let longDirection = longitudeRef == "E" ? "E" : "W"
-                locationParts.append(String(format: "%.6f°%@", longitude, longDirection))
-            }
-            
-            // Include altitude if available
-            if let altitude = gpsData[String(kCGImagePropertyGPSAltitude)] as? Double {
-                locationParts.append(String(format: "Alt: %.1fm", altitude))
-            }
-            
-            return locationParts.isEmpty ? "Not available" : locationParts.joined(separator: ", ")
-        }
-        
-        return "Not available"
+    init(photoDef: PhotoDef) {
+        _viewModel = StateObject(wrappedValue: ImageInfoViewModel(photoDef: photoDef))
     }
     
     var body: some View {
         NavigationView {
-            Form {
-                Section(header: Text("Basic Information")) {
-                    HStack {
-                        Text("Filename")
-                        Spacer()
-                        Text(photo.filename)
-                            .foregroundColor(.secondary)
+            if viewModel.isLoading {
+                ProgressView("Loading image information...")
+                    .navigationTitle("Image Information")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Done") {
+                                dismiss()
+                            }
+                        }
                     }
-                    
-                    HStack {
-                        Text("Resolution")
-                        Spacer()
-                        Text("\(Int(photo.fullImage.size.width)) × \(Int(photo.fullImage.size.height))")
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    if let imageData = photo.fullImage.jpegData(compressionQuality: 1.0) {
+            } else {
+                Form {
+                    Section(header: Text("Basic Information")) {
+                        HStack {
+                            Text("Filename")
+                            Spacer()
+                            Text(viewModel.filename)
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        HStack {
+                            Text("Resolution")
+                            Spacer()
+                            Text(viewModel.resolution)
+                                .foregroundColor(.secondary)
+                        }
+                        
                         HStack {
                             Text("File Size")
                             Spacer()
-                            Text(formatFileSize(bytes: imageData.count))
+                            Text(viewModel.fileSize)
                                 .foregroundColor(.secondary)
                         }
                     }
-                }
                 
-                Section(header: Text("Date Information")) {
-                    if let creationDate = photo.metadata["creationDate"] as? Double {
+                    Section(header: Text("Date Information")) {
                         HStack {
                             Text("Date Taken")
                             Spacer()
-                            Text(formatDate(Date(timeIntervalSince1970: creationDate)))
+                            Text(viewModel.dateTaken)
                                 .foregroundColor(.secondary)
                         }
-                    } else {
-                        Text("No date information available")
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    if let exifDict = photo.metadata[String(kCGImagePropertyExifDictionary)] as? [String: Any],
-                       let dateTimeOriginal = exifDict[String(kCGImagePropertyExifDateTimeOriginal)] as? String
-                    {
-                        HStack {
-                            Text("Original Date")
-                            Spacer()
-                            Text(dateTimeOriginal)
-                                .foregroundColor(.secondary)
+                        
+                        if viewModel.originalDateString != "Not available" {
+                            HStack {
+                                Text("Original Date")
+                                Spacer()
+                                Text(viewModel.originalDateString)
+                                    .foregroundColor(.secondary)
+                            }
                         }
                     }
-                }
                 
-                Section(header: Text("Orientation")) {
-                    if let tiffDict = photo.metadata[String(kCGImagePropertyTIFFDictionary)] as? [String: Any],
-                       let orientation = tiffDict[String(kCGImagePropertyTIFFOrientation)] as? Int
-                    {
+                    Section(header: Text("Orientation")) {
                         HStack {
                             Text("Orientation")
                             Spacer()
-                            Text(orientationString(from: orientation))
+                            Text(viewModel.orientationString)
                                 .foregroundColor(.secondary)
                         }
-                    } else {
-                        Text("Normal")
+                    }
+                
+                    Section(header: Text("Location")) {
+                        Text(viewModel.locationString)
                             .foregroundColor(.secondary)
                     }
-                }
                 
-                Section(header: Text("Location")) {
-                    Text(locationString(from: photo.metadata))
-                        .foregroundColor(.secondary)
-                }
-                
-                Section(header: Text("Camera Information")) {
-                    if let exifDict = photo.metadata[String(kCGImagePropertyExifDictionary)] as? [String: Any] {
-                        if let make = (photo.metadata[String(kCGImagePropertyTIFFDictionary)] as? [String: Any])?[String(kCGImagePropertyTIFFMake)] as? String,
-                           let model = (photo.metadata[String(kCGImagePropertyTIFFDictionary)] as? [String: Any])?[String(kCGImagePropertyTIFFModel)] as? String
-                        {
-                            HStack {
-                                Text("Camera")
-                                Spacer()
-                                Text("\(make) \(model)")
-                                    .foregroundColor(.secondary)
-                            }
-                        }
+                    Section(header: Text("Camera Information")) {
+                        let cameraInfo = viewModel.cameraInfo
                         
-                        if let fNumber = exifDict[String(kCGImagePropertyExifFNumber)] as? Double {
-                            HStack {
-                                Text("Aperture")
-                                Spacer()
-                                Text(String(format: "f/%.1f", fNumber))
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                        
-                        if let exposureTime = exifDict[String(kCGImagePropertyExifExposureTime)] as? Double {
-                            HStack {
-                                Text("Shutter Speed")
-                                Spacer()
-                                Text("\(exposureTime < 1 ? "1/\(Int(1 / exposureTime))" : String(format: "%.1f", exposureTime))s")
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                        
-                        if let isoValue = exifDict[String(kCGImagePropertyExifISOSpeedRatings)] as? [Int],
-                           let iso = isoValue.first
-                        {
-                            HStack {
-                                Text("ISO")
-                                Spacer()
-                                Text("\(iso)")
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                        
-                        if let focalLength = exifDict[String(kCGImagePropertyExifFocalLength)] as? Double {
-                            HStack {
-                                Text("Focal Length")
-                                Spacer()
-                                Text("\(Int(focalLength))mm")
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                    } else {
-                        Text("No camera information available")
-                            .foregroundColor(.secondary)
-                    }
-                }
-                
-                // Display all raw metadata for debugging
-                if photo.metadata.count > 0 {
-                    Section(header: Text("All Metadata")) {
-                        DisclosureGroup("Raw Metadata") {
-                            ForEach(photo.metadata.keys.sorted(), id: \.self) { key in
-                                VStack(alignment: .leading) {
-                                    Text(key)
-                                        .font(.headline)
-                                        .foregroundColor(.blue)
-                                    Text("\(String(describing: photo.metadata[key]!))")
-                                        .font(.caption)
+                        if cameraInfo.hasData {
+                            if cameraInfo.cameraName != "Unknown" {
+                                HStack {
+                                    Text("Camera")
+                                    Spacer()
+                                    Text(cameraInfo.cameraName)
+                                        .foregroundColor(.secondary)
                                 }
-                                .padding(.vertical, 4)
+                            }
+                            
+                            if cameraInfo.apertureString != "Unknown" {
+                                HStack {
+                                    Text("Aperture")
+                                    Spacer()
+                                    Text(cameraInfo.apertureString)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                            
+                            if cameraInfo.shutterSpeedString != "Unknown" {
+                                HStack {
+                                    Text("Shutter Speed")
+                                    Spacer()
+                                    Text(cameraInfo.shutterSpeedString)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                            
+                            if cameraInfo.isoString != "Unknown" {
+                                HStack {
+                                    Text("ISO")
+                                    Spacer()
+                                    Text(cameraInfo.isoString)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                            
+                            if cameraInfo.focalLengthString != "Unknown" {
+                                HStack {
+                                    Text("Focal Length")
+                                    Spacer()
+                                    Text(cameraInfo.focalLengthString)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                        } else {
+                            Text("No camera information available")
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                
+                    // Display all raw metadata for debugging
+                    if !viewModel.rawMetadata.isEmpty {
+                        Section(header: Text("All Metadata")) {
+                            DisclosureGroup("Raw Metadata") {
+                                ForEach(viewModel.rawMetadata.keys.sorted(), id: \.self) { key in
+                                    VStack(alignment: .leading) {
+                                        Text(key)
+                                            .font(.headline)
+                                            .foregroundColor(.blue)
+                                        Text("\(String(describing: viewModel.rawMetadata[key]!))")
+                                            .font(.caption)
+                                    }
+                                    .padding(.vertical, 4)
+                                }
                             }
                         }
                     }
                 }
-            }
-            .navigationTitle("Image Information")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") {
-                        dismiss()
+                .navigationTitle("Image Information")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Done") {
+                            dismiss()
+                        }
                     }
                 }
             }

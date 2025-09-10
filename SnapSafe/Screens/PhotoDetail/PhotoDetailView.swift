@@ -19,7 +19,7 @@ struct PhotoDetailView: View {
     @Environment(\.dismiss) private var dismiss
     
     // Initialize with a single photo
-    init(photo: SecurePhoto, showFaceDetection: Bool, onDelete: ((SecurePhoto) -> Void)? = nil, onDismiss: (() -> Void)? = nil) {
+    init(photo: SecurePhoto, showFaceDetection: Bool, onDelete: ((PhotoDef) -> Void)? = nil, onDismiss: (() -> Void)? = nil) {
         _viewModel = StateObject(wrappedValue: PhotoDetailViewModel(
             photo: photo,
             showFaceDetection: showFaceDetection,
@@ -29,7 +29,7 @@ struct PhotoDetailView: View {
     }
     
     // Initialize with multiple photos
-    init(allPhotos: [SecurePhoto], initialIndex: Int, showFaceDetection: Bool, onDelete: ((SecurePhoto) -> Void)? = nil, onDismiss: (() -> Void)? = nil) {
+    init(allPhotos: [SecurePhoto], initialIndex: Int, showFaceDetection: Bool, onDelete: ((PhotoDef) -> Void)? = nil, onDismiss: (() -> Void)? = nil) {
         _viewModel = StateObject(wrappedValue: PhotoDetailViewModel(
             allPhotos: allPhotos,
             initialIndex: initialIndex,
@@ -48,8 +48,8 @@ struct PhotoDetailView: View {
                 
                 VStack {
                     // Photo counter at the top if we have multiple photos
-                    if !viewModel.allPhotos.isEmpty {
-                        Text("\(viewModel.currentIndex + 1) of \(viewModel.allPhotos.count)")
+                    if !viewModel.photoFiles.isEmpty {
+                        Text("\(viewModel.currentIndex + 1) of \(viewModel.photoFiles.count)")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                             .padding(.top, 8)
@@ -65,56 +65,61 @@ struct PhotoDetailView: View {
                     )
                     
                     // Centered image display with appropriate orientation handling
-                    ZoomableImageView(
-                        image: viewModel.displayedImage,
-                        geometrySize: geometry.size,
-                        canGoToPrevious: viewModel.canGoToPrevious,
-                        canGoToNext:     viewModel.canGoToNext,
-                        onNavigatePrevious: viewModel.navigateToPrevious,
-                        onNavigateNext:     viewModel.navigateToNext,
-                        onDismiss: {
-                            viewModel.onDisappear()
-                            dismiss()
-                        },
-                        imageRotation:        viewModel.imageRotation,
-                        isFaceDetectionActive: viewModel.isFaceDetectionActive
-                    ) {
-                        // Face detection overlay
-                        if viewModel.isFaceDetectionActive {
-                            FaceDetectionOverlay(
-                                faces: viewModel.detectedFaces,
-                                originalSize: viewModel.currentPhoto.fullImage.size,
-                                displaySize: viewModel.imageFrameSize,
-                                isAddingBox: false,
-                                onTap: viewModel.toggleFaceSelection,
-                                onCreateBox: { _ in }, // Implemented through another method
-                                onResize: { face, scale in
-                                    // Find and resize the face
-                                    if let index = viewModel.detectedFaces.firstIndex(where: { $0.id == face.id }) {
-                                        // Create a new face with adjusted bounds
-                                        let centerX = face.bounds.midX
-                                        let centerY = face.bounds.midY
-                                        let newWidth = face.bounds.width * scale
-                                        let newHeight = face.bounds.height * scale
-                                        let newX = centerX - newWidth / 2
-                                        let newY = centerY - newHeight / 2
-                                        let newRect = CGRect(x: newX, y: newY, width: newWidth, height: newHeight)
-                                        
-                                        let resizedFace = DetectedFace(
-                                            bounds: newRect,
-                                            isSelected: face.isSelected,
-                                            isUserCreated: face.isUserCreated
-                                        )
-                                        
-                                        var updatedFaces = viewModel.detectedFaces
-                                        updatedFaces[index] = resizedFace
-                                        viewModel.detectedFaces = updatedFaces
+                    if viewModel.isImageLoading {
+                        ProgressView("Loading...")
+                            .frame(maxWidth: .infinity, maxHeight: geometry.size.height * 0.7)
+                    } else {
+                        ZoomableImageView(
+                            image: viewModel.displayedImage,
+                            geometrySize: geometry.size,
+                            canGoToPrevious: viewModel.canGoToPrevious,
+                            canGoToNext:     viewModel.canGoToNext,
+                            onNavigatePrevious: viewModel.navigateToPrevious,
+                            onNavigateNext:     viewModel.navigateToNext,
+                            onDismiss: {
+                                viewModel.onDisappear()
+                                dismiss()
+                            },
+                            imageRotation:        viewModel.imageRotation,
+                            isFaceDetectionActive: viewModel.isFaceDetectionActive
+                        ) {
+                            // Face detection overlay
+                            if viewModel.isFaceDetectionActive, let currentImage = viewModel.currentImage {
+                                FaceDetectionOverlay(
+                                    faces: viewModel.detectedFaces,
+                                    originalSize: currentImage.size,
+                                    displaySize: viewModel.imageFrameSize,
+                                    isAddingBox: false,
+                                    onTap: viewModel.toggleFaceSelection,
+                                    onCreateBox: { _ in }, // Implemented through another method
+                                    onResize: { face, scale in
+                                        // Find and resize the face
+                                        if let index = viewModel.detectedFaces.firstIndex(where: { $0.id == face.id }) {
+                                            // Create a new face with adjusted bounds
+                                            let centerX = face.bounds.midX
+                                            let centerY = face.bounds.midY
+                                            let newWidth = face.bounds.width * scale
+                                            let newHeight = face.bounds.height * scale
+                                            let newX = centerX - newWidth / 2
+                                            let newY = centerY - newHeight / 2
+                                            let newRect = CGRect(x: newX, y: newY, width: newWidth, height: newHeight)
+                                            
+                                            let resizedFace = DetectedFace(
+                                                bounds: newRect,
+                                                isSelected: face.isSelected,
+                                                isUserCreated: face.isUserCreated
+                                            )
+                                            
+                                            var updatedFaces = viewModel.detectedFaces
+                                            updatedFaces[index] = resizedFace
+                                            viewModel.detectedFaces = updatedFaces
+                                        }
                                     }
-                                }
-                            )
+                                )
+                            }
                         }
+                        .frame(maxWidth: .infinity, maxHeight: geometry.size.height * 0.7)
                     }
-                    .frame(maxWidth: .infinity, maxHeight: geometry.size.height * 0.7)
                     
                     Spacer()
                     
@@ -192,7 +197,9 @@ struct PhotoDetailView: View {
                 }
             )
             .sheet(isPresented: $viewModel.showImageInfo) {
-                ImageInfoView(photo: viewModel.currentPhoto)
+                if let photoDef = viewModel.currentPhotoDef {
+                    ImageInfoView(photoDef: photoDef)
+                }
             }
             .actionSheet(isPresented: $viewModel.showMaskOptions) {
                 ActionSheet(

@@ -18,14 +18,16 @@ struct PhotoCell: View {
 
     // Track whether this cell is visible in the viewport
     @State private var isVisible: Bool = false
+    @State private var thumbnail: UIImage? = nil
     
     // Cell size
     private let cellSize: CGFloat = 100
-
+    
     var body: some View {
+        
         ZStack(alignment: .topTrailing) {
             // Photo image that fills the entire cell
-            Image(uiImage: photo.thumbnail)
+            Image(uiImage: thumbnail ?? UIImage())
                 .resizable()
                 .aspectRatio(contentMode: .fill) // Use .fill to cover the entire cell
                 .frame(width: cellSize, height: cellSize)
@@ -59,6 +61,8 @@ struct PhotoCell: View {
                     .background(Circle().fill(Color.white))
                     .padding(5)
             }
+        }.task {
+            thumbnail = await photo.thumbnail()
         }
     }
 }
