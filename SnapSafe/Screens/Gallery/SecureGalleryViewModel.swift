@@ -43,10 +43,13 @@ final class SecureGalleryViewModel: ObservableObject {
     @Injected(\.addDecoyPhotoUseCase)
     private var addDecoyPhotoUseCase: AddDecoyPhotoUseCase
     
-    private var cancellables = Set<AnyCancellable>()
+    @Injected(\.prepareForSharingUseCase)
+    private var prepareForSharingUseCase: PrepareForSharingUseCase
     
     @InjectedObject(\.securityOverlayViewModel) 
     private var securityViewModel: SecurityOverlayViewModel
+    
+    private var cancellables = Set<AnyCancellable>()
     
     // Track currently presented activity controller for dismissal
     private weak var currentActivityController: UIActivityViewController?
@@ -316,81 +319,82 @@ final class SecureGalleryViewModel: ObservableObject {
     }
     
     func shareSelectedPhotos() {
-        // Get all the selected photos
-//        let images = selectedPhotos
-//        guard !images.isEmpty else { return }
-//        
-//        // Find the root view controller
-//        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-//              let window = windowScene.windows.first,
-//              let rootViewController = window.rootViewController
-//        else {
-//            print("Could not find root view controller")
-//            return
-//        }
-//        
-//        // Find the presented view controller to present from
-//        var currentController = rootViewController
-//        while let presented = currentController.presentedViewController {
-//            currentController = presented
-//        }
-//        
-//        // Create and prepare temporary files with UUID filenames
-//        var filesToShare: [URL] = []
-//        
-//        for image in images {
-//            if let imageData = image.jpegData(compressionQuality: 0.9) {
-//                // TODO: Implement photo sharing
-////                do {
-////                    let fileURL = try secureFileManager.preparePhotoForSharing(imageData: imageData)
-////                    filesToShare.append(fileURL)
-////                    print("Prepared file for sharing: \(fileURL.lastPathComponent)")
-////                } catch {
-////                    print("Error preparing photo for sharing: \(error.localizedDescription)")
-////                }
-//            }
-//        }
-//        
-//        // Share files if any were successfully prepared
-//        if !filesToShare.isEmpty {
-//            // Create a UIActivityViewController to share the files
-//            let activityViewController = UIActivityViewController(
-//                activityItems: filesToShare,
-//                applicationActivities: nil
-//            )
-//            
-//            // For iPad support
-//            if let popover = activityViewController.popoverPresentationController {
-//                popover.sourceView = window
-//                popover.sourceRect = CGRect(x: window.bounds.midX, y: window.bounds.midY, width: 0, height: 0)
-//                popover.permittedArrowDirections = []
-//            }
-//            
-//            // Store reference and present the share sheet
-//            currentActivityController = activityViewController
-//            currentController.present(activityViewController, animated: true) {
-//                print("Share sheet presented successfully for \(filesToShare.count) files")
-//            }
-//        } else {
-//            // Fallback to sharing just the images if file preparation failed for all
-//            print("Falling back to sharing images directly")
-//            
-//            let activityViewController = UIActivityViewController(
-//                activityItems: images,
-//                applicationActivities: nil
-//            )
-//            
-//            // For iPad support
-//            if let popover = activityViewController.popoverPresentationController {
-//                popover.sourceView = window
-//                popover.sourceRect = CGRect(x: window.bounds.midX, y: window.bounds.midY, width: 0, height: 0)
-//                popover.permittedArrowDirections = []
-//            }
-//            
-//            // Store reference and present the share sheet
-//            currentActivityController = activityViewController
-//            currentController.present(activityViewController, animated: true, completion: nil)
-//        }
+        Task {
+            // Get all the selected photos
+            let images = await selectedPhotos()
+            guard !images.isEmpty else { return }
+            
+            // Find the root view controller
+            guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                  let window = windowScene.windows.first,
+                  let rootViewController = window.rootViewController
+            else {
+                print("Could not find root view controller")
+                return
+            }
+            
+            // Find the presented view controller to present from
+            var currentController = rootViewController
+            while let presented = currentController.presentedViewController {
+                currentController = presented
+            }
+            
+            // Create and prepare temporary files with UUID filenames
+            var filesToShare: [URL] = []
+            
+            for image in images {
+                if let imageData = image.jpegData(compressionQuality: 0.9) {
+                    do {
+                        let fileURL = try prepareForSharingUseCase.preparePhotoForSharing(imageData: imageData)
+                        filesToShare.append(fileURL)
+                        print("Prepared file for sharing: \(fileURL.lastPathComponent)")
+                    } catch {
+                        print("Error preparing photo for sharing: \(error.localizedDescription)")
+                    }
+                }
+            }
+            
+            // Share files if any were successfully prepared
+            if !filesToShare.isEmpty {
+                // Create a UIActivityViewController to share the files
+                let activityViewController = UIActivityViewController(
+                    activityItems: filesToShare,
+                    applicationActivities: nil
+                )
+                
+                // For iPad support
+                if let popover = activityViewController.popoverPresentationController {
+                    popover.sourceView = window
+                    popover.sourceRect = CGRect(x: window.bounds.midX, y: window.bounds.midY, width: 0, height: 0)
+                    popover.permittedArrowDirections = []
+                }
+                
+                // Store reference and present the share sheet
+                currentActivityController = activityViewController
+                currentController.present(activityViewController, animated: true) {
+                    print("Share sheet presented successfully for \(filesToShare.count) files")
+                }
+            } else {
+                // Fallback to sharing just the images if file preparation failed for all
+                print("Falling back to sharing images directly")
+                
+                let activityViewController = UIActivityViewController(
+                    activityItems: images,
+                    applicationActivities: nil
+                )
+                
+                // For iPad support
+                if let popover = activityViewController.popoverPresentationController {
+                    popover.sourceView = window
+                    popover.sourceRect = CGRect(x: window.bounds.midX, y: window.bounds.midY, width: 0, height: 0)
+                    popover.permittedArrowDirections = []
+                }
+                
+                // Store reference and present the share sheet
+                currentActivityController = activityViewController
+                currentController.present(activityViewController, animated: true, completion: nil)
+            }
+        }
     }
     
     func clearMemoryForPhoto(_ photo: SecurePhoto) {

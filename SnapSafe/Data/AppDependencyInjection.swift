@@ -101,4 +101,10 @@ extension Container {
             imageRepository: self.secureImageRepository()
         ) }
     }
+    
+    @MainActor
+    var prepareForSharingUseCase: Factory<PrepareForSharingUseCase> {
+        self { @MainActor in PrepareForSharingUseCase() }
+    }
+    
 }
