@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Logging
 import UIKit
 import CoreLocation
 import UniformTypeIdentifiers
@@ -271,7 +272,10 @@ public class SecureImageRepository {
                 let data = try await decryptFile(thumbFile)
                 thumbnailImage = UIImage(data: data)
             } catch {
-                print("Failed to decrypt thumbnail: \(error)")
+                Logger.storage.error("Failed to decrypt thumbnail", metadata: [
+                    "photoName": .string(photo.photoName),
+                    "error": .string(String(describing: error))
+                ])
                 return nil
             }
         } else if FileManager.default.fileExists(atPath: photo.photoFile.path) {
@@ -290,7 +294,10 @@ public class SecureImageRepository {
                     try await encryptToFile(thumbnailData, targetFile: thumbFile)
                 }
             } catch {
-                print("Failed to create thumbnail: \(error)")
+                Logger.storage.error("Failed to create thumbnail", metadata: [
+                    "photoName": .string(photo.photoName),
+                    "error": .string(String(describing: error))
+                ])
                 return nil
             }
         }
@@ -333,7 +340,10 @@ public class SecureImageRepository {
                 }
                 .sorted { $0.photoName > $1.photoName } // Sort by name (newest first)
         } catch {
-            print("Failed to get photos: \(error)")
+            Logger.storage.error("Failed to get photos", metadata: [
+                "directory": .string(dir.path),
+                "error": .string(String(describing: error))
+            ])
             return []
         }
     }

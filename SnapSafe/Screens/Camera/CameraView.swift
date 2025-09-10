@@ -11,6 +11,7 @@ import ImageIO
 import PhotosUI
 import SwiftUI
 import FactoryKit
+import Logging
 
 
 // SwiftUI wrapper for the camera preview
@@ -40,7 +41,10 @@ struct CameraView: View {
                 }
             }
             .onAppear {
-                print("Camera view size: \(geometry.size.width)x\(geometry.size.height)")
+                Logger.ui.debug("Camera view size", metadata: [
+                    "width": .stringConvertible(geometry.size.width),
+                    "height": .stringConvertible(geometry.size.height)
+                ])
             }
         }
     }
@@ -108,7 +112,10 @@ struct CameraPreviewView: UIViewRepresentable {
     func makeUIView(context: Context) -> UIView {
         // Create a view with the exact size passed from parent
         let view = UIView(frame: CGRect(origin: .zero, size: viewSize))
-        print("📐 Creating camera preview with size: \(viewSize.width)x\(viewSize.height)")
+        Logger.camera.debug("Creating camera preview", metadata: [
+            "width": .stringConvertible(viewSize.width),
+            "height": .stringConvertible(viewSize.height)
+        ])
 
         // Store the view reference
         viewHolder.view = view
@@ -385,7 +392,7 @@ struct CameraPreviewView: UIViewRepresentable {
             await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
                 sessionQueue.async {
                     if !session.isRunning {
-                        print("📸 Starting camera session off-main after delay")
+                        Logger.camera.debug("Starting camera session off-main after delay")
                         session.startRunning()   // blocking; safe on this queue
                     }
                     cont.resume()
@@ -432,7 +439,10 @@ struct CameraPreviewView: UIViewRepresentable {
         @objc func handleDoubleTapGesture(_ gesture: UITapGestureRecognizer) {
             guard let view = gesture.view else { return }
             let location = gesture.location(in: view)
-            print("Double tap detected at \(location.x), \(location.y)")
+            Logger.camera.debug("Double tap detected", metadata: [
+                "x": .stringConvertible(location.x),
+                "y": .stringConvertible(location.y)
+            ])
             
             // Get the container view for proper coordinate conversion
             guard let containerView = parent.viewHolder.previewContainer else { return }
@@ -440,7 +450,7 @@ struct CameraPreviewView: UIViewRepresentable {
             // Check if the tap is within the container bounds
             let locationInContainer = view.convert(location, to: containerView)
             if !containerView.bounds.contains(locationInContainer) {
-                print("Tap outside of capture area, ignoring")
+                Logger.camera.debug("Tap outside of capture area, ignoring")
                 return
             }
             
@@ -450,7 +460,10 @@ struct CameraPreviewView: UIViewRepresentable {
                 // Convert the point from the container's coordinate space to the preview layer's coordinate space
                 let pointInPreviewLayer = layer.captureDevicePointConverted(fromLayerPoint: locationInContainer)
                 let devicePoint = layer.devicePoint(from: location)
-                print("Converted to device coordinates (2x tap): \(devicePoint.x), \(devicePoint.y)")
+                Logger.camera.debug("Converted to device coordinates (2x tap)", metadata: [
+                    "x": .stringConvertible(devicePoint.x),
+                    "y": .stringConvertible(devicePoint.y)
+                ])
                 
 
 //                print("Converted to camera coordinates (2x tap): \(pointInPreviewLayer.x), \(pointInPreviewLayer.y)")
@@ -466,7 +479,10 @@ struct CameraPreviewView: UIViewRepresentable {
         @objc func handleSingleTapGesture(_ gesture: UITapGestureRecognizer) {
             guard let view = gesture.view else { return }
             let location = gesture.location(in: view)
-            print("Single tap detected at \(location.x), \(location.y)")
+            Logger.camera.debug("Single tap detected", metadata: [
+                "x": .stringConvertible(location.x),
+                "y": .stringConvertible(location.y)
+            ])
             
             // Get the container view for proper coordinate conversion
             guard let containerView = parent.viewHolder.previewContainer else { return }
@@ -474,7 +490,7 @@ struct CameraPreviewView: UIViewRepresentable {
             // Check if the tap is within the container bounds
             let locationInContainer = view.convert(location, to: containerView)
             if !containerView.bounds.contains(locationInContainer) {
-                print("👆 Tap outside of capture area, ignoring")
+                Logger.camera.debug("Tap outside of capture area, ignoring")
                 return
             }
 
@@ -482,7 +498,10 @@ struct CameraPreviewView: UIViewRepresentable {
             if let layer = parent.viewHolder.previewLayer {
                 // Convert the point from the container's coordinate space to the preview layer's coordinate space
                 let pointInPreviewLayer = layer.captureDevicePointConverted(fromLayerPoint: locationInContainer)
-                print("Converted to camera coordinates (1x tap): \(pointInPreviewLayer.x), \(pointInPreviewLayer.y)")
+                Logger.camera.debug("Converted to camera coordinates (1x tap)", metadata: [
+                    "x": .stringConvertible(pointInPreviewLayer.x),
+                    "y": .stringConvertible(pointInPreviewLayer.y)
+                ])
 
                 // Adjust focus and exposure but not white balance
                 parent.cameraModel.adjustCameraSettings(at: pointInPreviewLayer, lockWhiteBalance: false)

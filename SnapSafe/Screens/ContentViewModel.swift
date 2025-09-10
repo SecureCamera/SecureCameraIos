@@ -8,6 +8,7 @@
 import SwiftUI
 import Combine
 import FactoryKit
+import Logging
 
 @MainActor
 final class ContentViewModel: ObservableObject {
@@ -45,7 +46,10 @@ final class ContentViewModel: ObservableObject {
     // MARK: - Public Methods
     
     func onAppear() {
-        print("ContentView appeared - PIN is set: \(hasCompletedIntro), is authorized: \(isAuthenticated)")
+        Logger.ui.info("ContentView appeared", metadata: [
+            "pinIsSet": .stringConvertible(hasCompletedIntro),
+            "isAuthorized": .stringConvertible(isAuthenticated)
+        ])
         
         // Check session validity if PIN setup is complete
         if hasCompletedIntro {
@@ -66,7 +70,7 @@ final class ContentViewModel: ObservableObject {
     
     func handlePINSetupComplete(_ completed: Bool) {
         if completed {
-            print("PIN setup complete, authenticating user")
+            Logger.ui.info("PIN setup complete, authenticating user")
             // Reset flag to avoid issues on subsequent launches
             Task {
                 try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second

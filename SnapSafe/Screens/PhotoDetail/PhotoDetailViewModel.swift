@@ -9,6 +9,7 @@ import UIKit
 import SwiftUI
 import FactoryKit
 import Combine
+import Logging
 
 
 @MainActor
@@ -133,7 +134,9 @@ class PhotoDetailViewModel: ObservableObject {
                 self.isImageLoading = false
             }
         } catch {
-            print("Error loading image: \(error)")
+            Logger.storage.error("Error loading image", metadata: [
+                "error": .string(String(describing: error))
+            ])
             await MainActor.run {
                 self.currentImage = UIImage(systemName: "photo")
                 self.isImageLoading = false
@@ -244,7 +247,7 @@ class PhotoDetailViewModel: ObservableObject {
                     await MainActor.run {
                         self.processingFaces = false
                     }
-                    print("Error creating JPEG data")
+                    Logger.storage.error("Error creating JPEG data")
                     return
                 }
                 
@@ -272,13 +275,15 @@ class PhotoDetailViewModel: ObservableObject {
                     await MainActor.run {
                         self.processingFaces = false
                     }
-                    print("Error saving masked photo: \(error.localizedDescription)")
+                    Logger.storage.error("Error saving masked photo", metadata: [
+                        "error": .string(error.localizedDescription)
+                    ])
                 }
             } else {
                 await MainActor.run {
                     self.processingFaces = false
                 }
-                print("Error creating masked image")
+                Logger.storage.error("Error creating masked image")
             }
         }
     }
@@ -312,7 +317,7 @@ class PhotoDetailViewModel: ObservableObject {
     }
     
     func navigateToPrevious() {
-        print("🟢 PhotoDetailViewModel: navigateToPrevious called")
+        Logger.ui.debug("PhotoDetailViewModel: navigateToPrevious called")
         if canGoToPrevious {
             withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
                 currentIndex -= 1
@@ -345,7 +350,7 @@ class PhotoDetailViewModel: ObservableObject {
     }
     
     func navigateToNext() {
-        print("🟢 PhotoDetailViewModel: navigateToNext called")
+        Logger.ui.debug("PhotoDetailViewModel: navigateToNext called")
         if canGoToNext {
             withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
                 currentIndex += 1
@@ -412,20 +417,22 @@ class PhotoDetailViewModel: ObservableObject {
     }
     
     func deleteCurrentPhoto() {
-        print("deleteCurrentPhoto called - starting deletion process")
+        Logger.ui.debug("deleteCurrentPhoto called - starting deletion process")
         
         guard let photoDefToDelete = currentPhotoDef else { return }
         
         // Perform file deletion in a background thread
         Task(priority: .userInitiated) {
             // Actually delete the file
-            print("Attempting to delete file: \(photoDefToDelete.photoName)")
+            Logger.ui.debug("Attempting to delete file", metadata: [
+                "filename": .string(photoDefToDelete.photoName)
+            ])
             self.secureImageRepository.deleteImage(photoDefToDelete)
-            print("File deletion successful")
+            Logger.ui.debug("File deletion successful")
             
             // All UI updates must happen on the main thread
             await MainActor.run {
-                print("Calling onDelete callback")
+                Logger.ui.debug("Calling onDelete callback")
                 // Notify the parent view about the deletion
                 if let onDelete = self.onDelete {
                     onDelete(photoDefToDelete)
@@ -474,7 +481,7 @@ class PhotoDetailViewModel: ObservableObject {
               let window = windowScene.windows.first,
               let rootViewController = window.rootViewController
         else {
-            print("Could not find root view controller")
+            Logger.ui.error("Could not find root view controller")
             return
         }
         
@@ -490,7 +497,9 @@ class PhotoDetailViewModel: ObservableObject {
                 // Prepare photo for sharing with UUID filename
                 let fileURL = try prepareForSharingUseCase.preparePhotoForSharing(imageData: imageData)
                 
-                print("Sharing photo with UUID filename: \(fileURL.lastPathComponent)")
+                Logger.ui.debug("Sharing photo with UUID filename", metadata: [
+                    "filename": .string(fileURL.lastPathComponent)
+                ])
                 
                 // Create a UIActivityViewController to show the sharing options with the file
                 let activityViewController = UIActivityViewController(
@@ -509,11 +518,13 @@ class PhotoDetailViewModel: ObservableObject {
                 currentActivityController = activityViewController
                 Task { @MainActor in
                     currentController.present(activityViewController, animated: true) {
-                        print("Share sheet presented successfully")
+                        Logger.ui.debug("Share sheet presented successfully")
                     }
                 }
             } catch {
-                print("Error preparing photo for sharing: \(error.localizedDescription)")
+                Logger.ui.error("Error preparing photo for sharing", metadata: [
+                    "error": .string(error.localizedDescription)
+                ])
                 
                 // Fallback to sharing just the image if file preparation fails
                 let activityViewController = UIActivityViewController(
@@ -532,7 +543,7 @@ class PhotoDetailViewModel: ObservableObject {
                 currentActivityController = activityViewController
                 Task { @MainActor in
                     currentController.present(activityViewController, animated: true) {
-                        print("Share sheet presented successfully (image fallback)")
+                        Logger.ui.debug("Share sheet presented successfully (image fallback)")
                     }
                 }
             }
@@ -554,7 +565,7 @@ class PhotoDetailViewModel: ObservableObject {
             currentActivityController = activityViewController
             Task { @MainActor in
                 currentController.present(activityViewController, animated: true) {
-                    print("Share sheet presented successfully (image fallback)")
+                    Logger.ui.debug("Share sheet presented successfully (image fallback)")
                 }
             }
         }

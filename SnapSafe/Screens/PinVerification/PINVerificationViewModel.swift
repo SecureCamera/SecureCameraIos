@@ -8,6 +8,7 @@
 import Foundation
 import SwiftUI
 import FactoryKit
+import Logging
 
 @MainActor
 final class PINVerificationViewModel: ObservableObject {
@@ -69,7 +70,7 @@ final class PINVerificationViewModel: ObservableObject {
         let hashedPin = await authorizePinUseCase.authorizePin(pin)
         if hashedPin != nil {
             // PIN is correct - AuthorizationRepository will automatically update isAuthorized
-            print("PIN correct, authentication handled by AuthorizationRepository")
+            Logger.security.info("PIN correct, authentication handled by AuthorizationRepository")
             
             // Notify SecurityOverlayViewModel that authentication is complete
             securityViewModel.authenticationComplete()

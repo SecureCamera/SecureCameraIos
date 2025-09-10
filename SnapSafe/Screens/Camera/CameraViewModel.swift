@@ -7,6 +7,7 @@
 import AVFoundation
 import SwiftUI
 import FactoryKit
+import Logging
 
 // Camera model that handles the AVFoundation functionality
 @MainActor
@@ -102,7 +103,9 @@ class CameraViewModel: NSObject, ObservableObject {
                 }
                 
             } catch {
-                print("Error refocusing: \(error.localizedDescription)")
+                Logger.camera.error("Error refocusing camera", metadata: [
+                    "error": .string(error.localizedDescription)
+                ])
             }
         }
     }
@@ -133,7 +136,7 @@ class CameraViewModel: NSObject, ObservableObject {
     }
     
     @objc private func handleAppWillEnterForeground() {
-        print("CameraModel: App entering foreground, resetting zoom level")
+        Logger.camera.debug("App entering foreground, resetting zoom level")
         resetZoomLevel()
     }
     
@@ -229,7 +232,9 @@ class CameraViewModel: NSObject, ObservableObject {
             }
             
             guard let device = device else {
-                print("Failed to get camera device for position: \(cameraPosition)")
+                Logger.camera.error("Failed to get camera device", metadata: [
+                "position": .string(String(describing: cameraPosition))
+            ])
                 return
             }
             
@@ -289,14 +294,16 @@ class CameraViewModel: NSObject, ObservableObject {
             prepareZeroShutterLagCapture()
             
         } catch {
-            print("Error setting up camera: \(error.localizedDescription)")
+            Logger.camera.error("Error setting up camera", metadata: [
+                "error": .string(error.localizedDescription)
+            ])
         }
     }
     
     #if DEBUG && targetEnvironment(simulator)
     // MARK: - Simulator Mock Camera Setup
     private func setupSimulatorMockCamera() async {
-        print("Setting up mock camera for simulator")
+        Logger.camera.debug("Setting up mock camera for simulator")
         
         await MainActor.run {
             self.minZoom = 0.5
@@ -309,7 +316,7 @@ class CameraViewModel: NSObject, ObservableObject {
     }
     
     private func captureMockPhoto() async {
-        print("Capturing mock photo in simulator")
+        Logger.camera.debug("Capturing mock photo in simulator")
         
         // Create a simple colored image for testing
         let size = CGSize(width: 1080, height: 1920)
@@ -342,7 +349,7 @@ class CameraViewModel: NSObject, ObservableObject {
         
         // Convert to JPEG data
         guard let imageData = mockImage.jpegData(compressionQuality: 0.8) else {
-            print("Failed to create mock image data")
+            Logger.camera.error("Failed to create mock image data")
             return
         }
         
@@ -406,9 +413,13 @@ class CameraViewModel: NSObject, ObservableObject {
                             location: locationTaken,
                             applyRotation: true)
 
-                        print("Created mock photo \(index + 1)")
+                        Logger.camera.debug("Created mock photo", metadata: [
+                            "photoIndex": .stringConvertible(index + 1)
+                        ])
                     } catch {
-                        print("Error creating mock photo: \(error)")
+                        Logger.camera.error("Error creating mock photo", metadata: [
+                            "error": .string(String(describing: error))
+                        ])
                     }
                 }
                 
@@ -437,9 +448,13 @@ class CameraViewModel: NSObject, ObservableObject {
                     applyRotation: true
                 )
                 
-                print("Mock photo saved successfully: \(newPhotoDef.photoName)")
+                Logger.camera.info("Mock photo saved successfully", metadata: [
+                    "filename": .string(newPhotoDef.photoName)
+                ])
             } catch {
-                print("Error saving mock photo: \(error.localizedDescription)")
+                Logger.camera.error("Error saving mock photo", metadata: [
+                    "error": .string(error.localizedDescription)
+                ])
             }
         }
     }
@@ -477,7 +492,9 @@ class CameraViewModel: NSObject, ObservableObject {
                 
                 device.unlockForConfiguration()
             } catch {
-                print("Error in focus check: \(error.localizedDescription)")
+                Logger.camera.error("Error in focus check", metadata: [
+                    "error": .string(error.localizedDescription)
+                ])
             }
         }
     }
@@ -594,7 +611,9 @@ class CameraViewModel: NSObject, ObservableObject {
             
             device.unlockForConfiguration()
         } catch {
-            print("Error setting zoom: \(error.localizedDescription)")
+            Logger.camera.error("Error setting zoom", metadata: [
+                "error": .string(error.localizedDescription)
+            ])
         }
     }
     
@@ -627,7 +646,9 @@ class CameraViewModel: NSObject, ObservableObject {
                     
                     device.unlockForConfiguration()
                 } catch {
-                    print("📸 Error preparing auto modes before lens switch: \(error.localizedDescription)")
+                    Logger.camera.error("Error preparing auto modes before lens switch", metadata: [
+                        "error": .string(error.localizedDescription)
+                    ])
                 }
             }
             
@@ -646,7 +667,9 @@ class CameraViewModel: NSObject, ObservableObject {
                     
                     device.unlockForConfiguration()
                 } catch {
-                    print("📸 Error preparing auto modes before lens switch: \(error.localizedDescription)")
+                    Logger.camera.error("Error preparing auto modes before lens switch", metadata: [
+                        "error": .string(error.localizedDescription)
+                    ])
                 }
             }
             
@@ -719,7 +742,9 @@ class CameraViewModel: NSObject, ObservableObject {
                 self?.resetToAutoFocus()
             }
         } catch {
-            print("Error adjusting camera settings: \(error.localizedDescription)")
+            Logger.camera.error("Error adjusting camera settings", metadata: [
+                "error": .string(error.localizedDescription)
+            ])
         }
     }
     
@@ -744,7 +769,9 @@ class CameraViewModel: NSObject, ObservableObject {
             
             device.unlockForConfiguration()
         } catch {
-            print("Error resetting focus: \(error.localizedDescription)")
+            Logger.camera.error("Error resetting focus", metadata: [
+                "error": .string(error.localizedDescription)
+            ])
         }
     }
     
@@ -784,7 +811,9 @@ class CameraViewModel: NSObject, ObservableObject {
                     previousWhiteBalanceGains = oldDevice.deviceWhiteBalanceGains
                     oldDevice.unlockForConfiguration()
                 } catch {
-                    print("📸 Could not capture white balance from previous device: \(error.localizedDescription)")
+                    Logger.camera.debug("Could not capture white balance from previous device", metadata: [
+                        "error": .string(error.localizedDescription)
+                    ])
                 }
             }
             
@@ -865,7 +894,9 @@ class CameraViewModel: NSObject, ObservableObject {
                                     }
                                     device.unlockForConfiguration()
                                 } catch {
-                                    print("📸 Error restoring white balance mode: \(error.localizedDescription)")
+                                    Logger.camera.error("Error restoring white balance mode", metadata: [
+                                        "error": .string(error.localizedDescription)
+                                    ])
                                 }
                             }
                         }
@@ -900,7 +931,9 @@ class CameraViewModel: NSObject, ObservableObject {
                 self.isConfiguring = false
                 
             } catch {
-                print("📸 Error switching lens type: \(error.localizedDescription)")
+                Logger.camera.error("Error switching lens type", metadata: [
+                    "error": .string(error.localizedDescription)
+                ])
                 self.session.commitConfiguration()
                 self.isConfiguring = false
             }
@@ -1021,7 +1054,9 @@ class CameraViewModel: NSObject, ObservableObject {
                 self.isConfiguring = false
                 
             } catch {
-                print("📸 Error switching camera: \(error.localizedDescription)")
+                Logger.camera.error("Error switching camera", metadata: [
+                    "error": .string(error.localizedDescription)
+                ])
                 self.session.commitConfiguration()
                 self.isConfiguring = false
             }
@@ -1064,7 +1099,9 @@ class CameraViewModel: NSObject, ObservableObject {
                     self.zoomFactor = 1.0
                 }
             } catch {
-                print("Error resetting zoom level: \(error.localizedDescription)")
+                Logger.camera.error("Error resetting zoom level", metadata: [
+                    "error": .string(error.localizedDescription)
+                ])
             }
         }
     }
@@ -1073,12 +1110,14 @@ class CameraViewModel: NSObject, ObservableObject {
     extension CameraViewModel: AVCapturePhotoCaptureDelegate {
     func photoOutput(_: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
         if let error = error {
-            print("Error capturing photo: \(error.localizedDescription)")
+            Logger.camera.error("Error capturing photo", metadata: [
+                "error": .string(error.localizedDescription)
+            ])
             return
         }
 
         guard let imageData = photo.fileDataRepresentation() else {
-            print("Failed to get image data")
+            Logger.camera.error("Failed to get image data")
             return
         }
 
@@ -1094,7 +1133,9 @@ class CameraViewModel: NSObject, ObservableObject {
     // Handle deferred photo processing with instant preview
     func photoOutput(_ output: AVCapturePhotoOutput, didFinishCapturingDeferredPhotoProxy proxy: AVCaptureDeferredPhotoProxy?, error: Error?) {
         guard error == nil else {
-            print("Error with deferred photo: \(error!.localizedDescription)")
+            Logger.camera.error("Error with deferred photo", metadata: [
+                "error": .string(error!.localizedDescription)
+            ])
             return
         }
         
@@ -1181,9 +1222,13 @@ class CameraViewModel: NSObject, ObservableObject {
                     location: locationTaken,
                     applyRotation: true
                 )
-                print("Photo saved successfully with timestamp filename: \(photoDef?.photoName)")
+                Logger.camera.info("Photo saved successfully", metadata: [
+                    "filename": .string(photoDef?.photoName ?? "unknown")
+                ])
             } catch {
-                print("Error saving photo: \(error.localizedDescription)")
+                Logger.camera.error("Error saving photo", metadata: [
+                    "error": .string(error.localizedDescription)
+                ])
             }
         }
     }

@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Logging
 
 final class SecurityResetUseCase {
     private let authManager: AuthorizationRepository
@@ -26,6 +27,6 @@ final class SecurityResetUseCase {
         await authManager.securityFailureReset()
         await imageRepository.securityFailureReset()
         await encryptionScheme.securityFailureReset()
-        print("Security Reset Complete!") // Timber.d equivalent
+        Logger.security.info("Security Reset Complete!")
     }
 }

@@ -5,6 +5,8 @@
 //  Created by Adam Brown on 9/4/25.
 //
 
+import Logging
+
 
 public final class CreatePinUseCase {
     private let authorizationRepository: AuthorizationRepository
@@ -43,7 +45,9 @@ public final class CreatePinUseCase {
             return true
         } catch {
             // Log the error for debugging purposes
-            print("Failed to create PIN: \(error)")
+            Logger.security.error("Failed to create PIN", metadata: [
+                "error": .string(String(describing: error))
+            ])
             return false
         }
     }

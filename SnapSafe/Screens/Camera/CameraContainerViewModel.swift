@@ -8,6 +8,7 @@
 import SwiftUI
 import AVFoundation
 import Combine
+import Logging
 
 @MainActor
 final class CameraContainerViewModel: ObservableObject {
@@ -36,7 +37,7 @@ final class CameraContainerViewModel: ObservableObject {
     func toggleFlashMode() {
         // Prevent rapid consecutive toggles
         guard !isTogglingFlash else { 
-            print("Flash toggle ignored - already in progress")
+            Logger.camera.debug("Flash toggle ignored - already in progress")
             return 
         }
         
@@ -56,14 +57,19 @@ final class CameraContainerViewModel: ObservableObject {
             newMode = .auto
         }
         
-        print("Flash mode cycling: \(currentMode) -> \(newMode)")
+        Logger.camera.debug("Flash mode cycling", metadata: [
+            "from": .string(String(describing: currentMode)),
+            "to": .string(String(describing: newMode))
+        ])
         
         // Update both the UI state and camera model immediately
         objectWillChange.send() // Force UI update
         currentFlashMode = newMode
         cameraModel.flashMode = newMode
         
-        print("Flash mode updated to: \(currentFlashMode)")
+        Logger.camera.debug("Flash mode updated", metadata: [
+            "mode": .string(String(describing: currentFlashMode))
+        ])
         
         // Re-enable toggling after a brief delay
         Task {

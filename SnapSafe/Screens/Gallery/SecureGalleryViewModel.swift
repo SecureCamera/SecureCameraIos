@@ -10,6 +10,7 @@ import PhotosUI
 import SwiftUI
 import Combine
 import FactoryKit
+import Logging
 
 @MainActor
 final class SecureGalleryViewModel: ObservableObject {
@@ -80,7 +81,10 @@ final class SecureGalleryViewModel: ObservableObject {
                 let img = try await secureImageRepository.readImage(photoDef)
                 result.append(img)
             } catch {
-                print("Error loading image for \(photoDef.photoName): \(error)")
+                Logger.storage.error("Error loading image", metadata: [
+                    "photoName": .string(photoDef.photoName),
+                    "error": .string(String(describing: error))
+                ])
             }
         }
         return result
@@ -202,7 +206,9 @@ final class SecureGalleryViewModel: ObservableObject {
                 isImporting = true
                 importProgress = 0
 
-                print("Importing \(importCount) photos...")
+                Logger.ui.info("Importing photos", metadata: [
+                    "count": .stringConvertible(importCount)
+                ])
 
                 // Process each selected item with progress tracking
                 for (index, item) in newItems.enumerated() {
@@ -240,14 +246,17 @@ final class SecureGalleryViewModel: ObservableObject {
     }
     
     func deleteSelectedPhotos() {
-        print("deleteSelectedPhotos() called")
+        Logger.ui.debug("deleteSelectedPhotos() called")
         
         // Create a local copy of the photos to delete
         let photosToDelete = selectedPhotoIds.compactMap { photo in
             photos.first(where: { $0 == photo })
         }
         
-        print("Will delete \(photosToDelete.count) photos: \(photosToDelete.map { $0.photoName }.joined(separator: ", "))")
+        Logger.ui.info("Will delete photos", metadata: [
+            "count": .stringConvertible(photosToDelete.count),
+            "photoNames": .string(photosToDelete.map { $0.photoName }.joined(separator: ", "))
+        ])
 
         // Clear selection and exit selection mode immediately
         // for better UI responsiveness
@@ -258,18 +267,22 @@ final class SecureGalleryViewModel: ObservableObject {
         Task.detached(priority: .userInitiated) { [weak self] in
             guard let self = self else { return }
             
-            print("Starting background deletion process")
+            Logger.ui.debug("Starting background deletion process")
 
             // Delete each photo
             for photoDef in photosToDelete {
-                print("Attempting to delete: \(photoDef.photoName)")
+                Logger.ui.debug("Attempting to delete photo", metadata: [
+                    "photoName": .string(photoDef.photoName)
+                ])
                 await self.secureImageRepository.deleteImage(photoDef)
-                print("Successfully deleted: \(photoDef.photoName)")
+                Logger.ui.debug("Successfully deleted photo", metadata: [
+                    "photoName": .string(photoDef.photoName)
+                ])
             }
 
             // After all deletions are complete, update the UI
             await MainActor.run {
-                print("All deletions complete, updating UI")
+                Logger.ui.debug("All deletions complete, updating UI")
                 
                 // Count photos before removal
                 let initialCount = self.photos.count
@@ -279,7 +292,9 @@ final class SecureGalleryViewModel: ObservableObject {
                     self.photos.removeAll { photoDef in
                         let shouldRemove = photosToDelete.contains { $0.photoName == photoDef.photoName }
                         if shouldRemove {
-                            print("Removing photo \(photoDef.photoName) from UI")
+                            Logger.ui.debug("Removing photo from UI", metadata: [
+                                "photoName": .string(photoDef.photoName)
+                            ])
                         }
                         return shouldRemove
                     }
@@ -288,7 +303,10 @@ final class SecureGalleryViewModel: ObservableObject {
                 // Verify removal
                 let finalCount = self.photos.count
                 let removedCount = initialCount - finalCount
-                print("UI update complete: removed \(removedCount) photos. Gallery now has \(finalCount) photos.")
+                Logger.ui.info("UI update complete", metadata: [
+                    "removedCount": .stringConvertible(removedCount),
+                    "finalCount": .stringConvertible(finalCount)
+                ])
             }
         }
     }
@@ -328,7 +346,7 @@ final class SecureGalleryViewModel: ObservableObject {
                   let window = windowScene.windows.first,
                   let rootViewController = window.rootViewController
             else {
-                print("Could not find root view controller")
+                Logger.ui.error("Could not find root view controller")
                 return
             }
             
@@ -346,9 +364,13 @@ final class SecureGalleryViewModel: ObservableObject {
                     do {
                         let fileURL = try prepareForSharingUseCase.preparePhotoForSharing(imageData: imageData)
                         filesToShare.append(fileURL)
-                        print("Prepared file for sharing: \(fileURL.lastPathComponent)")
+                        Logger.ui.debug("Prepared file for sharing", metadata: [
+                            "filename": .string(fileURL.lastPathComponent)
+                        ])
                     } catch {
-                        print("Error preparing photo for sharing: \(error.localizedDescription)")
+                        Logger.ui.error("Error preparing photo for sharing", metadata: [
+                            "error": .string(error.localizedDescription)
+                        ])
                     }
                 }
             }
@@ -371,11 +393,13 @@ final class SecureGalleryViewModel: ObservableObject {
                 // Store reference and present the share sheet
                 currentActivityController = activityViewController
                 currentController.present(activityViewController, animated: true) {
-                    print("Share sheet presented successfully for \(filesToShare.count) files")
+                    Logger.ui.info("Share sheet presented successfully", metadata: [
+                        "fileCount": .stringConvertible(filesToShare.count)
+                    ])
                 }
             } else {
                 // Fallback to sharing just the images if file preparation failed for all
-                print("Falling back to sharing images directly")
+                Logger.ui.debug("Falling back to sharing images directly")
                 
                 let activityViewController = UIActivityViewController(
                     activityItems: images,
@@ -496,14 +520,18 @@ final class SecureGalleryViewModel: ObservableObject {
                     )
                     continuation.resume(returning: newDef.photoName)
                 } catch {
-                    print("Error saving imported photo: \(error.localizedDescription)")
+                    Logger.storage.error("Error saving imported photo", metadata: [
+                        "error": .string(error.localizedDescription)
+                    ])
                     continuation.resume(returning: "")
                 }
             }
         }
 
         if !filename.isEmpty {
-            print("Successfully imported photo: \(filename)")
+            Logger.storage.info("Successfully imported photo", metadata: [
+                "filename": .string(filename)
+            ])
         }
     }
     
@@ -513,7 +541,7 @@ final class SecureGalleryViewModel: ObservableObject {
 
         // Convert image to data
         guard let imageData = image.jpegData(compressionQuality: 0.8) else {
-            print("Failed to convert image to data")
+            Logger.storage.error("Failed to convert image to data")
             return
         }
 

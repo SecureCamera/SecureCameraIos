@@ -12,6 +12,7 @@ import ImageIO
 import Photos
 import UIKit
 import FactoryKit
+import Logging
 
 class SecureCameraController: UIViewController, AVCapturePhotoCaptureDelegate {
     private var captureSession: AVCaptureSession!
@@ -49,11 +50,11 @@ class SecureCameraController: UIViewController, AVCapturePhotoCaptureDelegate {
 
             // Set quality prioritization to maximum quality over speed
             photoOutput.maxPhotoQualityPrioritization = .quality
-            print("📸 Set photo quality prioritization to maximum quality")
+            Logger.camera.debug("Set photo quality prioritization to maximum quality")
 
             // Prepare for zero shutter lag
             if photoOutput.isFastCapturePrioritizationSupported {
-                print("Fast capture prioritization is supported, preparing zero shutter lag pipeline")
+                Logger.camera.debug("Fast capture prioritization is supported, preparing zero shutter lag pipeline")
                 let zslSettings = AVCapturePhotoSettings()
                 photoOutput.setPreparedPhotoSettingsArray([zslSettings])
             }
@@ -68,7 +69,7 @@ class SecureCameraController: UIViewController, AVCapturePhotoCaptureDelegate {
             
             // Enable subject area change monitoring
             backCamera.isSubjectAreaChangeMonitoringEnabled = true
-            print("Enabled subject area change monitoring")
+            Logger.camera.debug("Enabled subject area change monitoring")
             
             if backCamera.isExposureModeSupported(.continuousAutoExposure) {
                 // Use a faster shutter speed (1/500 sec) for sharper images
@@ -78,7 +79,10 @@ class SecureCameraController: UIViewController, AVCapturePhotoCaptureDelegate {
                 
                 // Only set custom exposure if we're in good lighting conditions
                 if backCamera.exposureDuration.seconds < 0.1 { // Current exposure is faster than 1/10s
-                    print("Setting shutter-priority exposure: 1/500s, ISO: \(iso)")
+                    Logger.camera.debug("Setting shutter-priority exposure", metadata: [
+                        "shutter": .string("1/500s"),
+                        "iso": .stringConvertible(iso)
+                    ])
                     backCamera.setExposureModeCustom(duration: fastShutter, iso: iso) { _ in
                         // After setting custom exposure, lock it to prevent auto changes
                         try? backCamera.lockForConfiguration()
@@ -118,7 +122,7 @@ class SecureCameraController: UIViewController, AVCapturePhotoCaptureDelegate {
             if device.isFocusPointOfInterestSupported && device.isFocusModeSupported(.autoFocus) {
                 device.focusPointOfInterest = focusPoint
                 device.focusMode = .autoFocus
-                print("📸 Refocusing after subject area change")
+                Logger.camera.debug("Refocusing after subject area change")
             }
             
             // Set exposure point if supported
@@ -129,7 +133,9 @@ class SecureCameraController: UIViewController, AVCapturePhotoCaptureDelegate {
             
             device.unlockForConfiguration()
         } catch {
-            print("Error refocusing: \(error.localizedDescription)")
+            Logger.camera.error("Error refocusing", metadata: [
+                "error": .string(error.localizedDescription)
+            ])
         }
     }
 
@@ -143,14 +149,18 @@ class SecureCameraController: UIViewController, AVCapturePhotoCaptureDelegate {
     func photoOutput(_: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
         guard error == nil else {
             // Handle photo capture error
-            print("Error capturing photo: \(error!.localizedDescription)")
+            Logger.camera.error("Error capturing photo", metadata: [
+                "error": .string(error!.localizedDescription)
+            ])
             return
         }
     }
 
     func photoOutput(_: AVCapturePhotoOutput, didFinishCapturingDeferredPhotoProxy proxy: AVCaptureDeferredPhotoProxy?, error: Error?) {
         guard error == nil else {
-            print("Error with deferred photo: \(error!.localizedDescription)")
+            Logger.camera.error("Error with deferred photo", metadata: [
+                "error": .string(error!.localizedDescription)
+            ])
             return
         }
     }

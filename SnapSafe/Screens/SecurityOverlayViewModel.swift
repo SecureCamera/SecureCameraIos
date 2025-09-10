@@ -8,6 +8,7 @@
 import Combine
 import FactoryKit
 import SwiftUI
+import Logging
 
 // MARK: - Security Overlay State
 
@@ -64,7 +65,9 @@ final class SecurityOverlayViewModel: ObservableObject {
     // MARK: - Public Methods
 
     func handleScenePhaseChange(_ newPhase: ScenePhase) {
-        print("SecurityOverlay scene phase changed to: \(newPhase)")
+        Logger.security.debug("SecurityOverlay scene phase changed", metadata: [
+            "newPhase": .string(String(describing: newPhase))
+        ])
 
         Task {
             switch newPhase {
@@ -156,20 +159,22 @@ final class SecurityOverlayViewModel: ObservableObject {
     }
 
     private func handleDidEnterBackground() {
-        print("SecurityOverlay: App entered background")
+        Logger.security.debug("SecurityOverlay: App entered background")
         wasInBackground = true
         updateOverlayState()
     }
 
     private func handleWillEnterForeground() async {
-        print("SecurityOverlay: App will enter foreground, wasInBackground: \(wasInBackground)")
+        Logger.security.debug("SecurityOverlay: App will enter foreground", metadata: [
+            "wasInBackground": .stringConvertible(wasInBackground)
+        ])
 
         // Get current values from repositories
         let hasCompletedIntro = getCurrentValue(from: settings.hasCompletedIntro)
         let isAuthorized = getCurrentValue(from: authorizationRepository.isAuthorized)
 
         if wasInBackground, hasCompletedIntro, isAuthorized {
-            print("SecurityOverlay: Requiring authentication after background")
+            Logger.security.info("SecurityOverlay: Requiring authentication after background")
 
             // Set authentication required flag
             needsAuthenticationAfterBackground = true
@@ -202,7 +207,10 @@ final class SecurityOverlayViewModel: ObservableObject {
         let highestPriorityState = states.max(by: { $0.priority < $1.priority }) ?? .normal
 
         if currentOverlayState != highestPriorityState {
-            print("SecurityOverlay state changing from \(currentOverlayState) to \(highestPriorityState)")
+            Logger.security.info("SecurityOverlay state changing", metadata: [
+                "from": .string(String(describing: currentOverlayState)),
+                "to": .string(String(describing: highestPriorityState))
+            ])
             currentOverlayState = highestPriorityState
         }
     }

@@ -1,5 +1,6 @@
 import CryptoKit
 import Foundation
+import Logging
 import Security
 
 class PinRepositoryImpl: PinRepository {
@@ -89,8 +90,9 @@ class PinRepositoryImpl: PinRepository {
         do {
             let hashedPinData = try jsonEncoder().encode(hashedPin)
 
-            let jsonString = String(data: hashedPinData, encoding: .utf8)!
-            print(jsonString)
+            Logger.security.debug("Setting poison pill PIN", metadata: [
+                "hashedPinDataSize": .stringConvertible(hashedPinData.count)
+            ])
             
             let cipheredHashedPpp = try await encryptionScheme.encryptWithKeyAlias(
                 plain: hashedPinData, keyAlias: Self.PIN_KEY_ALIAS)
