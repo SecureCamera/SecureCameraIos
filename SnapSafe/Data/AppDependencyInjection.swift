@@ -27,7 +27,12 @@ extension Container {
     }
     
     var encryptionScheme: Factory<EncryptionScheme> {
-        self { PassThroughEncryptionScheme() }.singleton
+        // Switch between encryption schemes:
+        // - PassThroughEncryptionScheme() for testing/development
+        // - HardwareEncryptionScheme() for production with hardware backing
+        //self { PassThroughEncryptionScheme() }.singleton
+
+        self { HardwareEncryptionScheme(deviceInfo: self.deviceInfoDataSource()) }.singleton
     }
     
     var pinRepository: Factory<PinRepository> {

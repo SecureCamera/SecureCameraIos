@@ -26,6 +26,7 @@
 		663C7E2B2E70EF0C00967B9E /* ImageInfoViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 663C7E2A2E70EF0C00967B9E /* ImageInfoViewModel.swift */; };
 		663C7E2D2E70F2E900967B9E /* EnhancedPhotoDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 663C7E2C2E70F2E900967B9E /* EnhancedPhotoDetailViewModel.swift */; };
 		663C7E2F2E71121C00967B9E /* PrepareForSharingUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 663C7E2E2E71121600967B9E /* PrepareForSharingUseCase.swift */; };
+		663C7E312E712E9000967B9E /* HardwareEncryptionScheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 663C7E302E712E9000967B9E /* HardwareEncryptionScheme.swift */; };
 		667FF80E2E6A9D3000FB3E02 /* AuthorizationRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF80D2E6A9D2A00FB3E02 /* AuthorizationRepositoryTests.swift */; };
 		667FF8102E6A9EE600FB3E02 /* Clock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF80F2E6A9EE600FB3E02 /* Clock.swift */; };
 		667FF8122E6BA7F200FB3E02 /* AuthorizePinUseCaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF8112E6BA7F200FB3E02 /* AuthorizePinUseCaseTests.swift */; };
@@ -128,6 +129,7 @@
 		663C7E2A2E70EF0C00967B9E /* ImageInfoViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageInfoViewModel.swift; sourceTree = "<group>"; };
 		663C7E2C2E70F2E900967B9E /* EnhancedPhotoDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnhancedPhotoDetailViewModel.swift; sourceTree = "<group>"; };
 		663C7E2E2E71121600967B9E /* PrepareForSharingUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrepareForSharingUseCase.swift; sourceTree = "<group>"; };
+		663C7E302E712E9000967B9E /* HardwareEncryptionScheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HardwareEncryptionScheme.swift; sourceTree = "<group>"; };
 		667FF80D2E6A9D2A00FB3E02 /* AuthorizationRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorizationRepositoryTests.swift; sourceTree = "<group>"; };
 		667FF80F2E6A9EE600FB3E02 /* Clock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clock.swift; sourceTree = "<group>"; };
 		667FF8112E6BA7F200FB3E02 /* AuthorizePinUseCaseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorizePinUseCaseTests.swift; sourceTree = "<group>"; };
@@ -229,6 +231,7 @@
 		660130BB2E67AD1D00D07E9C /* Security */ = {
 			isa = PBXGroup;
 			children = (
+				663C7E302E712E9000967B9E /* HardwareEncryptionScheme.swift */,
 				660130B62E67AD1D00D07E9C /* AuthorizationRepository.swift */,
 				660130B82E67AD1D00D07E9C /* EncryptionScheme.swift */,
 				660130B92E67AD1D00D07E9C /* HashedPin.swift */,
@@ -689,6 +692,7 @@
 				A91DBC622DE58191001F42ED /* ImageInfoView.swift in Sources */,
 				A9E6B6B12E6EAE3500BB6F19 /* SecurityOverlayView.swift in Sources */,
 				66A404CD2E67F0960054FFE7 /* DataExt.swift in Sources */,
+				663C7E312E712E9000967B9E /* HardwareEncryptionScheme.swift in Sources */,
 				A9E6B6962E6E47B500BB6F19 /* ThumbnailCache.swift in Sources */,
 				A9E6B6972E6E47B500BB6F19 /* SecureImageRepository.swift in Sources */,
 				A91DBC642DE58191001F42ED /* PhotoDetailView.swift in Sources */,
