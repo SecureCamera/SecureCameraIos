@@ -10,6 +10,7 @@ import SwiftUI
 import FactoryKit
 import Combine
 
+
 @MainActor
 class PhotoDetailViewModel: ObservableObject {
     @Published var photoFiles: [PhotoDef] = []
@@ -51,6 +52,11 @@ class PhotoDetailViewModel: ObservableObject {
     
     private let faceDetector = FaceDetector()
     
+    let showFaceDetection: Bool
+    
+    // Track currently presented activity controller for dismissal
+    private weak var currentActivityController: UIActivityViewController?
+    
     // MARK: - Dependencies
     
     @InjectedObject(\.securityOverlayViewModel) 
@@ -66,11 +72,6 @@ class PhotoDetailViewModel: ObservableObject {
     private var prepareForSharingUseCase: PrepareForSharingUseCase
     
     private var cancellables = Set<AnyCancellable>()
-    
-    // Track currently presented activity controller for dismissal
-    private weak var currentActivityController: UIActivityViewController?
-    
-    let showFaceDetection: Bool
     
     // MARK: - Initialization
     
@@ -130,7 +131,6 @@ class PhotoDetailViewModel: ObservableObject {
             await MainActor.run {
                 self.currentImage = image
                 self.isImageLoading = false
-                MemoryManager.shared.checkMemoryUsage()
             }
         } catch {
             print("Error loading image: \(error)")

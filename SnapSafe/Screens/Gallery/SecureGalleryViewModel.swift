@@ -397,15 +397,12 @@ final class SecureGalleryViewModel: ObservableObject {
     }
     
     func clearMemoryForPhoto(_ photoDef: PhotoDef) {
-        // Memory management is now handled by the repository and ViewModels
-        // Trigger garbage collection
-        MemoryManager.shared.checkMemoryUsage()
+        self.secureImageRepository.thumbnailCache.evictThumbnail(photoDef)
     }
     
     func clearMemoryForAllPhotos() {
         // Clean up memory for all loaded images
-        // Memory management is now handled by the repository and ViewModels
-        MemoryManager.shared.checkMemoryUsage()
+        self.secureImageRepository.thumbnailCache.clear()
     }
     
     // MARK: - Private Methods
@@ -462,7 +459,7 @@ final class SecureGalleryViewModel: ObservableObject {
                 // Update UI on the main thread
                 await MainActor.run {
                     // First clear memory of existing photos if we're refreshing
-                    MemoryManager.shared.freeAllMemory()
+                    self.secureImageRepository.thumbnailCache.clear()
 
                     // Update the photos array
                     self.photos = sortedPhotos
