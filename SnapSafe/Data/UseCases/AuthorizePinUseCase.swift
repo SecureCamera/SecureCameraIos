@@ -9,13 +9,16 @@
 public final class AuthorizePinUseCase {
 	private let authRepository: AuthorizationRepository
 	private let pinRepository: PinRepository
+    private let encryptionScheme: EncryptionScheme
 
 	public init(
         authRepository: AuthorizationRepository,
-		pinRepository: PinRepository
+		pinRepository: PinRepository,
+        encryptionScheme: EncryptionScheme
 	) {
 		self.authRepository = authRepository
 		self.pinRepository = pinRepository
+        self.encryptionScheme = encryptionScheme
 	}
 
 	/// Authorizes user by verifying the PIN and updates the authorization state if successful.
@@ -28,8 +31,9 @@ public final class AuthorizePinUseCase {
 		guard isValid, let hashedPin else {
 			return nil
 		}
-
-		authRepository.authorizeSession()
+        
+        try! await self.encryptionScheme.deriveAndCacheKey(plainPin: pin, hashedPin: hashedPin)
+        self.authRepository.authorizeSession()
 		await authRepository.resetFailedAttempts()
 		return hashedPin
 	}
