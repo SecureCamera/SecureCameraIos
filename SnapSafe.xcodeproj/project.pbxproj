@@ -87,8 +87,6 @@
 		A91DBC792DE58191001F42ED /* SnapSafeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC522DE58191001F42ED /* SnapSafeApp.swift */; };
 		A91DBC7A2DE58191001F42ED /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A91DBC2C2DE58191001F42ED /* Preview Assets.xcassets */; };
 		A91DBC7B2DE58191001F42ED /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A91DBC3F2DE58191001F42ED /* Assets.xcassets */; };
-		A9B3E0882DCF1D3C003F1ED3 /* Dependencies in Frameworks */ = {isa = PBXBuildFile; productRef = A9B3E0872DCF1D3C003F1ED3 /* Dependencies */; };
-		A9B3E08A2DCF1D3C003F1ED3 /* DependenciesTestSupport in Frameworks */ = {isa = PBXBuildFile; productRef = A9B3E0892DCF1D3C003F1ED3 /* DependenciesTestSupport */; };
 		A9E6B6962E6E47B500BB6F19 /* ThumbnailCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9E6B6942E6E47B500BB6F19 /* ThumbnailCache.swift */; };
 		A9E6B6972E6E47B500BB6F19 /* SecureImageRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9E6B6932E6E47B500BB6F19 /* SecureImageRepository.swift */; };
 		A9E6B6992E6E47E700BB6F19 /* PhotoDef.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9E6B6982E6E47E700BB6F19 /* PhotoDef.swift */; };
@@ -209,7 +207,6 @@
 				660130A02E676F5B00D07E9C /* FactoryKit in Frameworks */,
 				66A404C92E67EAF90054FFE7 /* Argon2Kit in Frameworks */,
 				66A404DC2E69537E0054FFE7 /* Mockable in Frameworks */,
-				A9B3E0882DCF1D3C003F1ED3 /* Dependencies in Frameworks */,
 				663C7E342E7153CA00967B9E /* Logging in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -219,7 +216,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				660130A22E676F5B00D07E9C /* FactoryTesting in Frameworks */,
-				A9B3E08A2DCF1D3C003F1ED3 /* DependenciesTestSupport in Frameworks */,
 				66A404DA2E694E2C0054FFE7 /* Mockable in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -533,7 +529,6 @@
 			);
 			name = SnapSafe;
 			packageProductDependencies = (
-				A9B3E0872DCF1D3C003F1ED3 /* Dependencies */,
 				6601309F2E676F5B00D07E9C /* FactoryKit */,
 				66A404C82E67EAF90054FFE7 /* Argon2Kit */,
 				66A404DB2E69537E0054FFE7 /* Mockable */,
@@ -558,7 +553,6 @@
 			);
 			name = SnapSafeTests;
 			packageProductDependencies = (
-				A9B3E0892DCF1D3C003F1ED3 /* DependenciesTestSupport */,
 				660130A12E676F5B00D07E9C /* FactoryTesting */,
 				66A404D92E694E2C0054FFE7 /* Mockable */,
 			);
@@ -620,7 +614,6 @@
 			);
 			mainGroup = A9DE373E2DC5F34400679C2C;
 			packageReferences = (
-				A9B3E0862DCF1D3C003F1ED3 /* XCRemoteSwiftPackageReference "swift-dependencies" */,
 				6601309E2E676F5B00D07E9C /* XCRemoteSwiftPackageReference "Factory" */,
 				66A404C72E67EAF90054FFE7 /* XCRemoteSwiftPackageReference "Argon2Kit" */,
 				66A404D82E694E2C0054FFE7 /* XCRemoteSwiftPackageReference "Mockable" */,
@@ -1119,14 +1112,6 @@
 				minimumVersion = 0.4.0;
 			};
 		};
-		A9B3E0862DCF1D3C003F1ED3 /* XCRemoteSwiftPackageReference "swift-dependencies" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/pointfreeco/swift-dependencies";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 1.9.2;
-			};
-		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -1159,16 +1144,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 66A404D82E694E2C0054FFE7 /* XCRemoteSwiftPackageReference "Mockable" */;
 			productName = Mockable;
-		};
-		A9B3E0872DCF1D3C003F1ED3 /* Dependencies */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = A9B3E0862DCF1D3C003F1ED3 /* XCRemoteSwiftPackageReference "swift-dependencies" */;
-			productName = Dependencies;
-		};
-		A9B3E0892DCF1D3C003F1ED3 /* DependenciesTestSupport */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = A9B3E0862DCF1D3C003F1ED3 /* XCRemoteSwiftPackageReference "swift-dependencies" */;
-			productName = DependenciesTestSupport;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
