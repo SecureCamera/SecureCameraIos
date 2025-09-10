@@ -14,7 +14,6 @@ final class ContentViewModel: ObservableObject {
     // MARK: - Published Properties
     private let navigationState = Container.shared.appNavigation()
     
-    @Published var isPINSetupComplete = false
     @Published var hasCompletedIntro: Bool = false
     @Published var isAuthenticated: Bool = false
     
@@ -63,18 +62,6 @@ final class ContentViewModel: ObservableObject {
         navigationState.navigateToRoot()
         navigationState.navigate(to: currentRootDestination)
     }
-    
-    func handlePINSetupComplete(_ completed: Bool) {
-        if completed {
-            print("PIN setup complete, authenticating user")
-            // Reset flag to avoid issues on subsequent launches
-            Task {
-                try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
-                isPINSetupComplete = false
-            }
-        }
-    }
-    
     
     func handleAuthenticationChange(_ authenticated: Bool) {
         if authenticated {
