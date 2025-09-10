@@ -18,7 +18,7 @@ final class SecureGalleryViewModel: ObservableObject {
     @Published var photos: [PhotoDef] = []
     @Published var selectedPhoto: PhotoDef?
     @Published var isSelecting: Bool = false
-    @Published var selectedPhotoIds = Set<String>() // Changed from UUID to String to match PhotoDef.photoName
+    @Published var selectedPhotoIds = Set<PhotoDef>()
     @Published var showDeleteConfirmation = false
     @Published var isShowingImagePicker = false
     @Published var importedImage: UIImage?
@@ -73,7 +73,7 @@ final class SecureGalleryViewModel: ObservableObject {
     }
     
     func selectedPhotos() async -> [UIImage] {
-        let selected = photos.filter { selectedPhotoIds.contains($0.photoName) }
+        let selected = photos.filter { selectedPhotoIds.contains($0) }
         var result: [UIImage] = []
         for photoDef in selected {
             do {
@@ -143,20 +143,20 @@ final class SecureGalleryViewModel: ObservableObject {
     }
     
     func togglePhotoSelection(_ photo: PhotoDef) {
-        if selectedPhotoIds.contains(photo.photoName) {
-            selectedPhotoIds.remove(photo.photoName)
+        if selectedPhotoIds.contains(photo) {
+            selectedPhotoIds.remove(photo)
         } else {
             // If we're selecting decoys and already at the limit, don't allow more selections
             if isSelectingDecoys && selectedPhotoIds.count >= maxDecoys {
                 showDecoyLimitWarning = true
                 return
             }
-            selectedPhotoIds.insert(photo.photoName)
+            selectedPhotoIds.insert(photo)
         }
     }
     
     func prepareToDeleteSinglePhoto(_ photo: PhotoDef) {
-        selectedPhotoIds = [photo.photoName]
+        selectedPhotoIds = [photo]
         showDeleteConfirmation = true
     }
     
@@ -243,8 +243,8 @@ final class SecureGalleryViewModel: ObservableObject {
         print("deleteSelectedPhotos() called")
         
         // Create a local copy of the photos to delete
-        let photosToDelete = selectedPhotoIds.compactMap { photoName in
-            photos.first(where: { $0.photoName == photoName })
+        let photosToDelete = selectedPhotoIds.compactMap { photo in
+            photos.first(where: { $0 == photo })
         }
         
         print("Will delete \(photosToDelete.count) photos: \(photosToDelete.map { $0.photoName }.joined(separator: ", "))")
@@ -297,7 +297,7 @@ final class SecureGalleryViewModel: ObservableObject {
         Task {
             // First, un-mark any previously tagged decoys that aren't currently selected
             for photoDef in photos {
-                let isCurrentlySelected = selectedPhotoIds.contains(photoDef.photoName)
+                let isCurrentlySelected = selectedPhotoIds.contains(photoDef)
                 let isCurrentlyDecoy = secureImageRepository.isDecoyPhoto(photoDef)
                 
                 // If it's currently a decoy but not selected, unmark it
@@ -445,52 +445,41 @@ final class SecureGalleryViewModel: ObservableObject {
         Task.detached(priority: .userInitiated) { [weak self] in
             guard let self = self else { return }
             
-            do {
-                // Load photo metadata
-                let photoMetadata = await self.secureImageRepository.getPhotos()
+            // Load photo metadata
+            let photoMetadata = await self.secureImageRepository.getPhotos()
 
-                // Sort photos by creation date (newest first, which is more typical for photo galleries)
-                let sortedPhotos = photoMetadata.sorted { photoDef1, photoDef2 in
-                    let date1 = photoDef1.dateTaken() ?? Date.distantPast
-                    let date2 = photoDef2.dateTaken() ?? Date.distantPast
-                    return date1 > date2 // Newest first
-                }
+            // Sort photos by creation date (newest first, which is more typical for photo galleries)
+            let sortedPhotos = photoMetadata.sorted { photoDef1, photoDef2 in
+                let date1 = photoDef1.dateTaken() ?? Date.distantPast
+                let date2 = photoDef2.dateTaken() ?? Date.distantPast
+                return date1 > date2 // Newest first
+            }
 
-                // Update UI on the main thread
-                await MainActor.run {
-                    // First clear memory of existing photos if we're refreshing
-                    self.secureImageRepository.thumbnailCache.clear()
+            // Update UI on the main thread
+            await MainActor.run {
+                // First clear memory of existing photos if we're refreshing
+                self.secureImageRepository.thumbnailCache.clear()
 
-                    // Update the photos array
-                    self.photos = sortedPhotos
+                // Update the photos array
+                self.photos = sortedPhotos
 
-                    // If in decoy selection mode, pre-select existing decoy photos
-                    if self.isSelectingDecoys {
-                        // Find and select all photos that are already marked as decoys
-                        for photoDef in sortedPhotos {
-                            if self.secureImageRepository.isDecoyPhoto(photoDef) {
-                                self.selectedPhotoIds.insert(photoDef.photoName)
-                            }
+                // If in decoy selection mode, pre-select existing decoy photos
+                if self.isSelectingDecoys {
+                    // Find and select all photos that are already marked as decoys
+                    for photoDef in sortedPhotos {
+                        if self.secureImageRepository.isDecoyPhoto(photoDef) {
+                            self.selectedPhotoIds.insert(photoDef)
                         }
-
-                        // Enable selection mode
-                        self.isSelecting = true
                     }
+
+                    // Enable selection mode
+                    self.isSelecting = true
                 }
-            } catch {
-                print("Error loading photos: \(error.localizedDescription)")
             }
         }
     }
     
     private func processImportedImageData(_ imageData: Data) async {
-        // Create metadata including import timestamp
-        let metadata: [String: Any] = [
-            "imported": true,
-            "importSource": "PhotosPicker",
-            "creationDate": Date().timeIntervalSince1970,
-        ]
-
         // Save the photo data (runs on background thread)
         let filename = await withCheckedContinuation { continuation in
             Task.detached {
@@ -551,9 +540,9 @@ final class SecureGalleryViewModel: ObservableObject {
             await MainActor.run {
                 // Remove from the local array
                 withAnimation {
-                    self.photos.removeAll { $0.photoName == photoDef.photoName }
-                    if self.selectedPhotoIds.contains(photoDef.photoName) {
-                        self.selectedPhotoIds.remove(photoDef.photoName)
+                    self.photos.removeAll { $0 == photoDef }
+                    if self.selectedPhotoIds.contains(photoDef) {
+                        self.selectedPhotoIds.remove(photoDef)
                     }
                 }
             }
