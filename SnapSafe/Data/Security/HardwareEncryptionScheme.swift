@@ -11,7 +11,7 @@ import Foundation
 import Security
 
 // MARK: - KeyCache Actor for Thread-Safe Key Management
-actor KeyCache {
+private actor KeyCache {
     private var cachedKey: Data?
     
     func hasKey() -> Bool {
@@ -123,25 +123,29 @@ final class HardwareEncryptionScheme: EncryptionScheme {
     func deriveAndCacheKey(plainPin: String, hashedPin: HashedPin) async throws {
         // Check if key is already cached (fast path)
         if await keyCache.hasKey() {
+            print("HardwareEncryptionScheme: Key already cached, skipping derivation")
             return
         }
+        
+        print("HardwareEncryptionScheme: Key not cached, deriving new key")
         
         // Derive key
         let derivedKey = try await deriveKey(plainPin: plainPin, hashedPin: hashedPin)
         
         // Cache the derived key
         await keyCache.setKey(derivedKey)
+        print("HardwareEncryptionScheme: Successfully derived and cached key")
     }
     
     func getDerivedKey() async throws -> Data {
         guard let cachedKey = await keyCache.getKey() else {
+            print("HardwareEncryptionScheme: No key cached, cannot get derived key")
             throw CryptoError.keyNotDerived
         }
         return cachedKey
     }
     
     func deriveKey(plainPin: String, hashedPin: HashedPin) async throws -> Data {
-        // Only wrapped key mode - no ephemeral keys
         return try await deriveWrappedKey(plainPin: plainPin, hashedPin: hashedPin)
     }
     
@@ -152,9 +156,14 @@ final class HardwareEncryptionScheme: EncryptionScheme {
     }
     
     func createKey(plainPin: String, hashedPin: HashedPin) async throws {
+        print("HardwareEncryptionScheme: Creating key for PIN")
+        
         // Create hardware-backed KEK if it doesn't exist (outside of lock)
         if !hardwareKeyExists(keyAlias: Self.keyAlias) {
+            print("HardwareEncryptionScheme: Hardware key doesn't exist, creating new one")
             try createHardwareKey(keyAlias: Self.keyAlias)
+        } else {
+            print("HardwareEncryptionScheme: Hardware key already exists")
         }
         
         // Only wrapped key mode - no ephemeral keys
@@ -162,16 +171,27 @@ final class HardwareEncryptionScheme: EncryptionScheme {
     }
     
     func securityFailureReset() async {
+        print("HardwareEncryptionScheme: Performing security failure reset")
+        
         // Delete all DEKs
         let keyDir = getKeyDirectory()
         do {
             let contents = try FileManager.default.contentsOfDirectory(at: keyDir, 
                                                                        includingPropertiesForKeys: nil)
-            for file in contents where file.lastPathComponent.hasPrefix(Self.dekFilenamePrefix) {
-                try FileManager.default.removeItem(at: file)
+            let dekFiles = contents.filter { file in 
+                file.lastPathComponent.hasPrefix(Self.dekFilenamePrefix)
             }
+            
+            print("HardwareEncryptionScheme: Found \(dekFiles.count) DEK files to delete")
+            
+            for file in dekFiles {
+                try FileManager.default.removeItem(at: file)
+                print("HardwareEncryptionScheme: Deleted DEK file: \(file.lastPathComponent)")
+            }
+            
+            print("HardwareEncryptionScheme: Security failure reset completed successfully")
         } catch {
-            print("Failed to reset security keys: \(error)")
+            print("HardwareEncryptionScheme: Failed to reset security keys: \(error)")
         }
     }
     
@@ -191,14 +211,21 @@ private extension HardwareEncryptionScheme {
     func deriveWrappedKey(plainPin: String, hashedPin: HashedPin) async throws -> Data {
         let dekFile = getDekFile(hashedPin: hashedPin)
         if !FileManager.default.fileExists(atPath: dekFile.path) {
+            print("HardwareEncryptionScheme: DEK file not found, creating new key: \(dekFile.lastPathComponent)")
             try await createKey(plainPin: plainPin, hashedPin: hashedPin)
+        } else {
+            print("HardwareEncryptionScheme: Loading existing DEK from: \(dekFile.lastPathComponent)")
         }
         
         let encryptedDek = try Data(contentsOf: dekFile)
+        print("HardwareEncryptionScheme: Decrypting DEK (\(encryptedDek.count) bytes)")
+        
         return try decryptWithHardwareKey(encrypted: encryptedDek, keyAlias: Self.keyAlias)
     }
     
     func createWrappedKey(plainPin: String, hashedPin: HashedPin) async throws {
+        print("HardwareEncryptionScheme: Creating wrapped key")
+        
         // Create the dSalt (device salt)
         var dSalt = Data(count: Self.dSaltSize)
         let result = dSalt.withUnsafeMutableBytes { bytes in
@@ -206,8 +233,11 @@ private extension HardwareEncryptionScheme {
         }
         
         guard result == errSecSuccess else {
+            print("HardwareEncryptionScheme: Failed to generate random dSalt: \(result)")
             throw CryptoError.randomGenerationFailed
         }
+        
+        print("HardwareEncryptionScheme: Generated \(Self.dSaltSize) byte dSalt")
         
         // Derive the key using PBKDF2
         let encodedDSalt = dSalt.base64EncodedString()
@@ -218,13 +248,19 @@ private extension HardwareEncryptionScheme {
                       encodedDSalt.data(using: .utf8)! + 
                       encodedDeviceId.data(using: .utf8)!
         
+        print("HardwareEncryptionScheme: Deriving DEK using PBKDF2 with \(Self.defaultIterations) iterations")
+        
         let salt = Data(base64Encoded: hashedPin.salt) ?? Data()
         let dekBytes = try derivePBKDF2Key(input: dekInput, salt: salt)
+        
+        print("HardwareEncryptionScheme: Derived \(dekBytes.count) byte DEK")
         
         // Encrypt and store the DEK using hardware-backed key
         let encryptedDek = try encryptWithHardwareKey(plain: dekBytes, keyAlias: Self.keyAlias)
         let dekFile = getDekFile(hashedPin: hashedPin)
         try encryptedDek.write(to: dekFile)
+        
+        print("HardwareEncryptionScheme: Encrypted and stored DEK to \(dekFile.lastPathComponent)")
     }
     
     func derivePBKDF2Key(input: Data, salt: Data) throws -> Data {
@@ -248,6 +284,7 @@ private extension HardwareEncryptionScheme {
         }
         
         guard result == kCCSuccess else {
+            print("HardwareEncryptionScheme: PBKDF2 key derivation failed with result: \(result)")
             throw CryptoError.keyDerivationFailed
         }
         
@@ -257,8 +294,12 @@ private extension HardwareEncryptionScheme {
     // MARK: - Hardware Key Management
     
     func createHardwareKey(keyAlias: String) throws {
+        print("HardwareEncryptionScheme: Creating hardware key with alias: \(keyAlias)")
+        
         // First try with Secure Enclave
         do {
+            print("HardwareEncryptionScheme: Attempting Secure Enclave key generation")
+            
             let accessControl = SecAccessControlCreateWithFlags(
                 kCFAllocatorDefault,
                 kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
@@ -281,18 +322,24 @@ private extension HardwareEncryptionScheme {
             guard let _ = SecKeyCreateRandomKey(attributes as CFDictionary, &error) else {
                 if let error = error?.takeRetainedValue() {
                     let errorDesc = CFErrorCopyDescription(error) as String? ?? "Unknown error"
+                    print("HardwareEncryptionScheme: Secure Enclave key generation failed: \(errorDesc)")
                     throw CryptoError.keyGenerationFailed(errorDesc)
                 }
+                print("HardwareEncryptionScheme: Secure Enclave key generation failed with unknown error")
                 throw CryptoError.keyGenerationFailed("Unknown error")
             }
+            
+            print("HardwareEncryptionScheme: Successfully created Secure Enclave key")
         } catch {
             // Fallback to regular keychain if Secure Enclave fails
-            print("Secure Enclave unavailable, falling back to regular keychain")
+            print("HardwareEncryptionScheme: Secure Enclave unavailable, falling back to regular keychain: \(error)")
             try createFallbackKey(keyAlias: keyAlias)
         }
     }
     
     func createFallbackKey(keyAlias: String) throws {
+        print("HardwareEncryptionScheme: Creating fallback keychain key")
+        
         let accessControl = SecAccessControlCreateWithFlags(
             kCFAllocatorDefault,
             kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
@@ -314,10 +361,14 @@ private extension HardwareEncryptionScheme {
         guard let _ = SecKeyCreateRandomKey(attributes as CFDictionary, &error) else {
             if let error = error?.takeRetainedValue() {
                 let errorDesc = CFErrorCopyDescription(error) as String? ?? "Unknown error"
+                print("HardwareEncryptionScheme: Fallback key generation failed: \(errorDesc)")
                 throw CryptoError.keyGenerationFailed(errorDesc)
             }
+            print("HardwareEncryptionScheme: Fallback key generation failed with unknown error")
             throw CryptoError.keyGenerationFailed("Unknown error")
         }
+        
+        print("HardwareEncryptionScheme: Successfully created fallback keychain key")
     }
     
     func createHardwareKeyIfNeeded(keyAlias: String) throws {
@@ -362,6 +413,7 @@ private extension HardwareEncryptionScheme {
     func encryptWithHardwareKey(plain: Data, keyAlias: String) throws -> Data {
         let privateKey = try getHardwareKey(keyAlias: keyAlias)
         guard let publicKey = SecKeyCopyPublicKey(privateKey) else {
+            print("HardwareEncryptionScheme: Failed to get public key from private key for alias: \(keyAlias)")
             throw CryptoError.keyNotFound
         }
         
@@ -374,8 +426,10 @@ private extension HardwareEncryptionScheme {
         ) else {
             if let error = error?.takeRetainedValue() {
                 let errorDesc = CFErrorCopyDescription(error) as String? ?? "Unknown error"
+                print("HardwareEncryptionScheme: Hardware encryption failed: \(errorDesc)")
                 throw CryptoError.encryptionFailed(errorDesc)
             }
+            print("HardwareEncryptionScheme: Hardware encryption failed with unknown error")
             throw CryptoError.encryptionFailed("Unknown error")
         }
         
@@ -394,8 +448,10 @@ private extension HardwareEncryptionScheme {
         ) else {
             if let error = error?.takeRetainedValue() {
                 let errorDesc = CFErrorCopyDescription(error) as String? ?? "Unknown error"
+                print("HardwareEncryptionScheme: Hardware decryption failed: \(errorDesc)")
                 throw CryptoError.decryptionFailed(errorDesc)
             }
+            print("HardwareEncryptionScheme: Hardware decryption failed with unknown error")
             throw CryptoError.decryptionFailed("Unknown error")
         }
         
