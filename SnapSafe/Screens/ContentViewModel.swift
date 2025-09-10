@@ -125,5 +125,18 @@ final class ContentViewModel: ObservableObject {
             }
             .store(in: &cancellables)
         
+        // Monitor isPINSetupComplete to trigger navigation after PIN setup
+        $isPINSetupComplete
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] completed in
+                if completed {
+                    self?.handlePINSetupComplete(completed)
+                    // Since PIN was just created successfully, mark intro as completed and navigate
+                    self?.hasCompletedIntro = true
+                    self?.navigateToRootDestination()
+                }
+            }
+            .store(in: &cancellables)
+        
     }
 }
