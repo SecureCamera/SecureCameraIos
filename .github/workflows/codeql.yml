@@ -61,6 +61,19 @@ jobs:
       if: ${{ matrix.language == 'swift' }}
       run: sudo xcode-select -s /Applications/Xcode_16.2.app
 
+    # DEBUG
+    - name: Print Xcode & SDKs
+      run: |
+        xcode-select -p
+        xcodebuild -version
+        xcodebuild -showsdks
+
+    - name: List available simulators & runtimes
+      run: |
+        xcrun simctl list devicetypes
+        xcrun simctl list runtimes
+        xcrun simctl list devices
+
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v3
