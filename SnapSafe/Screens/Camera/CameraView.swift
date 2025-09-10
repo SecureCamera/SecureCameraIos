@@ -86,6 +86,8 @@ struct FocusIndicatorView: View {
 
 // UIViewRepresentable for camera preview
 struct CameraPreviewView: UIViewRepresentable {
+    private let sessionQueue = DispatchQueue(label: "camera.session.queue")
+    
     @ObservedObject var cameraModel: CameraViewModel
     var viewSize: CGSize // Store the parent view's size for coordinate conversion
     
@@ -376,13 +378,17 @@ struct CameraPreviewView: UIViewRepresentable {
         
         // Give a slight delay before starting the camera session
         // This ensures all UI setup is complete and configuration has been committed
-        Task {
+        Task(priority: .userInitiated) {
             try await Task.sleep(for: .milliseconds(500))
             // Start camera on background thread after delay
-            Task(priority: .userInitiated) {
-                if !capturedCameraModel.session.isRunning {
-                    print("📸 Starting camera session from makeCoordinator after delay")
-                    capturedCameraModel.session.startRunning()
+            let session = capturedCameraModel.session
+            await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
+                sessionQueue.async {
+                    if !session.isRunning {
+                        print("📸 Starting camera session off-main after delay")
+                        session.startRunning()   // blocking; safe on this queue
+                    }
+                    cont.resume()
                 }
             }
         }
