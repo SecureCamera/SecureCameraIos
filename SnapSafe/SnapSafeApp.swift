@@ -7,11 +7,16 @@
 
 import SwiftUI
 import FactoryKit
+import Logging
 
 @main
 struct SnapSafeApp: App {
     @StateObject private var nav = Container.shared.appNavigation()
     @AppStorage("appearanceMode") private var appearanceMode: AppearanceMode = .system
+    
+    init() {
+        LoggingConfiguration.configure()
+    }
     
     var body: some Scene {
         WindowGroup {

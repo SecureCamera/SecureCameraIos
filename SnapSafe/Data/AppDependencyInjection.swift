@@ -7,9 +7,50 @@
 
 import Foundation
 import FactoryKit
+import Logging
 
 
 extension Container {
+    
+    // MARK: - Logging
+    
+    /// Factory for encryption logger
+    var encryptionLogger: Factory<Logger> {
+        self { Logger.encryption }
+    }
+    
+    /// Factory for security logger  
+    var securityLogger: Factory<Logger> {
+        self { Logger.security }
+    }
+    
+    /// Factory for camera logger
+    var cameraLogger: Factory<Logger> {
+        self { Logger.camera }
+    }
+    
+    /// Factory for storage logger
+    var storageLogger: Factory<Logger> {
+        self { Logger.storage }
+    }
+    
+    /// Factory for UI logger
+    var uiLogger: Factory<Logger> {
+        self { Logger.ui }
+    }
+    
+    /// Factory for app logger
+    var appLogger: Factory<Logger> {
+        self { Logger.app }
+    }
+    
+    /// Factory for creating subsystem loggers
+    func logger(subsystem: String, category: String) -> Logger {
+        return Logger.subsystem(subsystem, category: category)
+    }
+    
+    // MARK: - Core Dependencies
+    
     var clock: Factory<Clock> {
          self { SystemClock() }
     }

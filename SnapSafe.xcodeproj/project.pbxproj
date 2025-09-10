@@ -27,6 +27,9 @@
 		663C7E2D2E70F2E900967B9E /* EnhancedPhotoDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 663C7E2C2E70F2E900967B9E /* EnhancedPhotoDetailViewModel.swift */; };
 		663C7E2F2E71121C00967B9E /* PrepareForSharingUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 663C7E2E2E71121600967B9E /* PrepareForSharingUseCase.swift */; };
 		663C7E312E712E9000967B9E /* HardwareEncryptionScheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 663C7E302E712E9000967B9E /* HardwareEncryptionScheme.swift */; };
+		663C7E342E7153CA00967B9E /* Logging in Frameworks */ = {isa = PBXBuildFile; productRef = 663C7E332E7153CA00967B9E /* Logging */; };
+		663C7E3D2E71542E00967B9E /* LoggingConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 663C7E3B2E71542E00967B9E /* LoggingConfiguration.swift */; };
+		663C7E3E2E71542E00967B9E /* Logger+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 663C7E3A2E71542E00967B9E /* Logger+Extensions.swift */; };
 		667FF80E2E6A9D3000FB3E02 /* AuthorizationRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF80D2E6A9D2A00FB3E02 /* AuthorizationRepositoryTests.swift */; };
 		667FF8102E6A9EE600FB3E02 /* Clock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF80F2E6A9EE600FB3E02 /* Clock.swift */; };
 		667FF8122E6BA7F200FB3E02 /* AuthorizePinUseCaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF8112E6BA7F200FB3E02 /* AuthorizePinUseCaseTests.swift */; };
@@ -130,6 +133,8 @@
 		663C7E2C2E70F2E900967B9E /* EnhancedPhotoDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnhancedPhotoDetailViewModel.swift; sourceTree = "<group>"; };
 		663C7E2E2E71121600967B9E /* PrepareForSharingUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrepareForSharingUseCase.swift; sourceTree = "<group>"; };
 		663C7E302E712E9000967B9E /* HardwareEncryptionScheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HardwareEncryptionScheme.swift; sourceTree = "<group>"; };
+		663C7E3A2E71542E00967B9E /* Logger+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Logger+Extensions.swift"; sourceTree = "<group>"; };
+		663C7E3B2E71542E00967B9E /* LoggingConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoggingConfiguration.swift; sourceTree = "<group>"; };
 		667FF80D2E6A9D2A00FB3E02 /* AuthorizationRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorizationRepositoryTests.swift; sourceTree = "<group>"; };
 		667FF80F2E6A9EE600FB3E02 /* Clock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clock.swift; sourceTree = "<group>"; };
 		667FF8112E6BA7F200FB3E02 /* AuthorizePinUseCaseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorizePinUseCaseTests.swift; sourceTree = "<group>"; };
@@ -205,6 +210,7 @@
 				66A404C92E67EAF90054FFE7 /* Argon2Kit in Frameworks */,
 				66A404DC2E69537E0054FFE7 /* Mockable in Frameworks */,
 				A9B3E0882DCF1D3C003F1ED3 /* Dependencies in Frameworks */,
+				663C7E342E7153CA00967B9E /* Logging in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -253,9 +259,19 @@
 			path = UserData;
 			sourceTree = "<group>";
 		};
+		663C7E3C2E71542E00967B9E /* Logging */ = {
+			isa = PBXGroup;
+			children = (
+				663C7E3A2E71542E00967B9E /* Logger+Extensions.swift */,
+				663C7E3B2E71542E00967B9E /* LoggingConfiguration.swift */,
+			);
+			path = Logging;
+			sourceTree = "<group>";
+		};
 		667FF8132E6BAB4500FB3E02 /* Util */ = {
 			isa = PBXGroup;
 			children = (
+				663C7E3C2E71542E00967B9E /* Logging */,
 				667FF8282E6CAE0C00FB3E02 /* CombineExt.swift */,
 				66DE21CE2E69750600AC94DA /* Json.swift */,
 				667FF80F2E6A9EE600FB3E02 /* Clock.swift */,
@@ -521,6 +537,7 @@
 				6601309F2E676F5B00D07E9C /* FactoryKit */,
 				66A404C82E67EAF90054FFE7 /* Argon2Kit */,
 				66A404DB2E69537E0054FFE7 /* Mockable */,
+				663C7E332E7153CA00967B9E /* Logging */,
 			);
 			productName = SnapSafe;
 			productReference = A9DE37472DC5F34400679C2C /* SnapSafe.app */;
@@ -607,6 +624,7 @@
 				6601309E2E676F5B00D07E9C /* XCRemoteSwiftPackageReference "Factory" */,
 				66A404C72E67EAF90054FFE7 /* XCRemoteSwiftPackageReference "Argon2Kit" */,
 				66A404D82E694E2C0054FFE7 /* XCRemoteSwiftPackageReference "Mockable" */,
+				663C7E322E7153CA00967B9E /* XCRemoteSwiftPackageReference "swift-log" */,
 			);
 			productRefGroup = A9DE37482DC5F34400679C2C /* Products */;
 			projectDirPath = "";
@@ -693,6 +711,8 @@
 				A9E6B6B12E6EAE3500BB6F19 /* SecurityOverlayView.swift in Sources */,
 				66A404CD2E67F0960054FFE7 /* DataExt.swift in Sources */,
 				663C7E312E712E9000967B9E /* HardwareEncryptionScheme.swift in Sources */,
+				663C7E3D2E71542E00967B9E /* LoggingConfiguration.swift in Sources */,
+				663C7E3E2E71542E00967B9E /* Logger+Extensions.swift in Sources */,
 				A9E6B6962E6E47B500BB6F19 /* ThumbnailCache.swift in Sources */,
 				A9E6B6972E6E47B500BB6F19 /* SecureImageRepository.swift in Sources */,
 				A91DBC642DE58191001F42ED /* PhotoDetailView.swift in Sources */,
@@ -1075,6 +1095,14 @@
 				minimumVersion = 2.5.3;
 			};
 		};
+		663C7E322E7153CA00967B9E /* XCRemoteSwiftPackageReference "swift-log" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-log.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.6.4;
+			};
+		};
 		66A404C72E67EAF90054FFE7 /* XCRemoteSwiftPackageReference "Argon2Kit" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/rkreutz/Argon2Kit.git";
@@ -1111,6 +1139,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 6601309E2E676F5B00D07E9C /* XCRemoteSwiftPackageReference "Factory" */;
 			productName = FactoryTesting;
+		};
+		663C7E332E7153CA00967B9E /* Logging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 663C7E322E7153CA00967B9E /* XCRemoteSwiftPackageReference "swift-log" */;
+			productName = Logging;
 		};
 		66A404C82E67EAF90054FFE7 /* Argon2Kit */ = {
 			isa = XCSwiftPackageProductDependency;
