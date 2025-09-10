@@ -31,14 +31,20 @@ public final class CreatePinUseCase {
     /// 1) creates the key, 2) derives & caches encryption key, 3) marks intro complete.
     /// - Returns: `true` on success, `false` otherwise.
     public func createPin(_ pin: String) async -> Bool {
-        await pinRepository.setAppPin(pin)
+        do {
+            await pinRepository.setAppPin(pin)
 
-        let hashedPin = await authorizePinUseCase.authorizePin(pin)
-        guard let hashedPin else { return false }
+            let hashedPin = await authorizePinUseCase.authorizePin(pin)
+            guard let hashedPin else { return false }
 
-        _ = await authorizationRepository.createKey(pin: pin, hashedPin: hashedPin)
-        try! await encryptionScheme.deriveAndCacheKey(plainPin: pin, hashedPin: hashedPin)
-        await settingsDataSource.setIntroCompleted(true)
-        return true
+            _ = await authorizationRepository.createKey(pin: pin, hashedPin: hashedPin)
+            try await encryptionScheme.deriveAndCacheKey(plainPin: pin, hashedPin: hashedPin)
+            await settingsDataSource.setIntroCompleted(true)
+            return true
+        } catch {
+            // Log the error for debugging purposes
+            print("Failed to create PIN: \(error)")
+            return false
+        }
     }
 }
