@@ -350,47 +350,47 @@ final class SecureGalleryViewModel: ObservableObject {
 ////                }
 //            }
 //        }
-        
-        // Share files if any were successfully prepared
-        if !filesToShare.isEmpty {
-            // Create a UIActivityViewController to share the files
-            let activityViewController = UIActivityViewController(
-                activityItems: filesToShare,
-                applicationActivities: nil
-            )
-            
-            // For iPad support
-            if let popover = activityViewController.popoverPresentationController {
-                popover.sourceView = window
-                popover.sourceRect = CGRect(x: window.bounds.midX, y: window.bounds.midY, width: 0, height: 0)
-                popover.permittedArrowDirections = []
-            }
-            
-            // Store reference and present the share sheet
-            currentActivityController = activityViewController
-            currentController.present(activityViewController, animated: true) {
-                print("Share sheet presented successfully for \(filesToShare.count) files")
-            }
-        } else {
-            // Fallback to sharing just the images if file preparation failed for all
-            print("Falling back to sharing images directly")
-            
-            let activityViewController = UIActivityViewController(
-                activityItems: images,
-                applicationActivities: nil
-            )
-            
-            // For iPad support
-            if let popover = activityViewController.popoverPresentationController {
-                popover.sourceView = window
-                popover.sourceRect = CGRect(x: window.bounds.midX, y: window.bounds.midY, width: 0, height: 0)
-                popover.permittedArrowDirections = []
-            }
-            
-            // Store reference and present the share sheet
-            currentActivityController = activityViewController
-            currentController.present(activityViewController, animated: true, completion: nil)
-        }
+//        
+//        // Share files if any were successfully prepared
+//        if !filesToShare.isEmpty {
+//            // Create a UIActivityViewController to share the files
+//            let activityViewController = UIActivityViewController(
+//                activityItems: filesToShare,
+//                applicationActivities: nil
+//            )
+//            
+//            // For iPad support
+//            if let popover = activityViewController.popoverPresentationController {
+//                popover.sourceView = window
+//                popover.sourceRect = CGRect(x: window.bounds.midX, y: window.bounds.midY, width: 0, height: 0)
+//                popover.permittedArrowDirections = []
+//            }
+//            
+//            // Store reference and present the share sheet
+//            currentActivityController = activityViewController
+//            currentController.present(activityViewController, animated: true) {
+//                print("Share sheet presented successfully for \(filesToShare.count) files")
+//            }
+//        } else {
+//            // Fallback to sharing just the images if file preparation failed for all
+//            print("Falling back to sharing images directly")
+//            
+//            let activityViewController = UIActivityViewController(
+//                activityItems: images,
+//                applicationActivities: nil
+//            )
+//            
+//            // For iPad support
+//            if let popover = activityViewController.popoverPresentationController {
+//                popover.sourceView = window
+//                popover.sourceRect = CGRect(x: window.bounds.midX, y: window.bounds.midY, width: 0, height: 0)
+//                popover.permittedArrowDirections = []
+//            }
+//            
+//            // Store reference and present the share sheet
+//            currentActivityController = activityViewController
+//            currentController.present(activityViewController, animated: true, completion: nil)
+//        }
     }
     
     func clearMemoryForPhoto(_ photo: SecurePhoto) {
