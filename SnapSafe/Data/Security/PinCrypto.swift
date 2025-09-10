@@ -60,6 +60,11 @@ final class PinCryptoImpl: PinCrypto {
             return false
         }
 
-        return try! Argon2.verify(password: password, encodedHash: encodedData)
+        do {
+            return try Argon2.verify(password: password, encodedHash: encodedData)
+        } catch {
+            print("PIN verification failed with Argon2 error: \(error)")
+            return false
+        }
     }
 }

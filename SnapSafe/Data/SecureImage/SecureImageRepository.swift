@@ -443,27 +443,31 @@ public class SecureImageRepository {
     }
     
     /// Adds a photo as decoy with specific key
-    func addDecoyPhotoWithKey(_ photoDef: PhotoDef, keyData: Data) async throws -> Bool {
+    func addDecoyPhotoWithKey(_ photoDef: PhotoDef, keyData: Data) async -> Bool {
         guard numDecoys() < Self.maxDecoyPhotos else {
             return false
         }
         
-        let jpegData = try await decryptJpg(photoDef)
-        let decoyDir = getDecoyDirectory()
-        
-        // Create decoy directory if needed
-        if !FileManager.default.fileExists(atPath: decoyDir.path) {
-            try FileManager.default.createDirectory(at: decoyDir, withIntermediateDirectories: true)
+        do {
+            let jpegData = try await decryptJpg(photoDef)
+            let decoyDir = getDecoyDirectory()
+            
+            // Create decoy directory if needed
+            if !FileManager.default.fileExists(atPath: decoyDir.path) {
+                try FileManager.default.createDirectory(at: decoyDir, withIntermediateDirectories: true)
+            }
+            
+            let decoyFile = getDecoyFile(photoDef)
+            try await encryptionScheme.encryptToFile(
+                plain: jpegData,
+                keyBytes: keyData,
+                targetFile: decoyFile
+            )
+            
+            return true
+        } catch {
+            return false
         }
-        
-        let decoyFile = getDecoyFile(photoDef)
-        try await encryptionScheme.encryptToFile(
-            plain: jpegData,
-            keyBytes: keyData,
-            targetFile: decoyFile
-        )
-        
-        return true
     }
     
     /// Removes a decoy photo
@@ -682,7 +686,7 @@ public class SecureImageRepository {
     // MARK: - Decrypt (stub; replace with your implementation)
 
     func decryptJpg(photoDef: PhotoDef) async throws -> Data {
-        return try! await encryptionScheme.decryptFile(photoDef.photoFile)
+        return try await encryptionScheme.decryptFile(photoDef.photoFile)
     }
 
     // MARK: - ImageIO helpers

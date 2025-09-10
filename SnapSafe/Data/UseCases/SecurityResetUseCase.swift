@@ -25,7 +25,7 @@ final class SecurityResetUseCase {
     func reset() async {
         await authManager.securityFailureReset()
         await imageRepository.securityFailureReset()
-        try! await encryptionScheme.securityFailureReset()
+        await encryptionScheme.securityFailureReset()
         print("Security Reset Complete!") // Timber.d equivalent
     }
 }

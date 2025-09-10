@@ -57,7 +57,7 @@ final class PassThroughEncryptionScheme: EncryptionScheme {
         cachedKey = plainPin.data(using: .utf8)
     }
     
-    func securityFailureReset() async throws {
+    func securityFailureReset() async {
         cachedKey = nil
     }
     

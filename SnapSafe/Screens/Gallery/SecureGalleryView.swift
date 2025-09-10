@@ -241,7 +241,7 @@ struct SecureGalleryView: View {
                 ForEach(viewModel.photos) { photo in
                     PhotoCell(
                         photo: photo,
-                        isSelected: viewModel.selectedPhotoIds.contains(photo.photoName),
+                        isSelected: viewModel.selectedPhotoIds.contains(photo),
                         isSelecting: viewModel.isSelecting,
                         onTap: {
                             viewModel.handlePhotoTap(photo)

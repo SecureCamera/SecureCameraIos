@@ -52,7 +52,7 @@ public protocol EncryptionScheme {
     func createKey(plainPin: String, hashedPin: HashedPin) async throws
 
     /// Wipes sensitive state (keys, caches, metadata) after a security failure.
-    func securityFailureReset() async throws
+    func securityFailureReset() async
 
     // MARK: - Poison Pill
     /// Activates a "poison pill" key path. `oldPin` may be used to validate/rotate.

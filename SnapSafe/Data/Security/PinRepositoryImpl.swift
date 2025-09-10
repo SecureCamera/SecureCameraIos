@@ -63,11 +63,11 @@ class PinRepositoryImpl: PinRepository {
     }
 
     func hashPin(_ pin: String) async -> HashedPin {
-        return await pinCrypto.hashPin(pin: pin, deviceId: await deviceInfo.getDeviceIdentifier())
+        return pinCrypto.hashPin(pin: pin, deviceId: await deviceInfo.getDeviceIdentifier())
     }
 
     func verifyPin(inputPin: String, storedHash: HashedPin) async -> Bool {
-        return await pinCrypto.verifyPin(
+        return pinCrypto.verifyPin(
             pin: inputPin, stored: storedHash, deviceId: await deviceInfo.getDeviceIdentifier())
     }
 
