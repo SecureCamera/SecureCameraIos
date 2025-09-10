@@ -32,8 +32,8 @@ class EnhancedPhotoDetailViewModel: ObservableObject {
     
     // MARK: - Initialization
     
-    init(allPhotos: [SecurePhoto], initialIndex: Int, showFaceDetection: Bool, onDelete: ((PhotoDef) -> Void)? = nil, onDismiss: (() -> Void)? = nil) {
-        self.photoFiles = mapToPhotoDefs(allPhotos)
+    init(allPhotos: [PhotoDef], initialIndex: Int, showFaceDetection: Bool, onDelete: ((PhotoDef) -> Void)? = nil, onDismiss: (() -> Void)? = nil) {
+        self.photoFiles = allPhotos
         self.currentIndex = initialIndex
         self.showFaceDetection = showFaceDetection
         self.onDelete = onDelete

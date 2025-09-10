@@ -146,47 +146,12 @@ class SecureCameraController: UIViewController, AVCapturePhotoCaptureDelegate {
             print("Error capturing photo: \(error!.localizedDescription)")
             return
         }
-
-        // Extract and process EXIF data
-        if photo.fileDataRepresentation() != nil {
-//            processAndSecurePhoto(data)
-        }
     }
 
     func photoOutput(_: AVCapturePhotoOutput, didFinishCapturingDeferredPhotoProxy proxy: AVCaptureDeferredPhotoProxy?, error: Error?) {
         guard error == nil else {
             print("Error with deferred photo: \(error!.localizedDescription)")
             return
-        }
-    }
-
-    private func processAndSecurePhoto(_ photoData: Data) async {
-        // Extract EXIF data before encryption
-        if let image = UIImage(data: photoData),
-           let _ = image.cgImage,
-           let metadata = extractMetadata(from: photoData)
-        {
-            // Process EXIF data (location, timestamps, etc.)
-            let processedEXIF = processEXIFData(metadata)
-
-            // Save the photo without encryption for now
-            do {
-                let image = UIImage(data: photoData)!
-                let capturedImage = CapturedImage(
-                    sensorBitmap: image,
-                    timestamp: self.clock.now,
-                    rotationDegrees: 0
-                )
-                
-                let _ = try await self.secureImageRepository.saveImage(
-                    capturedImage,
-                    location: self.locationRepository.lastLocation,
-                    applyRotation: true
-                )
-            } catch {
-                // Handle save error
-                print("Error saving photo: \(error.localizedDescription)")
-            }
         }
     }
 

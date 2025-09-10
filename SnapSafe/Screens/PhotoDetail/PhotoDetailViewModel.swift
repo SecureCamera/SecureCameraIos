@@ -74,8 +74,8 @@ class PhotoDetailViewModel: ObservableObject {
     
     // MARK: - Initialization
     
-    init(photo: SecurePhoto, showFaceDetection: Bool, onDelete: ((PhotoDef) -> Void)? = nil, onDismiss: (() -> Void)? = nil) {
-        self.singlePhotoFile = mapToPhotoDef(photo)
+    init(photo: PhotoDef, showFaceDetection: Bool, onDelete: ((PhotoDef) -> Void)? = nil, onDismiss: (() -> Void)? = nil) {
+        self.singlePhotoFile = photo
         self.showFaceDetection = showFaceDetection
         self.onDelete = onDelete
         self.onDismiss = onDismiss
@@ -87,8 +87,8 @@ class PhotoDetailViewModel: ObservableObject {
         }
     }
     
-    init(allPhotos: [SecurePhoto], initialIndex: Int, showFaceDetection: Bool, onDelete: ((PhotoDef) -> Void)? = nil, onDismiss: (() -> Void)? = nil) {
-        self.photoFiles = mapToPhotoDefs(allPhotos)
+    init(allPhotos: [PhotoDef], initialIndex: Int, showFaceDetection: Bool, onDelete: ((PhotoDef) -> Void)? = nil, onDismiss: (() -> Void)? = nil) {
+        self.photoFiles = allPhotos
         self.currentIndex = initialIndex
         self.showFaceDetection = showFaceDetection
         self.onDelete = onDelete

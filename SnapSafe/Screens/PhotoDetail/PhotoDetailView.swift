@@ -19,7 +19,7 @@ struct PhotoDetailView: View {
     @Environment(\.dismiss) private var dismiss
     
     // Initialize with a single photo
-    init(photo: SecurePhoto, showFaceDetection: Bool, onDelete: ((PhotoDef) -> Void)? = nil, onDismiss: (() -> Void)? = nil) {
+    init(photo: PhotoDef, showFaceDetection: Bool, onDelete: ((PhotoDef) -> Void)? = nil, onDismiss: (() -> Void)? = nil) {
         _viewModel = StateObject(wrappedValue: PhotoDetailViewModel(
             photo: photo,
             showFaceDetection: showFaceDetection,
@@ -29,7 +29,7 @@ struct PhotoDetailView: View {
     }
     
     // Initialize with multiple photos
-    init(allPhotos: [SecurePhoto], initialIndex: Int, showFaceDetection: Bool, onDelete: ((PhotoDef) -> Void)? = nil, onDismiss: (() -> Void)? = nil) {
+    init(allPhotos: [PhotoDef], initialIndex: Int, showFaceDetection: Bool, onDelete: ((PhotoDef) -> Void)? = nil, onDismiss: (() -> Void)? = nil) {
         _viewModel = StateObject(wrappedValue: PhotoDetailViewModel(
             allPhotos: allPhotos,
             initialIndex: initialIndex,

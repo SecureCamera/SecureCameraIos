@@ -42,15 +42,10 @@ struct PhotoCell: View {
                 .onAppear {
                     // This cell is now visible
                     isVisible = true
-                    photo.isVisible = true
-                    MemoryManager.shared.reportThumbnailLoaded()
                 }
                 .onDisappear {
                     // This cell is no longer visible
                     isVisible = false
-                    photo.markAsInvisible()
-                    // Let the memory manager know it can clean up if needed
-                    MemoryManager.shared.checkMemoryUsage()
                 }
 
             // Selection checkmark when in selection mode and selected

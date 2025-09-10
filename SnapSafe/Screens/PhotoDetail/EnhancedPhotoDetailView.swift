@@ -11,7 +11,7 @@ struct EnhancedPhotoDetailView: View {
     @StateObject private var viewModel: EnhancedPhotoDetailViewModel
     @Environment(\.dismiss) private var dismiss
     
-    init(allPhotos: [SecurePhoto], initialIndex: Int, showFaceDetection: Bool, onDelete: ((PhotoDef) -> Void)? = nil, onDismiss: (() -> Void)? = nil) {
+    init(allPhotos: [PhotoDef], initialIndex: Int, showFaceDetection: Bool, onDelete: ((PhotoDef) -> Void)? = nil, onDismiss: (() -> Void)? = nil) {
         _viewModel = StateObject(wrappedValue: EnhancedPhotoDetailViewModel(
             allPhotos: allPhotos,
             initialIndex: initialIndex,
@@ -32,7 +32,7 @@ struct EnhancedPhotoDetailView: View {
                 TabView(selection: $viewModel.currentIndex) {
                     ForEach(Array(viewModel.photoFiles.enumerated()), id: \.offset) { index, photoDef in
                         PhotoDetailView(
-                            photo: mapToSecurePhoto(photoDef), // Temporary conversion for compatibility
+                            photo: photoDef,
                             showFaceDetection: viewModel.showFaceDetection,
                             onDelete: { photoDef in
                                 viewModel.onDelete?(photoDef)
