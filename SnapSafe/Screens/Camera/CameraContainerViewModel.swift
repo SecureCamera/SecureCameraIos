@@ -26,9 +26,18 @@ final class CameraContainerViewModel: ObservableObject {
     init() {
         // Initialize flash mode from camera model
         currentFlashMode = cameraModel.flashMode
+        
+        // Check camera permissions when view model is initialized
+        Task {
+            await cameraModel.checkPermissions()
+        }
     }
     
     // MARK: - Public Methods
+    
+    func refreshPermissions() async {
+        await cameraModel.checkPermissions()
+    }
     
     func capturePhoto() {
         cameraModel.capturePhoto()

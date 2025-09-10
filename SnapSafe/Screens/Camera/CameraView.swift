@@ -28,23 +28,60 @@ struct CameraView: View {
                 Color.black
                     .edgesIgnoringSafeArea(.all)
                 
-                // Camera preview represented by UIViewRepresentable
-                CameraPreviewView(cameraModel: cameraModel, viewSize: geometry.size)
-                    .edgesIgnoringSafeArea(.all)
+                if cameraModel.isPermissionGranted {
+                    // Camera preview represented by UIViewRepresentable
+                    CameraPreviewView(cameraModel: cameraModel, viewSize: geometry.size)
+                        .edgesIgnoringSafeArea(.all)
 
-                // Focus indicator overlay with proper coordinates
-                if cameraModel.showingFocusIndicator, let point = cameraModel.focusIndicatorPoint {
-                    FocusIndicatorView()
-                        .position(x: point.x, y: point.y)
-                        .transition(.scale.combined(with: .opacity))
-                        .animation(.easeInOut(duration: 0.2), value: cameraModel.showingFocusIndicator)
+                    // Focus indicator overlay with proper coordinates
+                    if cameraModel.showingFocusIndicator, let point = cameraModel.focusIndicatorPoint {
+                        FocusIndicatorView()
+                            .position(x: point.x, y: point.y)
+                            .transition(.scale.combined(with: .opacity))
+                            .animation(.easeInOut(duration: 0.2), value: cameraModel.showingFocusIndicator)
+                    }
+                } else {
+                    // Camera permission denied message
+                    VStack(spacing: 20) {
+                        Image(systemName: "camera.fill")
+                            .font(.system(size: 60))
+                            .foregroundColor(.white.opacity(0.6))
+                        
+                        Text("Camera Access Disabled")
+                            .font(.title2)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.white)
+                        
+                        Text("Camera access is required to take photos. Please enable camera access in Settings.")
+                            .font(.body)
+                            .foregroundColor(.white.opacity(0.8))
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 40)
+                        
+                        Button(action: {
+                            if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
+                                UIApplication.shared.open(settingsUrl)
+                            }
+                        }) {
+                            HStack {
+                                Image(systemName: "gear")
+                                Text("Open Settings")
+                            }
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 12)
+                            .background(Color.blue)
+                            .cornerRadius(8)
+                        }
+                    }
                 }
             }
             .onAppear {
-                Logger.ui.debug("Camera view size", metadata: [
-                    "width": .stringConvertible(geometry.size.width),
-                    "height": .stringConvertible(geometry.size.height)
-                ])
+                // Re-check camera permissions when camera view appears
+                Task {
+                    await cameraModel.checkPermissions()
+                }
             }
         }
     }

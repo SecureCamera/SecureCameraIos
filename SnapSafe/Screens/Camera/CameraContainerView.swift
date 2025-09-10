@@ -110,11 +110,12 @@ struct CameraContainerView: View {
                         viewModel.capturePhoto()
                     }) {
                         Circle()
-                            .strokeBorder(Color.white, lineWidth: 4)
+                            .strokeBorder(viewModel.cameraModel.isPermissionGranted ? Color.white : Color.gray, lineWidth: 4)
                             .frame(width: 80, height: 80)
-                            .background(Circle().fill(Color.white))
+                            .background(Circle().fill(viewModel.cameraModel.isPermissionGranted ? Color.white : Color.gray.opacity(0.5)))
                             .padding()
                     }
+                    .disabled(!viewModel.cameraModel.isPermissionGranted)
 
                     Spacer()
                     Button(action: {
@@ -146,6 +147,14 @@ struct CameraContainerView: View {
             // Stop monitoring orientation changes
             NotificationCenter.default.removeObserver(self, name: UIDevice.orientationDidChangeNotification, object: nil)
             UIDevice.current.endGeneratingDeviceOrientationNotifications()
+        }
+        .onAppear {
+            // Re-check camera permissions when view appears
+            // This handles the case where user denied permission initially,
+            // then granted it in Settings while app was in background
+            Task {
+                await viewModel.refreshPermissions()
+            }
         }
     }
     
