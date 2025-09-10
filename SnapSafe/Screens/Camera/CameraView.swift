@@ -233,7 +233,7 @@ struct CameraPreviewView: UIViewRepresentable {
 
         // Assign the preview layer to cameraModel after the view is created
         // This needs to be done on the main thread since it modifies @Published property
-        DispatchQueue.main.async {
+        Task { @MainActor in
             cameraModel.preview = previewLayer
         }
 
@@ -261,7 +261,7 @@ struct CameraPreviewView: UIViewRepresentable {
     
     func updateUIView(_ uiView: UIView, context _: Context) {
         // Update the preview layer frame when the view updates
-        DispatchQueue.main.async {
+        Task { @MainActor in
             // Update frame with the latest size
             uiView.frame = CGRect(origin: .zero, size: viewSize)
             
@@ -376,9 +376,10 @@ struct CameraPreviewView: UIViewRepresentable {
         
         // Give a slight delay before starting the camera session
         // This ensures all UI setup is complete and configuration has been committed
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+        Task {
+            try await Task.sleep(for: .milliseconds(500))
             // Start camera on background thread after delay
-            DispatchQueue.global(qos: .userInitiated).async {
+            Task(priority: .userInitiated) {
                 if !capturedCameraModel.session.isRunning {
                     print("📸 Starting camera session from makeCoordinator after delay")
                     capturedCameraModel.session.startRunning()

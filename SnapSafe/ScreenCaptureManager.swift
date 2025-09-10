@@ -44,7 +44,7 @@ class ScreenCaptureManager: ObservableObject {
     /// Handle changes in screen recording status
     private func handleCaptureChange() {
         // Update the published property on the main thread
-        DispatchQueue.main.async { [weak self] in
+        Task { @MainActor [weak self] in
             self?.isScreenBeingRecorded = UIScreen.main.isCaptured
             
             if UIScreen.main.isCaptured {
@@ -75,7 +75,7 @@ class ScreenCaptureManager: ObservableObject {
         screenshotResetTimer?.invalidate()
         
         // Update the flag to trigger UI updates
-        DispatchQueue.main.async { [weak self] in
+        Task { @MainActor [weak self] in
             self?.screenshotTaken = true
             
             // Reset the flag after a delay

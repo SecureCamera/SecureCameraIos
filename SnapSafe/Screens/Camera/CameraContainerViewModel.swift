@@ -66,8 +66,11 @@ final class CameraContainerViewModel: ObservableObject {
         print("Flash mode updated to: \(currentFlashMode)")
         
         // Re-enable toggling after a brief delay
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            self.isTogglingFlash = false
+        Task {
+            try await Task.sleep(for: .milliseconds(100))
+            await MainActor.run {
+                self.isTogglingFlash = false
+            }
         }
     }
     

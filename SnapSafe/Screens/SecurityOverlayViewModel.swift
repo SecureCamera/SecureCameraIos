@@ -81,8 +81,11 @@ final class SecurityOverlayViewModel: ObservableObject {
                 updateOverlayState() // Show privacy shield for task switcher
                 
                 // Reset dismiss flag after a brief delay
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    self.dismissAllAlerts = false
+                Task {
+                    try await Task.sleep(for: .milliseconds(100))
+                    await MainActor.run {
+                        self.dismissAllAlerts = false
+                    }
                 }
             @unknown default:
                 break
@@ -178,8 +181,11 @@ final class SecurityOverlayViewModel: ObservableObject {
             authorizationRepository.revokeAuthorization()
 
             // Reset dismiss flag after a short delay
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                self.dismissAllSheets = false
+            Task {
+                try await Task.sleep(for: .milliseconds(100))
+                await MainActor.run {
+                    self.dismissAllSheets = false
+                }
             }
         } else {
             // Clear the background flag if not requiring authentication

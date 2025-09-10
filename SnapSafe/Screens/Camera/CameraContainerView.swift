@@ -153,8 +153,11 @@ struct CameraContainerView: View {
     
     private func triggerShutterEffect() {
         isShutterAnimating = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-            isShutterAnimating = false
+        Task {
+            try await Task.sleep(for: .milliseconds(150))
+            await MainActor.run {
+                isShutterAnimating = false
+            }
         }
     }
 

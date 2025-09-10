@@ -207,7 +207,7 @@ class PhotoDetailViewModel: ObservableObject {
         
         Task(priority: .userInitiated) {
             self.faceDetector.detectFaces(in: imageToProcess) { faces in
-                DispatchQueue.main.async {
+                Task { @MainActor in
                     withAnimation {
                         self.detectedFaces = faces
                         self.processingFaces = false
@@ -241,7 +241,7 @@ class PhotoDetailViewModel: ObservableObject {
             if let maskedImage = self.faceDetector.maskFaces(in: imageToProcess, faces: facesToMask, modes: [maskMode]) {
                 // Save the masked image to the file system
                 guard let imageData = maskedImage.jpegData(compressionQuality: 0.9) else {
-                    DispatchQueue.main.async {
+                    await MainActor.run {
                         self.processingFaces = false
                     }
                     print("Error creating JPEG data")
@@ -251,29 +251,31 @@ class PhotoDetailViewModel: ObservableObject {
                 do {
                     try await self.secureImageRepository.updateImage(currentPhotoDef, newImageData: imageData)
                     
-                    DispatchQueue.main.async {
+                    await MainActor.run {
                         withAnimation {
                             self.currentImage = maskedImage
                             self.modifiedImage = maskedImage
                             self.processingFaces = false
-                            
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                                withAnimation {
-                                    self.isFaceDetectionActive = false
-                                    self.detectedFaces = []
-                                    self.modifiedImage = nil
-                                }
-                            }
+                        }
+                    }
+                    
+                    // Wait 2 seconds then reset face detection state
+                    try await Task.sleep(for: .seconds(2))
+                    await MainActor.run {
+                        withAnimation {
+                            self.isFaceDetectionActive = false
+                            self.detectedFaces = []
+                            self.modifiedImage = nil
                         }
                     }
                 } catch {
-                    DispatchQueue.main.async {
+                    await MainActor.run {
                         self.processingFaces = false
                     }
                     print("Error saving masked photo: \(error.localizedDescription)")
                 }
             } else {
-                DispatchQueue.main.async {
+                await MainActor.run {
                     self.processingFaces = false
                 }
                 print("Error creating masked image")
@@ -333,8 +335,11 @@ class PhotoDetailViewModel: ObservableObject {
             }
             
             // Preload adjacent photos for smoother navigation
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                self.preloadAdjacentPhotos()
+            Task {
+                try await Task.sleep(for: .milliseconds(200))
+                await MainActor.run {
+                    self.preloadAdjacentPhotos()
+                }
             }
         }
     }
@@ -363,8 +368,11 @@ class PhotoDetailViewModel: ObservableObject {
             }
             
             // Preload adjacent photos for smoother navigation
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                self.preloadAdjacentPhotos()
+            Task {
+                try await Task.sleep(for: .milliseconds(200))
+                await MainActor.run {
+                    self.preloadAdjacentPhotos()
+                }
             }
         }
     }
@@ -499,7 +507,7 @@ class PhotoDetailViewModel: ObservableObject {
                 
                 // Store reference and present the share sheet
                 currentActivityController = activityViewController
-                DispatchQueue.main.async {
+                Task { @MainActor in
                     currentController.present(activityViewController, animated: true) {
                         print("Share sheet presented successfully")
                     }
@@ -522,7 +530,7 @@ class PhotoDetailViewModel: ObservableObject {
                 
                 // Store reference and present the share sheet
                 currentActivityController = activityViewController
-                DispatchQueue.main.async {
+                Task { @MainActor in
                     currentController.present(activityViewController, animated: true) {
                         print("Share sheet presented successfully (image fallback)")
                     }
@@ -544,7 +552,7 @@ class PhotoDetailViewModel: ObservableObject {
             
             // Store reference and present the share sheet
             currentActivityController = activityViewController
-            DispatchQueue.main.async {
+            Task { @MainActor in
                 currentController.present(activityViewController, animated: true) {
                     print("Share sheet presented successfully (image fallback)")
                 }
@@ -556,8 +564,11 @@ class PhotoDetailViewModel: ObservableObject {
     
     func onAppear() {
         // Preload adjacent photos for smoother navigation
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-            self.preloadAdjacentPhotos()
+        Task {
+            try await Task.sleep(for: .milliseconds(200))
+            await MainActor.run {
+                self.preloadAdjacentPhotos()
+            }
         }
     }
     

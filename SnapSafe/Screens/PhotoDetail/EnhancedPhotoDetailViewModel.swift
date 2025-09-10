@@ -81,8 +81,11 @@ class EnhancedPhotoDetailViewModel: ObservableObject {
         preloadAdjacentPhotos(currentIndex: newIndex)
         
         // Clear transition state after a delay
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-            self.isTabViewTransitioning = false
+        Task {
+            try await Task.sleep(for: .milliseconds(800))
+            await MainActor.run {
+                self.isTabViewTransitioning = false
+            }
         }
     }
     
@@ -132,9 +135,12 @@ class EnhancedPhotoDetailViewModel: ObservableObject {
                 dismissProgress = 1
             }
             
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                self.onDismiss?()
-                dismiss()
+            Task {
+                try await Task.sleep(for: .milliseconds(100))
+                await MainActor.run {
+                    self.onDismiss?()
+                    dismiss()
+                }
             }
         } else {
             // Return to original position
