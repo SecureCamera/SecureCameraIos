@@ -83,7 +83,7 @@ jobs:
     - if: matrix.build-mode == 'manual'
       shell: bash
       run: |
-        xcodebuild -project SnapSafe.xcodeproj/ -scheme SnapSafe -configuration Debug -sdk iphonesimulator18.4 -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.4' -derivedDataPath ./build CODE_SIGNING_ALLOWED=NO clean build
+        xcodebuild -project SnapSafe.xcodeproj/ -scheme SnapSafe -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.4' -derivedDataPath ./build CODE_SIGNING_ALLOWED=NO clean build
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
