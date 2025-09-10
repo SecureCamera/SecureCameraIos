@@ -167,9 +167,9 @@ struct SecureGalleryView: View {
         .onChange(of: viewModel.selectedPhoto) { _, newValue in
             viewModel.onSelectedPhotoChange(newValue)
         }
-        .fullScreenCover(item: $viewModel.selectedPhoto) { photo in
+        .fullScreenCover(item: $viewModel.selectedPhoto) { photoDef in
                 // Find the index of the selected photo in the photos array
-                if let initialIndex = viewModel.photos.firstIndex(where: { $0.id == photo.id }) {
+                if let initialIndex = viewModel.photos.firstIndex(where: { $0.photoName == photoDef.photoName }) {
                     EnhancedPhotoDetailView(
                         allPhotos: viewModel.photos,
                         initialIndex: initialIndex,
@@ -182,11 +182,11 @@ struct SecureGalleryView: View {
                 } else {
                     // Fallback if photo not found in array
                     PhotoDetailView(
-                        photo: photo,
+                        photo: photoDef,
                         showFaceDetection: showFaceDetection,
                         onDelete: { _ in viewModel.onAppear() },
                         onDismiss: {
-                            viewModel.clearMemoryForPhoto(photo)
+                            viewModel.clearMemoryForPhoto(photoDef)
                         }
                     )
                 }
@@ -241,7 +241,7 @@ struct SecureGalleryView: View {
                 ForEach(viewModel.photos) { photo in
                     PhotoCell(
                         photo: photo,
-                        isSelected: viewModel.selectedPhotoIds.contains(photo.id),
+                        isSelected: viewModel.selectedPhotoIds.contains(photo.photoName),
                         isSelecting: viewModel.isSelecting,
                         onTap: {
                             viewModel.handlePhotoTap(photo)

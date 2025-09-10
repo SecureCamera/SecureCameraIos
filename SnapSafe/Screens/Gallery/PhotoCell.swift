@@ -6,16 +6,20 @@
 //
 
 import SwiftUI
+import FactoryKit
 
 
 // Photo cell view for gallery items
 struct PhotoCell: View {
-    let photo: SecurePhoto
+    let photo: PhotoDef
     let isSelected: Bool
     let isSelecting: Bool
     let onTap: () -> Void
     let onDelete: () -> Void
 
+    @Injected(\.secureImageRepository)
+    private var secureImageRepository: SecureImageRepository
+    
     // Track whether this cell is visible in the viewport
     @State private var isVisible: Bool = false
     @State private var thumbnail: UIImage? = nil
@@ -57,7 +61,7 @@ struct PhotoCell: View {
                     .padding(5)
             }
         }.task {
-            thumbnail = await photo.thumbnail()
+            thumbnail = await self.secureImageRepository.readThumbnail(photo)
         }
     }
 }

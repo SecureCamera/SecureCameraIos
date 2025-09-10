@@ -15,10 +15,10 @@ import FactoryKit
 final class SecureGalleryViewModel: ObservableObject {
     // MARK: - Published Properties
     
-    @Published var photos: [SecurePhoto] = []
-    @Published var selectedPhoto: SecurePhoto?
+    @Published var photos: [PhotoDef] = []
+    @Published var selectedPhoto: PhotoDef?
     @Published var isSelecting: Bool = false
-    @Published var selectedPhotoIds = Set<UUID>()
+    @Published var selectedPhotoIds = Set<String>() // Changed from UUID to String to match PhotoDef.photoName
     @Published var showDeleteConfirmation = false
     @Published var isShowingImagePicker = false
     @Published var importedImage: UIImage?
@@ -69,15 +69,19 @@ final class SecureGalleryViewModel: ObservableObject {
     }
     
     var currentDecoyCount: Int {
-        photos.filter { $0.isDecoy }.count
+        photos.filter { secureImageRepository.isDecoyPhoto($0) }.count
     }
     
     func selectedPhotos() async -> [UIImage] {
-        let selected = photos.filter { selectedPhotoIds.contains($0.id) }
+        let selected = photos.filter { selectedPhotoIds.contains($0.photoName) }
         var result: [UIImage] = []
-        for photo in selected {
-            let img = await photo.fullImage()
-            result.append(img)
+        for photoDef in selected {
+            do {
+                let img = try await secureImageRepository.readImage(photoDef)
+                result.append(img)
+            } catch {
+                print("Error loading image for \(photoDef.photoName): \(error)")
+            }
         }
         return result
     }
@@ -124,13 +128,13 @@ final class SecureGalleryViewModel: ObservableObject {
         loadPhotos()
     }
     
-    func onSelectedPhotoChange(_ newValue: SecurePhoto?) {
+    func onSelectedPhotoChange(_ newValue: PhotoDef?) {
         if newValue == nil {
             loadPhotos()
         }
     }
     
-    func handlePhotoTap(_ photo: SecurePhoto) {
+    func handlePhotoTap(_ photo: PhotoDef) {
         if isSelecting {
             togglePhotoSelection(photo)
         } else {
@@ -138,21 +142,21 @@ final class SecureGalleryViewModel: ObservableObject {
         }
     }
     
-    func togglePhotoSelection(_ photo: SecurePhoto) {
-        if selectedPhotoIds.contains(photo.id) {
-            selectedPhotoIds.remove(photo.id)
+    func togglePhotoSelection(_ photo: PhotoDef) {
+        if selectedPhotoIds.contains(photo.photoName) {
+            selectedPhotoIds.remove(photo.photoName)
         } else {
             // If we're selecting decoys and already at the limit, don't allow more selections
             if isSelectingDecoys && selectedPhotoIds.count >= maxDecoys {
                 showDecoyLimitWarning = true
                 return
             }
-            selectedPhotoIds.insert(photo.id)
+            selectedPhotoIds.insert(photo.photoName)
         }
     }
     
-    func prepareToDeleteSinglePhoto(_ photo: SecurePhoto) {
-        selectedPhotoIds = [photo.id]
+    func prepareToDeleteSinglePhoto(_ photo: PhotoDef) {
+        selectedPhotoIds = [photo.photoName]
         showDeleteConfirmation = true
     }
     
@@ -239,11 +243,11 @@ final class SecureGalleryViewModel: ObservableObject {
         print("deleteSelectedPhotos() called")
         
         // Create a local copy of the photos to delete
-        let photosToDelete = selectedPhotoIds.compactMap { id in
-            photos.first(where: { $0.id == id })
+        let photosToDelete = selectedPhotoIds.compactMap { photoName in
+            photos.first(where: { $0.photoName == photoName })
         }
         
-        print("Will delete \(photosToDelete.count) photos: \(photosToDelete.map { $0.filename }.joined(separator: ", "))")
+        print("Will delete \(photosToDelete.count) photos: \(photosToDelete.map { $0.photoName }.joined(separator: ", "))")
 
         // Clear selection and exit selection mode immediately
         // for better UI responsiveness
@@ -257,15 +261,10 @@ final class SecureGalleryViewModel: ObservableObject {
             print("Starting background deletion process")
 
             // Delete each photo
-            for photo in photosToDelete {
-                do {
-                    print("Attempting to delete: \(photo.filename)")
-                    let photoDef = mapToPhotoDef(photo)
-                    await self.secureImageRepository.deleteImage(photoDef)
-                    print("Successfully deleted: \(photo.filename)")
-                } catch {
-                    print("Error deleting photo \(photo.filename): \(error.localizedDescription)")
-                }
+            for photoDef in photosToDelete {
+                print("Attempting to delete: \(photoDef.photoName)")
+                await self.secureImageRepository.deleteImage(photoDef)
+                print("Successfully deleted: \(photoDef.photoName)")
             }
 
             // After all deletions are complete, update the UI
@@ -277,10 +276,10 @@ final class SecureGalleryViewModel: ObservableObject {
                 
                 // Remove deleted photos from our array
                 withAnimation {
-                    self.photos.removeAll { photo in
-                        let shouldRemove = photosToDelete.contains { $0.id == photo.id }
+                    self.photos.removeAll { photoDef in
+                        let shouldRemove = photosToDelete.contains { $0.photoName == photoDef.photoName }
                         if shouldRemove {
-                            print("Removing photo \(photo.filename) from UI")
+                            print("Removing photo \(photoDef.photoName) from UI")
                         }
                         return shouldRemove
                     }
@@ -297,17 +296,17 @@ final class SecureGalleryViewModel: ObservableObject {
     func saveDecoySelections() {
         Task {
             // First, un-mark any previously tagged decoys that aren't currently selected
-            for photo in photos {
-                let isCurrentlySelected = selectedPhotoIds.contains(photo.id)
+            for photoDef in photos {
+                let isCurrentlySelected = selectedPhotoIds.contains(photoDef.photoName)
+                let isCurrentlyDecoy = secureImageRepository.isDecoyPhoto(photoDef)
                 
-                let selectedPhotoDef = mapToPhotoDef(photo)
                 // If it's currently a decoy but not selected, unmark it
-                if photo.isDecoy && !isCurrentlySelected {
-                    _ = await addDecoyPhotoUseCase.addDecoyPhoto(photoDef: selectedPhotoDef)
+                if isCurrentlyDecoy && !isCurrentlySelected {
+                    secureImageRepository.removeDecoyPhoto(photoDef)
                 }
                 // If it's selected but not a decoy, mark it
-                else if isCurrentlySelected && !photo.isDecoy {
-                    secureImageRepository.removeDecoyPhoto(selectedPhotoDef)
+                else if isCurrentlySelected && !isCurrentlyDecoy {
+                    _ = await addDecoyPhotoUseCase.addDecoyPhoto(photoDef: photoDef)
                 }
             }
             
@@ -397,18 +396,15 @@ final class SecureGalleryViewModel: ObservableObject {
         }
     }
     
-    func clearMemoryForPhoto(_ photo: SecurePhoto) {
-        photo.clearMemory(keepThumbnail: true)
+    func clearMemoryForPhoto(_ photoDef: PhotoDef) {
+        // Memory management is now handled by the repository and ViewModels
         // Trigger garbage collection
         MemoryManager.shared.checkMemoryUsage()
     }
     
     func clearMemoryForAllPhotos() {
-        // Clean up memory for all loaded full-size images when returning to gallery
-        for photo in self.photos {
-            photo.clearMemory(keepThumbnail: true)
-        }
-        // Trigger garbage collection
+        // Clean up memory for all loaded images
+        // Memory management is now handled by the repository and ViewModels
         MemoryManager.shared.checkMemoryUsage()
     }
     
@@ -453,22 +449,14 @@ final class SecureGalleryViewModel: ObservableObject {
             guard let self = self else { return }
             
             do {
-                // Only load metadata and file URLs, not actual image data
+                // Load photo metadata
                 let photoMetadata = await self.secureImageRepository.getPhotos()
 
-                // Create photo objects that will load their images on demand
-                var loadedPhotos = photoMetadata.map { photoDef in
-                    mapToSecurePhoto(photoDef)
-                }
-
-                // Sort photos by creation date (oldest at top, newest at bottom)
-                loadedPhotos.sort { photo1, photo2 in
-                    // Get creation dates from metadata
-                    let date1 = photo1.metadata["creationDate"] as? Double ?? 0
-                    let date2 = photo2.metadata["creationDate"] as? Double ?? 0
-
-                    // Sort by date (descending - newest first, which is more typical for photo galleries)
-                    return date2 < date1
+                // Sort photos by creation date (newest first, which is more typical for photo galleries)
+                let sortedPhotos = photoMetadata.sorted { photoDef1, photoDef2 in
+                    let date1 = photoDef1.dateTaken() ?? Date.distantPast
+                    let date2 = photoDef2.dateTaken() ?? Date.distantPast
+                    return date1 > date2 // Newest first
                 }
 
                 // Update UI on the main thread
@@ -477,23 +465,20 @@ final class SecureGalleryViewModel: ObservableObject {
                     MemoryManager.shared.freeAllMemory()
 
                     // Update the photos array
-                    self.photos = loadedPhotos
+                    self.photos = sortedPhotos
 
                     // If in decoy selection mode, pre-select existing decoy photos
                     if self.isSelectingDecoys {
                         // Find and select all photos that are already marked as decoys
-                        for photo in loadedPhotos {
-                            if photo.isDecoy {
-                                self.selectedPhotoIds.insert(photo.id)
+                        for photoDef in sortedPhotos {
+                            if self.secureImageRepository.isDecoyPhoto(photoDef) {
+                                self.selectedPhotoIds.insert(photoDef.photoName)
                             }
                         }
 
                         // Enable selection mode
                         self.isSelecting = true
                     }
-
-                    // Register these photos with the memory manager
-                    MemoryManager.shared.registerPhotos(loadedPhotos)
                 }
             } catch {
                 print("Error loading photos: \(error.localizedDescription)")
@@ -558,27 +543,22 @@ final class SecureGalleryViewModel: ObservableObject {
         }
     }
     
-    private func deletePhoto(_ photo: SecurePhoto) {
+    private func deletePhoto(_ photoDef: PhotoDef) {
         // Perform file deletion in background thread
         Task.detached(priority: .userInitiated) { [weak self] in
             guard let self = self else { return }
             
-            do {
-                let photoDef = mapToPhotoDef(photo)
-                await self.secureImageRepository.deleteImage(photoDef)
+            await self.secureImageRepository.deleteImage(photoDef)
 
-                // Update UI on main thread
-                await MainActor.run {
-                    // Remove from the local array
-                    withAnimation {
-                        self.photos.removeAll { $0.id == photo.id }
-                        if self.selectedPhotoIds.contains(photo.id) {
-                            self.selectedPhotoIds.remove(photo.id)
-                        }
+            // Update UI on main thread
+            await MainActor.run {
+                // Remove from the local array
+                withAnimation {
+                    self.photos.removeAll { $0.photoName == photoDef.photoName }
+                    if self.selectedPhotoIds.contains(photoDef.photoName) {
+                        self.selectedPhotoIds.remove(photoDef.photoName)
                     }
                 }
-            } catch {
-                print("Error deleting photo: \(error.localizedDescription)")
             }
         }
     }

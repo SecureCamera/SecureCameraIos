@@ -60,7 +60,6 @@
 		A91DBC552DE58191001F42ED /* DetectedFace.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC262DE58191001F42ED /* DetectedFace.swift */; };
 		A91DBC562DE58191001F42ED /* MaskMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC272DE58191001F42ED /* MaskMode.swift */; };
 		A91DBC572DE58191001F42ED /* MemoryManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC282DE58191001F42ED /* MemoryManager.swift */; };
-		A91DBC592DE58191001F42ED /* SecurePhoto.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC2A2DE58191001F42ED /* SecurePhoto.swift */; };
 		A91DBC5A2DE58191001F42ED /* FaceBoxView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC2E2DE58191001F42ED /* FaceBoxView.swift */; };
 		A91DBC5B2DE58191001F42ED /* FaceDetectionControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC2F2DE58191001F42ED /* FaceDetectionControlsView.swift */; };
 		A91DBC5C2DE58191001F42ED /* FaceDetectionOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC302DE58191001F42ED /* FaceDetectionOverlay.swift */; };
@@ -162,7 +161,6 @@
 		A91DBC262DE58191001F42ED /* DetectedFace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetectedFace.swift; sourceTree = "<group>"; };
 		A91DBC272DE58191001F42ED /* MaskMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MaskMode.swift; sourceTree = "<group>"; };
 		A91DBC282DE58191001F42ED /* MemoryManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryManager.swift; sourceTree = "<group>"; };
-		A91DBC2A2DE58191001F42ED /* SecurePhoto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurePhoto.swift; sourceTree = "<group>"; };
 		A91DBC2C2DE58191001F42ED /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		A91DBC2E2DE58191001F42ED /* FaceBoxView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceBoxView.swift; sourceTree = "<group>"; };
 		A91DBC2F2DE58191001F42ED /* FaceDetectionControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceDetectionControlsView.swift; sourceTree = "<group>"; };
@@ -390,7 +388,6 @@
 				A91DBC262DE58191001F42ED /* DetectedFace.swift */,
 				A91DBC272DE58191001F42ED /* MaskMode.swift */,
 				A91DBC282DE58191001F42ED /* MemoryManager.swift */,
-				A91DBC2A2DE58191001F42ED /* SecurePhoto.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -669,7 +666,6 @@
 				A91DBC562DE58191001F42ED /* MaskMode.swift in Sources */,
 				A91DBC572DE58191001F42ED /* MemoryManager.swift in Sources */,
 				667FF8412E6D356D00FB3E02 /* CameraContainerViewModel.swift in Sources */,
-				A91DBC592DE58191001F42ED /* SecurePhoto.swift in Sources */,
 				A91DBC5A2DE58191001F42ED /* FaceBoxView.swift in Sources */,
 				660130C42E67AD2200D07E9C /* SettingsDataSource.swift in Sources */,
 				660130C52E67AD2200D07E9C /* UserDefaultsSettingsDataSource.swift in Sources */,
