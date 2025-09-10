@@ -103,14 +103,19 @@ final class PINSetupViewModel: ObservableObject {
         }
         
         // Create the PIN using the use case
-        let success = await createPinUseCase.createPin(pin)
-        
-        if !success {
-            showError(message: "Failed to create PIN. Please try again.")
+        do {
+            let success = await createPinUseCase.createPin(pin)
+            
+            if !success {
+                showError(message: "Failed to create PIN. Please try again.")
+                return false
+            }
+            
+            return true
+        } catch {
+            showError(message: "An error occurred while creating your PIN. Please try again.")
             return false
         }
-        
-        return true
     }
     
     // MARK: - Error Handling

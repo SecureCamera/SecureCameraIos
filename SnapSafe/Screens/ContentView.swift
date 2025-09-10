@@ -25,7 +25,7 @@ struct ContentView: View {
             Color.clear
                 .navigationBarHidden(true)
                 .navigationDestination(for: AppDestination.self) { destination in
-                    navigationDestinationView(for: destination, hasCompletedIntro: $viewModel.hasCompletedIntro)
+                    navigationDestinationView(for: destination, isPINSetupComplete: $viewModel.isPINSetupComplete)
                         .navigationBarHidden(destination != .gallery)
                         .onChange(of: viewModel.isAuthenticated) { _, authenticated in
                             // Handle authentication changes for PIN verification
@@ -36,10 +36,10 @@ struct ContentView: View {
                 }
         }
         .sheet(item: $nav.presentedSheet) { destination in
-            navigationDestinationView(for: destination, hasCompletedIntro: $viewModel.hasCompletedIntro)
+            navigationDestinationView(for: destination, isPINSetupComplete: $viewModel.isPINSetupComplete)
         }
         .fullScreenCover(item: $nav.presentedFullScreenCover) { destination in
-            navigationDestinationView(for: destination, hasCompletedIntro: $viewModel.hasCompletedIntro)
+            navigationDestinationView(for: destination, isPINSetupComplete: $viewModel.isPINSetupComplete)
         }
         // Apply unified security management
         .securityManaged()
@@ -56,7 +56,7 @@ struct ContentView: View {
     // MARK: - Navigation Destination Views
     
     @ViewBuilder
-    private func navigationDestinationView(for destination: AppDestination, hasCompletedIntro: Binding<Bool>) -> some View {
+    private func navigationDestinationView(for destination: AppDestination, isPINSetupComplete: Binding<Bool>) -> some View {
         switch destination {
         case .settings:
             SettingsView()
@@ -65,7 +65,7 @@ struct ContentView: View {
                 nav.dismissFullScreenCover()
             })
         case .pinSetup:
-            PINSetupView()
+            PINSetupView(isPINSetupComplete: isPINSetupComplete)
         case .pinVerification:
             PINVerificationView()
         case .camera:
