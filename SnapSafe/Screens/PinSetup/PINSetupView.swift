@@ -9,8 +9,8 @@ import SwiftUI
 import FactoryKit
 
 struct PINSetupView: View {
+    @EnvironmentObject private var nav: AppNavigationState
     @StateObject private var viewModel = PINSetupViewModel()
-    @Binding var isPINSetupComplete: Bool
     
     var body: some View {
         NavigationView {
@@ -65,7 +65,7 @@ struct PINSetupView: View {
                         let success = await viewModel.createPin()
                         await MainActor.run {
                             if success {
-                                isPINSetupComplete = true
+                                nav.navigate(to: .camera)
                             }
                         }
                     }
@@ -107,5 +107,5 @@ struct PINSetupView: View {
 }
 
 #Preview {
-    PINSetupView(isPINSetupComplete: .constant(false))
+    PINSetupView()
 }
