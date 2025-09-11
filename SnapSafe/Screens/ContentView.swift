@@ -25,7 +25,7 @@ struct ContentView: View {
             Color.clear
                 .navigationBarHidden(true)
                 .navigationDestination(for: AppDestination.self) { destination in
-                    navigationDestinationView(for: destination, isPINSetupComplete: $viewModel.isPINSetupComplete)
+                    navigationDestinationView(for: destination)
                         .navigationBarHidden(destination != .gallery)
                         .onChange(of: viewModel.isAuthenticated) { _, authenticated in
                             // Handle authentication changes for PIN verification
@@ -36,15 +36,22 @@ struct ContentView: View {
                 }
         }
         .sheet(item: $nav.presentedSheet) { destination in
-            navigationDestinationView(for: destination, isPINSetupComplete: $viewModel.isPINSetupComplete)
+            navigationDestinationView(for: destination)
         }
         .fullScreenCover(item: $nav.presentedFullScreenCover) { destination in
-            navigationDestinationView(for: destination, isPINSetupComplete: $viewModel.isPINSetupComplete)
+            navigationDestinationView(for: destination)
         }
         // Apply unified security management
         .securityManaged()
         .onAppear {
             viewModel.onAppear()
+            navigateToRootDestination()
+        }
+        .onChange(of: viewModel.hasCompletedIntro) { _, _ in
+            navigateToRootDestination()
+        }
+        .onChange(of: viewModel.isAuthenticated) { _, _ in
+            navigateToRootDestination()
         }
         .onChange(of: securityViewModel.dismissAllSheets) { _, shouldDismiss in
             if shouldDismiss {
@@ -53,10 +60,28 @@ struct ContentView: View {
         }
     }
     
+    // MARK: - Navigation Methods
+    
+    private func navigateToRootDestination() {
+        // Clear current navigation path and navigate to root destination
+        nav.navigateToRoot()
+        nav.navigate(to: currentRootDestination)
+    }
+    
+    private var currentRootDestination: AppDestination {
+        if viewModel.hasCompletedIntro == false {
+            return .pinSetup
+        } else if !viewModel.isAuthenticated {
+            return .pinVerification
+        } else {
+            return .camera
+        }
+    }
+    
     // MARK: - Navigation Destination Views
     
     @ViewBuilder
-    private func navigationDestinationView(for destination: AppDestination, isPINSetupComplete: Binding<Bool>) -> some View {
+    private func navigationDestinationView(for destination: AppDestination) -> some View {
         switch destination {
         case .settings:
             SettingsView()
@@ -65,7 +90,7 @@ struct ContentView: View {
                 nav.dismissFullScreenCover()
             })
         case .pinSetup:
-            PINSetupView(isPINSetupComplete: isPINSetupComplete)
+            PINSetupView()
         case .pinVerification:
             PINVerificationView()
         case .camera:

@@ -7,10 +7,13 @@
 
 import SwiftUI
 import FactoryKit
+import Logging
 
 struct PINSetupView: View {
     @StateObject private var viewModel = PINSetupViewModel()
-    @Binding var isPINSetupComplete: Bool
+    
+    @Injected(\.settingsDataSource)
+    private var settings: SettingsDataSource
     
     var body: some View {
         NavigationView {
@@ -63,10 +66,9 @@ struct PINSetupView: View {
                 Button(action: {
                     Task {
                         let success = await viewModel.createPin()
-                        await MainActor.run {
-                            if success {
-                                isPINSetupComplete = true
-                            }
+                        if success {
+                            Logger.ui.info("PIN setup complete, marking intro as completed")
+                            await settings.setIntroCompleted(true)
                         }
                     }
                 }) {
@@ -107,5 +109,5 @@ struct PINSetupView: View {
 }
 
 #Preview {
-    PINSetupView(isPINSetupComplete: .constant(false))
+    PINSetupView()
 }

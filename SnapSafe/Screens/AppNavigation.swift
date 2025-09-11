@@ -40,6 +40,8 @@ final class AppNavigationState: ObservableObject {
     
     func navigateToRoot() {
         navigationPath.removeLast(navigationPath.count)
+        dismissSheet()
+        dismissFullScreenCover()
     }
     
     func presentSheet(_ destination: AppDestination) {
