@@ -4,6 +4,9 @@
     "" : {
 
     },
+    "%@" : {
+
+    },
     "%lld" : {
 
     },
@@ -65,6 +68,12 @@
     "Add Box" : {
 
     },
+    "All Metadata" : {
+
+    },
+    "Aperture" : {
+
+    },
     "App PIN" : {
 
     },
@@ -106,6 +115,18 @@
 
     },
     "Blur" : {
+
+    },
+    "Camera" : {
+
+    },
+    "Camera Access Disabled" : {
+
+    },
+    "Camera access is required to take photos. Please enable camera access in Settings." : {
+
+    },
+    "Camera Information" : {
 
     },
     "Cancel" : {
@@ -163,7 +184,14 @@
 
     },
     "Enter your PIN to continue" : {
-
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "hola amigo"
+          }
+        }
+      }
     },
     "Face Detection" : {
 
@@ -174,7 +202,13 @@
     "File Size" : {
 
     },
+    "Filename" : {
+
+    },
     "Filter Photos" : {
+
+    },
+    "Focal Length" : {
 
     },
     "For privacy and security reasons, screen recording is not allowed in SnapSafe." : {
@@ -204,6 +238,15 @@
     "Invalid PIN. Please try again." : {
 
     },
+    "ISO" : {
+
+    },
+    "Loading image information..." : {
+
+    },
+    "Loading..." : {
+
+    },
     "Location" : {
 
     },
@@ -225,6 +268,9 @@
     "New PIN (4 digits)" : {
 
     },
+    "No camera information available" : {
+
+    },
     "No faces detected" : {
 
     },
@@ -238,6 +284,15 @@
 
     },
     "OK" : {
+
+    },
+    "Open Settings" : {
+
+    },
+    "Orientation" : {
+
+    },
+    "Original Date" : {
 
     },
     "Permission Status" : {
@@ -265,6 +320,9 @@
 
     },
     "Privacy & Detection" : {
+
+    },
+    "Raw Metadata" : {
 
     },
     "Request Location Permission" : {
@@ -340,6 +398,9 @@
     "Set Up Security PIN" : {
 
     },
+    "Setting PIN..." : {
+
+    },
     "Settings" : {
 
     },
@@ -347,6 +408,9 @@
 
     },
     "Sharing Options" : {
+
+    },
+    "Shutter Speed" : {
 
     },
     "SnapSafe" : {

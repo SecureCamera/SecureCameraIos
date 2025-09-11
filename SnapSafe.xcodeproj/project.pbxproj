@@ -93,6 +93,9 @@
 		A9E6B69B2E6E487400BB6F19 /* PhotoMetaData.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9E6B69A2E6E487400BB6F19 /* PhotoMetaData.swift */; };
 		A9E6B6AF2E6EAD3D00BB6F19 /* SecurityOverlayViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9E6B6AE2E6EAD3D00BB6F19 /* SecurityOverlayViewModel.swift */; };
 		A9E6B6B12E6EAE3500BB6F19 /* SecurityOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9E6B6B02E6EAE3500BB6F19 /* SecurityOverlayView.swift */; };
+		A9E6B6B52E7247D300BB6F19 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = A9E6B6B42E7247D300BB6F19 /* Localizable.xcstrings */; };
+		A9E6B6B62E7247D300BB6F19 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = A9E6B6B42E7247D300BB6F19 /* Localizable.xcstrings */; };
+		A9E6B6B72E7247D300BB6F19 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = A9E6B6B42E7247D300BB6F19 /* Localizable.xcstrings */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -197,6 +200,7 @@
 		A9E6B69A2E6E487400BB6F19 /* PhotoMetaData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoMetaData.swift; sourceTree = "<group>"; };
 		A9E6B6AE2E6EAD3D00BB6F19 /* SecurityOverlayViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurityOverlayViewModel.swift; sourceTree = "<group>"; };
 		A9E6B6B02E6EAE3500BB6F19 /* SecurityOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurityOverlayView.swift; sourceTree = "<group>"; };
+		A9E6B6B42E7247D300BB6F19 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -466,6 +470,7 @@
 		A9DE373E2DC5F34400679C2C = {
 			isa = PBXGroup;
 			children = (
+				A9E6B6B42E7247D300BB6F19 /* Localizable.xcstrings */,
 				A91DBB422DE41BAE001F42ED /* SnapSafe.xctestplan */,
 				A9DE37482DC5F34400679C2C /* Products */,
 				A91DBC532DE58191001F42ED /* SnapSafe */,
@@ -611,6 +616,7 @@
 			knownRegions = (
 				en,
 				Base,
+				es,
 			);
 			mainGroup = A9DE373E2DC5F34400679C2C;
 			packageReferences = (
@@ -637,6 +643,7 @@
 			files = (
 				A91DBC7A2DE58191001F42ED /* Preview Assets.xcassets in Resources */,
 				A91DBC7B2DE58191001F42ED /* Assets.xcassets in Resources */,
+				A9E6B6B72E7247D300BB6F19 /* Localizable.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -644,6 +651,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A9E6B6B62E7247D300BB6F19 /* Localizable.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -651,6 +659,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A9E6B6B52E7247D300BB6F19 /* Localizable.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
