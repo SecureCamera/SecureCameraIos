@@ -47,6 +47,7 @@ final class AuthorizationRepositoryTests: XCTestCase {
         let hashed = HashedPin(hash: "hashed_pin", salt: "salt")
         given(pinRepo).getHashedPin().willReturn(hashed)
         given(pinRepo).verifySecurityPin(.any).willReturn(true)
+        given(encryption).deriveAndCacheKey(plainPin: .any, hashedPin: .any).willReturn()
 
         auth = AuthorizationRepository(
             settings: settings,
@@ -56,7 +57,8 @@ final class AuthorizationRepositoryTests: XCTestCase {
 
         authorizePin = AuthorizePinUseCase(
             authRepository: auth,
-            pinRepository: pinRepo
+            pinRepository: pinRepo,
+            encryptionScheme: encryption
         )
     }
 

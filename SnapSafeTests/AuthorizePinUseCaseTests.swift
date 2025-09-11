@@ -48,7 +48,8 @@ final class AuthorizePinUseCaseTests: XCTestCase {
 
         authorizePin = AuthorizePinUseCase(
             authRepository: auth,
-            pinRepository: pinRepo
+            pinRepository: pinRepo,
+            encryptionScheme: encryption
         )
     }
     
@@ -61,6 +62,7 @@ final class AuthorizePinUseCaseTests: XCTestCase {
         given(pinRepo).activatePoisonPill().willReturn()
         given(pinRepo).verifyPoisonPillPin(.any).willReturn(true)
         given(pinRepo).hasPoisonPillPin().willReturn(true)
+        given(encryption).deriveAndCacheKey(plainPin: .any, hashedPin: .any).willReturn()
     }
     
     // MARK: - PIN Authorization Tests
