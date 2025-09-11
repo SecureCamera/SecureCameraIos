@@ -43,11 +43,17 @@ final class SettingsViewModel: ObservableObject {
     
     // MARK: - Dependencies
     
+    @Injected(\.pinRepository)
+    private var pinRepository: PinRepository
+    
     @Injected(\.authorizationRepository)
     private var authorizationRepository: AuthorizationRepository
     
     @Injected(\.locationRepository)
     private var locationManager: LocationRepository
+    
+    @Injected(\.securityResetUseCase)
+    private var securityResetUseCase: SecurityResetUseCase
     
     private var cancellables = Set<AnyCancellable>()
     
@@ -201,12 +207,14 @@ final class SettingsViewModel: ObservableObject {
         isSelectingDecoys = false
     }
     
-    /// Save emergency PIN
-    func saveEmergencyPIN() {
+    /// Save poisin pill PIN
+    func savePoisonPillPIN() {
         if !poisonPIN.isEmpty {
-            print("Setting poison PIN")
-            // TODO: authManager.setPoisonPIN(poisonPIN)
-            poisonPIN = ""
+            Task {
+                print("Setting poison pill PIN")
+                await self.pinRepository.setPoisonPillPin(poisonPIN)
+                poisonPIN = ""
+            }
         }
     }
     
@@ -217,17 +225,9 @@ final class SettingsViewModel: ObservableObject {
     
     /// Reset all security settings to default values
     func resetSecuritySettings() {
-        sessionTimeout = 5
-        appPIN = ""
-        confirmAppPIN = ""
-        poisonPIN = ""
-        showPINError = false
-        showPINSuccess = false
-        showResetConfirmation = false
-        
-        // TODO: In a real implementation:
-        // authManager.resetSecuritySettings()
-        print("Security settings have been reset")
+        Task {
+            await self.securityResetUseCase.reset()
+        }
     }
     
     // MARK: - Computed Properties

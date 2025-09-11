@@ -9,7 +9,7 @@ import Foundation
 import Logging
 
 final class SecurityResetUseCase {
-    private let authManager: AuthorizationRepository
+    private let authRepo: AuthorizationRepository
     private let imageRepository: SecureImageRepository
     private let encryptionScheme: EncryptionScheme
     
@@ -18,13 +18,13 @@ final class SecurityResetUseCase {
         imageRepository: SecureImageRepository,
         encryptionScheme: EncryptionScheme
     ) {
-        self.authManager = authManager
+        self.authRepo = authManager
         self.imageRepository = imageRepository
         self.encryptionScheme = encryptionScheme
     }
     
     func reset() async {
-        await authManager.securityFailureReset()
+        await authRepo.securityFailureReset()
         await imageRepository.securityFailureReset()
         await encryptionScheme.securityFailureReset()
         Logger.security.info("Security Reset Complete!")

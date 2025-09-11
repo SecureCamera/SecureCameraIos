@@ -173,14 +173,14 @@ struct SettingsView: View {
 //                }
 
                 // EMERGENCY ERASURE SECTION (POISON PILL)
-                Section(header: Text("Emergency Erasure"), footer: Text("If this PIN is entered, all photos will be immediately deleted")) {
-                    SecureField("Set Emergency PIN", text: $viewModel.poisonPIN)
+                Section(header: Text("Poison Pill"), footer: Text("If this PIN is entered, all photos will be immediately deleted")) {
+                    SecureField("Set Poison Pill PIN", text: $viewModel.poisonPIN)
                         .keyboardType(.numberPad)
                         .autocorrectionDisabled(true)
                         .textContentType(.oneTimeCode) // Prevents keychain suggestions
 
-                    Button("Save Emergency PIN") {
-                        viewModel.saveEmergencyPIN()
+                    Button("Save Poison Pill PIN") {
+                        viewModel.savePoisonPillPIN()
                     }
                     .foregroundColor(.red)
                     .disabled(viewModel.isSaveEmergencyPINDisabled)
@@ -188,13 +188,13 @@ struct SettingsView: View {
 
                 // SECURITY RESET SECTION
                 Section {
-                    Button("Reset All Security Settings") {
+                    Button("Perform Security Reset") {
                         viewModel.showSecurityResetConfirmation()
                     }
                     .foregroundColor(.red)
 
                 } footer: {
-                    Text("Resets all security settings to default values. Does not delete photos.")
+                    Text("Resets everything, deletes all photos and encryption keys.")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }

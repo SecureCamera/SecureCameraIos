@@ -114,6 +114,17 @@ extension Container {
     }
     
     @MainActor
+    var verifyPinUseCase: Factory<VerifyPinUseCase> {
+        self { @MainActor in VerifyPinUseCase(
+            authManager: self.authorizationRepository(),
+            imageManager: self.secureImageRepository(),
+            pinRepository: self.pinRepository(),
+            encryptionScheme: self.encryptionScheme(),
+            authorizePinUseCase: self.authorizedPinUseCase()
+        ) }
+    }
+    
+    @MainActor
     var appNavigation: Factory<AppNavigationState> {
         self { @MainActor in AppNavigationState() }.singleton
     }
@@ -153,5 +164,12 @@ extension Container {
     @MainActor
     var prepareForSharingUseCase: Factory<PrepareForSharingUseCase> {
         self { @MainActor in PrepareForSharingUseCase() }
+    }
+    
+    @MainActor
+    var securityResetUseCase: Factory<SecurityResetUseCase> {
+        self { @MainActor in SecurityResetUseCase(
+            authManager: self.authorizationRepository(), imageRepository: self.secureImageRepository(), encryptionScheme: self.encryptionScheme(),
+        ) }
     }
 }

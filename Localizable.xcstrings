@@ -80,6 +80,15 @@
     "Appearance" : {
 
     },
+    "Apply Face Masking" : {
+
+    },
+    "Apply Noise" : {
+
+    },
+    "Are you sure you want to %@ the selected faces? This action cannot be undone." : {
+
+    },
     "Are you sure you want to %@ the selected faces? This will permanently modify the photo." : {
 
     },
@@ -132,10 +141,16 @@
     "Cancel" : {
 
     },
+    "Cancel Detection" : {
+
+    },
     "Choose how the app appears. System follows your device's appearance setting." : {
 
     },
     "Choose how to mask the selected faces" : {
+
+    },
+    "Choose how you want to obfuscate the selected faces" : {
 
     },
     "Confirm New PIN" : {
@@ -166,6 +181,9 @@
 
     },
     "Delete Photo%@" : {
+
+    },
+    "Detect Faces" : {
 
     },
     "Detecting faces..." : {
@@ -244,6 +262,9 @@
     "Loading image information..." : {
 
     },
+    "Loading image..." : {
+
+    },
     "Loading..." : {
 
     },
@@ -295,6 +316,9 @@
     "Original Date" : {
 
     },
+    "Perform Security Reset" : {
+
+    },
     "Permission Status" : {
 
     },
@@ -302,6 +326,9 @@
 
     },
     "Photo Details" : {
+
+    },
+    "Photo Obfuscation" : {
 
     },
     "PIN" : {
@@ -319,7 +346,13 @@
     "Please stop recording to continue using the app." : {
 
     },
+    "Poison Pill" : {
+
+    },
     "Privacy & Detection" : {
+
+    },
+    "Processing faces..." : {
 
     },
     "Raw Metadata" : {
@@ -341,6 +374,9 @@
 
     },
     "Resets all security settings to default values. Does not delete photos." : {
+
+    },
+    "Resets everything, deletes all photos and encryption keys." : {
 
     },
     "Resolution" : {
@@ -368,6 +404,9 @@
     "Save Emergency PIN" : {
 
     },
+    "Save Poison Pill PIN" : {
+
+    },
     "Screen Recording Detected" : {
 
     },
@@ -383,6 +422,9 @@
     "Select Mask Type" : {
 
     },
+    "Select Masking Mode" : {
+
+    },
     "Select Photos" : {
 
     },
@@ -393,6 +435,9 @@
 
     },
     "Set PIN" : {
+
+    },
+    "Set Poison Pill PIN" : {
 
     },
     "Set Up Security PIN" : {

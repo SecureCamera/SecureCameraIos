@@ -23,8 +23,8 @@ final class PINVerificationViewModel: ObservableObject {
     @Injected(\.authorizationRepository)
     private var authorizationRepository: AuthorizationRepository
     
-    @Injected(\.authorizedPinUseCase)
-    private var authorizePinUseCase: AuthorizePinUseCase
+    @Injected(\.verifyPinUseCase)
+    private var verifyPinUseCase: VerifyPinUseCase
     
     @Injected(\.securityOverlayViewModel)
     private var securityViewModel: SecurityOverlayViewModel
@@ -67,10 +67,10 @@ final class PINVerificationViewModel: ObservableObject {
     }
     
     func verifyPIN() async {
-        let hashedPin = await authorizePinUseCase.authorizePin(pin)
-        if hashedPin != nil {
-            // PIN is correct - AuthorizationRepository will automatically update isAuthorized
-            Logger.security.info("PIN correct, authentication handled by AuthorizationRepository")
+        let success = await verifyPinUseCase.verifyPin(pin)
+        if success {
+            // PIN verification successful (includes poison pill handling)
+            Logger.security.info("PIN verification successful")
             
             // Notify SecurityOverlayViewModel that authentication is complete
             securityViewModel.authenticationComplete()
@@ -81,7 +81,7 @@ final class PINVerificationViewModel: ObservableObject {
             // Clear the PIN field for next time
             pin = ""
         } else {
-            // PIN is incorrect
+            // PIN verification failed
             showError = true
             attempts += 1
             pin = ""
