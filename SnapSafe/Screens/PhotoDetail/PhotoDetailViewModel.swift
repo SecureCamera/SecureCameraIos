@@ -38,22 +38,7 @@ class PhotoDetailViewModel: ObservableObject {
     @Published var isZoomed: Bool = false
     @Published var lastDragPosition: CGSize = .zero
     
-    // Face detection states
-    @Published var isFaceDetectionActive = false
-    @Published var detectedFaces: [DetectedFace] = []
-    @Published var processingFaces = false
-    @Published var modifiedImage: UIImage?
-    @Published var showBlurConfirmation = false
-    @Published var selectedMaskMode: MaskMode = .blur
-    @Published var showMaskOptions = false
-    
     @Published var showImageInfo = false
-    
-    @Published var imageFrameSize: CGSize = .zero
-    
-    private let faceDetector = FaceDetector()
-    
-    let showFaceDetection: Bool
     
     // Track currently presented activity controller for dismissal
     private weak var currentActivityController: UIActivityViewController?
@@ -76,9 +61,8 @@ class PhotoDetailViewModel: ObservableObject {
     
     // MARK: - Initialization
     
-    init(photo: PhotoDef, showFaceDetection: Bool, onDelete: ((PhotoDef) -> Void)? = nil, onDismiss: (() -> Void)? = nil) {
+    init(photo: PhotoDef, onDelete: ((PhotoDef) -> Void)? = nil, onDismiss: (() -> Void)? = nil) {
         self.singlePhotoFile = photo
-        self.showFaceDetection = showFaceDetection
         self.onDelete = onDelete
         self.onDismiss = onDismiss
         setupSecurityObservers()
@@ -89,10 +73,9 @@ class PhotoDetailViewModel: ObservableObject {
         }
     }
     
-    init(allPhotos: [PhotoDef], initialIndex: Int, showFaceDetection: Bool, onDelete: ((PhotoDef) -> Void)? = nil, onDismiss: (() -> Void)? = nil) {
+    init(allPhotos: [PhotoDef], initialIndex: Int, onDelete: ((PhotoDef) -> Void)? = nil, onDismiss: (() -> Void)? = nil) {
         self.photoFiles = allPhotos
         self.currentIndex = initialIndex
-        self.showFaceDetection = showFaceDetection
         self.onDelete = onDelete
         self.onDismiss = onDismiss
         setupSecurityObservers()
@@ -113,11 +96,7 @@ class PhotoDetailViewModel: ObservableObject {
     }
     
     var displayedImage: UIImage {
-        if isFaceDetectionActive, let modified = modifiedImage {
-            return modified
-        } else {
-            return currentImage ?? UIImage(systemName: "photo")!
-        }
+        return currentImage ?? UIImage(systemName: "photo")!
     }
     
     // MARK: - Image Loading
@@ -152,141 +131,6 @@ class PhotoDetailViewModel: ObservableObject {
         !photoFiles.isEmpty && currentIndex < photoFiles.count - 1
     }
     
-    var hasFacesSelected: Bool {
-        detectedFaces.contains { $0.isSelected }
-    }
-    
-    var maskActionTitle: String {
-        switch selectedMaskMode {
-        case .blur:
-            return "Blur Selected Faces"
-        case .pixelate:
-            return "Pixelate Selected Faces"
-        case .blackout:
-            return "Blackout Selected Faces"
-        case .noise:
-            return "Apply Noise to Selected Faces"
-        }
-    }
-    
-    var maskActionVerb: String {
-        switch selectedMaskMode {
-        case .blur:
-            return "blur"
-        case .pixelate:
-            return "pixelate"
-        case .blackout:
-            return "blackout"
-        case .noise:
-            return "apply noise to"
-        }
-    }
-    
-    var maskButtonLabel: String {
-        switch selectedMaskMode {
-        case .blur:
-            return "Blur Faces"
-        case .pixelate:
-            return "Pixelate Faces"
-        case .blackout:
-            return "Blackout Faces"
-        case .noise:
-            return "Apply Noise"
-        }
-    }
-    
-    // MARK: - Face Detection Methods
-    
-    func detectFaces() {
-        guard let imageToProcess = currentImage else { return }
-        
-        withAnimation {
-            isFaceDetectionActive = true
-            processingFaces = true
-        }
-        
-        detectedFaces = []
-        modifiedImage = nil
-        
-        Task(priority: .userInitiated) {
-            self.faceDetector.detectFaces(in: imageToProcess) { faces in
-                Task { @MainActor in
-                    withAnimation {
-                        self.detectedFaces = faces
-                        self.processingFaces = false
-                    }
-                }
-            }
-        }
-    }
-    
-    func toggleFaceSelection(_ face: DetectedFace) {
-        if let index = detectedFaces.firstIndex(where: { $0.id == face.id }) {
-            let updatedFaces = detectedFaces
-            updatedFaces[index].isSelected.toggle()
-            detectedFaces = updatedFaces
-        }
-    }
-    
-    func applyFaceMasking() {
-        guard let imageToProcess = currentImage,
-              let currentPhotoDef = currentPhotoDef else { return }
-        
-        withAnimation {
-            processingFaces = true
-        }
-        
-        Task(priority: .userInitiated) {
-            let facesToMask = self.detectedFaces
-            let maskMode = self.selectedMaskMode
-            
-            // Process the image
-            if let maskedImage = self.faceDetector.maskFaces(in: imageToProcess, faces: facesToMask, modes: [maskMode]) {
-                // Save the masked image to the file system
-                guard let imageData = maskedImage.jpegData(compressionQuality: 0.9) else {
-                    await MainActor.run {
-                        self.processingFaces = false
-                    }
-                    Logger.storage.error("Error creating JPEG data")
-                    return
-                }
-                
-                do {
-                    try await self.secureImageRepository.updateImage(currentPhotoDef, newImageData: imageData)
-                    
-                    await MainActor.run {
-                        withAnimation {
-                            self.currentImage = maskedImage
-                            self.modifiedImage = maskedImage
-                            self.processingFaces = false
-                        }
-                    }
-                    
-                    // Wait 2 seconds then reset face detection state
-                    try await Task.sleep(for: .seconds(2))
-                    await MainActor.run {
-                        withAnimation {
-                            self.isFaceDetectionActive = false
-                            self.detectedFaces = []
-                            self.modifiedImage = nil
-                        }
-                    }
-                } catch {
-                    await MainActor.run {
-                        self.processingFaces = false
-                    }
-                    Logger.storage.error("Error saving masked photo", metadata: [
-                        "error": .string(error.localizedDescription)
-                    ])
-                }
-            } else {
-                await MainActor.run {
-                    self.processingFaces = false
-                }
-                Logger.storage.error("Error creating masked image")
-            }
-        }
-    }
     
     // MARK: - Navigation Methods
     
@@ -325,10 +169,6 @@ class PhotoDetailViewModel: ObservableObject {
                 imageRotation = 0
                 // Reset zoom and pan
                 resetZoomAndPan()
-                // Clear face detection state
-                isFaceDetectionActive = false
-                detectedFaces = []
-                modifiedImage = nil
                 // Reset any navigation offsets
                 offset = 0
                 isSwiping = false
@@ -358,10 +198,6 @@ class PhotoDetailViewModel: ObservableObject {
                 imageRotation = 0
                 // Reset zoom and pan
                 resetZoomAndPan()
-                // Clear face detection state
-                isFaceDetectionActive = false
-                detectedFaces = []
-                modifiedImage = nil
                 // Reset any navigation offsets
                 offset = 0
                 isSwiping = false
@@ -617,8 +453,6 @@ class PhotoDetailViewModel: ObservableObject {
     private func dismissAllAlerts() {
         // Dismiss all active alert states
         showDeleteConfirmation = false
-        showBlurConfirmation = false
-        showMaskOptions = false
         showImageInfo = false
         
         // Dismiss any currently presented activity controller (iOS export dialog)

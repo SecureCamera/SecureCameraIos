@@ -70,6 +70,8 @@ struct ContentView: View {
             PINVerificationView()
         case .camera:
             CameraContainerView()
+        case .photoObfuscation(let photoDef):
+            PhotoObfuscationView(photoDef: photoDef, navigator: nav)
         }
     }
 }

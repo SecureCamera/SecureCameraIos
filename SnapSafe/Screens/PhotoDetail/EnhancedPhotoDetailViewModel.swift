@@ -7,6 +7,7 @@
 
 import SwiftUI
 import FactoryKit
+import Logging
 
 @MainActor
 class EnhancedPhotoDetailViewModel: ObservableObject {
@@ -26,16 +27,14 @@ class EnhancedPhotoDetailViewModel: ObservableObject {
     
     // MARK: - Configuration
     
-    let showFaceDetection: Bool
     var onDelete: ((PhotoDef) -> Void)?
     var onDismiss: (() -> Void)?
     
     // MARK: - Initialization
     
-    init(allPhotos: [PhotoDef], initialIndex: Int, showFaceDetection: Bool, onDelete: ((PhotoDef) -> Void)? = nil, onDismiss: (() -> Void)? = nil) {
+    init(allPhotos: [PhotoDef], initialIndex: Int, onDelete: ((PhotoDef) -> Void)? = nil, onDismiss: (() -> Void)? = nil) {
         self.photoFiles = allPhotos
         self.currentIndex = initialIndex
-        self.showFaceDetection = showFaceDetection
         self.onDelete = onDelete
         self.onDismiss = onDismiss
     }
@@ -65,7 +64,10 @@ class EnhancedPhotoDetailViewModel: ObservableObject {
     // MARK: - Index Management
     
     func handleIndexChange(newIndex: Int) {
-        print("🟣 EnhancedPhotoDetailViewModel: currentIndex changed from \(currentIndex) to \(newIndex)")
+        Logger.ui.debug("EnhancedPhotoDetailViewModel: currentIndex changed", metadata: [
+            "from": .stringConvertible(currentIndex),
+            "to": .stringConvertible(newIndex)
+        ])
         
         // Track when TabView transitions occur
         isTabViewTransitioning = true

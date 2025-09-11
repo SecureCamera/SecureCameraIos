@@ -30,6 +30,11 @@
 		663C7E342E7153CA00967B9E /* Logging in Frameworks */ = {isa = PBXBuildFile; productRef = 663C7E332E7153CA00967B9E /* Logging */; };
 		663C7E3D2E71542E00967B9E /* LoggingConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 663C7E3B2E71542E00967B9E /* LoggingConfiguration.swift */; };
 		663C7E3E2E71542E00967B9E /* Logger+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 663C7E3A2E71542E00967B9E /* Logger+Extensions.swift */; };
+		663C7E422E7289C300967B9E /* PhotoObfuscationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 663C7E3F2E7289C300967B9E /* PhotoObfuscationView.swift */; };
+		663C7E432E7289C300967B9E /* PhotoObfuscationViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 663C7E402E7289C300967B9E /* PhotoObfuscationViewModel.swift */; };
+		663C7E482E728B2A00967B9E /* FaceBoxView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 663C7E442E728B2A00967B9E /* FaceBoxView.swift */; };
+		663C7E492E728B2A00967B9E /* FaceDetectionOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 663C7E462E728B2A00967B9E /* FaceDetectionOverlay.swift */; };
+		663C7E4A2E728B2A00967B9E /* FaceDetectionControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 663C7E452E728B2A00967B9E /* FaceDetectionControlsView.swift */; };
 		667FF80E2E6A9D3000FB3E02 /* AuthorizationRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF80D2E6A9D2A00FB3E02 /* AuthorizationRepositoryTests.swift */; };
 		667FF8102E6A9EE600FB3E02 /* Clock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF80F2E6A9EE600FB3E02 /* Clock.swift */; };
 		667FF8122E6BA7F200FB3E02 /* AuthorizePinUseCaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF8112E6BA7F200FB3E02 /* AuthorizePinUseCaseTests.swift */; };
@@ -63,9 +68,6 @@
 		A91DBC542DE58191001F42ED /* AppearanceMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC252DE58191001F42ED /* AppearanceMode.swift */; };
 		A91DBC552DE58191001F42ED /* DetectedFace.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC262DE58191001F42ED /* DetectedFace.swift */; };
 		A91DBC562DE58191001F42ED /* MaskMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC272DE58191001F42ED /* MaskMode.swift */; };
-		A91DBC5A2DE58191001F42ED /* FaceBoxView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC2E2DE58191001F42ED /* FaceBoxView.swift */; };
-		A91DBC5B2DE58191001F42ED /* FaceDetectionControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC2F2DE58191001F42ED /* FaceDetectionControlsView.swift */; };
-		A91DBC5C2DE58191001F42ED /* FaceDetectionOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC302DE58191001F42ED /* FaceDetectionOverlay.swift */; };
 		A91DBC5D2DE58191001F42ED /* PhotoControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC312DE58191001F42ED /* PhotoControlsView.swift */; };
 		A91DBC5E2DE58191001F42ED /* ZoomableImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC322DE58191001F42ED /* ZoomableImageView.swift */; };
 		A91DBC5F2DE58191001F42ED /* ZoomLevelIndicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC332DE58191001F42ED /* ZoomLevelIndicator.swift */; };
@@ -136,6 +138,11 @@
 		663C7E302E712E9000967B9E /* HardwareEncryptionScheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HardwareEncryptionScheme.swift; sourceTree = "<group>"; };
 		663C7E3A2E71542E00967B9E /* Logger+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Logger+Extensions.swift"; sourceTree = "<group>"; };
 		663C7E3B2E71542E00967B9E /* LoggingConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoggingConfiguration.swift; sourceTree = "<group>"; };
+		663C7E3F2E7289C300967B9E /* PhotoObfuscationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoObfuscationView.swift; sourceTree = "<group>"; };
+		663C7E402E7289C300967B9E /* PhotoObfuscationViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoObfuscationViewModel.swift; sourceTree = "<group>"; };
+		663C7E442E728B2A00967B9E /* FaceBoxView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceBoxView.swift; sourceTree = "<group>"; };
+		663C7E452E728B2A00967B9E /* FaceDetectionControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceDetectionControlsView.swift; sourceTree = "<group>"; };
+		663C7E462E728B2A00967B9E /* FaceDetectionOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceDetectionOverlay.swift; sourceTree = "<group>"; };
 		667FF80D2E6A9D2A00FB3E02 /* AuthorizationRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorizationRepositoryTests.swift; sourceTree = "<group>"; };
 		667FF80F2E6A9EE600FB3E02 /* Clock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clock.swift; sourceTree = "<group>"; };
 		667FF8112E6BA7F200FB3E02 /* AuthorizePinUseCaseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorizePinUseCaseTests.swift; sourceTree = "<group>"; };
@@ -168,9 +175,6 @@
 		A91DBC262DE58191001F42ED /* DetectedFace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetectedFace.swift; sourceTree = "<group>"; };
 		A91DBC272DE58191001F42ED /* MaskMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MaskMode.swift; sourceTree = "<group>"; };
 		A91DBC2C2DE58191001F42ED /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
-		A91DBC2E2DE58191001F42ED /* FaceBoxView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceBoxView.swift; sourceTree = "<group>"; };
-		A91DBC2F2DE58191001F42ED /* FaceDetectionControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceDetectionControlsView.swift; sourceTree = "<group>"; };
-		A91DBC302DE58191001F42ED /* FaceDetectionOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceDetectionOverlay.swift; sourceTree = "<group>"; };
 		A91DBC312DE58191001F42ED /* PhotoControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoControlsView.swift; sourceTree = "<group>"; };
 		A91DBC322DE58191001F42ED /* ZoomableImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoomableImageView.swift; sourceTree = "<group>"; };
 		A91DBC332DE58191001F42ED /* ZoomLevelIndicator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoomLevelIndicator.swift; sourceTree = "<group>"; };
@@ -268,6 +272,27 @@
 			path = Logging;
 			sourceTree = "<group>";
 		};
+		663C7E412E7289C300967B9E /* PhotoObfuscation */ = {
+			isa = PBXGroup;
+			children = (
+				663C7E472E728B2A00967B9E /* Components */,
+				663C7E3F2E7289C300967B9E /* PhotoObfuscationView.swift */,
+				663C7E402E7289C300967B9E /* PhotoObfuscationViewModel.swift */,
+				A91DBC462DE58191001F42ED /* FaceDetector.swift */,
+			);
+			path = PhotoObfuscation;
+			sourceTree = "<group>";
+		};
+		663C7E472E728B2A00967B9E /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				663C7E442E728B2A00967B9E /* FaceBoxView.swift */,
+				663C7E452E728B2A00967B9E /* FaceDetectionControlsView.swift */,
+				663C7E462E728B2A00967B9E /* FaceDetectionOverlay.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
 		667FF8132E6BAB4500FB3E02 /* Util */ = {
 			isa = PBXGroup;
 			children = (
@@ -293,6 +318,7 @@
 				667FF8212E6C9E3400FB3E02 /* Camera */,
 				667FF8202E6C9E1F00FB3E02 /* Settings */,
 				667FF81F2E6C9E0B00FB3E02 /* Gallery */,
+				663C7E412E7289C300967B9E /* PhotoObfuscation */,
 				667FF81E2E6C9DCB00FB3E02 /* PinSetup */,
 				A91DBC3C2DE58191001F42ED /* PhotoDetail */,
 				A91DBC4E2DE58191001F42ED /* PrivacyShield.swift */,
@@ -419,9 +445,6 @@
 		A91DBC342DE58191001F42ED /* Components */ = {
 			isa = PBXGroup;
 			children = (
-				A91DBC2E2DE58191001F42ED /* FaceBoxView.swift */,
-				A91DBC2F2DE58191001F42ED /* FaceDetectionControlsView.swift */,
-				A91DBC302DE58191001F42ED /* FaceDetectionOverlay.swift */,
 				A91DBC312DE58191001F42ED /* PhotoControlsView.swift */,
 				A91DBC322DE58191001F42ED /* ZoomableImageView.swift */,
 				A91DBC332DE58191001F42ED /* ZoomLevelIndicator.swift */,
@@ -448,7 +471,6 @@
 				663C7E2A2E70EF0C00967B9E /* ImageInfoViewModel.swift */,
 				A91DBC3A2DE58191001F42ED /* PhotoDetailView.swift */,
 				A91DBC3B2DE58191001F42ED /* PhotoDetailViewModel.swift */,
-				A91DBC462DE58191001F42ED /* FaceDetector.swift */,
 			);
 			path = PhotoDetail;
 			sourceTree = "<group>";
@@ -685,12 +707,9 @@
 				663C7E2F2E71121C00967B9E /* PrepareForSharingUseCase.swift in Sources */,
 				A91DBC562DE58191001F42ED /* MaskMode.swift in Sources */,
 				667FF8412E6D356D00FB3E02 /* CameraContainerViewModel.swift in Sources */,
-				A91DBC5A2DE58191001F42ED /* FaceBoxView.swift in Sources */,
 				660130C42E67AD2200D07E9C /* SettingsDataSource.swift in Sources */,
 				660130C52E67AD2200D07E9C /* UserDefaultsSettingsDataSource.swift in Sources */,
 				663C7E2B2E70EF0C00967B9E /* ImageInfoViewModel.swift in Sources */,
-				A91DBC5B2DE58191001F42ED /* FaceDetectionControlsView.swift in Sources */,
-				A91DBC5C2DE58191001F42ED /* FaceDetectionOverlay.swift in Sources */,
 				A91DBC5D2DE58191001F42ED /* PhotoControlsView.swift in Sources */,
 				667FF8102E6A9EE600FB3E02 /* Clock.swift in Sources */,
 				660130A92E67753600D07E9C /* AppDependencyInjection.swift in Sources */,
@@ -705,6 +724,9 @@
 				66DE21CF2E69750C00AC94DA /* Json.swift in Sources */,
 				66A404D32E67FD720054FFE7 /* PinRepository.swift in Sources */,
 				A91DBC602DE58191001F42ED /* ZoomableModifier.swift in Sources */,
+				663C7E482E728B2A00967B9E /* FaceBoxView.swift in Sources */,
+				663C7E492E728B2A00967B9E /* FaceDetectionOverlay.swift in Sources */,
+				663C7E4A2E728B2A00967B9E /* FaceDetectionControlsView.swift in Sources */,
 				667FF8332E6D0FF800FB3E02 /* ContentView.swift in Sources */,
 				A91DBC612DE58191001F42ED /* EnhancedPhotoDetailView.swift in Sources */,
 				667FF82F2E6CC33B00FB3E02 /* SecureGalleryViewModel.swift in Sources */,
@@ -738,6 +760,8 @@
 				660130BE2E67AD1D00D07E9C /* EncryptionScheme.swift in Sources */,
 				660130BF2E67AD1D00D07E9C /* HashedPin.swift in Sources */,
 				660130C02E67AD1D00D07E9C /* PassThroughEncryptionScheme.swift in Sources */,
+				663C7E422E7289C300967B9E /* PhotoObfuscationView.swift in Sources */,
+				663C7E432E7289C300967B9E /* PhotoObfuscationViewModel.swift in Sources */,
 				A91DBC762DE58191001F42ED /* ScreenCaptureManager.swift in Sources */,
 				667FF83B2E6D142200FB3E02 /* ContentViewModel.swift in Sources */,
 				A91DBC772DE58191001F42ED /* SecureGalleryView.swift in Sources */,
@@ -909,7 +933,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"SnapSafe/Preview Content\"";
-				DEVELOPMENT_TEAM = BP75F4S5N3;
+				DEVELOPMENT_TEAM = 8P3G3HT4J5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Snap-Safe-Info.plist";

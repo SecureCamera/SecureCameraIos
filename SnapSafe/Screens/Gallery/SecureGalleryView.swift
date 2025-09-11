@@ -173,7 +173,6 @@ struct SecureGalleryView: View {
                     EnhancedPhotoDetailView(
                         allPhotos: viewModel.photos,
                         initialIndex: initialIndex,
-                        showFaceDetection: showFaceDetection,
                         onDelete: { _ in viewModel.onAppear() },
                         onDismiss: {
                             viewModel.clearMemoryForAllPhotos()
@@ -183,7 +182,6 @@ struct SecureGalleryView: View {
                     // Fallback if photo not found in array
                     PhotoDetailView(
                         photo: photoDef,
-                        showFaceDetection: showFaceDetection,
                         onDelete: { _ in viewModel.onAppear() },
                         onDismiss: {
                             viewModel.clearMemoryForPhoto(photoDef)

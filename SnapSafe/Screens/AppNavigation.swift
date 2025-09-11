@@ -15,6 +15,7 @@ enum AppDestination: Hashable {
     case pinSetup
     case pinVerification
     case camera
+    case photoObfuscation(PhotoDef)
 }
 
 // MARK: - Navigation State
@@ -75,6 +76,7 @@ extension AppDestination: Identifiable {
         case .pinSetup: return "pinSetup"
         case .pinVerification: return "pinVerification"
         case .camera: return "camera"
+        case .photoObfuscation(let photoDef): return "photoObfuscation_\(photoDef.photoName)"
         }
     }
 }

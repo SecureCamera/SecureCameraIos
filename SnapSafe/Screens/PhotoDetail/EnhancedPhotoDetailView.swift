@@ -11,11 +11,10 @@ struct EnhancedPhotoDetailView: View {
     @StateObject private var viewModel: EnhancedPhotoDetailViewModel
     @Environment(\.dismiss) private var dismiss
     
-    init(allPhotos: [PhotoDef], initialIndex: Int, showFaceDetection: Bool, onDelete: ((PhotoDef) -> Void)? = nil, onDismiss: (() -> Void)? = nil) {
+    init(allPhotos: [PhotoDef], initialIndex: Int, onDelete: ((PhotoDef) -> Void)? = nil, onDismiss: (() -> Void)? = nil) {
         _viewModel = StateObject(wrappedValue: EnhancedPhotoDetailViewModel(
             allPhotos: allPhotos,
             initialIndex: initialIndex,
-            showFaceDetection: showFaceDetection,
             onDelete: onDelete,
             onDismiss: onDismiss
         ))
@@ -33,7 +32,6 @@ struct EnhancedPhotoDetailView: View {
                     ForEach(Array(viewModel.photoFiles.enumerated()), id: \.offset) { index, photoDef in
                         PhotoDetailView(
                             photo: photoDef,
-                            showFaceDetection: viewModel.showFaceDetection,
                             onDelete: { photoDef in
                                 viewModel.onDelete?(photoDef)
                             },

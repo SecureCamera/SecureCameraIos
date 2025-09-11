@@ -9,7 +9,7 @@ import SwiftUI
 import Foundation
 import UIKit
 
-struct FaceDetectionOverlay: View {
+public struct FaceDetectionOverlay: View {
     let faces: [DetectedFace]
     let originalSize: CGSize
     let displaySize: CGSize
@@ -23,7 +23,7 @@ struct FaceDetectionOverlay: View {
     @State private var selectedFaceForResize: DetectedFace? = nil
     @State private var currentResizeScale: CGFloat = 1.0
     
-    var body: some View {
+    public var body: some View {
         ZStack {
             // Add a gesture overlay to capture exact tap locations for adding boxes
             if isAddingBox {
