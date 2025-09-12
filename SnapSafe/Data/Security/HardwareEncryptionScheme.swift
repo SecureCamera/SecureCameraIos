@@ -129,7 +129,7 @@ final class HardwareEncryptionScheme: EncryptionScheme {
             return
         }
         
-        logger.info("Key not cached, deriving new key")
+        logger.info("Key not cached, deriving key")
         
         // Derive key with timing
         let derivedKey = try await logger.logAsyncOperation("derive_and_cache_key") {

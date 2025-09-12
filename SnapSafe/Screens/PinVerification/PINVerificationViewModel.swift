@@ -70,7 +70,7 @@ final class PINVerificationViewModel: ObservableObject {
         let success = await verifyPinUseCase.verifyPin(pin)
         if success {
             // PIN verification successful (includes poison pill handling)
-            Logger.security.info("PIN verification successful")
+            Logger.ui.info("PIN verification successful")
             
             // Notify SecurityOverlayViewModel that authentication is complete
             securityViewModel.authenticationComplete()

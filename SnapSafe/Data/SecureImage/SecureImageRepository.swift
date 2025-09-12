@@ -89,6 +89,7 @@ public class SecureImageRepository {
     /// Encrypts and saves image data to a file
     private func encryptToFile(_ data: Data, targetFile: URL) async throws {
         try await encryptionScheme.encryptToFile(plain: data, targetFile: targetFile)
+        Logger.storage.info("Saved image to file: \(targetFile.path)")
     }
     
     /// Decrypts a file and returns the data
