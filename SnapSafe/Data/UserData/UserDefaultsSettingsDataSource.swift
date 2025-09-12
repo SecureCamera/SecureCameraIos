@@ -55,7 +55,7 @@ public final class UserDefaultsSettingsDataSource: SettingsDataSource {
     // MARK: - Storage + JSON
     private let defaults: UserDefaults
     private let jsonDecoder = JSONDecoder()
-    private let jsonEncoder = JSONEncoder()
+    private let jsonEncoder = jsonEncoderFactory()
 
     // MARK: - Init
     /// - Parameter userDefaults: UserDefaults instance to use. Defaults to `.standard`.

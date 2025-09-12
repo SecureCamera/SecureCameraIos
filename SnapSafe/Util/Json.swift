@@ -10,3 +10,7 @@ public func jsonEncoder() -> JSONEncoder {
     encoder.outputFormatting = [.sortedKeys]
     return encoder
 }
+
+public func jsonEncoderFactory() -> JSONEncoder {
+    return jsonEncoder()
+}

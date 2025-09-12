@@ -173,7 +173,6 @@ final class HardwareEncryptionScheme: EncryptionScheme {
                 ])
             }
             
-            // Only wrapped key mode - no ephemeral keys
             try await createWrappedKey(plainPin: plainPin, hashedPin: hashedPin)
         }
     }
