@@ -40,6 +40,6 @@ final class AddDecoyPhotoUseCase {
             return false
         }
 
-        return try await imageRepository.addDecoyPhotoWithKey(photoDef, keyData: keyBytes)
+        return await imageRepository.addDecoyPhotoWithKey(photoDef, keyData: keyBytes)
     }
 }

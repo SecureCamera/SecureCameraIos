@@ -55,12 +55,7 @@ public final class VerifyPinUseCase {
             
             // Attempt regular PIN authorization
             let hashedPin = await authorizePinUseCase.authorizePin(pin)
-            
-            if let hashedPin = hashedPin {
-                // PIN authorization successful
-                try await encryptionScheme.deriveAndCacheKey(plainPin: pin, hashedPin: hashedPin)
-                await authManager.resetFailedAttempts()
-                
+            if hashedPin != nil {
                 Logger.security.info("PIN verification successful")
                 return true
             } else {
