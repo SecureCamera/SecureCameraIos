@@ -43,7 +43,7 @@ final class PhotoObfuscationViewModel: ObservableObject {
     
     // MARK: - Dependencies
     
-    @InjectedObject(\.securityOverlayViewModel) 
+    @Injected(\.securityOverlayViewModel) 
     private var securityViewModel: SecurityOverlayViewModel
     
     @Injected(\.secureImageRepository)
