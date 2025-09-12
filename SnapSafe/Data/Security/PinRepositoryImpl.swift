@@ -34,7 +34,7 @@ class PinRepositoryImpl: PinRepository {
 
             await dataSource.setAppPin(cipheredPin: cipheredHashBase64)
         } catch {
-            // Handle encoding/encryption errors silently
+            Logger.storage.error("Failed to store app pin: \(error)")
         }
     }
 
@@ -42,6 +42,7 @@ class PinRepositoryImpl: PinRepository {
         guard let cipheredPinBase64 = await dataSource.getCipheredPin(),
             let cipheredPinData = Data(base64Encoded: cipheredPinBase64)
         else {
+            Logger.security.debug("Failed to get hashed pin: no stored pin or invalid base64 encoding")
             return nil
         }
 
@@ -52,12 +53,16 @@ class PinRepositoryImpl: PinRepository {
             )
             return try JSONDecoder().decode(HashedPin.self, from: hashedPinData)
         } catch {
+            Logger.security.error("Failed to decrypt or decode hashed pin", metadata: [
+                "error": .string(String(describing: error))
+            ])
             return nil
         }
     }
 
     func verifySecurityPin(_ pin: String) async -> Bool {
         guard let storedHashedPin = await getHashedPin() else {
+            Logger.security.warning("Failed to verify security pin: no stored hashed pin available")
             return false
         }
         return await verifyPin(inputPin: pin, storedHash: storedHashedPin)
@@ -80,7 +85,10 @@ class PinRepositoryImpl: PinRepository {
 
     /// Verify if the input matches the Poison Pill PIN.
     func verifyPoisonPillPin(_ pin: String) async -> Bool {
-        guard let stored = await getHashedPoisonPillPin() else { return false }
+        guard let stored = await getHashedPoisonPillPin() else {
+            Logger.security.debug("Failed to verify poison pill pin: no stored poison pill pin available")
+            return false
+        }
         return await verifyPin(inputPin: pin, storedHash: stored)
     }
 
@@ -99,6 +107,7 @@ class PinRepositoryImpl: PinRepository {
             let cipheredHashedPppBase64 = cipheredHashedPpp.base64EncodedString()
 
             guard let plainPinData = pin.data(using: .utf8) else {
+                Logger.security.error("Failed to encode poison pill pin as UTF-8 data")
                 throw PinError.stringEncodingFailed
             }
             let cipheredPlainPpp = try await encryptionScheme.encryptWithKeyAlias(
@@ -109,8 +118,9 @@ class PinRepositoryImpl: PinRepository {
                 cipheredHashedPin: cipheredHashedPppBase64, cipheredPlainPin: cipheredPlainPppBase64
             )
         } catch {
-            // TODO: What do we want to do with encoding/encryption errors here?
-            Logger.security.critical("Failed to set Poison Pill PIN!")
+            Logger.security.critical("Failed to set Poison Pill PIN", metadata: [
+                "error": .string(String(describing: error))
+            ])
         }
     }
 
@@ -118,6 +128,7 @@ class PinRepositoryImpl: PinRepository {
         guard let encryptedStoredPinBase64 = await dataSource.getPlainPoisonPillPin(),
             let encryptedStoredPin = Data(base64Encoded: encryptedStoredPinBase64)
         else {
+            Logger.security.debug("Failed to get plain poison pill pin: no stored pin or invalid base64 encoding")
             return nil
         }
 
@@ -128,6 +139,9 @@ class PinRepositoryImpl: PinRepository {
             )
             return String(data: decryptedData, encoding: .utf8)
         } catch {
+            Logger.security.error("Failed to decrypt plain poison pill pin", metadata: [
+                "error": .string(String(describing: error))
+            ])
             return nil
         }
     }
@@ -136,6 +150,7 @@ class PinRepositoryImpl: PinRepository {
         guard let encryptedPinBase64 = await dataSource.getHashedPoisonPillPin(),
             let encryptedPinData = Data(base64Encoded: encryptedPinBase64)
         else {
+            Logger.security.debug("Failed to get hashed poison pill pin: no stored pin or invalid base64 encoding")
             return nil
         }
 
@@ -146,12 +161,16 @@ class PinRepositoryImpl: PinRepository {
             )
             return try JSONDecoder().decode(HashedPin.self, from: storedPinData)
         } catch {
+            Logger.security.error("Failed to decrypt or decode hashed poison pill pin", metadata: [
+                "error": .string(String(describing: error))
+            ])
             return nil
         }
     }
 
     func activatePoisonPill() async {
         guard let poisonPillPin = await getHashedPoisonPillPin() else {
+            Logger.security.warning("Failed to activate poison pill: no hashed poison pill pin available")
             return
         }
 
@@ -166,7 +185,9 @@ class PinRepositoryImpl: PinRepository {
             await dataSource.activatePoisonPill(ciphered: cipheredBase64)
             await removePoisonPillPin()
         } catch {
-            // Handle encoding/encryption errors silently
+            Logger.security.error("Failed to activate poison pill", metadata: [
+                "error": .string(String(describing: error))
+            ])
         }
     }
 
