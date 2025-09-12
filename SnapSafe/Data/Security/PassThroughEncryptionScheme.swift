@@ -46,7 +46,7 @@ final class PassThroughEncryptionScheme: EncryptionScheme {
     }
     
     func deriveKey(plainPin: String, hashedPin: HashedPin) async throws -> Data {
-        return plainPin.data(using: .utf8) ?? Data()
+        return Data(plainPin.utf8)
     }
     
     func evictKey() {

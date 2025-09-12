@@ -171,4 +171,11 @@ extension Container {
             authManager: self.authorizationRepository(), imageRepository: self.secureImageRepository(), encryptionScheme: self.encryptionScheme(),
         ) }
     }
+    
+    var createPoisonPillUseCase: Factory<CreatePoisonPillUseCase> {
+        self { @MainActor in CreatePoisonPillUseCase(
+            pinRepository: self.pinRepository(),
+            encryptionScheme: self.encryptionScheme()
+        ) }
+    }
 }

@@ -80,7 +80,11 @@ public class SecureImageRepository {
     
     private func clearAllThumbnails() {
         let thumbnailsDir = getThumbnailsDirectory()
-        try? FileManager.default.removeItem(at: thumbnailsDir)
+        do {
+            try FileManager.default.removeItem(at: thumbnailsDir)
+        } catch {
+            Logger.storage.error("Failed to remove thumbnailsDir: \(error.localizedDescription)")
+        }
         thumbnailCache.clear()
     }
     

@@ -328,7 +328,7 @@ final class SecureGalleryViewModel: ObservableObject {
                     if !success {
                         Logger.ui.error("Failed to add decoy photo \(photoDef)")
                     } else {
-                        Logger.ui.error("Set photo as decoy \(photoDef)")
+                        Logger.ui.info("Set photo as decoy \(photoDef)")
                     }
                 }
             }

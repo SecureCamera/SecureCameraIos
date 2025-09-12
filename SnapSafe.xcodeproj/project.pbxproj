@@ -36,6 +36,7 @@
 		663C7E492E728B2A00967B9E /* FaceDetectionOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 663C7E462E728B2A00967B9E /* FaceDetectionOverlay.swift */; };
 		663C7E4A2E728B2A00967B9E /* FaceDetectionControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 663C7E452E728B2A00967B9E /* FaceDetectionControlsView.swift */; };
 		663C7E4C2E729DF800967B9E /* VerifyPinUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 663C7E4B2E729DF800967B9E /* VerifyPinUseCase.swift */; };
+		663C7E4E2E73DB3100967B9E /* CreatePoisonPillUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 663C7E4D2E73DB2200967B9E /* CreatePoisonPillUseCase.swift */; };
 		667FF80E2E6A9D3000FB3E02 /* AuthorizationRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF80D2E6A9D2A00FB3E02 /* AuthorizationRepositoryTests.swift */; };
 		667FF8102E6A9EE600FB3E02 /* Clock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF80F2E6A9EE600FB3E02 /* Clock.swift */; };
 		667FF8122E6BA7F200FB3E02 /* AuthorizePinUseCaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF8112E6BA7F200FB3E02 /* AuthorizePinUseCaseTests.swift */; };
@@ -145,6 +146,7 @@
 		663C7E452E728B2A00967B9E /* FaceDetectionControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceDetectionControlsView.swift; sourceTree = "<group>"; };
 		663C7E462E728B2A00967B9E /* FaceDetectionOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceDetectionOverlay.swift; sourceTree = "<group>"; };
 		663C7E4B2E729DF800967B9E /* VerifyPinUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VerifyPinUseCase.swift; sourceTree = "<group>"; };
+		663C7E4D2E73DB2200967B9E /* CreatePoisonPillUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatePoisonPillUseCase.swift; sourceTree = "<group>"; };
 		667FF80D2E6A9D2A00FB3E02 /* AuthorizationRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorizationRepositoryTests.swift; sourceTree = "<group>"; };
 		667FF80F2E6A9EE600FB3E02 /* Clock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clock.swift; sourceTree = "<group>"; };
 		667FF8112E6BA7F200FB3E02 /* AuthorizePinUseCaseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorizePinUseCaseTests.swift; sourceTree = "<group>"; };
@@ -412,6 +414,7 @@
 		669751312E6A63C50059C5F3 /* UseCases */ = {
 			isa = PBXGroup;
 			children = (
+				663C7E4D2E73DB2200967B9E /* CreatePoisonPillUseCase.swift */,
 				663C7E1E2E6FED9A00967B9E /* AddDecoyPhotoUseCase.swift */,
 				669751322E6A63D30059C5F3 /* AuthorizePinUseCase.swift */,
 				669751342E6A642A0059C5F3 /* CreatePinUseCase.swift */,
@@ -732,6 +735,7 @@
 				663C7E492E728B2A00967B9E /* FaceDetectionOverlay.swift in Sources */,
 				663C7E4A2E728B2A00967B9E /* FaceDetectionControlsView.swift in Sources */,
 				667FF8332E6D0FF800FB3E02 /* ContentView.swift in Sources */,
+				663C7E4E2E73DB3100967B9E /* CreatePoisonPillUseCase.swift in Sources */,
 				A91DBC612DE58191001F42ED /* EnhancedPhotoDetailView.swift in Sources */,
 				667FF82F2E6CC33B00FB3E02 /* SecureGalleryViewModel.swift in Sources */,
 				667FF81B2E6C9D1800FB3E02 /* PhotoCell.swift in Sources */,

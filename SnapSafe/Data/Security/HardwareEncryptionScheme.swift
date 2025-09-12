@@ -276,7 +276,9 @@ private extension HardwareEncryptionScheme {
                 "key_size": .stringConvertible(Self.defaultKeySize)
             ])
             
-            let salt = Data(base64Encoded: hashedPin.salt) ?? Data()
+            guard let salt = Data(base64URLString: hashedPin.salt) else {
+                fatalError("Failed to convert hashed pin to Data")
+            }
             let dekBytes = try derivePBKDF2Key(input: dekInput, salt: salt)
             
             logger.logDataOperation("derived_dek", dataSize: dekBytes.count)
@@ -538,7 +540,9 @@ private extension HardwareEncryptionScheme {
     
     func getDekFile(hashedPin: HashedPin) -> URL {
         // Hash the pin hash to create a safe filename (similar to Android implementation)
-        let pinData = Data(base64Encoded: hashedPin.hash) ?? Data()
+        guard let pinData = Data(base64URLString: hashedPin.hash) else {
+            fatalError("Failed to convert hashed pin to Data")
+        }
         let hash = SHA512.hash(data: pinData)
         let hashString = Data(hash).base64EncodedString()
             .replacingOccurrences(of: "/", with: "_")

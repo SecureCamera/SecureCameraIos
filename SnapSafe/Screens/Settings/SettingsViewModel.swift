@@ -55,6 +55,9 @@ final class SettingsViewModel: ObservableObject {
     @Injected(\.securityResetUseCase)
     private var securityResetUseCase: SecurityResetUseCase
     
+    @Injected(\.createPoisonPillUseCase)
+    private var createPoisonPillUseCase: CreatePoisonPillUseCase
+    
     private var cancellables = Set<AnyCancellable>()
     
     // MARK: - Initialization
@@ -212,7 +215,7 @@ final class SettingsViewModel: ObservableObject {
         if !poisonPIN.isEmpty {
             Task {
                 print("Setting poison pill PIN")
-                await self.pinRepository.setPoisonPillPin(poisonPIN)
+                await createPoisonPillUseCase.createPin(pppin: poisonPIN)
                 poisonPIN = ""
             }
         }
