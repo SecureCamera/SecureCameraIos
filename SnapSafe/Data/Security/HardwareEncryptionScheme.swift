@@ -32,7 +32,7 @@ private actor KeyCache {
     
     func evictKey() {
         // Zero the memory before releasing
-        cachedKey?.withUnsafeMutableBytes { bytes in
+        _ = cachedKey?.withUnsafeMutableBytes { bytes in
             memset(bytes.baseAddress!, 0, bytes.count)
         }
         cachedKey = nil
@@ -143,7 +143,7 @@ final class HardwareEncryptionScheme: EncryptionScheme {
     
     func getDerivedKey() async throws -> Data {
         guard let cachedKey = await keyCache.getKey() else {
-            logger.error("No key cached, cannot get derived key")
+            logger.error("No key cached, and cannot get derived key")
             throw CryptoError.keyNotDerived
         }
         return cachedKey

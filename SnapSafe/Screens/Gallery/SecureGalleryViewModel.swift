@@ -47,7 +47,7 @@ final class SecureGalleryViewModel: ObservableObject {
     @Injected(\.prepareForSharingUseCase)
     private var prepareForSharingUseCase: PrepareForSharingUseCase
     
-    @InjectedObject(\.securityOverlayViewModel) 
+    @Injected(\.securityOverlayViewModel)
     private var securityViewModel: SecurityOverlayViewModel
     
     private var cancellables = Set<AnyCancellable>()
@@ -324,7 +324,12 @@ final class SecureGalleryViewModel: ObservableObject {
                 }
                 // If it's selected but not a decoy, mark it
                 else if isCurrentlySelected && !isCurrentlyDecoy {
-                    _ = await addDecoyPhotoUseCase.addDecoyPhoto(photoDef: photoDef)
+                    let success = await addDecoyPhotoUseCase.addDecoyPhoto(photoDef: photoDef)
+                    if !success {
+                        Logger.ui.error("Failed to add decoy photo \(photoDef)")
+                    } else {
+                        Logger.ui.error("Set photo as decoy \(photoDef)")
+                    }
                 }
             }
             

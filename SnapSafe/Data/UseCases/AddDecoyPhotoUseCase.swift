@@ -7,6 +7,7 @@
 
 import Foundation
 import FactoryKit
+import Logging
 
 
 final class AddDecoyPhotoUseCase {
@@ -37,6 +38,7 @@ final class AddDecoyPhotoUseCase {
         do {
             keyBytes = try await encryptionScheme.deriveKey(plainPin: plain, hashedPin: ppp)
         } catch {
+            Logger.security.error("Failed to derive key for Poison Pill setting decoy: \(error)")
             return false
         }
 

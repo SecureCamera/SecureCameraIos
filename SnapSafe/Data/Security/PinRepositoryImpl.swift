@@ -98,7 +98,9 @@ class PinRepositoryImpl: PinRepository {
                 plain: hashedPinData, keyAlias: Self.PIN_KEY_ALIAS)
             let cipheredHashedPppBase64 = cipheredHashedPpp.base64EncodedString()
 
-            let plainPinData = pin.data(using: .utf8) ?? Data()
+            guard let plainPinData = pin.data(using: .utf8) else {
+                throw PinError.stringEncodingFailed
+            }
             let cipheredPlainPpp = try await encryptionScheme.encryptWithKeyAlias(
                 plain: plainPinData, keyAlias: Self.PIN_KEY_ALIAS)
             let cipheredPlainPppBase64 = cipheredPlainPpp.base64EncodedString()
@@ -108,6 +110,7 @@ class PinRepositoryImpl: PinRepository {
             )
         } catch {
             // TODO: What do we want to do with encoding/encryption errors here?
+            Logger.security.critical("Failed to set Poison Pill PIN!")
         }
     }
 
@@ -170,4 +173,8 @@ class PinRepositoryImpl: PinRepository {
     func removePoisonPillPin() async {
         await dataSource.removePoisonPillPin()
     }
+}
+
+enum PinError: Error {
+    case stringEncodingFailed
 }

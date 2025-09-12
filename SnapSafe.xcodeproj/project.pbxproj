@@ -412,15 +412,15 @@
 		669751312E6A63C50059C5F3 /* UseCases */ = {
 			isa = PBXGroup;
 			children = (
-				663C7E4B2E729DF800967B9E /* VerifyPinUseCase.swift */,
-				663C7E2E2E71121600967B9E /* PrepareForSharingUseCase.swift */,
 				663C7E1E2E6FED9A00967B9E /* AddDecoyPhotoUseCase.swift */,
+				669751322E6A63D30059C5F3 /* AuthorizePinUseCase.swift */,
+				669751342E6A642A0059C5F3 /* CreatePinUseCase.swift */,
 				663C7E1F2E6FED9A00967B9E /* InvalidateSessionUseCase.swift */,
 				663C7E202E6FED9A00967B9E /* PinStrengthCheckUseCase.swift */,
+				663C7E2E2E71121600967B9E /* PrepareForSharingUseCase.swift */,
 				663C7E212E6FED9A00967B9E /* RemovePoisonPillIUseCase.swift */,
 				663C7E222E6FED9A00967B9E /* SecurityResetUseCase.swift */,
-				669751342E6A642A0059C5F3 /* CreatePinUseCase.swift */,
-				669751322E6A63D30059C5F3 /* AuthorizePinUseCase.swift */,
+				663C7E4B2E729DF800967B9E /* VerifyPinUseCase.swift */,
 			);
 			path = UseCases;
 			sourceTree = "<group>";
