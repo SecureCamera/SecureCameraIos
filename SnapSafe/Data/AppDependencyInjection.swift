@@ -98,7 +98,6 @@ extension Container {
             self { AuthorizePinUseCase(
                 authRepository: self.authorizationRepository(),
                 pinRepository: self.pinRepository(),
-                encryptionScheme: self.encryptionScheme(),
             )
         }
     }

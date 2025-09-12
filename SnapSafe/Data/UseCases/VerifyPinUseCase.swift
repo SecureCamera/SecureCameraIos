@@ -55,14 +55,14 @@ public final class VerifyPinUseCase {
             
             // Attempt regular PIN authorization
             let hashedPin = await authorizePinUseCase.authorizePin(pin)
-            if hashedPin != nil {
-                Logger.security.info("PIN verification successful")
-                return true
-            } else {
-                // PIN authorization failed
+            guard let hashedPin else {
                 Logger.security.warning("PIN verification failed - invalid PIN provided")
                 return false
             }
+
+            try! await encryptionScheme.deriveAndCacheKey(plainPin: pin, hashedPin: hashedPin)
+            Logger.security.info("PIN verification successful")
+            return true
         } catch {
             Logger.security.error("PIN verification failed with error", metadata: [
                 "error": .string(String(describing: error))
