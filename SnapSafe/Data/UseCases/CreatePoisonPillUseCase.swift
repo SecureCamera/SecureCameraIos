@@ -14,12 +14,14 @@ final class CreatePoisonPillUseCase {
         self.encryptionScheme = encryptionScheme
     }
     
-    func createPin(pppin: String) async {
+    func createPin(pppin: String) async -> Bool {
         await pinRepository.setPoisonPillPin(pppin)
         guard let hashedPPPin = await pinRepository.getHashedPoisonPillPin()
                 else {
             fatalError("Failed to retrieve hashed pin")
         }
         try! await encryptionScheme.createKey(plainPin: pppin, hashedPin: hashedPPPin)
+        
+        return true
     }
 }

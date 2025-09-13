@@ -64,7 +64,7 @@ struct ContentView: View {
     
     private func navigateToRootDestination() {
         // Clear current navigation path and navigate to root destination
-        nav.navigateToRoot()
+        nav.clearNavigationStack()
         nav.navigate(to: currentRootDestination)
     }
     
@@ -97,6 +97,8 @@ struct ContentView: View {
             CameraContainerView()
         case .photoObfuscation(let photoDef):
             PhotoObfuscationView(photoDef: photoDef, navigator: nav)
+        case .poisonPillSetupWizard:
+            PoisonPillSetupWizardView()
         }
     }
 }

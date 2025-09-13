@@ -29,6 +29,8 @@ final class SettingsViewModel: ObservableObject {
     @Published var confirmAppPIN = ""
     @Published var poisonPIN = ""
     @Published var showResetConfirmation = false
+    @Published var hasPoisonPill = false
+    @Published var showRemovePoisonPillConfirmation = false
     @Published var showPINError = false
     @Published var pinErrorMessage = ""
     @Published var showPINSuccess = false
@@ -72,6 +74,7 @@ final class SettingsViewModel: ObservableObject {
     /// Initialize values when the view appears
     func onAppear() {
         includeLocationData = locationManager.shouldIncludeLocationData
+        checkPoisonPillStatus()
     }
     
     /// Update sanitize file name setting
@@ -217,6 +220,39 @@ final class SettingsViewModel: ObservableObject {
                 print("Setting poison pill PIN")
                 await createPoisonPillUseCase.createPin(pppin: poisonPIN)
                 poisonPIN = ""
+                checkPoisonPillStatus()
+            }
+        }
+    }
+    
+    /// Check if poison pill is currently configured
+    func checkPoisonPillStatus() {
+        Task {
+            do {
+                let hasPoison = try await pinRepository.hasPoisonPillPin()
+                await MainActor.run {
+                    self.hasPoisonPill = hasPoison
+                }
+            } catch {
+                print("Error checking poison pill status: \(error)")
+                await MainActor.run {
+                    self.hasPoisonPill = false
+                }
+            }
+        }
+    }
+    
+    /// Show confirmation before removing poison pill
+    func doShowRemovePoisonPillConfirmation() {
+        showRemovePoisonPillConfirmation = true
+    }
+    
+    /// Remove the configured poison pill
+    func removePoisonPill() {
+        Task {
+            await pinRepository.removePoisonPillPin()
+            await MainActor.run {
+                self.hasPoisonPill = false
             }
         }
     }

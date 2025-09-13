@@ -16,6 +16,7 @@ enum AppDestination: Hashable {
     case pinVerification
     case camera
     case photoObfuscation(PhotoDef)
+    case poisonPillSetupWizard
 }
 
 // MARK: - Navigation State
@@ -38,7 +39,7 @@ final class AppNavigationState: ObservableObject {
         }
     }
     
-    func navigateToRoot() {
+    func clearNavigationStack() {
         navigationPath.removeLast(navigationPath.count)
         dismissSheet()
         dismissFullScreenCover()
@@ -63,7 +64,6 @@ final class AppNavigationState: ObservableObject {
     func dismissAll() {
         presentedSheet = nil
         presentedFullScreenCover = nil
-        navigateToRoot()
     }
 }
 
@@ -79,6 +79,7 @@ extension AppDestination: Identifiable {
         case .pinVerification: return "pinVerification"
         case .camera: return "camera"
         case .photoObfuscation(let photoDef): return "photoObfuscation_\(photoDef.photoName)"
+        case .poisonPillSetupWizard: return "poisonPillSetupWizard"
         }
     }
 }

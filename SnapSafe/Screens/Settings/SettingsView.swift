@@ -23,6 +23,7 @@ struct SettingsView: View {
     @InjectedObject(\.locationRepository) private var locationRepository: LocationRepository
     
     @Environment(\.openURL) private var openURL
+    @EnvironmentObject private var nav: AppNavigationState
 
     var body: some View {
         NavigationView {
@@ -100,18 +101,6 @@ struct SettingsView: View {
                         .padding(.top, 4)
                 }
 
-                // DECOY PHOTOS SECTION
-                Section(header: Text("Decoy Photos")) {
-                    Button("Mark Decoys") {
-                        viewModel.startSelectingDecoys()
-                    }
-
-                    Text("Decoy photos will be shown when emergency PIN is entered")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .padding(.top, 4)
-                }
-
                 // SECURITY SECTION
                 Section(header: Text("Security")) {
                     HStack {
@@ -173,17 +162,51 @@ struct SettingsView: View {
 //                }
 
                 // EMERGENCY ERASURE SECTION (POISON PILL)
-                Section(header: Text("Poison Pill"), footer: Text("If this PIN is entered, all photos will be immediately deleted")) {
-                    SecureField("Set Poison Pill PIN", text: $viewModel.poisonPIN)
-                        .keyboardType(.numberPad)
-                        .autocorrectionDisabled(true)
-                        .textContentType(.oneTimeCode) // Prevents keychain suggestions
-
-                    Button("Save Poison Pill PIN") {
-                        viewModel.savePoisonPillPIN()
+                Section(header: Text("Poison Pill"), footer: Text("Emergency security feature that permanently deletes all data when triggered")) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Emergency Data Deletion")
+                                .font(.body)
+                                .fontWeight(.medium)
+                            
+                            Text(viewModel.hasPoisonPill ? "Poison pill is configured and ready" : "Set up a special PIN that will immediately delete all photos and encryption keys")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        Spacer()
+                        
+                        Image(systemName: viewModel.hasPoisonPill ? "checkmark.shield.fill" : "exclamationmark.triangle.fill")
+                            .foregroundColor(viewModel.hasPoisonPill ? .green : .orange)
+                            .font(.system(size: 20))
                     }
-                    .foregroundColor(.red)
-                    .disabled(viewModel.isSaveEmergencyPINDisabled)
+                    
+                    if viewModel.hasPoisonPill {
+                        Button("Remove Poison Pill") {
+                            viewModel.doShowRemovePoisonPillConfirmation()
+                        }
+                        .foregroundColor(.red)
+                    } else {
+                        Button("Setup Poison Pill") {
+                            nav.dismissAll()
+                            nav.navigate(to: .poisonPillSetupWizard)
+                        }
+                        .foregroundColor(.orange)
+                    }
+                }
+                
+                if viewModel.hasPoisonPill {
+                    // DECOY PHOTOS SECTION
+                    Section(header: Text("Decoy Photos")) {
+                        Button("Mark Decoys") {
+                            viewModel.startSelectingDecoys()
+                        }
+
+                        Text("Decoy photos will be shown when emergency PIN is entered")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .padding(.top, 4)
+                    }
                 }
 
                 // SECURITY RESET SECTION
@@ -206,6 +229,9 @@ struct SettingsView: View {
             .onAppear {
                 viewModel.onAppear()
             }
+            .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+                viewModel.checkPoisonPillStatus()
+            }
             .onChange(of: viewModel.shouldOpenSettings) { _, shouldOpen in
                 if shouldOpen {
                     if let url = URL(string: UIApplication.openSettingsURLString) {
@@ -220,6 +246,16 @@ struct SettingsView: View {
                     message: Text("Are you sure you want to reset all security settings to default? This action cannot be undone."),
                     primaryButton: .destructive(Text("Reset")) {
                         viewModel.resetSecuritySettings()
+                    },
+                    secondaryButton: .cancel()
+                )
+            }
+            .alert(isPresented: $viewModel.showRemovePoisonPillConfirmation) {
+                Alert(
+                    title: Text("Remove Poison Pill"),
+                    message: Text("Are you sure you want to remove the poison pill? You will need to set it up again if you want this emergency protection."),
+                    primaryButton: .destructive(Text("Remove")) {
+                        viewModel.removePoisonPill()
                     },
                     secondaryButton: .cancel()
                 )

@@ -105,6 +105,9 @@
     "Are you sure you want to delete this photo? This action cannot be undone." : {
 
     },
+    "Are you sure you want to remove the poison pill? You will need to set it up again if you want this emergency protection." : {
+
+    },
     "Are you sure you want to reset all security settings to default? This action cannot be undone." : {
 
     },
@@ -159,6 +162,12 @@
     "Confirm PIN" : {
 
     },
+    "Continue Setup" : {
+
+    },
+    "Create a 4-digit PIN that will trigger emergency deletion" : {
+
+    },
     "Date Information" : {
 
     },
@@ -192,7 +201,16 @@
     "Done" : {
 
     },
+    "Emergency Data Deletion" : {
+
+    },
     "Emergency Erasure" : {
+
+    },
+    "Emergency Security Feature" : {
+
+    },
+    "Emergency security feature that permanently deletes all data when triggered" : {
 
     },
     "Enter 4-digit PIN" : {
@@ -269,6 +287,9 @@
 
     },
     "Location" : {
+
+    },
+    "Make sure you understand the consequences before setting up a poison pill PIN" : {
 
     },
     "Manage Permission in Settings" : {
@@ -349,6 +370,9 @@
     "Poison Pill" : {
 
     },
+    "Poison pill is configured and ready" : {
+
+    },
     "Privacy & Detection" : {
 
     },
@@ -356,6 +380,15 @@
 
     },
     "Raw Metadata" : {
+
+    },
+    "Remember this PIN carefully. When entered, it will immediately and permanently delete all photos and encryption keys." : {
+
+    },
+    "Remove" : {
+
+    },
+    "Remove Poison Pill" : {
 
     },
     "Request Location Permission" : {
@@ -440,13 +473,22 @@
     "Set Poison Pill PIN" : {
 
     },
+    "Set up a special PIN that will immediately delete all photos and encryption keys" : {
+
+    },
     "Set Up Security PIN" : {
 
     },
     "Setting PIN..." : {
 
     },
+    "Setting up..." : {
+
+    },
     "Settings" : {
+
+    },
+    "Setup Poison Pill" : {
 
     },
     "Share" : {
@@ -476,6 +518,9 @@
     "Theme" : {
 
     },
+    "This feature is irreversible" : {
+
+    },
     "Too Many Decoys" : {
 
     },
@@ -488,6 +533,8 @@
     "Verifying..." : {
 
     },
+    "Warning: This will permanently delete all your data" : {
+
     },
     "When enabled, faces can be detected in photos for privacy protection" : {
 

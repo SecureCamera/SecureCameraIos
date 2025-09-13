@@ -133,7 +133,6 @@ extension Container {
         self { @MainActor in SecurityOverlayViewModel() }.singleton
     }
     
-    
     var locationRepository: Factory<LocationRepository> {
         self { LocationRepository() }.singleton
     }

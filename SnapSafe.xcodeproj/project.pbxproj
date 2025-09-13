@@ -37,6 +37,10 @@
 		663C7E4A2E728B2A00967B9E /* FaceDetectionControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 663C7E452E728B2A00967B9E /* FaceDetectionControlsView.swift */; };
 		663C7E4C2E729DF800967B9E /* VerifyPinUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 663C7E4B2E729DF800967B9E /* VerifyPinUseCase.swift */; };
 		663C7E4E2E73DB3100967B9E /* CreatePoisonPillUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 663C7E4D2E73DB2200967B9E /* CreatePoisonPillUseCase.swift */; };
+		663C7E542E73FA3100967B9E /* PoisonPillSetupWizardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 663C7E522E73FA3100967B9E /* PoisonPillSetupWizardViewModel.swift */; };
+		663C7E552E73FA3100967B9E /* PoisonPillPinCreationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 663C7E502E73FA3100967B9E /* PoisonPillPinCreationView.swift */; };
+		663C7E562E73FA3100967B9E /* PoisonPillSetupWizardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 663C7E512E73FA3100967B9E /* PoisonPillSetupWizardView.swift */; };
+		663C7E572E73FA3100967B9E /* PoisonPillExplanationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 663C7E4F2E73FA3100967B9E /* PoisonPillExplanationView.swift */; };
 		667FF80E2E6A9D3000FB3E02 /* AuthorizationRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF80D2E6A9D2A00FB3E02 /* AuthorizationRepositoryTests.swift */; };
 		667FF8102E6A9EE600FB3E02 /* Clock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF80F2E6A9EE600FB3E02 /* Clock.swift */; };
 		667FF8122E6BA7F200FB3E02 /* AuthorizePinUseCaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF8112E6BA7F200FB3E02 /* AuthorizePinUseCaseTests.swift */; };
@@ -147,6 +151,10 @@
 		663C7E462E728B2A00967B9E /* FaceDetectionOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceDetectionOverlay.swift; sourceTree = "<group>"; };
 		663C7E4B2E729DF800967B9E /* VerifyPinUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VerifyPinUseCase.swift; sourceTree = "<group>"; };
 		663C7E4D2E73DB2200967B9E /* CreatePoisonPillUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatePoisonPillUseCase.swift; sourceTree = "<group>"; };
+		663C7E4F2E73FA3100967B9E /* PoisonPillExplanationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PoisonPillExplanationView.swift; sourceTree = "<group>"; };
+		663C7E502E73FA3100967B9E /* PoisonPillPinCreationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PoisonPillPinCreationView.swift; sourceTree = "<group>"; };
+		663C7E512E73FA3100967B9E /* PoisonPillSetupWizardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PoisonPillSetupWizardView.swift; sourceTree = "<group>"; };
+		663C7E522E73FA3100967B9E /* PoisonPillSetupWizardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PoisonPillSetupWizardViewModel.swift; sourceTree = "<group>"; };
 		667FF80D2E6A9D2A00FB3E02 /* AuthorizationRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorizationRepositoryTests.swift; sourceTree = "<group>"; };
 		667FF80F2E6A9EE600FB3E02 /* Clock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clock.swift; sourceTree = "<group>"; };
 		667FF8112E6BA7F200FB3E02 /* AuthorizePinUseCaseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorizePinUseCaseTests.swift; sourceTree = "<group>"; };
@@ -297,6 +305,17 @@
 			path = Components;
 			sourceTree = "<group>";
 		};
+		663C7E532E73FA3100967B9E /* PoisonPillSetup */ = {
+			isa = PBXGroup;
+			children = (
+				663C7E4F2E73FA3100967B9E /* PoisonPillExplanationView.swift */,
+				663C7E502E73FA3100967B9E /* PoisonPillPinCreationView.swift */,
+				663C7E512E73FA3100967B9E /* PoisonPillSetupWizardView.swift */,
+				663C7E522E73FA3100967B9E /* PoisonPillSetupWizardViewModel.swift */,
+			);
+			path = PoisonPillSetup;
+			sourceTree = "<group>";
+		};
 		667FF8132E6BAB4500FB3E02 /* Util */ = {
 			isa = PBXGroup;
 			children = (
@@ -313,18 +332,19 @@
 		667FF81D2E6C9DC200FB3E02 /* Screens */ = {
 			isa = PBXGroup;
 			children = (
+				663C7E532E73FA3100967B9E /* PoisonPillSetup */,
 				667FF83A2E6D142200FB3E02 /* ContentViewModel.swift */,
 				667FF8322E6D0FF800FB3E02 /* ContentView.swift */,
 				A9E6B6AE2E6EAD3D00BB6F19 /* SecurityOverlayViewModel.swift */,
 				A9E6B6B02E6EAE3500BB6F19 /* SecurityOverlayView.swift */,
 				667FF8242E6C9E9200FB3E02 /* Views */,
-				667FF8232E6C9E6A00FB3E02 /* PinVerification */,
 				667FF8212E6C9E3400FB3E02 /* Camera */,
 				667FF8202E6C9E1F00FB3E02 /* Settings */,
 				667FF81F2E6C9E0B00FB3E02 /* Gallery */,
 				663C7E412E7289C300967B9E /* PhotoObfuscation */,
 				667FF81E2E6C9DCB00FB3E02 /* PinSetup */,
 				A91DBC3C2DE58191001F42ED /* PhotoDetail */,
+				667FF8232E6C9E6A00FB3E02 /* PinVerification */,
 				A91DBC4E2DE58191001F42ED /* PrivacyShield.swift */,
 				A91DBC402DE58191001F42ED /* AuthenticationOverlayView.swift */,
 				667FF8342E6D101300FB3E02 /* AppNavigation.swift */,
@@ -699,6 +719,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				667FF82B2E6CB78000FB3E02 /* getRotationAngle.swift in Sources */,
+				663C7E542E73FA3100967B9E /* PoisonPillSetupWizardViewModel.swift in Sources */,
+				663C7E552E73FA3100967B9E /* PoisonPillPinCreationView.swift in Sources */,
+				663C7E562E73FA3100967B9E /* PoisonPillSetupWizardView.swift in Sources */,
+				663C7E572E73FA3100967B9E /* PoisonPillExplanationView.swift in Sources */,
 				A91DBC542DE58191001F42ED /* AppearanceMode.swift in Sources */,
 				663C7E232E6FED9A00967B9E /* SecurityResetUseCase.swift in Sources */,
 				663C7E2D2E70F2E900967B9E /* EnhancedPhotoDetailViewModel.swift in Sources */,
