@@ -240,25 +240,21 @@ struct SettingsView: View {
                     viewModel.shouldOpenSettings = false
                 }
             }
-            .alert(isPresented: $viewModel.showResetConfirmation) {
-                Alert(
-                    title: Text("Reset Security Settings"),
-                    message: Text("Are you sure you want to reset all security settings to default? This action cannot be undone."),
-                    primaryButton: .destructive(Text("Reset")) {
-                        viewModel.resetSecuritySettings()
-                    },
-                    secondaryButton: .cancel()
-                )
+            .alert("Reset Security Settings", isPresented: $viewModel.showResetConfirmation) {
+                Button("Reset", role: .destructive) {
+                    viewModel.resetSecuritySettings()
+                }
+                Button("Cancel", role: .cancel) { }
+            } message: {
+                Text("Are you sure you want to reset all security settings to default? This action cannot be undone.")
             }
-            .alert(isPresented: $viewModel.showRemovePoisonPillConfirmation) {
-                Alert(
-                    title: Text("Remove Poison Pill"),
-                    message: Text("Are you sure you want to remove the poison pill? You will need to set it up again if you want this emergency protection."),
-                    primaryButton: .destructive(Text("Remove")) {
-                        viewModel.removePoisonPill()
-                    },
-                    secondaryButton: .cancel()
-                )
+            .alert("Remove Poison Pill", isPresented: $viewModel.showRemovePoisonPillConfirmation) {
+                Button("Remove", role: .destructive) {
+                    viewModel.removePoisonPill()
+                }
+                Button("Cancel", role: .cancel) { }
+            } message: {
+                Text("Are you sure you want to remove the poison pill? You will need to set it up again if you want this emergency protection.")
             }
             .fullScreenCover(isPresented: $viewModel.isSelectingDecoys) {
                 // Reset the selection flag when the sheet is dismissed
