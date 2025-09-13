@@ -43,7 +43,8 @@ struct PoisonPillSetupWizardView: View {
                 Button("Cancel") {
                     handleCancel()
                 }
-                .foregroundColor(.secondary)
+                .foregroundColor(viewModel.isLoading ? .gray : .secondary)
+                .disabled(viewModel.isLoading)
                 
                 Spacer()
                 
@@ -53,11 +54,12 @@ struct PoisonPillSetupWizardView: View {
                 
                 Spacer()
                 
-                if viewModel.currentStep == .pinCreation {
+                if viewModel.currentStep != .explanation1 {
                     Button("Back") {
                         viewModel.goToPreviousStep()
                     }
-                    .foregroundColor(.orange)
+                    .foregroundColor(viewModel.isLoading ? .gray : .orange)
+                    .disabled(viewModel.isLoading)
                 } else {
                     // Invisible button for balance
                     Button("Back") {
@@ -85,10 +87,49 @@ struct PoisonPillSetupWizardView: View {
     @ViewBuilder
     private var stepContent: some View {
         switch viewModel.currentStep {
-        case .explanation:
+        case .explanation1:
             PoisonPillExplanationView(
+                step: ExplanationStep.poisonPillSteps[0],
+                isFirstStep: true,
                 onNext: {
                     viewModel.goToNextStep()
+                },
+                onCancel: {
+                    handleCancel()
+                }
+            )
+            .transition(.asymmetric(
+                insertion: .move(edge: .trailing),
+                removal: .move(edge: .leading)
+            ))
+            
+        case .explanation2:
+            PoisonPillExplanationView(
+                step: ExplanationStep.poisonPillSteps[1],
+                onNext: {
+                    viewModel.goToNextStep()
+                },
+                onBack: {
+                    viewModel.goToPreviousStep()
+                },
+                onCancel: {
+                    handleCancel()
+                }
+            )
+            .transition(.asymmetric(
+                insertion: .move(edge: .trailing),
+                removal: .move(edge: .leading)
+            ))
+            
+        case .explanation3:
+            PoisonPillExplanationView(
+                step: ExplanationStep.poisonPillSteps[2],
+                isLastStep: true,
+                onNext: {
+                    viewModel.goToNextStep()
+                },
+                onBack: {
+                    viewModel.goToPreviousStep()
                 },
                 onCancel: {
                     handleCancel()

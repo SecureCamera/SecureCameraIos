@@ -11,13 +11,19 @@ import FactoryKit
 import Logging
 
 enum PoisonPillWizardStep: Int, CaseIterable {
-    case explanation = 0
-    case pinCreation = 1
+    case explanation1 = 0
+    case explanation2 = 1
+    case explanation3 = 2
+    case pinCreation = 3
     
     var title: String {
         switch self {
-        case .explanation:
+        case .explanation1:
             return "Poison Pill"
+        case .explanation2:
+            return "How It Works"
+        case .explanation3:
+            return "Decoy Strategy"
         case .pinCreation:
             return "Set Poison Pill PIN"
         }
@@ -28,7 +34,7 @@ enum PoisonPillWizardStep: Int, CaseIterable {
 final class PoisonPillSetupWizardViewModel: ObservableObject {
     // MARK: - Published Properties
     
-    @Published var currentStep: PoisonPillWizardStep = .explanation
+    @Published var currentStep: PoisonPillWizardStep = .explanation1
     @Published var pin: String = ""
     @Published var confirmPin: String = ""
     @Published var showError: Bool = false
@@ -60,16 +66,30 @@ final class PoisonPillSetupWizardViewModel: ObservableObject {
     
     func goToNextStep() {
         withAnimation(.easeInOut(duration: 0.3)) {
-            if currentStep == .explanation {
+            switch currentStep {
+            case .explanation1:
+                currentStep = .explanation2
+            case .explanation2:
+                currentStep = .explanation3
+            case .explanation3:
                 currentStep = .pinCreation
+            case .pinCreation:
+                break // Already at the last step
             }
         }
     }
     
     func goToPreviousStep() {
         withAnimation(.easeInOut(duration: 0.3)) {
-            if currentStep == .pinCreation {
-                currentStep = .explanation
+            switch currentStep {
+            case .explanation1:
+                break // Already at the first step
+            case .explanation2:
+                currentStep = .explanation1
+            case .explanation3:
+                currentStep = .explanation2
+            case .pinCreation:
+                currentStep = .explanation3
             }
         }
     }
@@ -135,7 +155,7 @@ final class PoisonPillSetupWizardViewModel: ObservableObject {
     // MARK: - Reset
     
     func reset() {
-        currentStep = .explanation
+        currentStep = .explanation1
         pin = ""
         confirmPin = ""
         showError = false

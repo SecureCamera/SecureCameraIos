@@ -41,6 +41,7 @@
 		663C7E552E73FA3100967B9E /* PoisonPillPinCreationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 663C7E502E73FA3100967B9E /* PoisonPillPinCreationView.swift */; };
 		663C7E562E73FA3100967B9E /* PoisonPillSetupWizardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 663C7E512E73FA3100967B9E /* PoisonPillSetupWizardView.swift */; };
 		663C7E572E73FA3100967B9E /* PoisonPillExplanationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 663C7E4F2E73FA3100967B9E /* PoisonPillExplanationView.swift */; };
+		663C7E592E752CF900967B9E /* ExplanationStep.swift in Sources */ = {isa = PBXBuildFile; fileRef = 663C7E582E752CF900967B9E /* ExplanationStep.swift */; };
 		667FF80E2E6A9D3000FB3E02 /* AuthorizationRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF80D2E6A9D2A00FB3E02 /* AuthorizationRepositoryTests.swift */; };
 		667FF8102E6A9EE600FB3E02 /* Clock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF80F2E6A9EE600FB3E02 /* Clock.swift */; };
 		667FF8122E6BA7F200FB3E02 /* AuthorizePinUseCaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF8112E6BA7F200FB3E02 /* AuthorizePinUseCaseTests.swift */; };
@@ -155,6 +156,7 @@
 		663C7E502E73FA3100967B9E /* PoisonPillPinCreationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PoisonPillPinCreationView.swift; sourceTree = "<group>"; };
 		663C7E512E73FA3100967B9E /* PoisonPillSetupWizardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PoisonPillSetupWizardView.swift; sourceTree = "<group>"; };
 		663C7E522E73FA3100967B9E /* PoisonPillSetupWizardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PoisonPillSetupWizardViewModel.swift; sourceTree = "<group>"; };
+		663C7E582E752CF900967B9E /* ExplanationStep.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExplanationStep.swift; sourceTree = "<group>"; };
 		667FF80D2E6A9D2A00FB3E02 /* AuthorizationRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorizationRepositoryTests.swift; sourceTree = "<group>"; };
 		667FF80F2E6A9EE600FB3E02 /* Clock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clock.swift; sourceTree = "<group>"; };
 		667FF8112E6BA7F200FB3E02 /* AuthorizePinUseCaseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorizePinUseCaseTests.swift; sourceTree = "<group>"; };
@@ -308,6 +310,7 @@
 		663C7E532E73FA3100967B9E /* PoisonPillSetup */ = {
 			isa = PBXGroup;
 			children = (
+				663C7E582E752CF900967B9E /* ExplanationStep.swift */,
 				663C7E4F2E73FA3100967B9E /* PoisonPillExplanationView.swift */,
 				663C7E502E73FA3100967B9E /* PoisonPillPinCreationView.swift */,
 				663C7E512E73FA3100967B9E /* PoisonPillSetupWizardView.swift */,
@@ -332,7 +335,6 @@
 		667FF81D2E6C9DC200FB3E02 /* Screens */ = {
 			isa = PBXGroup;
 			children = (
-				663C7E532E73FA3100967B9E /* PoisonPillSetup */,
 				667FF83A2E6D142200FB3E02 /* ContentViewModel.swift */,
 				667FF8322E6D0FF800FB3E02 /* ContentView.swift */,
 				A9E6B6AE2E6EAD3D00BB6F19 /* SecurityOverlayViewModel.swift */,
@@ -344,6 +346,7 @@
 				663C7E412E7289C300967B9E /* PhotoObfuscation */,
 				667FF81E2E6C9DCB00FB3E02 /* PinSetup */,
 				A91DBC3C2DE58191001F42ED /* PhotoDetail */,
+				663C7E532E73FA3100967B9E /* PoisonPillSetup */,
 				667FF8232E6C9E6A00FB3E02 /* PinVerification */,
 				A91DBC4E2DE58191001F42ED /* PrivacyShield.swift */,
 				A91DBC402DE58191001F42ED /* AuthenticationOverlayView.swift */,
@@ -739,6 +742,7 @@
 				663C7E4C2E729DF800967B9E /* VerifyPinUseCase.swift in Sources */,
 				667FF8412E6D356D00FB3E02 /* CameraContainerViewModel.swift in Sources */,
 				660130C42E67AD2200D07E9C /* SettingsDataSource.swift in Sources */,
+				663C7E592E752CF900967B9E /* ExplanationStep.swift in Sources */,
 				660130C52E67AD2200D07E9C /* UserDefaultsSettingsDataSource.swift in Sources */,
 				663C7E2B2E70EF0C00967B9E /* ImageInfoViewModel.swift in Sources */,
 				A91DBC5D2DE58191001F42ED /* PhotoControlsView.swift in Sources */,

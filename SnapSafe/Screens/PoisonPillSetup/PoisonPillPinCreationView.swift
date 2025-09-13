@@ -21,13 +21,14 @@ struct PoisonPillPinCreationView: View {
     let onCancel: () -> Void
     
     var body: some View {
-        ScrollView {
-            VStack(spacing: 30) {
-            // Header Icon
-            Image(systemName: "lock.trianglebadge.exclamationmark")
-                .font(.system(size: 70))
-                .foregroundColor(.orange)
-                .padding(.top, 50)
+        GeometryReader { geometry in
+            ScrollView {
+                VStack(spacing: 30) {
+                // Header Icon
+                Image(systemName: "lock.trianglebadge.exclamationmark")
+                    .font(.system(size: 70))
+                    .foregroundColor(.orange)
+                    .padding(.top, max(30, geometry.safeAreaInsets.top + 20))
             
             // Title
             Text("Set Poison Pill PIN")
@@ -52,6 +53,8 @@ struct PoisonPillPinCreationView: View {
                             .stroke(pin.count == 4 ? Color.orange : Color.gray, lineWidth: 1)
                     )
                     .padding(.horizontal, 50)
+                    .disabled(isLoading)
+                    .opacity(isLoading ? 0.6 : 1.0)
                     .onChange(of: pin) { _, newValue in
                         onPinChange(newValue)
                     }
@@ -66,6 +69,8 @@ struct PoisonPillPinCreationView: View {
                             .stroke(confirmPin.count == 4 ? Color.orange : Color.gray, lineWidth: 1)
                     )
                     .padding(.horizontal, 50)
+                    .disabled(isLoading)
+                    .opacity(isLoading ? 0.6 : 1.0)
                     .onChange(of: confirmPin) { _, newValue in
                         onConfirmPinChange(newValue)
                     }
@@ -90,21 +95,14 @@ struct PoisonPillPinCreationView: View {
             }
             
             // Warning
-            VStack(spacing: 10) {
-                HStack {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundColor(.red)
-                        .font(.caption)
-                    Text("Warning: This will permanently delete all your data")
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.red)
-                }
-                
+            HStack {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundColor(.red)
+                    .font(.caption)
                 Text("Remember this PIN carefully. When entered, it will immediately and permanently delete all photos and encryption keys.")
                     .font(.caption)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.red)
             }
             .padding(.horizontal, 30)
             
@@ -128,14 +126,17 @@ struct PoisonPillPinCreationView: View {
                 .disabled(!canProceed)
                 
                 Button("Cancel", action: onCancel)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(isLoading ? .gray : .secondary)
+                    .disabled(isLoading)
             }
             .padding(.horizontal, 40)
-            .padding(.bottom, 30)
+            .padding(.bottom, max(30, geometry.safeAreaInsets.bottom + 20))
+                }
+                .frame(maxWidth: .infinity)
             }
-            .frame(maxWidth: .infinity)
         }
         .navigationBarHidden(true)
+        .ignoresSafeArea(.container, edges: [])
         .onTapGesture {
             hideKeyboard()
         }
@@ -170,11 +171,11 @@ struct PoisonPillPinCreationView: View {
 }
 
 #Preview {
-    @State var pin = ""
-    @State var confirmPin = ""
-    @State var showError = false
-    @State var errorMessage = ""
-    @State var isLoading = false
+    @Previewable @State var pin = ""
+    @Previewable @State var confirmPin = ""
+    @Previewable @State var showError = false
+    @Previewable @State var errorMessage = ""
+    @Previewable @State var isLoading = false
     
     return NavigationView {
         PoisonPillPinCreationView(

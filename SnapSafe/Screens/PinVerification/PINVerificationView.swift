@@ -31,11 +31,18 @@ struct PINVerificationView: View {
                 .textContentType(.oneTimeCode)
                 .multilineTextAlignment(.center)
                 .padding()
-                .background(RoundedRectangle(cornerRadius: 8).stroke(Color.gray, lineWidth: 1))
+                .background(RoundedRectangle(cornerRadius: 8).stroke(viewModel.isLoading ? Color.gray.opacity(0.5) : Color.gray, lineWidth: 1))
                 .padding(.horizontal, 50)
                 .focused($isPINFieldFocused)
+                .disabled(viewModel.isLoading)
+                .opacity(viewModel.isLoading ? 0.6 : 1.0)
                 .onChange(of: viewModel.pin) { _, newValue in
                     viewModel.updatePIN(newValue)
+                }
+                .onChange(of: viewModel.isLoading) { _, isLoading in
+                    if isLoading {
+                        isPINFieldFocused = false
+                    }
                 }
             
             if viewModel.showError {

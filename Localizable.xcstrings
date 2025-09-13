@@ -162,6 +162,9 @@
     "Confirm PIN" : {
 
     },
+    "Continue" : {
+
+    },
     "Continue Setup" : {
 
     },
@@ -474,6 +477,9 @@
 
     },
     "Set up a special PIN that will immediately delete all photos and encryption keys" : {
+
+    },
+    "Set Up PIN" : {
 
     },
     "Set Up Security PIN" : {

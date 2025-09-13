@@ -2,107 +2,203 @@
 //  PoisonPillExplanationView.swift
 //  SnapSafe
 //
-//  Created by Claude on 9/12/25.
+//  Created by Claude on 9/13/25.
 //
 
 import SwiftUI
 
 struct PoisonPillExplanationView: View {
+    let step: ExplanationStep
+    let isFirstStep: Bool
+    let isLastStep: Bool
     let onNext: () -> Void
+    let onBack: (() -> Void)?
     let onCancel: () -> Void
     
+    init(
+        step: ExplanationStep,
+        isFirstStep: Bool = false,
+        isLastStep: Bool = false,
+        onNext: @escaping () -> Void,
+        onBack: (() -> Void)? = nil,
+        onCancel: @escaping () -> Void
+    ) {
+        self.step = step
+        self.isFirstStep = isFirstStep
+        self.isLastStep = isLastStep
+        self.onNext = onNext
+        self.onBack = onBack
+        self.onCancel = onCancel
+    }
+    
     var body: some View {
-        VStack(spacing: 30) {
-            // Header Icon
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 80))
-                .foregroundColor(.orange)
-                .padding(.top, 40)
-            
-            // Title
-            Text("Emergency Security Feature")
-                .font(.largeTitle)
-                .fontWeight(.bold)
-                .multilineTextAlignment(.center)
-            
-            // Main Content
-            VStack(spacing: 20) {
-                explanationCard(
-                    icon: "lock.trianglebadge.exclamationmark",
-                    title: "What is a Poison Pill?",
-                    description: "A special PIN that immediately deletes all your photos and encryption keys when entered, protecting your privacy in emergency situations."
-                )
-                
-                explanationCard(
-                    icon: "person.fill.xmark",
-                    title: "When to Use",
-                    description: "If someone forces you to unlock your phone or you're in a situation where your data security is compromised."
-                )
-                
-                explanationCard(
-                    icon: "trash.circle.fill",
-                    title: "What Happens",
-                    description: "All photos, encryption keys, and sensitive data are permanently deleted. This action cannot be undone."
-                )
-            }
-            .padding(.horizontal, 20)
-            
-            // Action Buttons
-            VStack(spacing: 15) {
-                Button(action: onNext) {
-                    HStack {
-                        Text("Continue Setup")
-                        Image(systemName: "arrow.right")
+        GeometryReader { geometry in
+            VStack(spacing: 0) {
+                // Scrollable Content Area
+                ScrollView {
+                    VStack(spacing: 30) {
+                        // Header Icon
+                        Image(systemName: step.icon)
+                            .font(.system(size: 80))
+                            .foregroundColor(step.iconColor)
+                            .padding(.top, max(20, geometry.safeAreaInsets.top + 20))
+                        
+                        // Title
+                        Text(step.title)
+                            .font(.largeTitle)
+                            .fontWeight(.bold)
+                            .multilineTextAlignment(.center)
+                        
+                        // Content
+                        VStack(alignment: .leading, spacing: 20) {
+                            ForEach(contentSections, id: \.self) { section in
+                                contentSection(section)
+                            }
+                        }
+                        .padding(.horizontal, 30)
+                        
+                        // Bottom padding to ensure content doesn't get cut off
+                        Spacer(minLength: 20)
                     }
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.orange)
-                    .cornerRadius(10)
+                    .padding(.bottom, 20)
                 }
                 
-                Button("Cancel", action: onCancel)
-                    .foregroundColor(.secondary)
+                // Fixed Bottom Button Area
+                VStack(spacing: 0) {
+                    Divider()
+                    
+                    Button(action: onNext) {
+                        HStack {
+                            Text(isLastStep ? "Set Up PIN" : "Continue")
+                            Image(systemName: "arrow.right")
+                        }
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(step.iconColor)
+                        .cornerRadius(10)
+                    }
+                    .padding(.horizontal, 40)
+                    .padding(.top, 20)
+                    .padding(.bottom, max(20, geometry.safeAreaInsets.bottom + 10))
+                    .background(Color(.systemBackground))
+                }
             }
-            .padding(.horizontal, 40)
-            .padding(.bottom, 30)
         }
         .navigationBarHidden(true)
+        .ignoresSafeArea(.container, edges: [])
+    }
+    
+    // MARK: - Private Methods
+    
+    private var contentSections: [String] {
+        step.content.components(separatedBy: "\n\n").filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
     }
     
     @ViewBuilder
-    private func explanationCard(icon: String, title: String, description: String) -> some View {
-        HStack(alignment: .top, spacing: 15) {
-            Image(systemName: icon)
-                .font(.system(size: 24))
-                .foregroundColor(.orange)
-                .frame(width: 30)
-            
-            VStack(alignment: .leading, spacing: 5) {
-                Text(title)
-                    .font(.headline)
-                    .fontWeight(.semibold)
+    private func contentSection(_ section: String) -> some View {
+        let trimmed = section.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        if trimmed.hasPrefix("⚠️") || trimmed.hasPrefix("💡") {
+            // Special sections (warnings, tips)
+            VStack(spacing: 10) {
+                let lines = trimmed.components(separatedBy: "\n")
+                if let firstLine = lines.first {
+                    Text(firstLine)
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                }
                 
-                Text(description)
-                    .font(.body)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.leading)
+                if lines.count > 1 {
+                    let remainingText = lines.dropFirst().joined(separator: "\n")
+                    Text(remainingText)
+                        .font(.callout)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.leading)
+                }
             }
-            
-            Spacer()
+            .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(backgroundColorForSection(trimmed))
+            )
+        } else {
+            // Regular content sections
+            VStack(alignment: .leading, spacing: 8) {
+                let lines = trimmed.components(separatedBy: "\n")
+                ForEach(Array(lines.enumerated()), id: \.offset) { index, line in
+                    let trimmedLine = line.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !trimmedLine.isEmpty {
+                        if index == 0 && isSectionHeader(trimmedLine) {
+                            // Section header
+                            Text(trimmedLine)
+                                .font(.title2)
+                                .fontWeight(.semibold)
+                                .foregroundColor(step.iconColor)
+                                .padding(.top, index == 0 ? 0 : 15)
+                        } else {
+                            // Regular content
+                            Text(trimmedLine)
+                                .font(.body)
+                                .foregroundColor(.primary)
+                                .multilineTextAlignment(.leading)
+                                .lineSpacing(4)
+                        }
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(.systemGray6))
+    }
+    
+    private func isSectionHeader(_ text: String) -> Bool {
+        let headers = ["What is a Poison Pill?", "Ultimate Privacy Protection", 
+                      "When to Use", "What Happens", "Making It Less Suspicious", 
+                      "The Solution", "How It Works"]
+        return headers.contains { text.contains($0) }
+    }
+    
+    private func backgroundColorForSection(_ text: String) -> Color {
+        if text.hasPrefix("⚠️") {
+            return Color(.systemGray6)
+        } else if text.hasPrefix("💡") {
+            return Color(.systemYellow).opacity(0.1)
+        }
+        return Color(.systemGray6)
+    }
+}
+
+#Preview("Step 1") {
+    NavigationView {
+        PoisonPillExplanationView(
+            step: ExplanationStep.poisonPillSteps[0],
+            isFirstStep: true,
+            onNext: {},
+            onCancel: {}
         )
     }
 }
 
-#Preview {
+#Preview("Step 2") {
     NavigationView {
         PoisonPillExplanationView(
+            step: ExplanationStep.poisonPillSteps[1],
             onNext: {},
+            onBack: {},
+            onCancel: {}
+        )
+    }
+}
+
+#Preview("Step 3") {
+    NavigationView {
+        PoisonPillExplanationView(
+            step: ExplanationStep.poisonPillSteps[2],
+            isLastStep: true,
+            onNext: {},
+            onBack: {},
             onCancel: {}
         )
     }
