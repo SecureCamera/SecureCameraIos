@@ -45,11 +45,11 @@ class PhotoDetailViewModel: ObservableObject {
     
     // MARK: - Dependencies
     
-    @InjectedObject(\.securityOverlayViewModel) 
-    private var securityViewModel: SecurityOverlayViewModel
-    
     @Injected(\.secureImageRepository)
     private var secureImageRepository: SecureImageRepository
+    
+    @Injected(\.authorizationRepository)
+    private var authorizationRepository: AuthorizationRepository
     
     @Injected(\.clock)
     private var clock: Clock
@@ -144,7 +144,7 @@ class PhotoDetailViewModel: ObservableObject {
             
             // Preload thumbnail in background
             Task(priority: .userInitiated) {
-                _ = try? await secureImageRepository.readThumbnail(prevPhotoDef)
+                _ = await secureImageRepository.readThumbnail(prevPhotoDef)
             }
         }
         
@@ -155,7 +155,7 @@ class PhotoDetailViewModel: ObservableObject {
             
             // Preload thumbnail in background
             Task(priority: .userInitiated) {
-                _ = try? await secureImageRepository.readThumbnail(nextPhotoDef)
+                _ = await secureImageRepository.readThumbnail(nextPhotoDef)
             }
         }
     }
@@ -429,21 +429,11 @@ class PhotoDetailViewModel: ObservableObject {
     // MARK: - Private Methods
     
     private func setupSecurityObservers() {
-        // Monitor security overlay dismissAllAlerts to dismiss any active alerts
-        securityViewModel.$dismissAllAlerts
+        // Monitor authorization state changes to dismiss alerts when unauthorized
+        authorizationRepository.isAuthorized
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] shouldDismiss in
-                if shouldDismiss {
-                    self?.dismissAllAlerts()
-                }
-            }
-            .store(in: &cancellables)
-            
-        // Monitor security overlay state changes to dismiss alerts when privacy shield appears
-        securityViewModel.$currentOverlayState
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] overlayState in
-                if overlayState == .privacyShield {
+            .sink { [weak self] isAuthorized in
+                if !isAuthorized {
                     self?.dismissAllAlerts()
                 }
             }

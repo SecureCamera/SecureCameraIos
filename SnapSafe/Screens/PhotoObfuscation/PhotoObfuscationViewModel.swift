@@ -43,8 +43,8 @@ final class PhotoObfuscationViewModel: ObservableObject {
     
     // MARK: - Dependencies
     
-    @Injected(\.securityOverlayViewModel) 
-    private var securityViewModel: SecurityOverlayViewModel
+    @Injected(\.authorizationRepository)
+    private var authorizationRepository: AuthorizationRepository
     
     @Injected(\.secureImageRepository)
     private var secureImageRepository: SecureImageRepository
@@ -329,21 +329,11 @@ final class PhotoObfuscationViewModel: ObservableObject {
     // MARK: - Private Methods
     
     private func setupSecurityObservers() {
-        // Monitor security overlay dismissAllAlerts to dismiss any active alerts
-        securityViewModel.$dismissAllAlerts
+        // Monitor authorization state changes to dismiss alerts when unauthorized
+        authorizationRepository.isAuthorized
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] shouldDismiss in
-                if shouldDismiss {
-                    self?.dismissAllAlerts()
-                }
-            }
-            .store(in: &cancellables)
-            
-        // Monitor security overlay state changes to dismiss alerts when privacy shield appears
-        securityViewModel.$currentOverlayState
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] overlayState in
-                if overlayState == .privacyShield {
+            .sink { [weak self] isAuthorized in
+                if !isAuthorized {
                     self?.dismissAllAlerts()
                 }
             }
