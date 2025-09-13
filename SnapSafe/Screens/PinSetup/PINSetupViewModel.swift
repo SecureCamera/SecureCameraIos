@@ -112,7 +112,7 @@ final class PINSetupViewModel: ObservableObject {
             }
             
             return true
-        } catch {
+        } catch { // TODO: nothing throws above this, remove?
             showError(message: "An error occurred while creating your PIN. Please try again.")
             return false
         }

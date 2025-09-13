@@ -29,14 +29,14 @@ final class CameraContainerViewModel: ObservableObject {
         
         // Check camera permissions when view model is initialized
         Task {
-            await cameraModel.checkPermissions()
+            await cameraModel.checkAndSetupCamera()
         }
     }
     
     // MARK: - Public Methods
     
     func refreshPermissions() async {
-        await cameraModel.checkPermissions()
+        await cameraModel.checkAndSetupCamera()
     }
     
     func capturePhoto() {

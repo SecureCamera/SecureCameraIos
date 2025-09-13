@@ -21,7 +21,9 @@ class CameraViewModel: NSObject, ObservableObject {
         return false
         #endif
     }
-    @Published var isPermissionGranted = false
+    var isPermissionGranted: Bool { 
+        cameraPermissionRepository.isPermissionGranted 
+    }
     @Published var session = AVCaptureSession()
     @Published var alert = false
     @Published var output = AVCapturePhotoOutput()
@@ -45,6 +47,9 @@ class CameraViewModel: NSObject, ObservableObject {
     
     @Injected(\.locationRepository)
     private var locationRepository: LocationRepository
+    
+    @Injected(\.cameraPermissionRepository)
+    private var cameraPermissionRepository: CameraPermissionRepository
     
     enum CameraLensType {
         case ultraWide   // 0.5x zoom
@@ -124,7 +129,7 @@ class CameraViewModel: NSObject, ObservableObject {
         
         Task {
             try await Task.sleep(for: .milliseconds(100))
-            await checkPermissions()
+            await checkAndSetupCamera()
         }
     }
     
@@ -139,13 +144,11 @@ class CameraViewModel: NSObject, ObservableObject {
         Logger.camera.debug("App entering foreground, resetting zoom level")
         resetZoomLevel()
     }
-    
-    func checkPermissions() async {
+     
+    func checkAndSetupCamera() async {
         #if DEBUG && targetEnvironment(simulator)
         if isRunningInSimulator {
-            await MainActor.run {
-                self.isPermissionGranted = true
-            }
+            // For simulator, just setup camera after a delay
             Task {
                 try await Task.sleep(for: .milliseconds(200))
                 await setupCamera()
@@ -154,34 +157,16 @@ class CameraViewModel: NSObject, ObservableObject {
         }
         #endif
         
-        switch AVCaptureDevice.authorizationStatus(for: .video) {
-        case .authorized:
-            await MainActor.run {
-                self.isPermissionGranted = true
-            }
+        // Use the camera permission repository to check permissions
+        let isGranted = await cameraPermissionRepository.checkAndUpdatePermissions()
+        
+        if isGranted {
             Task {
                 try await Task.sleep(for: .milliseconds(200))
                 await setupCamera()
             }
-        case .notDetermined:
-            let status = await AVCaptureDevice.requestAccess(for: .video)
-            if status {
-                await MainActor.run {
-                    self.isPermissionGranted = true
-                }
-                Task {
-                    try await Task.sleep(for: .milliseconds(200))
-                    await setupCamera()
-                }
-            } else {
-                await MainActor.run {
-                    self.isPermissionGranted = false
-                    self.alert = true
-                }
-            }
-        default:
+        } else {
             await MainActor.run {
-                self.isPermissionGranted = false
                 self.alert = true
             }
         }
