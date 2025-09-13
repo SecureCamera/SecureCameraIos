@@ -94,6 +94,11 @@ extension Container {
         ) }.singleton
     }
     
+    @MainActor
+    var cameraPermissionRepository: Factory<CameraPermissionRepository> {
+        self { @MainActor in CameraPermissionRepository() }.singleton
+    }
+    
     var authorizedPinUseCase: Factory<AuthorizePinUseCase> {
             self { AuthorizePinUseCase(
                 authRepository: self.authorizationRepository(),

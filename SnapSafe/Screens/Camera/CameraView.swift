@@ -80,7 +80,7 @@ struct CameraView: View {
             .onAppear {
                 // Re-check camera permissions when camera view appears
                 Task {
-                    await cameraModel.checkPermissions()
+                    await cameraModel.checkAndSetupCamera()
                 }
             }
         }

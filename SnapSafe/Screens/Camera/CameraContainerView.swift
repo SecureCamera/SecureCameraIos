@@ -7,10 +7,12 @@
 
 import AVFoundation
 import SwiftUI
+import FactoryKit
 
 struct CameraContainerView: View {
     @StateObject private var viewModel = CameraContainerViewModel()
     @EnvironmentObject private var nav: AppNavigationState
+    @InjectedObject(\.cameraPermissionRepository) private var cameraPermissionRepository: CameraPermissionRepository
     
     // Local camera UI state
     @State private var isShutterAnimating = false
@@ -110,12 +112,12 @@ struct CameraContainerView: View {
                         viewModel.capturePhoto()
                     }) {
                         Circle()
-                            .strokeBorder(viewModel.cameraModel.isPermissionGranted ? Color.white : Color.gray, lineWidth: 4)
+                            .strokeBorder(cameraPermissionRepository.isPermissionGranted ? Color.white : Color.gray, lineWidth: 4)
                             .frame(width: 80, height: 80)
-                            .background(Circle().fill(viewModel.cameraModel.isPermissionGranted ? Color.white : Color.gray.opacity(0.5)))
+                            .background(Circle().fill(cameraPermissionRepository.isPermissionGranted ? Color.white : Color.gray.opacity(0.5)))
                             .padding()
                     }
-                    .disabled(!viewModel.cameraModel.isPermissionGranted)
+                    .disabled(!cameraPermissionRepository.isPermissionGranted)
 
                     Spacer()
                     Button(action: {
