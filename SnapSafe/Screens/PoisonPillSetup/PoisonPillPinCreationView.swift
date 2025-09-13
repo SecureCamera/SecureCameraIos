@@ -108,7 +108,10 @@ struct PoisonPillPinCreationView: View {
             
             // Action Buttons
             VStack(spacing: 15) {
-                Button(action: onSetup) {
+                Button(action: {
+                    hideKeyboard()
+                    onSetup()
+                }) {
                     HStack {
                         if isLoading {
                             ProgressView()

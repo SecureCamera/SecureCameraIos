@@ -53,6 +53,7 @@ struct PINVerificationView: View {
             }
             
             Button(action: {
+                isPINFieldFocused = false
                 viewModel.unlockButtonTapped()
             }) {
                 HStack {
@@ -85,6 +86,14 @@ struct PINVerificationView: View {
         }
         .obscuredWhenInactive()
         .screenCaptureProtected()
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") {
+                    isPINFieldFocused = false
+                }
+            }
+        }
     }
 }
 
