@@ -48,12 +48,19 @@ struct PINVerificationView: View {
             Button(action: {
                 viewModel.unlockButtonTapped()
             }) {
-                Text("Unlock")
-                    .foregroundColor(.white)
-                    .padding()
-                    .frame(width: 200)
-                    .background(viewModel.unlockButtonBackgroundColor)
-                    .cornerRadius(10)
+                HStack {
+                    if viewModel.isLoading {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                            .foregroundColor(.white)
+                    }
+                    Text(viewModel.isLoading ? "Verifying..." : "Unlock")
+                        .foregroundColor(.white)
+                }
+                .padding()
+                .frame(width: 200)
+                .background(viewModel.unlockButtonBackgroundColor)
+                .cornerRadius(10)
             }
             .disabled(viewModel.isUnlockButtonDisabled)
             .padding(.top, 20)

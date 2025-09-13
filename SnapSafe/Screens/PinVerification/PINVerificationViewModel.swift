@@ -17,6 +17,7 @@ final class PINVerificationViewModel: ObservableObject {
     @Published var pin = ""
     @Published var showError = false
     @Published var attempts = 0
+    @Published var isLoading = false
     
     // MARK: - Dependencies
     
@@ -33,11 +34,11 @@ final class PINVerificationViewModel: ObservableObject {
     // MARK: - Computed Properties
     
     var isUnlockButtonDisabled: Bool {
-        pin.count != 4
+        pin.count != 4 || isLoading
     }
     
     var unlockButtonBackgroundColor: Color {
-        pin.count == 4 ? Color.blue : Color.gray
+        pin.count == 4 && !isLoading ? Color.blue : Color.gray
     }
     
     var errorMessage: String {
@@ -67,7 +68,13 @@ final class PINVerificationViewModel: ObservableObject {
     }
     
     func verifyPIN() async {
+        isLoading = true
+        showError = false
+        
         let success = await verifyPinUseCase.verifyPin(pin)
+        
+        isLoading = false
+        
         if success {
             // PIN verification successful (includes poison pill handling)
             Logger.ui.info("PIN verification successful")
