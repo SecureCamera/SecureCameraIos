@@ -12,6 +12,15 @@ struct PINVerificationView: View {
     @FocusState private var isPINFieldFocused: Bool
     @Environment(\.scenePhase) private var scenePhase
     
+    // Cache computed values to reduce view updates
+    private var buttonDisabled: Bool {
+        viewModel.pin.count != 4 || viewModel.isLoading
+    }
+    
+    private var buttonBackgroundColor: Color {
+        viewModel.pin.count == 4 && !viewModel.isLoading ? Color.blue : Color.gray
+    }
+    
     var body: some View {
         VStack(spacing: 30) {
             Image(systemName: "lock.shield")
@@ -31,11 +40,10 @@ struct PINVerificationView: View {
                 .textContentType(.oneTimeCode)
                 .multilineTextAlignment(.center)
                 .padding()
-                .background(RoundedRectangle(cornerRadius: 8).stroke(viewModel.isLoading ? Color.gray.opacity(0.5) : Color.gray, lineWidth: 1))
+                .background(RoundedRectangle(cornerRadius: 8).stroke(Color.gray, lineWidth: 1))
                 .padding(.horizontal, 50)
                 .focused($isPINFieldFocused)
                 .disabled(viewModel.isLoading)
-                .opacity(viewModel.isLoading ? 0.6 : 1.0)
                 .onChange(of: viewModel.pin) { _, newValue in
                     viewModel.updatePIN(newValue)
                 }
@@ -67,16 +75,17 @@ struct PINVerificationView: View {
                 }
                 .padding()
                 .frame(width: 200)
-                .background(viewModel.unlockButtonBackgroundColor)
+                .background(buttonBackgroundColor)
                 .cornerRadius(10)
             }
-            .disabled(viewModel.isUnlockButtonDisabled)
+            .disabled(buttonDisabled)
             .padding(.top, 20)
             
             Spacer()
         }
         .onAppear {
             viewModel.onAppear()
+            isPINFieldFocused = true
         }
         .onChange(of: scenePhase) { _, newPhase in
             // Dismiss keyboard when app goes to background or inactive

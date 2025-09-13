@@ -11,9 +11,20 @@ import Logging
 
 struct PINSetupView: View {
     @StateObject private var viewModel = PINSetupViewModel()
+    @FocusState private var isPINFieldFocused: Bool
+    @FocusState private var isConfirmPINFieldFocused: Bool
     
     @Injected(\.settingsDataSource)
     private var settings: SettingsDataSource
+    
+    // Cache computed values to reduce view updates
+    private var buttonDisabled: Bool {
+        !viewModel.canSubmit
+    }
+    
+    private var buttonBackgroundColor: Color {
+        viewModel.canSubmit ? Color.blue : Color.gray
+    }
     
     var body: some View {
         NavigationView {
@@ -40,8 +51,14 @@ struct PINSetupView: View {
                         .padding()
                         .background(RoundedRectangle(cornerRadius: 8).stroke(Color.gray, lineWidth: 1))
                         .padding(.horizontal, 50)
+                        .focused($isPINFieldFocused)
                         .onChange(of: viewModel.pin) { _, newValue in
                             viewModel.updatePIN(newValue)
+                            // Auto-advance to confirm field when PIN is complete
+                            if newValue.count == 4 {
+                                isPINFieldFocused = false
+                                isConfirmPINFieldFocused = true
+                            }
                         }
                     
                     SecureField("Confirm PIN", text: $viewModel.confirmPin)
@@ -51,6 +68,7 @@ struct PINSetupView: View {
                         .padding()
                         .background(RoundedRectangle(cornerRadius: 8).stroke(Color.gray, lineWidth: 1))
                         .padding(.horizontal, 50)
+                        .focused($isConfirmPINFieldFocused)
                         .onChange(of: viewModel.confirmPin) { _, newValue in
                             viewModel.updateConfirmPIN(newValue)
                         }
@@ -64,6 +82,8 @@ struct PINSetupView: View {
                 }
                 
                 Button(action: {
+                    isPINFieldFocused = false
+                    isConfirmPINFieldFocused = false
                     Task {
                         let success = await viewModel.createPin()
                         if success {
@@ -83,12 +103,10 @@ struct PINSetupView: View {
                     }
                     .padding()
                     .frame(width: 200)
-                    .background(
-                        viewModel.canSubmit ? Color.blue : Color.gray
-                    )
+                    .background(buttonBackgroundColor)
                     .cornerRadius(10)
                 }
-                .disabled(!viewModel.canSubmit)
+                .disabled(buttonDisabled)
                 .padding(.top, 20)
                 
                 Spacer()
@@ -104,6 +122,18 @@ struct PINSetupView: View {
             .navigationBarHidden(true)
             .obscuredWhenInactive()
             .screenCaptureProtected()
+            .onAppear {
+                isPINFieldFocused = true
+            }
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Done") {
+                        isPINFieldFocused = false
+                        isConfirmPINFieldFocused = false
+                    }
+                }
+            }
         }
     }
 }
