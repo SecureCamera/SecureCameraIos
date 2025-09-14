@@ -171,6 +171,9 @@
     "Create a 4-digit PIN that will trigger emergency deletion" : {
 
     },
+    "Create a PIN that will trigger emergency deletion" : {
+
+    },
     "Date Information" : {
 
     },
@@ -220,6 +223,9 @@
 
     },
     "Enter a new 4-digit PIN twice to change your app security PIN" : {
+
+    },
+    "Enter new PIN" : {
 
     },
     "Enter PIN" : {
@@ -558,6 +564,9 @@
 
     },
     "When enabled, personal information will be removed from photos before sharing" : {
+
+    },
+    "When entered, this PIN it will immediately and permanently delete all photos and encryption keys." : {
 
     },
     "You can select a maximum of %lld decoy photos. Please deselect some photos before saving." : {

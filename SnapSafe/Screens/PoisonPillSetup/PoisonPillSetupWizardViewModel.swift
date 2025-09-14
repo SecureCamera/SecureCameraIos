@@ -32,6 +32,9 @@ enum PoisonPillWizardStep: Int, CaseIterable {
 
 @MainActor
 final class PoisonPillSetupWizardViewModel: ObservableObject {
+    let minPinLength = 4
+    let maxPinLength = 10
+    
     // MARK: - Published Properties
     
     @Published var currentStep: PoisonPillWizardStep = .explanation1
@@ -49,13 +52,35 @@ final class PoisonPillSetupWizardViewModel: ObservableObject {
     @Injected(\.createPoisonPillUseCase)
     private var createPoisonPillUseCase: CreatePoisonPillUseCase
     
+    @Injected(\.pinStrengthCheckUseCase)
+    private var pinStrengthCheckUseCase: PinStrengthCheckUseCase
+    
     // MARK: - Computed Properties
     
     var canProceedFromPinCreation: Bool {
-        return pin.count == 4 && 
-               confirmPin.count == 4 && 
+        return isPinLengthValid(pin.count) && 
+               isPinLengthValid(confirmPin.count) && 
                pin == confirmPin &&
                !isLoading
+    }
+    
+    // MARK: - PIN Validation Methods
+    func validateAndFilterPIN(_ newValue: String, isConfirm: Bool = false) -> String {
+        var filtered = newValue
+        
+        // Only allow numbers
+        filtered = filtered.filter { $0.isNumber }
+        
+        // Limit to max digits
+        if filtered.count > maxPinLength {
+            filtered = String(filtered.prefix(maxPinLength))
+        }
+        
+        return filtered
+    }
+    
+    func isPinLengthValid(_ length: Int) -> Bool {
+        return length >= minPinLength && length <= maxPinLength
     }
     
     var progressValue: Double {
@@ -97,25 +122,23 @@ final class PoisonPillSetupWizardViewModel: ObservableObject {
     // MARK: - PIN Management
     
     func updatePIN(_ newValue: String) {
-        let filtered = String(newValue.prefix(4).filter { $0.isNumber })
+        let filtered = validateAndFilterPIN(newValue)
         if pin != filtered {
             pin = filtered
-            validatePINs()
         }
     }
     
     func updateConfirmPIN(_ newValue: String) {
-        let filtered = String(newValue.prefix(4).filter { $0.isNumber })
+        let filtered = validateAndFilterPIN(newValue)
         if confirmPin != filtered {
             confirmPin = filtered
-            validatePINs()
         }
     }
     
     private func validatePINs() {
         showError = false
         
-        if pin.count == 4 && confirmPin.count == 4 && pin != confirmPin {
+        if isPinLengthValid(pin.count) && isPinLengthValid(confirmPin.count) && pin != confirmPin {
             showError = true
             errorMessage = "PINs do not match"
         }
@@ -127,8 +150,21 @@ final class PoisonPillSetupWizardViewModel: ObservableObject {
         isLoading = true
         showError = false
         
+        // Check PIN strength
+        if !pinStrengthCheckUseCase.isPinStrongEnough(pin) {
+            showError = true
+            errorMessage = "PIN is too weak. Avoid common patterns like 1234 or repeated digits."
+            isLoading = false
+            // Clear PIN fields like in PINSetupViewModel
+            pin = ""
+            confirmPin = ""
+            return false
+        }
+        
         Logger.security.info("Setting up poison pill PIN")
         let success: Bool = await self.createPoisonPillUseCase.createPin(pppin: pin)
+        
+        isLoading = false
         
         if success {
             Logger.security.info("Poison pill PIN setup completed successfully")
@@ -136,11 +172,12 @@ final class PoisonPillSetupWizardViewModel: ObservableObject {
         } else {
             showError = true
             errorMessage = "Failed to setup poison pill PIN"
+            // Clear PIN fields on failure like in PINSetupViewModel
+            pin = ""
+            confirmPin = ""
             Logger.security.error("Failed to setup poison pill PIN - createPinUseCase returned false")
             return false
         }
-    
-        isLoading = false
     }
     
     // MARK: - Reset

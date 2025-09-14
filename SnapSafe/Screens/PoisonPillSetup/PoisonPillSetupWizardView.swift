@@ -159,6 +159,7 @@ struct PoisonPillSetupWizardView: View {
                         }
                     }
                 },
+                isPinLengthValid: viewModel.isPinLengthValid,
                 onCancel: {
                     handleCancel()
                 }
