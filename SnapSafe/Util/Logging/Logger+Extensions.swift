@@ -9,26 +9,26 @@ import Logging
 
 extension Logger {
     /// Logger for encryption and cryptographic operations
-    static let encryption = Logger(label: "com.snapsafe.encryption")
+    static let encryption = Logger(label: "com.darkrockstudios.apps.snapsafe.encryption")
     
     /// Logger for security operations (PIN, auth, access control)
-    static let security = Logger(label: "com.snapsafe.security")
+    static let security = Logger(label: "com.darkrockstudios.apps.snapsafe.security")
     
     /// Logger for camera operations and photo capture
-    static let camera = Logger(label: "com.snapsafe.camera")
+    static let camera = Logger(label: "com.darkrockstudios.apps.snapsafe.camera")
     
     /// Logger for storage and file operations
-    static let storage = Logger(label: "com.snapsafe.storage")
+    static let storage = Logger(label: "com.darkrockstudios.apps.snapsafe.storage")
     
     /// Logger for user interface events and navigation
-    static let ui = Logger(label: "com.snapsafe.ui")
+    static let ui = Logger(label: "com.darkrockstudios.apps.snapsafe.ui")
     
     /// Logger for general application events
-    static let app = Logger(label: "com.snapsafe.app")
+    static let app = Logger(label: "com.darkrockstudios.apps.snapsafe.app")
     
     /// Creates a logger with a specific subsystem for more granular logging
     static func subsystem(_ name: String, category: String) -> Logger {
-        return Logger(label: "com.snapsafe.\(category).\(name)")
+        return Logger(label: "com.darkrockstudios.apps.snapsafe.\(category).\(name)")
     }
 }
 

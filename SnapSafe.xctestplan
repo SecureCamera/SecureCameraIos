@@ -9,6 +9,7 @@
     }
   ],
   "defaultOptions" : {
+    "distributor" : "com.apple.TestFlight",
     "targetForVariableExpansion" : {
       "containerPath" : "container:SnapSafe.xcodeproj",
       "identifier" : "A9DE37462DC5F34400679C2C",
