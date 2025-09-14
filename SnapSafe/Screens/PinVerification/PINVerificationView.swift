@@ -33,14 +33,18 @@ struct PINVerificationView: View {
                 .bold()
             
             Text("Enter your PIN to continue")
-                .foregroundColor(.secondary)
+                .foregroundColor(Color(UIColor.lightText))
             
-            SecureField("PIN", text: $viewModel.pin)
+            SecureField("PIN", text: $viewModel.pin, prompt: Text("PIN").foregroundColor(Color(UIColor.lightText)))
                 .keyboardType(.numberPad)
                 .textContentType(.oneTimeCode)
                 .multilineTextAlignment(.center)
                 .padding()
-                .background(RoundedRectangle(cornerRadius: 8).stroke(Color.gray, lineWidth: 1))
+                .foregroundColor(Color(UIColor.lightText))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color(UIColor.systemGray3), lineWidth: 1)
+                )
                 .padding(.horizontal, 50)
                 .focused($isPINFieldFocused)
                 .disabled(viewModel.isLoading)
