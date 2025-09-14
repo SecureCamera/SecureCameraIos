@@ -23,13 +23,14 @@ struct PhotoCell: View {
     // Track whether this cell is visible in the viewport
     @State private var isVisible: Bool = false
     @State private var thumbnail: UIImage? = nil
+    @State private var isDecoy: Bool = false
     
     // Cell size
     private let cellSize: CGFloat = 100
     
     var body: some View {
         
-        ZStack(alignment: .topTrailing) {
+        ZStack {
             // Photo image that fills the entire cell
             Image(uiImage: thumbnail ?? UIImage())
                 .resizable()
@@ -52,16 +53,37 @@ struct PhotoCell: View {
                     isVisible = false
                 }
 
-            // Selection checkmark when in selection mode and selected
+            // Selection checkmark when in selection mode and selected (top-right)
             if isSelecting && isSelected {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 24))
-                    .foregroundColor(.blue)
-                    .background(Circle().fill(Color.white))
-                    .padding(5)
+                VStack {
+                    HStack {
+                        Spacer()
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 24))
+                            .foregroundColor(.blue)
+                            .background(Circle().fill(Color.white))
+                            .padding(5)
+                    }
+                    Spacer()
+                }
+            }
+            
+            // Decoy indicator (bottom-left)
+            if isDecoy {
+                VStack {
+                    Spacer()
+                    HStack {
+                        Image(systemName: "shield.fill")
+                            .font(.system(size: 16))
+                            .foregroundColor(.white.opacity(0.75))
+                            .padding(5)
+                        Spacer()
+                    }
+                }
             }
         }.task {
             thumbnail = await self.secureImageRepository.readThumbnail(photo)
+            isDecoy = secureImageRepository.isDecoyPhoto(photo)
         }
     }
 }
