@@ -9,84 +9,45 @@ import SwiftUI
 
 struct PoisonPillExplanationView: View {
     let step: ExplanationStep
-    let isFirstStep: Bool
-    let isLastStep: Bool
-    let onNext: () -> Void
-    let onBack: (() -> Void)?
-    let onCancel: () -> Void
     
-    init(
-        step: ExplanationStep,
-        isFirstStep: Bool = false,
-        isLastStep: Bool = false,
-        onNext: @escaping () -> Void,
-        onBack: (() -> Void)? = nil,
-        onCancel: @escaping () -> Void
-    ) {
+    init(step: ExplanationStep) {
         self.step = step
-        self.isFirstStep = isFirstStep
-        self.isLastStep = isLastStep
-        self.onNext = onNext
-        self.onBack = onBack
-        self.onCancel = onCancel
     }
     
     var body: some View {
-        GeometryReader { geometry in
-            VStack(spacing: 0) {
-                // Scrollable Content Area
-                ScrollView {
-                    VStack(spacing: 30) {
-                        // Header Icon
-                        Image(systemName: step.icon)
-                            .font(.system(size: 80))
-                            .foregroundColor(step.iconColor)
-                            .padding(.top, max(20, geometry.safeAreaInsets.top + 20))
-                        
-                        // Title
-                        Text(step.title)
-                            .font(.largeTitle)
-                            .fontWeight(.bold)
-                            .multilineTextAlignment(.center)
-                        
-                        // Content
-                        VStack(alignment: .leading, spacing: 20) {
-                            ForEach(contentSections, id: \.self) { section in
-                                contentSection(section)
-                            }
-                        }
-                        .padding(.horizontal, 30)
-                        
-                        // Bottom padding to ensure content doesn't get cut off
-                        Spacer(minLength: 20)
-                    }
-                    .padding(.bottom, 20)
-                }
+        // Just the scrollable content, no fixed bottom button
+        ScrollView {
+            VStack(spacing: 30) {
+                // Top spacing
+                Spacer()
+                    .frame(height: 50)
                 
-                // Fixed Bottom Button Area
-                VStack(spacing: 0) {
-                    Divider()
-                    
-                    Button(action: onNext) {
-                        HStack {
-                            Text(isLastStep ? "Set Up PIN" : "Continue")
-                            Image(systemName: "arrow.right")
-                        }
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(step.iconColor)
-                        .cornerRadius(10)
-                    }
-                    .padding(.horizontal, 40)
+                // Header Icon
+                Image(systemName: step.icon)
+                    .font(.system(size: 80))
+                    .foregroundColor(step.iconColor)
                     .padding(.top, 20)
-                    .padding(.bottom, max(20, geometry.safeAreaInsets.bottom + 10))
-                    .background(Color(.systemBackground))
+                
+                // Title
+                Text(step.title)
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                    .multilineTextAlignment(.center)
+                
+                // Content
+                VStack(alignment: .leading, spacing: 20) {
+                    ForEach(contentSections, id: \.self) { section in
+                        contentSection(section)
+                    }
                 }
+                .padding(.horizontal, 30)
+                
+                // Bottom spacing for fixed controls
+                Spacer()
+                    .frame(height: 150)
             }
+            .padding(.bottom, 20)
         }
-        .navigationBarHidden(true)
-        .ignoresSafeArea(.container, edges: [])
     }
     
     // MARK: - Private Methods
@@ -172,34 +133,18 @@ struct PoisonPillExplanationView: View {
 
 #Preview("Step 1") {
     NavigationView {
-        PoisonPillExplanationView(
-            step: ExplanationStep.poisonPillSteps[0],
-            isFirstStep: true,
-            onNext: {},
-            onCancel: {}
-        )
+        PoisonPillExplanationView(step: ExplanationStep.poisonPillSteps[0])
     }
 }
 
 #Preview("Step 2") {
     NavigationView {
-        PoisonPillExplanationView(
-            step: ExplanationStep.poisonPillSteps[1],
-            onNext: {},
-            onBack: {},
-            onCancel: {}
-        )
+        PoisonPillExplanationView(step: ExplanationStep.poisonPillSteps[1])
     }
 }
 
 #Preview("Step 3") {
     NavigationView {
-        PoisonPillExplanationView(
-            step: ExplanationStep.poisonPillSteps[2],
-            isLastStep: true,
-            onNext: {},
-            onBack: {},
-            onCancel: {}
-        )
+        PoisonPillExplanationView(step: ExplanationStep.poisonPillSteps[2])
     }
 }

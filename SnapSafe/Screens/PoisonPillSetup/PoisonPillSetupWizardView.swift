@@ -26,6 +26,34 @@ struct PoisonPillSetupWizardView: View {
                 // Step Content
                 stepContent
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                
+                // Fixed bottom button (only show for explanation steps, not PIN creation)
+                if viewModel.currentStep != .pinCreation {
+                    VStack(spacing: 0) {
+                        Divider()
+                            .background(Color.gray.opacity(0.3))
+                        
+                        Button(action: {
+                            viewModel.goToNextStep()
+                        }) {
+                            HStack {
+                                Text(viewModel.currentStep == .explanation3 ? "Set Up PIN" : "Continue")
+                                    .fontWeight(.medium)
+                                Image(systemName: "arrow.right")
+                                    .font(.system(size: 14, weight: .medium))
+                            }
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                            .background(Color.orange)
+                            .cornerRadius(12)
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 20)
+                        .padding(.bottom, 20)
+                    }
+                    .background(Color(UIColor.systemBackground))
+                }
             }
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarHidden(true)
@@ -88,53 +116,21 @@ struct PoisonPillSetupWizardView: View {
     private var stepContent: some View {
         switch viewModel.currentStep {
         case .explanation1:
-            PoisonPillExplanationView(
-                step: ExplanationStep.poisonPillSteps[0],
-                isFirstStep: true,
-                onNext: {
-                    viewModel.goToNextStep()
-                },
-                onCancel: {
-                    handleCancel()
-                }
-            )
+            PoisonPillExplanationView(step: ExplanationStep.poisonPillSteps[0])
             .transition(.asymmetric(
                 insertion: .move(edge: .trailing),
                 removal: .move(edge: .leading)
             ))
             
         case .explanation2:
-            PoisonPillExplanationView(
-                step: ExplanationStep.poisonPillSteps[1],
-                onNext: {
-                    viewModel.goToNextStep()
-                },
-                onBack: {
-                    viewModel.goToPreviousStep()
-                },
-                onCancel: {
-                    handleCancel()
-                }
-            )
+            PoisonPillExplanationView(step: ExplanationStep.poisonPillSteps[1])
             .transition(.asymmetric(
                 insertion: .move(edge: .trailing),
                 removal: .move(edge: .leading)
             ))
             
         case .explanation3:
-            PoisonPillExplanationView(
-                step: ExplanationStep.poisonPillSteps[2],
-                isLastStep: true,
-                onNext: {
-                    viewModel.goToNextStep()
-                },
-                onBack: {
-                    viewModel.goToPreviousStep()
-                },
-                onCancel: {
-                    handleCancel()
-                }
-            )
+            PoisonPillExplanationView(step: ExplanationStep.poisonPillSteps[2])
             .transition(.asymmetric(
                 insertion: .move(edge: .trailing),
                 removal: .move(edge: .leading)
