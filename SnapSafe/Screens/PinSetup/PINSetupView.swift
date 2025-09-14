@@ -54,11 +54,6 @@ struct PINSetupView: View {
                         .focused($isPINFieldFocused)
                         .onChange(of: viewModel.pin) { _, newValue in
                             viewModel.updatePIN(newValue)
-                            // Auto-advance to confirm field when PIN is complete
-                            if newValue.count == 4 {
-                                isPINFieldFocused = false
-                                isConfirmPINFieldFocused = true
-                            }
                         }
                     
                     SecureField("Confirm PIN", text: $viewModel.confirmPin)

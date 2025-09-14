@@ -12,6 +12,9 @@ import FactoryKit
 @MainActor
 final class PINSetupViewModel: ObservableObject {
     
+    private let maxLength: Int = 10
+    private let minLength: Int = 4
+    
     // MARK: - Published Properties
     @Published var pin: String = ""
     @Published var confirmPin: String = ""
@@ -21,7 +24,8 @@ final class PINSetupViewModel: ObservableObject {
     
     // MARK: - Computed Properties
     var isPINValid: Bool {
-        pin.count == 4 && confirmPin.count == 4
+        pin.count >= minLength && pin.count <= maxLength
+        && confirmPin.count >= minLength && confirmPin.count <= maxLength
     }
     
     var canSubmit: Bool {
@@ -30,6 +34,7 @@ final class PINSetupViewModel: ObservableObject {
     
     // MARK: - Dependencies
     @Injected(\.createPinUseCase) private var createPinUseCase: CreatePinUseCase
+    @Injected(\.pinStrengthCheckUseCase) private var pinStrengthCheckUseCase: PinStrengthCheckUseCase
     
     // MARK: - Private Properties
     private var cancellables = Set<AnyCancellable>()
@@ -41,12 +46,6 @@ final class PINSetupViewModel: ObservableObject {
     
     // MARK: - Private Methods
     private func setupBindings() {
-        // Clear error when user starts typing
-        Publishers.CombineLatest($pin, $confirmPin)
-            .sink { [weak self] _, _ in
-                self?.clearError()
-            }
-            .store(in: &cancellables)
     }
     
     private func clearError() {
@@ -61,9 +60,9 @@ final class PINSetupViewModel: ObservableObject {
         // Only allow numbers
         filtered = filtered.filter { $0.isNumber }
         
-        // Limit to 4 digits
-        if filtered.count > 4 {
-            filtered = String(filtered.prefix(4))
+        // Limit to max digits
+        if filtered.count > maxLength {
+            filtered = String(filtered.prefix(maxLength))
         }
         
         return filtered
@@ -81,14 +80,10 @@ final class PINSetupViewModel: ObservableObject {
     func createPin() async -> Bool {
         guard canSubmit else { return false }
         
+        clearError()
+        
         isLoading = true
         defer { isLoading = false }
-        
-        // Validate PIN length
-        if pin.count != 4 {
-            showError(message: "PIN must be 4 digits")
-            return false
-        }
         
         // Check if PINs match
         if pin != confirmPin {
@@ -99,6 +94,12 @@ final class PINSetupViewModel: ObservableObject {
         // Validate PIN format (already done above, but keeping for clarity)
         guard pin.allSatisfy({ $0.isNumber }) else {
             showError(message: "PIN must contain only numbers")
+            return false
+        }
+        
+        // Check PIN strength
+        if !pinStrengthCheckUseCase.isPinStrongEnough(pin) {
+            showError(message: "PIN is too weak. Avoid common patterns like 1234 or repeated digits.")
             return false
         }
         
@@ -115,6 +116,9 @@ final class PINSetupViewModel: ObservableObject {
     
     // MARK: - Error Handling
     private func showError(message: String) {
+        pin = ""
+        confirmPin = ""
+        
         errorMessage = message
         showError = true
     }

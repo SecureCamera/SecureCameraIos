@@ -182,4 +182,8 @@ extension Container {
             encryptionScheme: self.encryptionScheme()
         ) }
     }
+    
+    var pinStrengthCheckUseCase: Factory<PinStrengthCheckUseCase> {
+        self { PinStrengthCheckUseCase() }
+    }
 }
