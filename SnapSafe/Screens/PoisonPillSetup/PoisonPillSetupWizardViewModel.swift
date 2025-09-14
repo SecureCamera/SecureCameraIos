@@ -127,28 +127,19 @@ final class PoisonPillSetupWizardViewModel: ObservableObject {
         isLoading = true
         showError = false
         
-        do {
-            Logger.security.info("Setting up poison pill PIN")
-            let success: Bool = await self.createPoisonPillUseCase.createPin(pppin: pin)
-            
-            if success {
-                Logger.security.info("Poison pill PIN setup completed successfully")
-                return true
-            } else {
-                showError = true
-                errorMessage = "Failed to setup poison pill PIN"
-                Logger.security.error("Failed to setup poison pill PIN - createPinUseCase returned false")
-                return false
-            }
-        } catch {
+        Logger.security.info("Setting up poison pill PIN")
+        let success: Bool = await self.createPoisonPillUseCase.createPin(pppin: pin)
+        
+        if success {
+            Logger.security.info("Poison pill PIN setup completed successfully")
+            return true
+        } else {
             showError = true
-            errorMessage = "An error occurred while setting up the PIN"
-            Logger.security.error("Error setting up poison pill PIN", metadata: [
-                "error": .string(String(describing: error))
-            ])
+            errorMessage = "Failed to setup poison pill PIN"
+            Logger.security.error("Failed to setup poison pill PIN - createPinUseCase returned false")
             return false
         }
-        
+    
         isLoading = false
     }
     
