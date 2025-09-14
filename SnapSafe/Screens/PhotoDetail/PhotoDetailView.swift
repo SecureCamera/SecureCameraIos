@@ -109,7 +109,15 @@ struct PhotoDetailView: View {
                             Logger.ui.debug("Delete button pressed - showing confirmation")
                             viewModel.showDeleteConfirmation = true
                         },
-                        isZoomed: viewModel.isZoomed
+                        onToggleDecoy: {
+                            Logger.ui.debug("Decoy toggle button pressed")
+                            viewModel.toggleDecoyStatus()
+                        },
+                        isZoomed: viewModel.isZoomed,
+                        showDecoyButton: viewModel.isPoisonPillConfigured,
+                        decoyButtonTitle: viewModel.decoyButtonTitle,
+                        decoyButtonIcon: viewModel.decoyButtonIcon,
+                        isDecoyOperationLoading: viewModel.isDecoyOperationLoading
                     )
                 }
             }

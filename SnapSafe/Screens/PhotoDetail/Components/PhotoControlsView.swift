@@ -12,7 +12,12 @@ struct PhotoControlsView: View {
     var onObfuscate: () -> Void
     var onShare: () -> Void
     var onDelete: () -> Void
+    var onToggleDecoy: (() -> Void)?
     var isZoomed: Bool
+    var showDecoyButton: Bool
+    var decoyButtonTitle: String
+    var decoyButtonIcon: String
+    var isDecoyOperationLoading: Bool
     
     var body: some View {
         HStack(spacing: 30) {
@@ -36,6 +41,29 @@ struct PhotoControlsView: View {
                         .font(.caption)
                 }
                 .foregroundColor(.blue)
+            }
+            
+            // Decoy button (conditional)
+            if showDecoyButton {
+                Button(action: {
+                    onToggleDecoy?()
+                }) {
+                    VStack {
+                        if isDecoyOperationLoading {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                                .frame(height: 24)
+                        } else {
+                            Image(systemName: decoyButtonIcon)
+                                .font(.system(size: 24))
+                        }
+                        Text(decoyButtonTitle)
+                            .font(.caption)
+                    }
+                    .foregroundColor(.red)
+                }
+                .disabled(isDecoyOperationLoading)
+                .opacity(isDecoyOperationLoading ? 0.6 : 1.0)
             }
             
             // Share button
@@ -78,7 +106,12 @@ struct PhotoControlsView_Previews: PreviewProvider {
                 onObfuscate: {},
                 onShare: {},
                 onDelete: {},
-                isZoomed: false
+                onToggleDecoy: {},
+                isZoomed: false,
+                showDecoyButton: true,
+                decoyButtonTitle: "Add Decoy",
+                decoyButtonIcon: "shield",
+                isDecoyOperationLoading: false
             )
         }
     }

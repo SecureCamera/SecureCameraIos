@@ -77,7 +77,7 @@ class PinRepositoryImpl: PinRepository {
             pin: inputPin, stored: storedHash, deviceId: await deviceInfo.getDeviceIdentifier())
     }
 
-    func hasPoisonPillPin() async throws -> Bool {
+    func hasPoisonPillPin() async -> Bool {
         let hasPrimary = await getHashedPin() != nil
         let hasPoison = await getHashedPoisonPillPin() != nil
         return hasPrimary && hasPoison

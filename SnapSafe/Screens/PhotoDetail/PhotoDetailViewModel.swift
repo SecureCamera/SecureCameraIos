@@ -39,11 +39,16 @@ class PhotoDetailViewModel: ObservableObject {
     @Published var lastDragPosition: CGSize = .zero
     
     @Published var showImageInfo = false
+    @Published var isDecoyOperationLoading = false
+    @Published var isPoisonPillConfigured = false
     
     // Track currently presented activity controller for dismissal
     private weak var currentActivityController: UIActivityViewController?
     
     // MARK: - Dependencies
+    
+    @Injected(\.pinRepository)
+    private var pinRepository: PinRepository
     
     @Injected(\.secureImageRepository)
     private var secureImageRepository: SecureImageRepository
@@ -56,6 +61,9 @@ class PhotoDetailViewModel: ObservableObject {
     
     @Injected(\.prepareForSharingUseCase)
     private var prepareForSharingUseCase: PrepareForSharingUseCase
+    
+    @Injected(\.addDecoyPhotoUseCase)
+    private var addDecoyPhotoUseCase: AddDecoyPhotoUseCase
     
     private var cancellables = Set<AnyCancellable>()
     
@@ -97,6 +105,25 @@ class PhotoDetailViewModel: ObservableObject {
     
     var displayedImage: UIImage {
         return currentImage ?? UIImage(systemName: "photo")!
+    }
+    
+    // MARK: - Decoy Management Computed Properties
+    
+    func isPoisonPillSetup() async -> Bool {
+        return await pinRepository.hasPoisonPillPin()
+    }
+    
+    var isCurrentPhotoDecoy: Bool {
+        guard let photoDef = currentPhotoDef else { return false }
+        return secureImageRepository.isDecoyPhoto(photoDef)
+    }
+    
+    var decoyButtonTitle: String {
+        isCurrentPhotoDecoy ? "Remove Decoy" : "Add Decoy"
+    }
+    
+    var decoyButtonIcon: String {
+        isCurrentPhotoDecoy ? "shield.slash" : "shield"
     }
     
     // MARK: - Image Loading
@@ -407,9 +434,53 @@ class PhotoDetailViewModel: ObservableObject {
         }
     }
     
+    // MARK: - Decoy Management
+    
+    func toggleDecoyStatus() {
+        guard let photoDef = currentPhotoDef else { return }
+        
+        isDecoyOperationLoading = true
+        
+        Task(priority: .userInitiated) {
+            if isCurrentPhotoDecoy {
+                // Remove decoy status
+                await MainActor.run {
+                    secureImageRepository.removeDecoyPhoto(photoDef)
+                    isDecoyOperationLoading = false
+                    Logger.ui.info("Removed photo from decoys", metadata: [
+                        "photoName": .string(photoDef.photoName)
+                    ])
+                }
+            } else {
+                // Add decoy status
+                let success = await addDecoyPhotoUseCase.addDecoyPhoto(photoDef: photoDef)
+                await MainActor.run {
+                    isDecoyOperationLoading = false
+                    if success {
+                        Logger.ui.info("Added photo as decoy", metadata: [
+                            "photoName": .string(photoDef.photoName)
+                        ])
+                    } else {
+                        Logger.ui.error("Failed to add photo as decoy", metadata: [
+                            "photoName": .string(photoDef.photoName)
+                        ])
+                    }
+                }
+            }
+        }
+    }
+    
     // MARK: - View Lifecycle
     
     func onAppear() {
+        // Check poison pill status
+        Task {
+            let hasPoisonPill = await isPoisonPillSetup()
+            await MainActor.run {
+                self.isPoisonPillConfigured = hasPoisonPill
+            }
+        }
+        
         // Preload adjacent photos for smoother navigation
         Task {
             try await Task.sleep(for: .milliseconds(200))

@@ -19,7 +19,7 @@ public protocol PinRepository {
     func verifyPoisonPillPin(_ pin: String) async -> Bool
     
     func verifySecurityPin(_ pin: String) async -> Bool
-    func hasPoisonPillPin() async throws -> Bool
+    func hasPoisonPillPin() async -> Bool
     
     // MARK: - Poison Pill APIs
 
