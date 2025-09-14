@@ -19,6 +19,10 @@ struct PINSetupIntroView: View {
         currentSlideIndex == slides.count
     }
     
+    private var isFirstSlide: Bool {
+        currentSlideIndex == 0
+    }
+    
     var body: some View {
         VStack(spacing: 0) {
             // Main content area
@@ -52,23 +56,66 @@ struct PINSetupIntroView: View {
                             }
                         }
                         
-                        // Continue button
-                        Button(action: {
-                            withAnimation(.easeInOut(duration: 0.4)) {
-                                currentSlideIndex += 1
+                        // Buttons - show both Continue and Skip on first slide, only Continue on others
+                        if isFirstSlide {
+                            HStack(spacing: 12) {
+                                // Skip button
+                                Button(action: {
+                                    withAnimation(.easeInOut(duration: 0.4)) {
+                                        currentSlideIndex = slides.count // Jump to PIN creation screen
+                                    }
+                                }) {
+                                    Text("Skip")
+                                        .fontWeight(.medium)
+                                        .foregroundColor(.blue)
+                                        .frame(maxWidth: .infinity)
+                                        .frame(height: 50)
+                                        .background(Color.blue.opacity(0.1))
+                                        .cornerRadius(12)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .stroke(Color.blue, lineWidth: 1)
+                                        )
+                                }
+                                
+                                // Continue button
+                                Button(action: {
+                                    withAnimation(.easeInOut(duration: 0.4)) {
+                                        currentSlideIndex += 1
+                                    }
+                                }) {
+                                    HStack {
+                                        Text("Continue")
+                                            .fontWeight(.medium)
+                                        Image(systemName: "arrow.right")
+                                            .font(.system(size: 14, weight: .medium))
+                                    }
+                                    .foregroundColor(.white)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 50)
+                                    .background(Color.blue)
+                                    .cornerRadius(12)
+                                }
                             }
-                        }) {
-                            HStack {
-                                Text(isLastIntroSlide ? "Set Up PIN" : "Continue")
-                                    .fontWeight(.medium)
-                                Image(systemName: "arrow.right")
-                                    .font(.system(size: 14, weight: .medium))
+                        } else {
+                            // Continue button only for non-first slides
+                            Button(action: {
+                                withAnimation(.easeInOut(duration: 0.4)) {
+                                    currentSlideIndex += 1
+                                }
+                            }) {
+                                HStack {
+                                    Text(isLastIntroSlide ? "Set Up PIN" : "Continue")
+                                        .fontWeight(.medium)
+                                    Image(systemName: "arrow.right")
+                                        .font(.system(size: 14, weight: .medium))
+                                }
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 50)
+                                .background(Color.blue)
+                                .cornerRadius(12)
                             }
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 50)
-                            .background(Color.blue)
-                            .cornerRadius(12)
                         }
                     }
                     .padding(.horizontal, 20)
