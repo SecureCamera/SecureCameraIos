@@ -13,7 +13,8 @@ struct PoisonPillPinCreationView: View {
     @Binding var showError: Bool
     @Binding var errorMessage: String
     @Binding var isLoading: Bool
-    
+    @Environment(\.scenePhase) private var scenePhase
+
     let canProceed: Bool
     let onPinChange: (String) -> Void
     let onConfirmPinChange: (String) -> Void
@@ -129,6 +130,15 @@ struct PoisonPillPinCreationView: View {
         .ignoresSafeArea(.container, edges: [])
         .onTapGesture {
             hideKeyboard()
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            // Clear PIN content and dismiss keyboard when app goes to background or inactive
+            if newPhase == .background || newPhase == .inactive {
+                hideKeyboard()
+                pin = ""
+                confirmPin = ""
+                showError = false
+            }
         }
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {

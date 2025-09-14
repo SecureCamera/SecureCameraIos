@@ -13,7 +13,8 @@ struct PINSetupView: View {
     @StateObject private var viewModel = PINSetupViewModel()
     @FocusState private var isPINFieldFocused: Bool
     @FocusState private var isConfirmPINFieldFocused: Bool
-    
+    @Environment(\.scenePhase) private var scenePhase
+
     @Injected(\.settingsDataSource)
     private var settings: SettingsDataSource
     
@@ -119,6 +120,14 @@ struct PINSetupView: View {
             .screenCaptureProtected()
             .onAppear {
                 isPINFieldFocused = true
+            }
+            .onChange(of: scenePhase) { _, newPhase in
+                // Clear PIN content and dismiss keyboard when app goes to background or inactive
+                if newPhase == .background || newPhase == .inactive {
+                    isPINFieldFocused = false
+                    isConfirmPINFieldFocused = false
+                    viewModel.clearPinContent()
+                }
             }
             .toolbar {
                 ToolbarItemGroup(placement: .keyboard) {

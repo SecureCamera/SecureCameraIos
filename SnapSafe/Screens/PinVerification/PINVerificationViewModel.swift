@@ -104,7 +104,14 @@ final class PINVerificationViewModel: ObservableObject {
         }
     }
     
+    // MARK: - Security Methods
+
+    func clearPinContent() {
+        pin = ""
+        showError = false
+    }
+
     // MARK: - Private Methods
-    
+
     // Add any private helper methods if needed
 }

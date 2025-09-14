@@ -130,4 +130,10 @@ final class PINSetupViewModel: ObservableObject {
         clearError()
         isLoading = false
     }
+
+    func clearPinContent() {
+        pin = ""
+        confirmPin = ""
+        clearError()
+    }
 }

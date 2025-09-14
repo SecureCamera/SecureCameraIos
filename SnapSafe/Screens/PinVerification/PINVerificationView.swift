@@ -92,9 +92,10 @@ struct PINVerificationView: View {
             isPINFieldFocused = true
         }
         .onChange(of: scenePhase) { _, newPhase in
-            // Dismiss keyboard when app goes to background or inactive
+            // Clear PIN content and dismiss keyboard when app goes to background or inactive
             if newPhase == .background || newPhase == .inactive {
                 isPINFieldFocused = false
+                viewModel.clearPinContent()
             }
         }
         .obscuredWhenInactive()
