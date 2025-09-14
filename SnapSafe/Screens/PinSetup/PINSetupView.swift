@@ -38,13 +38,13 @@ struct PINSetupView: View {
                     .font(.largeTitle)
                     .bold()
                 
-                Text("Please create a 4-digit PIN to secure your photos")
+                Text("Please create a PIN to secure your photos")
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
                 
                 VStack(spacing: 20) {
-                    SecureField("Enter 4-digit PIN", text: $viewModel.pin)
+                    SecureField("Enter PIN", text: $viewModel.pin)
                         .keyboardType(.numberPad)
                         .textContentType(.oneTimeCode)
                         .multilineTextAlignment(.center)

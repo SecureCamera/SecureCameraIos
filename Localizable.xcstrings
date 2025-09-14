@@ -222,6 +222,9 @@
     "Enter a new 4-digit PIN twice to change your app security PIN" : {
 
     },
+    "Enter PIN" : {
+
+    },
     "Enter your PIN to continue" : {
       "localizations" : {
         "es" : {
@@ -365,6 +368,9 @@
 
     },
     "Please create a 4-digit PIN to secure your photos" : {
+
+    },
+    "Please create a PIN to secure your photos" : {
 
     },
     "Please stop recording to continue using the app." : {

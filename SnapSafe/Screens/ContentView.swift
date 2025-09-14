@@ -90,7 +90,7 @@ struct ContentView: View {
                 nav.dismissFullScreenCover()
             })
         case .pinSetup:
-            PINSetupView()
+            PINSetupIntroView()
         case .pinVerification:
             PINVerificationView()
         case .camera:
