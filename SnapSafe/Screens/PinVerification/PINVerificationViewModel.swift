@@ -60,7 +60,7 @@ final class PINVerificationViewModel: ObservableObject {
     
     var unlockButtonText: String {
         if backoffSeconds > 0 {
-            return "Wait \(backoffSeconds)s"
+            return "Wait (\(backoffSeconds)s)"
         } else if isLoading {
             return "Verifying..."
         } else {
@@ -78,7 +78,7 @@ final class PINVerificationViewModel: ObservableObject {
     
     var attemptsWarningMessage: String {
         let remaining = AuthorizationRepository.MAX_FAILED_ATTEMPTS - currentFailedAttempts
-        return "Attempts remaining \(remaining)/\(AuthorizationRepository.MAX_FAILED_ATTEMPTS)"
+        return "Attempts \(remaining)/\(AuthorizationRepository.MAX_FAILED_ATTEMPTS)"
     }
     
     // MARK: - Public Methods
