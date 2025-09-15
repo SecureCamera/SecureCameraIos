@@ -65,6 +65,9 @@ class PhotoDetailViewModel: ObservableObject {
     @Injected(\.addDecoyPhotoUseCase)
     private var addDecoyPhotoUseCase: AddDecoyPhotoUseCase
     
+    @Injected(\.removeDecoyPhotoUseCase)
+    private var removeDecoyPhotoUseCase: RemoveDecoyPhotoUseCase
+    
     private var cancellables = Set<AnyCancellable>()
     
     // MARK: - Initialization
@@ -445,7 +448,7 @@ class PhotoDetailViewModel: ObservableObject {
             if isCurrentPhotoDecoy {
                 // Remove decoy status
                 await MainActor.run {
-                    secureImageRepository.removeDecoyPhoto(photoDef)
+                    removeDecoyPhotoUseCase.removeDecoyPhoto(photoDef)
                     isDecoyOperationLoading = false
                     Logger.ui.info("Removed photo from decoys", metadata: [
                         "photoName": .string(photoDef.photoName)

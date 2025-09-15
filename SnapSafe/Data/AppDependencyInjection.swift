@@ -165,6 +165,13 @@ extension Container {
     }
     
     @MainActor
+    var removeDecoyPhotoUseCase: Factory<RemoveDecoyPhotoUseCase> {
+        self { @MainActor in RemoveDecoyPhotoUseCase(
+            imageRepository: self.secureImageRepository()
+        ) }
+    }
+    
+    @MainActor
     var prepareForSharingUseCase: Factory<PrepareForSharingUseCase> {
         self { @MainActor in PrepareForSharingUseCase() }
     }

@@ -44,6 +44,9 @@ final class SecureGalleryViewModel: ObservableObject {
     @Injected(\.addDecoyPhotoUseCase)
     private var addDecoyPhotoUseCase: AddDecoyPhotoUseCase
     
+    @Injected(\.removeDecoyPhotoUseCase)
+    private var removeDecoyPhotoUseCase: RemoveDecoyPhotoUseCase
+    
     @Injected(\.prepareForSharingUseCase)
     private var prepareForSharingUseCase: PrepareForSharingUseCase
     
@@ -320,7 +323,7 @@ final class SecureGalleryViewModel: ObservableObject {
                 
                 // If it's currently a decoy but not selected, unmark it
                 if isCurrentlyDecoy && !isCurrentlySelected {
-                    secureImageRepository.removeDecoyPhoto(photoDef)
+                    _ = removeDecoyPhotoUseCase.removeDecoyPhoto(photoDef)
                 }
                 // If it's selected but not a decoy, mark it
                 else if isCurrentlySelected && !isCurrentlyDecoy {
