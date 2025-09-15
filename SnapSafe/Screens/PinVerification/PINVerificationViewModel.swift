@@ -18,27 +18,47 @@ final class PINVerificationViewModel: ObservableObject {
     @Published var showError = false
     @Published var attempts = 0
     @Published var isLoading = false
+    @Published var backoffSeconds = 0
+    
+    // MARK: - Security Constants
+    private let maxFailedAttempts = 10
+    
+    // MARK: - Timer
+    private var backoffTimer: Timer?
     
     // MARK: - Dependencies
     
     @Injected(\.authorizationRepository)
     private var authorizationRepository: AuthorizationRepository
     
+    @Injected(\.securityOverlayViewModel)
+    private var securityViewModel: SecurityOverlayViewModel
+    
     @Injected(\.verifyPinUseCase)
     private var verifyPinUseCase: VerifyPinUseCase
     
-    @Injected(\.securityOverlayViewModel)
-    private var securityViewModel: SecurityOverlayViewModel
+    @Injected(\.securityResetUseCase)
+    private var securityResetUseCase: SecurityResetUseCase
     
     
     // MARK: - Computed Properties
     
     var isUnlockButtonDisabled: Bool {
-        pin.count != 4 || isLoading
+        pin.count < 4 || isLoading || backoffSeconds > 0
     }
     
     var unlockButtonBackgroundColor: Color {
-        pin.count == 4 && !isLoading ? Color.blue : Color.gray
+        pin.count >= 4 && !isLoading && backoffSeconds == 0 ? Color.blue : Color.gray
+    }
+    
+    var unlockButtonText: String {
+        if backoffSeconds > 0 {
+            return "Wait \(backoffSeconds)s"
+        } else if isLoading {
+            return "Verifying..."
+        } else {
+            return "Unlock"
+        }
     }
     
     var errorMessage: String {
@@ -50,6 +70,14 @@ final class PINVerificationViewModel: ObservableObject {
     func onAppear() {
         // Update last active time when view appears
         authorizationRepository.keepAliveSession()
+        
+        Task {
+            await updateBackoffTime()
+        }
+    }
+    
+    func onDisappear() {
+        stopBackoffTimer()
     }
     
     func updatePIN(_ newValue: String) {
@@ -77,7 +105,10 @@ final class PINVerificationViewModel: ObservableObject {
         
         if success {
             // PIN verification successful (includes poison pill handling)
-            Logger.ui.info("PIN verification successful")
+            Logger.security.info("PIN verification successful")
+            
+            // Reset failed attempts counter on successful verification
+            attempts = 0
             
             // Notify SecurityOverlayViewModel that authentication is complete
             securityViewModel.authenticationComplete()
@@ -93,8 +124,27 @@ final class PINVerificationViewModel: ObservableObject {
             attempts += 1
             pin = ""
             
-            // Could add more sophisticated security measures here, like
-            // temporary lockout after multiple failed attempts
+            Logger.security.warning("PIN verification failed", metadata: [
+                "attemptCount": .stringConvertible(attempts),
+                "maxAttempts": .stringConvertible(maxFailedAttempts)
+            ])
+            
+            // Check if we've reached the maximum failed attempts
+            if attempts >= maxFailedAttempts {
+                Logger.security.critical("Maximum failed PIN attempts reached, triggering security reset", metadata: [
+                    "attemptCount": .stringConvertible(attempts)
+                ])
+                
+                // Trigger security reset
+                Task {
+                    await securityResetUseCase.reset()
+                }
+            } else {
+                // Check for backoff time after failed attempt
+                Task {
+                    await updateBackoffTime()
+                }
+            }
         }
     }
     
@@ -112,6 +162,42 @@ final class PINVerificationViewModel: ObservableObject {
     }
 
     // MARK: - Private Methods
-
-    // Add any private helper methods if needed
+    
+    private func updateBackoffTime() async {
+        let remainingSeconds = await authorizationRepository.calculateRemainingBackoffSeconds()
+        
+        await MainActor.run {
+            self.backoffSeconds = remainingSeconds
+            
+            if remainingSeconds > 0 {
+                startBackoffTimer()
+                Logger.security.info("PIN verification backoff active", metadata: [
+                    "backoffSeconds": .stringConvertible(remainingSeconds)
+                ])
+            } else {
+                stopBackoffTimer()
+            }
+        }
+    }
+    
+    private func startBackoffTimer() {
+        stopBackoffTimer() // Stop any existing timer
+        
+        backoffTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+            guard let self = self else { return }
+            
+            Task { @MainActor in
+                if self.backoffSeconds > 0 {
+                    self.backoffSeconds -= 1
+                } else {
+                    self.stopBackoffTimer()
+                }
+            }
+        }
+    }
+    
+    private func stopBackoffTimer() {
+        backoffTimer?.invalidate()
+        backoffTimer = nil
+    }
 }

@@ -120,8 +120,8 @@ extension Container {
     @MainActor
     var verifyPinUseCase: Factory<VerifyPinUseCase> {
         self { @MainActor in VerifyPinUseCase(
-            authManager: self.authorizationRepository(),
-            imageManager: self.secureImageRepository(),
+            authRepository: self.authorizationRepository(),
+            imageRepository: self.secureImageRepository(),
             pinRepository: self.pinRepository(),
             encryptionScheme: self.encryptionScheme(),
             authorizePinUseCase: self.authorizedPinUseCase()

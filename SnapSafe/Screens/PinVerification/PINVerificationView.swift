@@ -12,14 +12,6 @@ struct PINVerificationView: View {
     @FocusState private var isPINFieldFocused: Bool
     @Environment(\.scenePhase) private var scenePhase
     
-    // Cache computed values to reduce view updates
-    private var buttonDisabled: Bool {
-        viewModel.pin.count != 4 || viewModel.isLoading
-    }
-    
-    private var buttonBackgroundColor: Color {
-        viewModel.pin.count == 4 && !viewModel.isLoading ? Color.blue : Color.gray
-    }
     
     var body: some View {
         VStack(spacing: 30) {
@@ -74,15 +66,15 @@ struct PINVerificationView: View {
                             .scaleEffect(0.8)
                             .foregroundColor(.white)
                     }
-                    Text(viewModel.isLoading ? "Verifying..." : "Unlock")
+                    Text(viewModel.unlockButtonText)
                         .foregroundColor(.white)
                 }
                 .padding()
                 .frame(width: 200)
-                .background(buttonBackgroundColor)
+                .background(viewModel.unlockButtonBackgroundColor)
                 .cornerRadius(10)
             }
-            .disabled(buttonDisabled)
+            .disabled(viewModel.isUnlockButtonDisabled)
             .padding(.top, 20)
             
             Spacer()
@@ -90,6 +82,9 @@ struct PINVerificationView: View {
         .onAppear {
             viewModel.onAppear()
             isPINFieldFocused = true
+        }
+        .onDisappear {
+            viewModel.onDisappear()
         }
         .onChange(of: scenePhase) { _, newPhase in
             // Clear PIN content and dismiss keyboard when app goes to background or inactive
