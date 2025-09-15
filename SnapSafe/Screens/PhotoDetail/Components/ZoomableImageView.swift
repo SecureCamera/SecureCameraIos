@@ -42,7 +42,7 @@ struct ZoomableImageView<Overlay: View>: View {
         GeometryReader { g in
             Image(uiImage: image)
                 .resizable()
-                .aspectRatio(contentMode: .fill)
+                .aspectRatio(contentMode: .fit)
                 .rotationEffect(.degrees(imageRotation))
                 .scaleEffect(scale)
                 .offset(x: accumulatedPan.width + panOffset.width + swipeOffset,
