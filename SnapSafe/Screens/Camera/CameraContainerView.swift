@@ -111,11 +111,23 @@ struct CameraContainerView: View {
                         triggerShutterEffect()
                         viewModel.capturePhoto()
                     }) {
-                        Circle()
-                            .strokeBorder(cameraPermissionRepository.isPermissionGranted ? Color.white : Color.gray, lineWidth: 4)
-                            .frame(width: 80, height: 80)
-                            .background(Circle().fill(cameraPermissionRepository.isPermissionGranted ? Color.white : Color.gray.opacity(0.5)))
-                            .padding()
+                        ZStack {
+                            // Background circle
+                            Circle()
+                                .strokeBorder(cameraPermissionRepository.isPermissionGranted ? Color.white : Color.gray, lineWidth: 4)
+                                .frame(width: 80, height: 80)
+                                .background(
+                                    Circle()
+                                        .fill(cameraPermissionRepository.isPermissionGranted ? Color.white : Color.gray.opacity(0.5))
+                                )
+                            // Overlay shutter icon
+                            Image("snapshutter")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 90, height: 90)
+                                .foregroundColor(.black)
+                        }
+                        .padding()
                     }
                     .disabled(!cameraPermissionRepository.isPermissionGranted)
 
@@ -176,4 +188,27 @@ struct CameraContainerView: View {
     private func toggleCameraPosition() {
         viewModel.toggleCameraPosition()
     }
+}
+
+#Preview {
+    // Create a mock camera permission repository with granted permissions for preview
+//    @MainActor
+//    class MockCameraPermissionRepository: CameraPermissionRepository {
+//        override init() {
+//            super.init()
+//            // Force permission to be granted for preview
+//            Task {
+//                await self.checkAndUpdatePermissions()
+//            }
+//        }
+//
+//        // Override to always return true for preview
+//        override var isPermissionGranted: Bool {
+//            return true
+//        }
+//    }
+
+    return CameraContainerView()
+        .environmentObject(AppNavigationState())
+//        .environmentObject(MockCameraPermissionRepository())
 }
