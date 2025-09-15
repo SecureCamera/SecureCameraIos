@@ -262,21 +262,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		660130BB2E67AD1D00D07E9C /* Security */ = {
+		660130BB2E67AD1D00D07E9C /* Encryption */ = {
 			isa = PBXGroup;
 			children = (
-				A9ABCD242E751BAE00E73AE5 /* CameraPermissionRepository.swift */,
 				663C7E302E712E9000967B9E /* HardwareEncryptionScheme.swift */,
-				660130B62E67AD1D00D07E9C /* AuthorizationRepository.swift */,
 				660130B82E67AD1D00D07E9C /* EncryptionScheme.swift */,
-				660130B92E67AD1D00D07E9C /* HashedPin.swift */,
 				660130BA2E67AD1D00D07E9C /* PassThroughEncryptionScheme.swift */,
 				660130C62E67AD3A00D07E9C /* DeviceInfoDataSource.swift */,
-				66A404CA2E67EB7F0054FFE7 /* PinCrypto.swift */,
-				66A404D22E67FD720054FFE7 /* PinRepository.swift */,
-				66A404D42E6800840054FFE7 /* PinRepositoryImpl.swift */,
 			);
-			path = Security;
+			path = Encryption;
 			sourceTree = "<group>";
 		};
 		660130C32E67AD2200D07E9C /* UserData */ = {
@@ -328,6 +322,33 @@
 				663C7E522E73FA3100967B9E /* PoisonPillSetupWizardViewModel.swift */,
 			);
 			path = PoisonPillSetup;
+			sourceTree = "<group>";
+		};
+		6660FC462E77D05800C0B617 /* PIN */ = {
+			isa = PBXGroup;
+			children = (
+				66A404CA2E67EB7F0054FFE7 /* PinCrypto.swift */,
+				66A404D22E67FD720054FFE7 /* PinRepository.swift */,
+				66A404D42E6800840054FFE7 /* PinRepositoryImpl.swift */,
+				660130B92E67AD1D00D07E9C /* HashedPin.swift */,
+			);
+			path = PIN;
+			sourceTree = "<group>";
+		};
+		6660FC472E77D07300C0B617 /* Camera */ = {
+			isa = PBXGroup;
+			children = (
+				A9ABCD242E751BAE00E73AE5 /* CameraPermissionRepository.swift */,
+			);
+			path = Camera;
+			sourceTree = "<group>";
+		};
+		6660FC482E77D09200C0B617 /* Authorization */ = {
+			isa = PBXGroup;
+			children = (
+				660130B62E67AD1D00D07E9C /* AuthorizationRepository.swift */,
+			);
+			path = Authorization;
 			sourceTree = "<group>";
 		};
 		667FF8132E6BAB4500FB3E02 /* Util */ = {
@@ -429,11 +450,14 @@
 		667FF8252E6C9EAD00FB3E02 /* Data */ = {
 			isa = PBXGroup;
 			children = (
+				6660FC482E77D09200C0B617 /* Authorization */,
+				6660FC472E77D07300C0B617 /* Camera */,
+				6660FC462E77D05800C0B617 /* PIN */,
 				A9E6B6952E6E47B500BB6F19 /* SecureImage */,
 				667FF8262E6C9F6B00FB3E02 /* Location */,
 				660130C32E67AD2200D07E9C /* UserData */,
 				669751312E6A63C50059C5F3 /* UseCases */,
-				660130BB2E67AD1D00D07E9C /* Security */,
+				660130BB2E67AD1D00D07E9C /* Encryption */,
 				A91DBC2B2DE58191001F42ED /* Models */,
 				660130A82E67753600D07E9C /* AppDependencyInjection.swift */,
 			);
