@@ -367,22 +367,22 @@
 		667FF81D2E6C9DC200FB3E02 /* Screens */ = {
 			isa = PBXGroup;
 			children = (
-				667FF83A2E6D142200FB3E02 /* ContentViewModel.swift */,
+				667FF8342E6D101300FB3E02 /* AppNavigation.swift */,
+				A91DBC402DE58191001F42ED /* AuthenticationOverlayView.swift */,
 				667FF8322E6D0FF800FB3E02 /* ContentView.swift */,
-				A9E6B6AE2E6EAD3D00BB6F19 /* SecurityOverlayViewModel.swift */,
+				667FF83A2E6D142200FB3E02 /* ContentViewModel.swift */,
+				A91DBC4E2DE58191001F42ED /* PrivacyShield.swift */,
 				A9E6B6B02E6EAE3500BB6F19 /* SecurityOverlayView.swift */,
-				667FF8242E6C9E9200FB3E02 /* Views */,
+				A9E6B6AE2E6EAD3D00BB6F19 /* SecurityOverlayViewModel.swift */,
 				667FF8212E6C9E3400FB3E02 /* Camera */,
-				667FF8202E6C9E1F00FB3E02 /* Settings */,
 				667FF81F2E6C9E0B00FB3E02 /* Gallery */,
+				A91DBC3C2DE58191001F42ED /* PhotoDetail */,
 				663C7E412E7289C300967B9E /* PhotoObfuscation */,
 				667FF81E2E6C9DCB00FB3E02 /* PinSetup */,
-				A91DBC3C2DE58191001F42ED /* PhotoDetail */,
-				663C7E532E73FA3100967B9E /* PoisonPillSetup */,
 				667FF8232E6C9E6A00FB3E02 /* PinVerification */,
-				A91DBC4E2DE58191001F42ED /* PrivacyShield.swift */,
-				A91DBC402DE58191001F42ED /* AuthenticationOverlayView.swift */,
-				667FF8342E6D101300FB3E02 /* AppNavigation.swift */,
+				663C7E532E73FA3100967B9E /* PoisonPillSetup */,
+				667FF8202E6C9E1F00FB3E02 /* Settings */,
+				667FF8242E6C9E9200FB3E02 /* Views */,
 			);
 			path = Screens;
 			sourceTree = "<group>";
@@ -450,16 +450,16 @@
 		667FF8252E6C9EAD00FB3E02 /* Data */ = {
 			isa = PBXGroup;
 			children = (
+				660130A82E67753600D07E9C /* AppDependencyInjection.swift */,
 				6660FC482E77D09200C0B617 /* Authorization */,
 				6660FC472E77D07300C0B617 /* Camera */,
+				660130BB2E67AD1D00D07E9C /* Encryption */,
+				667FF8262E6C9F6B00FB3E02 /* Location */,
+				A91DBC2B2DE58191001F42ED /* Models */,
 				6660FC462E77D05800C0B617 /* PIN */,
 				A9E6B6952E6E47B500BB6F19 /* SecureImage */,
-				667FF8262E6C9F6B00FB3E02 /* Location */,
-				660130C32E67AD2200D07E9C /* UserData */,
 				669751312E6A63C50059C5F3 /* UseCases */,
-				660130BB2E67AD1D00D07E9C /* Encryption */,
-				A91DBC2B2DE58191001F42ED /* Models */,
-				660130A82E67753600D07E9C /* AppDependencyInjection.swift */,
+				660130C32E67AD2200D07E9C /* UserData */,
 			);
 			path = Data;
 			sourceTree = "<group>";
