@@ -27,6 +27,13 @@ struct PINVerificationView: View {
             Text("Enter your PIN to continue")
                 .foregroundColor(Color(UIColor.lightText))
             
+            if viewModel.shouldShowAttemptsWarning {
+                Text(viewModel.attemptsWarningMessage)
+                    .foregroundColor(.red)
+                    .font(.callout)
+                    .padding(.top, 5)
+            }
+            
             SecureField("PIN", text: $viewModel.pin, prompt: Text("PIN").foregroundColor(Color(UIColor.lightText)))
                 .keyboardType(.numberPad)
                 .textContentType(.oneTimeCode)
@@ -61,6 +68,10 @@ struct PINVerificationView: View {
                 viewModel.unlockButtonTapped()
             }) {
                 HStack {
+                    if viewModel.isLastAttempt {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundColor(.white)
+                    }
                     if viewModel.isLoading {
                         ProgressView()
                             .scaleEffect(0.8)
@@ -76,6 +87,13 @@ struct PINVerificationView: View {
             }
             .disabled(viewModel.isUnlockButtonDisabled)
             .padding(.top, 20)
+            
+            if viewModel.shouldShowAttemptsWarning {
+                Text("10 failed attempts will result in a full data wipe.\nALL PHOTOS WILL BE LOST!")
+                    .foregroundColor(.red)
+                    .font(.callout)
+                    .padding(.top, 5)
+            }
             
             Spacer()
         }

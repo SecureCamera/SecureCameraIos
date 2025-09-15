@@ -19,9 +19,7 @@ final class PINVerificationViewModel: ObservableObject {
     @Published var attempts = 0
     @Published var isLoading = false
     @Published var backoffSeconds = 0
-    
-    // MARK: - Security Constants
-    private let maxFailedAttempts = 10
+    @Published var currentFailedAttempts = 0
     
     // MARK: - Timer
     private var backoffTimer: Timer?
@@ -48,7 +46,16 @@ final class PINVerificationViewModel: ObservableObject {
     }
     
     var unlockButtonBackgroundColor: Color {
-        pin.count >= 4 && !isLoading && backoffSeconds == 0 ? Color.blue : Color.gray
+        if pin.count >= 4 && !isLoading && backoffSeconds == 0 {
+            // Red for final attempt, blue for normal attempts
+            return isLastAttempt ? Color.red : Color.blue
+        } else {
+            return Color.gray
+        }
+    }
+    
+    var isLastAttempt: Bool {
+        currentFailedAttempts >= (AuthorizationRepository.MAX_FAILED_ATTEMPTS - 1)
     }
     
     var unlockButtonText: String {
@@ -65,6 +72,15 @@ final class PINVerificationViewModel: ObservableObject {
         "Invalid PIN. Please try again."
     }
     
+    var shouldShowAttemptsWarning: Bool {
+        currentFailedAttempts > 2
+    }
+    
+    var attemptsWarningMessage: String {
+        let remaining = AuthorizationRepository.MAX_FAILED_ATTEMPTS - currentFailedAttempts
+        return "Attempts remaining \(remaining)/\(AuthorizationRepository.MAX_FAILED_ATTEMPTS)"
+    }
+    
     // MARK: - Public Methods
     
     func onAppear() {
@@ -73,6 +89,7 @@ final class PINVerificationViewModel: ObservableObject {
         
         Task {
             await updateBackoffTime()
+            await updateCurrentFailedAttempts()
         }
     }
     
@@ -110,6 +127,11 @@ final class PINVerificationViewModel: ObservableObject {
             // Reset failed attempts counter on successful verification
             attempts = 0
             
+            // Update current failed attempts from repository after successful verification
+            Task {
+                await updateCurrentFailedAttempts()
+            }
+            
             // Notify SecurityOverlayViewModel that authentication is complete
             securityViewModel.authenticationComplete()
             
@@ -126,11 +148,11 @@ final class PINVerificationViewModel: ObservableObject {
             
             Logger.security.warning("PIN verification failed", metadata: [
                 "attemptCount": .stringConvertible(attempts),
-                "maxAttempts": .stringConvertible(maxFailedAttempts)
+                "maxAttempts": .stringConvertible(AuthorizationRepository.MAX_FAILED_ATTEMPTS)
             ])
             
             // Check if we've reached the maximum failed attempts
-            if attempts >= maxFailedAttempts {
+            if attempts >= AuthorizationRepository.MAX_FAILED_ATTEMPTS {
                 Logger.security.critical("Maximum failed PIN attempts reached, triggering security reset", metadata: [
                     "attemptCount": .stringConvertible(attempts)
                 ])
@@ -143,6 +165,7 @@ final class PINVerificationViewModel: ObservableObject {
                 // Check for backoff time after failed attempt
                 Task {
                     await updateBackoffTime()
+                    await updateCurrentFailedAttempts()
                 }
             }
         }
@@ -177,6 +200,14 @@ final class PINVerificationViewModel: ObservableObject {
             } else {
                 stopBackoffTimer()
             }
+        }
+    }
+    
+    private func updateCurrentFailedAttempts() async {
+        let failedAttempts = await authorizationRepository.getFailedAttempts()
+        
+        await MainActor.run {
+            self.currentFailedAttempts = failedAttempts
         }
     }
     

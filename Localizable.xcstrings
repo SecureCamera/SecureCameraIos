@@ -59,6 +59,9 @@
     "5 minutes" : {
 
     },
+    "10 failed attempts will result in a full data wipe.\nALL PHOTOS WILL BE LOST!" : {
+
+    },
     "15 minutes" : {
 
     },
