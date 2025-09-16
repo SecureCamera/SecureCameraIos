@@ -58,7 +58,6 @@ final class AuthorizationRepositoryTests: XCTestCase {
         authorizePin = AuthorizePinUseCase(
             authRepository: auth,
             pinRepository: pinRepo,
-            encryptionScheme: encryption
         )
     }
 
