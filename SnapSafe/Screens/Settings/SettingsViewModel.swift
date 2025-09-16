@@ -97,12 +97,6 @@ final class SettingsViewModel: ObservableObject {
         print("Face detection: \(newValue)")
     }
     
-    /// Update include location data setting
-    func updateIncludeLocationData(_ newValue: Bool) {
-        includeLocationData = newValue
-        locationManager.setIncludeLocationData(newValue)
-    }
-    
     /// Request location permission or open settings
     func requestLocationPermission() {
         let permissionNotDetermined = locationManager.authorizationStatus == .notDetermined

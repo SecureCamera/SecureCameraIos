@@ -91,18 +91,6 @@ class LocationRepository: NSObject, ObservableObject {
         return nil
     }
 
-    // Function to set the user's preference for including location data
-    func setIncludeLocationData(_ include: Bool) {
-        shouldIncludeLocationData = include
-        UserDefaults.standard.set(include, forKey: "shouldIncludeLocationData")
-
-        if include {
-            startUpdatingLocation()
-        } else {
-            stopUpdatingLocation()
-        }
-    }
-
     // Function to get a user-friendly status string
     func getAuthorizationStatusString() -> String {
         switch authorizationStatus {

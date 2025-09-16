@@ -63,11 +63,6 @@ struct SettingsView: View {
 
                 // LOCATION SECTION
                 Section(header: Text("Location")) {
-                    Toggle("Include Location Data", isOn: $viewModel.includeLocationData)
-                        .onChange(of: viewModel.includeLocationData) { _, newValue in
-                            viewModel.updateIncludeLocationData(newValue)
-                        }
-
                     HStack {
                         Text("Permission Status")
                         Spacer()
