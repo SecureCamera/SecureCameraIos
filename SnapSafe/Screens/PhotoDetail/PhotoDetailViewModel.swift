@@ -448,7 +448,7 @@ class PhotoDetailViewModel: ObservableObject {
             if isCurrentPhotoDecoy {
                 // Remove decoy status
                 await MainActor.run {
-                    removeDecoyPhotoUseCase.removeDecoyPhoto(photoDef)
+                    _ = removeDecoyPhotoUseCase.removeDecoyPhoto(photoDef)
                     isDecoyOperationLoading = false
                     Logger.ui.info("Removed photo from decoys", metadata: [
                         "photoName": .string(photoDef.photoName)

@@ -100,7 +100,7 @@ class EnhancedPhotoDetailViewModel: ObservableObject {
         if currentIndex > 0 {
             let previousPhotoDef = photoFiles[currentIndex - 1]
             Task(priority: .userInitiated) {
-                _ = try? await secureImageRepository.readThumbnail(previousPhotoDef)
+                _ = await secureImageRepository.readThumbnail(previousPhotoDef)
             }
         }
         
@@ -108,7 +108,7 @@ class EnhancedPhotoDetailViewModel: ObservableObject {
         if currentIndex < photoFiles.count - 1 {
             let nextPhotoDef = photoFiles[currentIndex + 1]
             Task(priority: .userInitiated) {
-                _ = try? await secureImageRepository.readThumbnail(nextPhotoDef)
+                _ = await secureImageRepository.readThumbnail(nextPhotoDef)
             }
         }
     }

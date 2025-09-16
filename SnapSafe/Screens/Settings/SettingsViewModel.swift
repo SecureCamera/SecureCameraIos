@@ -218,7 +218,7 @@ final class SettingsViewModel: ObservableObject {
         if !poisonPIN.isEmpty {
             Task {
                 print("Setting poison pill PIN")
-                await createPoisonPillUseCase.createPin(pppin: poisonPIN)
+                _ = await createPoisonPillUseCase.createPin(pppin: poisonPIN)
                 poisonPIN = ""
                 checkPoisonPillStatus()
             }
@@ -229,7 +229,7 @@ final class SettingsViewModel: ObservableObject {
     func checkPoisonPillStatus() {
         Task {
             do {
-                let hasPoison = try await pinRepository.hasPoisonPillPin()
+                let hasPoison = await pinRepository.hasPoisonPillPin()
                 await MainActor.run {
                     self.hasPoisonPill = hasPoison
                 }
