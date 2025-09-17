@@ -1,4 +1,4 @@
 files:
-  - source: Localizable.xcstrings
-    translation: '%original_file_name%'
+  - source: /Localizable.xcstrings
+    translation: /%original_file_name%
     multilingual: 1
