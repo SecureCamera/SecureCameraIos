@@ -4,7 +4,7 @@ The camera app that minds its own business.
 
 [![iOS build](https://github.com/SecureCamera/SecureCameraIos/actions/workflows/ios.yml/badge.svg)](https://github.com/SecureCamera/SecureCameraIos/actions/workflows/ios.yml)
 [![CodeQL Advanced](https://github.com/SecureCamera/SecureCameraIos/actions/workflows/codeql.yml/badge.svg)](https://github.com/SecureCamera/SecureCameraIos/actions/workflows/codeql.yml)
-[![codebeat badge](https://codebeat.co/badges/98126bc1-7ae9-4aed-be5c-21875c1999a1)](https://codebeat.co/projects/github-com-securecamera-securecameraios-main)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/d1016686e1f44d8fa5e6a2864ec6ac6b)](https://app.codacy.com/gh/SecureCamera/SecureCameraIos/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 
 # Recommended iOS Settings
 
