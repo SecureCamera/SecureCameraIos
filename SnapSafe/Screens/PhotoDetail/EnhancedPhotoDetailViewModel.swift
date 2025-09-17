@@ -12,9 +12,21 @@ import Logging
 @MainActor
 class EnhancedPhotoDetailViewModel: ObservableObject {
     // MARK: - Dependencies
-    
+
     @Injected(\.secureImageRepository)
     private var secureImageRepository: SecureImageRepository
+
+    @Injected(\.prepareForSharingUseCase)
+    private var prepareForSharingUseCase: PrepareForSharingUseCase
+
+    @Injected(\.addDecoyPhotoUseCase)
+    private var addDecoyPhotoUseCase: AddDecoyPhotoUseCase
+
+    @Injected(\.removeDecoyPhotoUseCase)
+    private var removeDecoyPhotoUseCase: RemoveDecoyPhotoUseCase
+
+    @Injected(\.pinRepository)
+    private var pinRepository: PinRepository
     
     // MARK: - Published Properties
     
@@ -24,6 +36,15 @@ class EnhancedPhotoDetailViewModel: ObservableObject {
     @Published var dismissProgress: CGFloat = 0
     @Published var isTabViewTransitioning: Bool = false
     @Published var lastIndexChangeTime: Date = Date()
+
+    // Toolbar state
+    @Published var showImageInfo = false
+    @Published var showDeleteConfirmation = false
+    @Published var isDecoyOperationLoading = false
+    @Published var isPoisonPillConfigured = false
+
+    // Track currently presented activity controller for dismissal
+    private weak var currentActivityController: UIActivityViewController?
     
     // MARK: - Configuration
     
@@ -59,6 +80,26 @@ class EnhancedPhotoDetailViewModel: ObservableObject {
     
     var overlayOpacity: Double {
         1.0 - dismissProgress
+    }
+
+    // Current photo computed properties
+    var currentPhotoDef: PhotoDef? {
+        guard currentIndex < photoFiles.count else { return nil }
+        return photoFiles[currentIndex]
+    }
+
+
+    var isCurrentPhotoDecoy: Bool {
+        guard let photoDef = currentPhotoDef else { return false }
+        return secureImageRepository.isDecoyPhoto(photoDef)
+    }
+
+    var decoyButtonTitle: String {
+        isCurrentPhotoDecoy ? "Remove Decoy" : "Add Decoy"
+    }
+
+    var decoyButtonIcon: String {
+        isCurrentPhotoDecoy ? "shield.slash" : "shield"
     }
     
     // MARK: - Index Management
@@ -157,28 +198,113 @@ class EnhancedPhotoDetailViewModel: ObservableObject {
     
     func onAppear() {
         preloadAdjacentPhotos(currentIndex: currentIndex)
+        loadPoisonPillConfiguration()
+    }
+
+    func loadPoisonPillConfiguration() {
+        Task {
+            let hasPoisonPill = await pinRepository.hasPoisonPillPin()
+            await MainActor.run {
+                isPoisonPillConfigured = hasPoisonPill
+            }
+        }
     }
     
     // MARK: - Photo Management
     
     func deletePhoto(at index: Int) {
         guard index < photoFiles.count else { return }
-        
+
         let photoDefToDelete = photoFiles[index]
-        
-        // Notify delegate
-        onDelete?(photoDefToDelete)
-        
-        // Remove from local array
-        photoFiles.remove(at: index)
-        
-        if photoFiles.isEmpty {
-            // No photos left, dismiss the view
-            onDismiss?()
-        } else {
-            // Adjust current index if necessary
-            if currentIndex >= photoFiles.count {
-                currentIndex = photoFiles.count - 1
+
+        // Perform file deletion in a background thread
+        Task(priority: .userInitiated) {
+            // Actually delete the file
+            Logger.ui.debug("Attempting to delete file", metadata: [
+                "filename": .string(photoDefToDelete.photoName)
+            ])
+            secureImageRepository.deleteImage(photoDefToDelete)
+            Logger.ui.debug("File deletion successful")
+
+            // All UI updates must happen on the main thread
+            await MainActor.run {
+                Logger.ui.debug("Calling onDelete callback")
+                onDelete?(photoDefToDelete)
+            }
+        }
+    }
+
+    // MARK: - Toolbar Actions
+
+    func shareCurrentPhoto() {
+        guard let photoDef = currentPhotoDef else { return }
+
+        Task {
+            do {
+                // First load the image
+                let image = try await secureImageRepository.readImage(photoDef)
+
+                // Convert image to data for sharing with UUID filename
+                if let imageData = image.jpegData(compressionQuality: 0.9) {
+                    // Prepare photo for sharing with UUID filename
+                    let fileURL = try prepareForSharingUseCase.preparePhotoForSharing(imageData: imageData)
+
+                    Logger.ui.debug("Photo prepared for sharing successfully")
+
+                    // Create activity controller with the temporary image
+                    let activityController = UIActivityViewController(
+                        activityItems: [fileURL],
+                        applicationActivities: nil
+                    )
+
+                    // Store reference for potential dismissal
+                    currentActivityController = activityController
+
+                    // Present the activity controller
+                    if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                       let rootViewController = windowScene.windows.first?.rootViewController {
+
+                        var presentingViewController = rootViewController
+                        while let presentedViewController = presentingViewController.presentedViewController {
+                            presentingViewController = presentedViewController
+                        }
+
+                        await MainActor.run {
+                            presentingViewController.present(activityController, animated: true)
+                        }
+                    }
+                }
+            } catch {
+                Logger.ui.error("Failed to prepare photo for sharing", metadata: ["error": .string(error.localizedDescription)])
+            }
+        }
+    }
+
+    func toggleDecoyStatus() {
+        guard let photoDef = currentPhotoDef else { return }
+
+        isDecoyOperationLoading = true
+
+        Task {
+            if isCurrentPhotoDecoy {
+                Logger.ui.debug("Removing decoy status from photo", metadata: ["photoId": .stringConvertible(photoDef.id)])
+                await MainActor.run {
+                    _ = removeDecoyPhotoUseCase.removeDecoyPhoto(photoDef)
+                    isDecoyOperationLoading = false
+                }
+            } else {
+                Logger.ui.debug("Adding decoy status to photo", metadata: ["photoId": .stringConvertible(photoDef.id)])
+                // Add decoy status
+                let success = await addDecoyPhotoUseCase.addDecoyPhoto(photoDef: photoDef)
+                await MainActor.run {
+                    isDecoyOperationLoading = false
+                }
+
+                if success {
+                    Logger.ui.info("Successfully added decoy status")
+                } else {
+                    Logger.ui.error("Failed to add decoy status")
+                }
             }
         }
     }
