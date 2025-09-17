@@ -146,21 +146,28 @@ final class PhotoObfuscationViewModel: ObservableObject {
     
     func detectFaces() {
         guard let imageToProcess = currentImage else { return }
-        
+
+        // Maintain current image frame size to prevent shifting
+        let currentFrameSize = imageFrameSize
+
         withAnimation {
             isFaceDetectionActive = true
             processingFaces = true
         }
-        
+
         detectedFaces = []
         modifiedImage = nil
-        
+
         Task(priority: .userInitiated) {
             self.faceDetector.detectFaces(in: imageToProcess) { faces in
                 Task { @MainActor in
                     withAnimation {
                         self.detectedFaces = faces
                         self.processingFaces = false
+                        // Ensure frame size remains consistent
+                        if self.imageFrameSize != currentFrameSize {
+                            self.imageFrameSize = currentFrameSize
+                        }
                     }
                 }
             }

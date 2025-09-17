@@ -98,120 +98,221 @@ struct PhotoObfuscationView: View {
     }
     
     private var imageContent: some View {
-        GeometryReader { geometry in
-            ZStack {
-                // Main image display
-                Image(uiImage: viewModel.displayedImage)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .background(
-                        GeometryReader { imageGeometry in
-                            Color.clear
-                                .onAppear {
-                                    viewModel.imageFrameSize = imageGeometry.size
-                                }
+        VStack(spacing: 0) {
+            // Main image area - centered and stable
+            GeometryReader { geometry in
+                let availableSize = geometry.size
+
+                ZStack {
+                    // Main image display - precisely centered
+                    Image(uiImage: viewModel.displayedImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(maxWidth: availableSize.width, maxHeight: availableSize.height)
+                        .position(x: availableSize.width / 2, y: availableSize.height / 2)
+                        .background(
+                            GeometryReader { imageGeometry in
+                                Color.clear
+                                    .onAppear {
+                                        DispatchQueue.main.async {
+                                            viewModel.imageFrameSize = imageGeometry.size
+                                        }
+                                    }
+                                    .onChange(of: imageGeometry.size) { _, newSize in
+                                        DispatchQueue.main.async {
+                                            viewModel.imageFrameSize = newSize
+                                        }
+                                    }
+                            }
+                        )
+
+                    // Face detection overlay - precisely aligned with centered image
+                    if viewModel.isFaceDetectionActive && viewModel.imageFrameSize != .zero {
+                        FaceDetectionOverlay(
+                            faces: viewModel.detectedFaces,
+                            originalSize: viewModel.currentImage?.size ?? .zero,
+                            displaySize: viewModel.imageFrameSize,
+                            isAddingBox: false,
+                            onTap: viewModel.toggleFaceSelection,
+                            onCreateBox: { _ in },
+                            onResize: { _, _ in }
+                        )
+                        .frame(width: viewModel.imageFrameSize.width, height: viewModel.imageFrameSize.height)
+                        .position(x: availableSize.width / 2, y: availableSize.height / 2)
+                        .clipped()
+                    }
+
+                    // Processing overlay
+                    if viewModel.processingFaces {
+                        Color.black.opacity(0.5)
+                            .ignoresSafeArea()
+
+                        VStack {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                .scaleEffect(1.5)
+
+                            Text("Processing faces...")
+                                .foregroundColor(.white)
+                                .padding(.top)
                         }
-                    )
-                
-                // Face detection overlay
-                if viewModel.isFaceDetectionActive {
-                    FaceDetectionOverlay(
-                        faces: viewModel.detectedFaces,
-                        originalSize: viewModel.currentImage?.size ?? .zero,
-                        displaySize: viewModel.imageFrameSize,
-                        isAddingBox: false,
-                        onTap: viewModel.toggleFaceSelection,
-                        onCreateBox: { _ in },
-                        onResize: { _, _ in },
-                        
-                    )
-                }
-                
-                // Processing overlay
-                if viewModel.processingFaces {
-                    Color.black.opacity(0.5)
-                        .ignoresSafeArea()
-                    
-                    VStack {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                            .scaleEffect(1.5)
-                        
-                        Text("Processing faces...")
-                            .foregroundColor(.white)
-                            .padding(.top)
+                        .position(x: availableSize.width / 2, y: availableSize.height / 2)
                     }
                 }
             }
-            .overlay(alignment: .bottom) {
-                controlsOverlay
-            }
+
+            // Bottom toolbar
+            ObfuscationControlsView(
+                onDetectFaces: {
+                    viewModel.detectFaces()
+                },
+                onShare: {
+                    viewModel.sharePhoto()
+                },
+                onCancelDetection: {
+                    withAnimation {
+                        viewModel.isFaceDetectionActive = false
+                        viewModel.detectedFaces = []
+                        viewModel.modifiedImage = nil
+                    }
+                },
+                onMaskFaces: {
+                    viewModel.showMaskOptions = true
+                },
+                isFaceDetectionActive: viewModel.isFaceDetectionActive,
+                hasFacesSelected: viewModel.hasFacesSelected,
+                maskButtonLabel: viewModel.maskButtonLabel,
+                isProcessing: viewModel.processingFaces
+            )
         }
     }
-    
-    private var controlsOverlay: some View {
-        VStack(spacing: 16) {
-            if viewModel.isFaceDetectionActive {
-                // Face detection controls
-                HStack(spacing: 20) {
-                    Button("Cancel Detection") {
-                        withAnimation {
-                            viewModel.isFaceDetectionActive = false
-                            viewModel.detectedFaces = []
-                            viewModel.modifiedImage = nil
+}
+
+// MARK: - ObfuscationControlsView (Private)
+
+private struct ObfuscationControlsView: View {
+    var onDetectFaces: () -> Void
+    var onShare: () -> Void
+    var onCancelDetection: (() -> Void)?
+    var onMaskFaces: (() -> Void)?
+    var isFaceDetectionActive: Bool
+    var hasFacesSelected: Bool
+    var maskButtonLabel: String
+    var isProcessing: Bool
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Separator line
+            Divider()
+                .background(Color.gray.opacity(0.3))
+
+            HStack {
+                if isFaceDetectionActive {
+                    // Cancel detection button
+                    Button(action: {
+                        onCancelDetection?()
+                    }) {
+                        VStack(spacing: 4) {
+                            Image(systemName: "xmark.circle")
+                                .font(.system(size: 22))
+                                .frame(height: 22)
+                            Text("Cancel")
+                                .font(.caption2)
+                                .multilineTextAlignment(.center)
                         }
+                        .foregroundColor(.gray)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 60)
                     }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background(Color.gray.opacity(0.8))
-                    .cornerRadius(8)
-                    
-                    if viewModel.hasFacesSelected {
-                        Button(viewModel.maskButtonLabel) {
-                            viewModel.showMaskOptions = true
+                    .disabled(isProcessing)
+                    .opacity(isProcessing ? 0.6 : 1.0)
+
+                    // Mask faces button (conditional)
+                    if hasFacesSelected {
+                        Button(action: {
+                            onMaskFaces?()
+                        }) {
+                            VStack(spacing: 4) {
+                                if isProcessing {
+                                    ProgressView()
+                                        .scaleEffect(0.7)
+                                        .frame(height: 22)
+                                } else {
+                                    Image(systemName: "face.dashed.fill")
+                                        .font(.system(size: 22))
+                                        .frame(height: 22)
+                                }
+                                Text(maskButtonLabel)
+                                    .font(.caption2)
+                                    .multilineTextAlignment(.center)
+                            }
+                            .foregroundColor(.red)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 60)
                         }
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(Color.red.opacity(0.8))
-                        .cornerRadius(8)
+                        .disabled(isProcessing)
+                        .opacity(isProcessing ? 0.6 : 1.0)
                     }
-                    
-                    Button("Share") {
-                        viewModel.sharePhoto()
+
+                    // Share button
+                    Button(action: onShare) {
+                        VStack(spacing: 4) {
+                            Image(systemName: "square.and.arrow.up")
+                                .font(.system(size: 22))
+                                .frame(height: 22)
+                            Text("Share")
+                                .font(.caption2)
+                                .multilineTextAlignment(.center)
+                        }
+                        .foregroundColor(.blue)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 60)
                     }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background(Color.blue.opacity(0.8))
-                    .cornerRadius(8)
-                }
-            } else {
-                // Main controls
-                HStack(spacing: 20) {
-                    Button("Detect Faces") {
-                        viewModel.detectFaces()
+                    .disabled(isProcessing)
+                    .opacity(isProcessing ? 0.6 : 1.0)
+                } else {
+                    // Detect faces button
+                    Button(action: onDetectFaces) {
+                        VStack(spacing: 4) {
+                            Image(systemName: "face.dashed")
+                                .font(.system(size: 22))
+                                .frame(height: 22)
+                            Text("Detect Faces")
+                                .font(.caption2)
+                                .multilineTextAlignment(.center)
+                        }
+                        .foregroundColor(.orange)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 60)
                     }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 12)
-                    .background(Color.orange.opacity(0.8))
-                    .cornerRadius(10)
-                    
-                    Button("Share") {
-                        viewModel.sharePhoto()
+                    .disabled(isProcessing)
+                    .opacity(isProcessing ? 0.6 : 1.0)
+
+                    // Share button
+                    Button(action: onShare) {
+                        VStack(spacing: 4) {
+                            Image(systemName: "square.and.arrow.up")
+                                .font(.system(size: 22))
+                                .frame(height: 22)
+                            Text("Share")
+                                .font(.caption2)
+                                .multilineTextAlignment(.center)
+                        }
+                        .foregroundColor(.blue)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 60)
                     }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 12)
-                    .background(Color.blue.opacity(0.8))
-                    .cornerRadius(10)
+                    .disabled(isProcessing)
+                    .opacity(isProcessing ? 0.6 : 1.0)
                 }
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(Color(UIColor.systemBackground))
         }
-        .padding(.horizontal, 20)
-        .padding(.bottom, 30)
+        .animation(.easeInOut(duration: 0.2), value: isFaceDetectionActive)
+        .animation(.easeInOut(duration: 0.2), value: hasFacesSelected)
+        .animation(.easeInOut(duration: 0.2), value: isProcessing)
     }
 }
 
