@@ -45,8 +45,8 @@ struct PhotoDetailView: View {
                 // Background color
                 Color.black.opacity(0.05)
                     .edgesIgnoringSafeArea(.all)
-                
-                VStack {
+
+                VStack(spacing: 0) {
                     // Photo counter at the top if we have multiple photos
                     if !viewModel.photoFiles.isEmpty {
                         Text("\(viewModel.currentIndex + 1) of \(viewModel.photoFiles.count)")
@@ -55,19 +55,17 @@ struct PhotoDetailView: View {
                             .padding(.top, 8)
                             .opacity(viewModel.isZoomed ? 0.5 : 1.0) // Fade when zoomed
                     }
-                    
-                    Spacer()
-                    
+
                     // Zoom level indicator
                     ZoomLevelIndicator(
                         scale: viewModel.currentScale,
                         isVisible: viewModel.isZoomed
                     )
-                    
+
                     // Centered image display with appropriate orientation handling
                     if viewModel.isImageLoading {
                         ProgressView("Loading...")
-                            .frame(maxWidth: .infinity, maxHeight: geometry.size.height * 0.7)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
                     } else {
                         ZoomableImageView(
                             image: viewModel.displayedImage,
@@ -86,39 +84,8 @@ struct PhotoDetailView: View {
                             // No overlay needed - face detection is in separate screen
                             EmptyView()
                         }
-                        .frame(maxWidth: .infinity, maxHeight: geometry.size.height * 0.7)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
-                    
-                    Spacer()
-                    
-                    // Photo controls
-                    PhotoControlsView(
-                        onInfo: { viewModel.showImageInfo = true },
-                        onObfuscate: {
-                            // Navigate to obfuscation screen
-                            if let currentPhotoDef = viewModel.currentPhotoDef {
-                                //nav.navigate(to: .photoObfuscation(currentPhotoDef))
-                                nav.presentedFullScreenCover = .photoObfuscation(currentPhotoDef)
-                            }
-                        },
-                        onShare: {
-                            Logger.ui.debug("Share button pressed - showing share sheet")
-                            viewModel.sharePhoto()
-                        },
-                        onDelete: {
-                            Logger.ui.debug("Delete button pressed - showing confirmation")
-                            viewModel.showDeleteConfirmation = true
-                        },
-                        onToggleDecoy: {
-                            Logger.ui.debug("Decoy toggle button pressed")
-                            viewModel.toggleDecoyStatus()
-                        },
-                        isZoomed: viewModel.isZoomed,
-                        showDecoyButton: viewModel.isPoisonPillConfigured,
-                        decoyButtonTitle: viewModel.decoyButtonTitle,
-                        decoyButtonIcon: viewModel.decoyButtonIcon,
-                        isDecoyOperationLoading: viewModel.isDecoyOperationLoading
-                    )
                 }
             }
             .navigationBarTitle("Photo Detail", displayMode: .inline)

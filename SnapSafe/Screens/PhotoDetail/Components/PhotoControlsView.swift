@@ -20,78 +20,105 @@ struct PhotoControlsView: View {
     var isDecoyOperationLoading: Bool
     
     var body: some View {
-        HStack(spacing: 30) {
-            // Info button
-            Button(action: onInfo) {
-                VStack {
-                    Image(systemName: "info.circle")
-                        .font(.system(size: 24))
-                    Text("Info")
-                        .font(.caption)
-                }
-                .foregroundColor(.blue)
-            }
-            
-            // Obfuscate faces button
-            Button(action: onObfuscate) {
-                VStack {
-                    Image(systemName: "face.dashed")
-                        .font(.system(size: 24))
-                    Text("Obfuscate")
-                        .font(.caption)
-                }
-                .foregroundColor(.blue)
-            }
-            
-            // Decoy button (conditional)
-            if showDecoyButton {
-                Button(action: {
-                    onToggleDecoy?()
-                }) {
-                    VStack {
-                        if isDecoyOperationLoading {
-                            ProgressView()
-                                .scaleEffect(0.8)
-                                .frame(height: 24)
-                        } else {
-                            Image(systemName: decoyButtonIcon)
-                                .font(.system(size: 24))
-                        }
-                        Text(decoyButtonTitle)
-                            .font(.caption)
+        VStack(spacing: 0) {
+            // Separator line
+            Divider()
+                .background(Color.gray.opacity(0.3))
+
+            HStack {
+                // Delete button
+                Button(action: onDelete) {
+                    VStack(spacing: 4) {
+                        Image(systemName: "trash")
+                            .font(.system(size: 22))
+                            .frame(height: 22)
+                        Text("Delete")
+                            .font(.caption2)
+                            .multilineTextAlignment(.center)
                     }
                     .foregroundColor(.red)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 60)
                 }
-                .disabled(isDecoyOperationLoading)
-                .opacity(isDecoyOperationLoading ? 0.6 : 1.0)
-            }
-            
-            // Share button
-            Button(action: onShare) {
-                VStack {
-                    Image(systemName: "square.and.arrow.up")
-                        .font(.system(size: 24))
-                    Text("Share")
-                        .font(.caption)
+                
+                // Info button
+                Button(action: onInfo) {
+                    VStack(spacing: 4) {
+                        Image(systemName: "info.circle")
+                            .font(.system(size: 22))
+                            .frame(height: 22)
+                        Text("Info")
+                            .font(.caption2)
+                            .multilineTextAlignment(.center)
+                    }
+                    .foregroundColor(.blue)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 60)
                 }
-                .foregroundColor(.blue)
-            }
-            
-            // Delete button
-            Button(action: onDelete) {
-                VStack {
-                    Image(systemName: "trash")
-                        .font(.system(size: 24))
-                    Text("Delete")
-                        .font(.caption)
+
+                // Obfuscate faces button
+                Button(action: onObfuscate) {
+                    VStack(spacing: 4) {
+                        Image(systemName: "face.dashed")
+                            .font(.system(size: 22))
+                            .frame(height: 22)
+                        Text("Obfuscate")
+                            .font(.caption2)
+                            .multilineTextAlignment(.center)
+                    }
+                    .foregroundColor(.blue)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 60)
                 }
-                .foregroundColor(.red)
+
+                // Decoy button (conditional)
+                if showDecoyButton {
+                    Button(action: {
+                        onToggleDecoy?()
+                    }) {
+                        VStack(spacing: 4) {
+                            if isDecoyOperationLoading {
+                                ProgressView()
+                                    .scaleEffect(0.7)
+                                    .frame(height: 22)
+                            } else {
+                                Image(systemName: decoyButtonIcon)
+                                    .font(.system(size: 22))
+                                    .frame(height: 22)
+                            }
+                            Text(decoyButtonTitle)
+                                .font(.caption2)
+                                .multilineTextAlignment(.center)
+                        }
+                        .foregroundColor(.red)
+                        .frame(maxWidth: .infinity)
+                    .frame(height: 60)
+                    }
+                    .disabled(isDecoyOperationLoading)
+                    .opacity(isDecoyOperationLoading ? 0.6 : 1.0)
+                }
+
+                // Share button
+                Button(action: onShare) {
+                    VStack(spacing: 4) {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 22))
+                            .frame(height: 22)
+                        Text("Share")
+                            .font(.caption2)
+                            .multilineTextAlignment(.center)
+                    }
+                    .foregroundColor(.blue)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 60)
+                }
+
+
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(Color(UIColor.systemBackground))
         }
-        .padding()
-        .background(Color.white.opacity(0.8))
-        .cornerRadius(12)
-        .padding(.bottom, 20)
         .opacity(isZoomed ? 0 : 1) // Hide controls when zoomed
         .animation(.easeInOut(duration: 0.2), value: isZoomed)
     }
