@@ -9,12 +9,13 @@ import SwiftUI
 import Foundation
 import UIKit
 
+
 struct FaceBoxView: View {
     let face: DetectedFace
     let originalSize: CGSize
     let displaySize: CGSize
     var onTap: () -> Void
-    
+
     // Get the scaled rectangle based on the display size
     private var scaledRect: CGRect {
         let rect = face.scaledRect(originalSize: originalSize, displaySize: displaySize)
@@ -32,33 +33,6 @@ struct FaceBoxView: View {
             Rectangle()
                 .stroke(face.isSelected ? Color.green : Color.red, lineWidth: 3)
 
-            // Show resize handles for selected faces
-            if face.isSelected {
-                // Corner handles positioned at the corners of the rectangle
-                Circle()
-                    .fill(Color.white)
-                    .stroke(Color.black, lineWidth: 1)
-                    .frame(width: 12, height: 12)
-                    .position(x: -6, y: -6) // Top-left corner
-
-                Circle()
-                    .fill(Color.white)
-                    .stroke(Color.black, lineWidth: 1)
-                    .frame(width: 12, height: 12)
-                    .position(x: scaledRect.width + 6, y: -6) // Top-right corner
-
-                Circle()
-                    .fill(Color.white)
-                    .stroke(Color.black, lineWidth: 1)
-                    .frame(width: 12, height: 12)
-                    .position(x: -6, y: scaledRect.height + 6) // Bottom-left corner
-
-                Circle()
-                    .fill(Color.white)
-                    .stroke(Color.black, lineWidth: 1)
-                    .frame(width: 12, height: 12)
-                    .position(x: scaledRect.width + 6, y: scaledRect.height + 6) // Bottom-right corner
-            }
         }
         .onTapGesture {
             onTap()

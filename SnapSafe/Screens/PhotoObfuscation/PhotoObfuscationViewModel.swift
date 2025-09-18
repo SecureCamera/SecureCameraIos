@@ -24,6 +24,10 @@ final class PhotoObfuscationViewModel: ObservableObject {
     @Published var processingFaces = false
     @Published var modifiedImage: UIImage?
     @Published var showObscureConfirmation = false
+    @Published var showManualBoxObscureConfirmation = false
+
+    // Manual box addition state
+    @Published var isAddingBox = false
     
     @Published var imageFrameSize: CGSize = .zero
     
@@ -77,6 +81,10 @@ final class PhotoObfuscationViewModel: ObservableObject {
     var hasFacesSelected: Bool {
         detectedFaces.contains { $0.isSelected }
     }
+
+    var hasManualBoxesSelected: Bool {
+        detectedFaces.contains { $0.isSelected && $0.isUserCreated }
+    }
     
     var maskActionTitle: String {
         return "Obscure Selected Faces"
@@ -88,6 +96,14 @@ final class PhotoObfuscationViewModel: ObservableObject {
 
     var maskButtonLabel: String {
         return "Obscure Faces"
+    }
+
+    var manualBoxActionTitle: String {
+        return "Obscure Selected Areas"
+    }
+
+    var manualBoxButtonLabel: String {
+        return "Obscure Areas"
     }
     
     // MARK: - Image Loading
@@ -190,7 +206,46 @@ final class PhotoObfuscationViewModel: ObservableObject {
             }
         }
     }
-    
+
+    func applyManualBoxObscuring() {
+        guard let imageToProcess = currentImage else { return }
+
+        withAnimation {
+            processingFaces = true
+        }
+
+        Task(priority: .userInitiated) {
+            // Only process user-created faces
+            let boxesToMask = self.detectedFaces.filter { $0.isUserCreated }
+
+            // Process the image using pixelate mode only
+            if let maskedImage = self.faceDetector.maskFaces(in: imageToProcess, faces: boxesToMask, modes: [.pixelate]) {
+                await MainActor.run {
+                    withAnimation {
+                        self.currentImage = maskedImage
+                        self.modifiedImage = maskedImage
+                        self.processingFaces = false
+                    }
+                }
+
+                // Wait 2 seconds then reset manual box state
+                try await Task.sleep(for: .seconds(2))
+                await MainActor.run {
+                    withAnimation {
+                        // Remove processed manual boxes from the list
+                        self.detectedFaces.removeAll { $0.isUserCreated }
+                        self.modifiedImage = nil
+                    }
+                }
+            } else {
+                await MainActor.run {
+                    self.processingFaces = false
+                }
+                Logger.storage.error("Error creating obscured image for manual boxes")
+            }
+        }
+    }
+
     // MARK: - Save and Share Methods
     
     func saveChanges() {
@@ -302,6 +357,20 @@ final class PhotoObfuscationViewModel: ObservableObject {
     func cancel() {
         onDismiss?()
     }
+
+    // MARK: - Manual Box Methods
+
+    func startAddingBoxes() {
+        isAddingBox = true
+    }
+
+    func stopAddingBoxes() {
+        isAddingBox = false
+    }
+
+    func clearManualBoxes() {
+        detectedFaces.removeAll { $0.isUserCreated }
+    }
     
     // MARK: - Private Methods
     
@@ -321,6 +390,7 @@ final class PhotoObfuscationViewModel: ObservableObject {
     private func dismissAllAlerts() {
         // Dismiss all active alert states
         showObscureConfirmation = false
+        showManualBoxObscureConfirmation = false
 
         // Dismiss any currently presented activity controller (iOS export dialog)
         currentActivityController?.dismiss(animated: false, completion: nil)
@@ -336,16 +406,16 @@ extension PhotoObfuscationViewModel {
         detectedFaces[idx].isSelected.toggle()
     }
 
-    // Create a new box (e.g., 160x160) centered at the tapped image point
+    // Create a new box (larger size for easy finger resizing) centered at the tapped image point
     func createBox(at displayPoint: CGPoint) {
         guard let img = currentImage else { return }
         let imagePoint = DetectedFace.imagePoint(fromDisplay: displayPoint,
                                                  originalSize: img.size,
                                                  displaySize: imageFrameSize)
-        let size: CGFloat = 160
+        let size: CGFloat = 900
         let rect = CGRect(x: imagePoint.x - size/2, y: imagePoint.y - size/2, width: size, height: size)
         let clamped = clamp(rect, in: img.size)
-        detectedFaces.append(DetectedFace(bounds: clamped, isSelected: true))
+        detectedFaces.append(DetectedFace(bounds: clamped, isSelected: true, isUserCreated: true))
     }
 
     // Drag move in image-space delta
@@ -368,6 +438,7 @@ extension PhotoObfuscationViewModel {
         guard let img = currentImage, let idx = detectedFaces.firstIndex(where: { $0.id == id }) else { return }
         detectedFaces[idx].bounds = clamp(newBounds, in: img.size)
     }
+
 
     // Pinch resize around the face center; `scale` is the gesture's instantaneous factor
     func resizeFace(id: UUID, scale: CGFloat) {

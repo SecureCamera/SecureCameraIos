@@ -108,6 +108,9 @@
     "Are you sure you want to delete this photo? This action cannot be undone." : {
 
     },
+    "Are you sure you want to obscure the selected areas? This action cannot be undone." : {
+
+    },
     "Are you sure you want to remove the poison pill? You will need to set it up again if you want this emergency protection." : {
 
     },
@@ -340,6 +343,12 @@
     "Obfuscate" : {
 
     },
+    "Obscure Areas" : {
+
+    },
+    "Obscure Faces" : {
+
+    },
     "OK" : {
 
     },
@@ -534,6 +543,9 @@
 
     },
     "Tap faces to select them for masking. Pinch to resize boxes." : {
+
+    },
+    "Tap to add box" : {
 
     },
     "The camera app that minds its own business." : {

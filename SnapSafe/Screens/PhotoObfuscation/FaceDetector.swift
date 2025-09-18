@@ -20,7 +20,8 @@ class FaceDetector {
             return
         }
 
-        let request = VNDetectFaceRectanglesRequest()
+        // Use VNDetectFaceLandmarksRequest to get both face bounds and eye positions
+        let request = VNDetectFaceLandmarksRequest()
         let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
 
         do {
@@ -42,8 +43,39 @@ class FaceDetector {
                 let y = (1 - boundingBox.origin.y - boundingBox.height) * image.size.height
                 let width = boundingBox.width * image.size.width
 
-                // Use the bounds parameter of our new DetectedFace class
-                return DetectedFace(bounds: CGRect(x: x, y: y, width: width, height: height))
+                // Extract eye positions if available
+                var leftEye: CGPoint?
+                var rightEye: CGPoint?
+
+                if let landmarks = observation.landmarks {
+                    // Get left eye position (from the perspective of the face, not the viewer)
+                    if let leftEyePoints = landmarks.leftEye?.normalizedPoints, !leftEyePoints.isEmpty {
+                        // Calculate centroid of left eye points
+                        let avgX = leftEyePoints.map { $0.x }.reduce(0, +) / CGFloat(leftEyePoints.count)
+                        let avgY = leftEyePoints.map { $0.y }.reduce(0, +) / CGFloat(leftEyePoints.count)
+
+                        // Convert to image coordinates
+                        leftEye = CGPoint(
+                            x: boundingBox.origin.x * image.size.width + avgX * width,
+                            y: (1 - boundingBox.origin.y - avgY * boundingBox.height) * image.size.height
+                        )
+                    }
+
+                    // Get right eye position (from the perspective of the face, not the viewer)
+                    if let rightEyePoints = landmarks.rightEye?.normalizedPoints, !rightEyePoints.isEmpty {
+                        // Calculate centroid of right eye points
+                        let avgX = rightEyePoints.map { $0.x }.reduce(0, +) / CGFloat(rightEyePoints.count)
+                        let avgY = rightEyePoints.map { $0.y }.reduce(0, +) / CGFloat(rightEyePoints.count)
+
+                        // Convert to image coordinates
+                        rightEye = CGPoint(
+                            x: boundingBox.origin.x * image.size.width + avgX * width,
+                            y: (1 - boundingBox.origin.y - avgY * boundingBox.height) * image.size.height
+                        )
+                    }
+                }
+
+                return DetectedFace(bounds: CGRect(x: x, y: y, width: width, height: height), isSelected: true, leftEye: leftEye, rightEye: rightEye)
             }
 
             completion(detectedFaces)
@@ -122,7 +154,7 @@ class FaceDetector {
             case .pixelate:
                 // For pixelation, extract the face, pixelate it, and draw it back
                 if let faceCGImage = workingImage.cgImage?.cropping(to: safeRect),
-                   let faceImage = pixelateImage(UIImage(cgImage: faceCGImage), targetBlockSize: 8)
+                   let faceImage = pixelateImage(UIImage(cgImage: faceCGImage), face: face, targetBlockSize: 8)
                 {
                     faceImage.draw(in: safeRect)
                 }
@@ -137,23 +169,100 @@ class FaceDetector {
         return finalImage
     }
 
-    // Helper method to pixelate an image without creating multiple copies
-    private func pixelateImage(_ image: UIImage, targetBlockSize: Int = 8) -> UIImage? {
-        let scale = CGFloat(targetBlockSize) / max(image.size.width, image.size.height)
-        let smallSize = CGSize(width: image.size.width * scale, height: image.size.height * scale)
+    // Enhanced pixelate method following the specific algorithm:
+    // 1. Scale down to 8x8
+    // 2. Add noise (25% probability of black/white pixels)
+    // 3. Draw eye blackout line if eyes are detected
+    // 4. Scale back up to original size
+    private func pixelateImage(_ image: UIImage, face: DetectedFace, targetBlockSize: Int = 8) -> UIImage? {
+        // Step 1: Scale down to 8x8
+        let smallSize = CGSize(width: targetBlockSize, height: targetBlockSize)
 
-        // Downscale
         UIGraphicsBeginImageContextWithOptions(smallSize, false, 1.0)
         defer { UIGraphicsEndImageContext() }
 
+        // Draw the image scaled down
         image.draw(in: CGRect(origin: .zero, size: smallSize))
         guard let smallImage = UIGraphicsGetImageFromCurrentImageContext() else { return nil }
 
-        // Upscale
+        // Step 2: Add noise - create a new context to modify the small image
+        UIGraphicsBeginImageContextWithOptions(smallSize, false, 1.0)
+        guard let noiseContext = UIGraphicsGetCurrentContext() else { return nil }
+        defer { UIGraphicsEndImageContext() }
+
+        // Draw the scaled down image first
+        smallImage.draw(at: .zero)
+
+        // Add random noise (25% probability)
+        let noiseProbability: Float = 0.25
+
+        for y in 0..<targetBlockSize {
+            for x in 0..<targetBlockSize {
+                if Float.random(in: 0...1) <= noiseProbability {
+                    let color = Bool.random() ? UIColor.black : UIColor.white
+                    color.setFill()
+                    noiseContext.fill(CGRect(x: x, y: y, width: 1, height: 1))
+                }
+            }
+        }
+
+        // Step 3: Draw eye blackout line if eyes are detected
+        if let leftEye = face.leftEye, let rightEye = face.rightEye {
+            // Convert eye positions from original face coordinates to 8x8 coordinates
+            let faceRect = face.bounds
+            let leftEyeInFace = CGPoint(
+                x: leftEye.x - faceRect.origin.x,
+                y: leftEye.y - faceRect.origin.y
+            )
+            let rightEyeInFace = CGPoint(
+                x: rightEye.x - faceRect.origin.x,
+                y: rightEye.y - faceRect.origin.y
+            )
+
+            let leftEyeInSmall = CGPoint(
+                x: leftEyeInFace.x * CGFloat(targetBlockSize) / faceRect.width,
+                y: leftEyeInFace.y * CGFloat(targetBlockSize) / faceRect.height
+            )
+            let rightEyeInSmall = CGPoint(
+                x: rightEyeInFace.x * CGFloat(targetBlockSize) / faceRect.width,
+                y: rightEyeInFace.y * CGFloat(targetBlockSize) / faceRect.height
+            )
+
+            // Draw black line from edge to edge at eye level
+            UIColor.black.setStroke()
+            noiseContext.setLineWidth(1.0)
+
+            if leftEyeInSmall.x >= 0 && leftEyeInSmall.x < CGFloat(targetBlockSize) &&
+               leftEyeInSmall.y >= 0 && leftEyeInSmall.y < CGFloat(targetBlockSize) &&
+               rightEyeInSmall.x >= 0 && rightEyeInSmall.x < CGFloat(targetBlockSize) &&
+               rightEyeInSmall.y >= 0 && rightEyeInSmall.y < CGFloat(targetBlockSize) {
+                // Draw line from left edge to right edge at the eye level
+                noiseContext.move(to: CGPoint(x: 0, y: leftEyeInSmall.y))
+                noiseContext.addLine(to: CGPoint(x: CGFloat(targetBlockSize - 1), y: rightEyeInSmall.y))
+                noiseContext.strokePath()
+            } else {
+                // If both eyes aren't in bounds, draw individual points
+                if leftEyeInSmall.x >= 0 && leftEyeInSmall.x < CGFloat(targetBlockSize) &&
+                   leftEyeInSmall.y >= 0 && leftEyeInSmall.y < CGFloat(targetBlockSize) {
+                    UIColor.black.setFill()
+                    noiseContext.fill(CGRect(x: Int(leftEyeInSmall.x), y: Int(leftEyeInSmall.y), width: 1, height: 1))
+                }
+
+                if rightEyeInSmall.x >= 0 && rightEyeInSmall.x < CGFloat(targetBlockSize) &&
+                   rightEyeInSmall.y >= 0 && rightEyeInSmall.y < CGFloat(targetBlockSize) {
+                    UIColor.black.setFill()
+                    noiseContext.fill(CGRect(x: Int(rightEyeInSmall.x), y: Int(rightEyeInSmall.y), width: 1, height: 1))
+                }
+            }
+        }
+
+        guard let noisySmallImage = UIGraphicsGetImageFromCurrentImageContext() else { return nil }
+
+        // Step 4: Scale back up to original size
         UIGraphicsBeginImageContextWithOptions(image.size, false, 1.0)
         defer { UIGraphicsEndImageContext() }
 
-        smallImage.draw(in: CGRect(origin: .zero, size: image.size), blendMode: .normal, alpha: 1.0)
+        noisySmallImage.draw(in: CGRect(origin: .zero, size: image.size))
 
         return UIGraphicsGetImageFromCurrentImageContext()
     }

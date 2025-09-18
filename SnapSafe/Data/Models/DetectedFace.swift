@@ -16,11 +16,15 @@ public struct _DetectedFace: Identifiable, Hashable {
     public var bounds: CGRect
     public var isSelected: Bool = false
     public var isUserCreated: Bool = false
+    public var leftEye: CGPoint?
+    public var rightEye: CGPoint?
 
-    public init(bounds: CGRect, isSelected: Bool = false, isUserCreated: Bool = false) {
+    public init(bounds: CGRect, isSelected: Bool = false, isUserCreated: Bool = false, leftEye: CGPoint? = nil, rightEye: CGPoint? = nil) {
         self.bounds = bounds.integral
         self.isSelected = isSelected
         self.isUserCreated = isUserCreated
+        self.leftEye = leftEye
+        self.rightEye = rightEye
     }
 
     public init(rect: CGRect, isSelected: Bool = false) {
@@ -69,7 +73,7 @@ public struct _DetectedFace: Identifiable, Hashable {
         let w = max(minSize, bounds.width * scale)
         let h = max(minSize, bounds.height * scale)
         let newRect = CGRect(x: c.x - w/2, y: c.y - h/2, width: w, height: h).integral
-        return DetectedFace(bounds: newRect, isSelected: isSelected, isUserCreated: isUserCreated)
+        return DetectedFace(bounds: newRect, isSelected: isSelected, isUserCreated: isUserCreated, leftEye: leftEye, rightEye: rightEye)
     }
 
     /// Return a new face whose rect is clamped inside the image bounds.
@@ -83,13 +87,13 @@ public struct _DetectedFace: Identifiable, Hashable {
         if y + h > imageSize.height { y = min(y, imageSize.height - 1); h = imageSize.height - y }
 
         let r = CGRect(x: x, y: y, width: max(1, w), height: max(1, h)).integral
-        return DetectedFace(bounds: r, isSelected: isSelected, isUserCreated: isUserCreated)
+        return DetectedFace(bounds: r, isSelected: isSelected, isUserCreated: isUserCreated, leftEye: leftEye, rightEye: rightEye)
     }
 
     /// Return a translated face by an image-space delta.
     public func moved(by delta: CGSize) -> DetectedFace {
         let r = bounds.offsetBy(dx: delta.width, dy: delta.height).integral
-        return DetectedFace(bounds: r, isSelected: isSelected, isUserCreated: isUserCreated)
+        return DetectedFace(bounds: r, isSelected: isSelected, isUserCreated: isUserCreated, leftEye: leftEye, rightEye: rightEye)
     }
 
     /// Mutate this face by translating with an image-space delta.

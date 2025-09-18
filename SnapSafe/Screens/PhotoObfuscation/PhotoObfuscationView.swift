@@ -70,8 +70,16 @@ struct PhotoObfuscationView: View {
         } message: {
             Text("Are you sure you want to \(viewModel.maskActionVerb) the selected faces? This action cannot be undone.")
         }
+        .alert("Obscure Areas", isPresented: $viewModel.showManualBoxObscureConfirmation) {
+            Button("Cancel", role: .cancel) { }
+            Button(viewModel.manualBoxActionTitle) {
+                viewModel.applyManualBoxObscuring()
+            }
+        } message: {
+            Text("Are you sure you want to obscure the selected areas? This action cannot be undone.")
+        }
     }
-    
+
     private var imageContent: some View {
         VStack(spacing: 0) {
             // Main image area - centered and stable
@@ -102,12 +110,12 @@ struct PhotoObfuscationView: View {
                         )
 
                     // Face detection overlay - precisely aligned with centered image
-                    if viewModel.isFaceDetectionActive && viewModel.imageFrameSize != .zero {
+                    if (viewModel.isFaceDetectionActive || viewModel.isAddingBox || !viewModel.detectedFaces.isEmpty) && viewModel.imageFrameSize != .zero {
                         FaceDetectionOverlay(
                             faces: viewModel.detectedFaces,
                             originalSize: viewModel.currentImage?.size ?? .zero,
                             displaySize: viewModel.imageFrameSize,
-                            isAddingBox: false,
+                            isAddingBox: viewModel.isAddingBox,
                             onTap: { id in viewModel.toggleFaceSelection(id: id) },
                             onCreateBox: { pt in viewModel.createBox(at: pt) },
                             onMove: { id, delta in viewModel.moveFace(id: id, by: delta) },
@@ -137,6 +145,31 @@ struct PhotoObfuscationView: View {
                         }
                         .position(x: availableSize.width / 2, y: availableSize.height / 2)
                     }
+
+                    // Add box mode notice
+                    if viewModel.isAddingBox {
+                        VStack {
+                            Spacer()
+                            HStack {
+                                Spacer()
+                                VStack(spacing: 8) {
+                                    Image(systemName: "plus.app")
+                                        .font(.system(size: 24))
+                                        .foregroundColor(.white)
+
+                                    Text("Tap to add box")
+                                        .font(.headline)
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 8)
+                                        .background(Color.black.opacity(0.7))
+                                        .cornerRadius(20)
+                                }
+                                Spacer()
+                            }
+                            .padding(.bottom, 100) // Above the toolbar
+                        }
+                    }
                 }
             }
 
@@ -148,19 +181,33 @@ struct PhotoObfuscationView: View {
                 onShare: {
                     viewModel.sharePhoto()
                 },
+                onAddBox: {
+                    viewModel.startAddingBoxes()
+                },
                 onCancelDetection: {
                     withAnimation {
                         viewModel.isFaceDetectionActive = false
                         viewModel.detectedFaces = []
                         viewModel.modifiedImage = nil
+                        viewModel.isAddingBox = false
                     }
+                },
+                onCancelAddBox: {
+                    viewModel.stopAddingBoxes()
+                    viewModel.clearManualBoxes()
                 },
                 onMaskFaces: {
                     viewModel.showObscureConfirmation = true
                 },
+                onObscureAreas: {
+                    viewModel.showManualBoxObscureConfirmation = true
+                },
                 isFaceDetectionActive: viewModel.isFaceDetectionActive,
+                isAddingBox: viewModel.isAddingBox,
                 hasFacesSelected: viewModel.hasFacesSelected,
+                hasManualBoxesSelected: viewModel.hasManualBoxesSelected,
                 maskButtonLabel: viewModel.maskButtonLabel,
+                manualBoxButtonLabel: viewModel.manualBoxButtonLabel,
                 isProcessing: viewModel.processingFaces
             )
         }
@@ -172,11 +219,17 @@ struct PhotoObfuscationView: View {
 private struct ObfuscationControlsView: View {
     var onDetectFaces: () -> Void
     var onShare: () -> Void
+    var onAddBox: () -> Void
     var onCancelDetection: (() -> Void)?
+    var onCancelAddBox: (() -> Void)?
     var onMaskFaces: (() -> Void)?
+    var onObscureAreas: (() -> Void)?
     var isFaceDetectionActive: Bool
+    var isAddingBox: Bool
     var hasFacesSelected: Bool
+    var hasManualBoxesSelected: Bool
     var maskButtonLabel: String
+    var manualBoxButtonLabel: String
     var isProcessing: Bool
 
     var body: some View {
@@ -186,7 +239,68 @@ private struct ObfuscationControlsView: View {
                 .background(Color.gray.opacity(0.3))
 
             HStack {
-                if isFaceDetectionActive {
+                if hasManualBoxesSelected && !isAddingBox && !isFaceDetectionActive {
+                    // Cancel manual boxes button
+                    Button(action: {
+                        onCancelAddBox?()
+                    }) {
+                        VStack(spacing: 4) {
+                            Image(systemName: "xmark.circle")
+                                .font(.system(size: 22))
+                                .frame(height: 22)
+                            Text("Cancel")
+                                .font(.caption2)
+                                .multilineTextAlignment(.center)
+                        }
+                        .foregroundColor(.gray)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 60)
+                    }
+                    .disabled(isProcessing)
+                    .opacity(isProcessing ? 0.6 : 1.0)
+
+                    // Obscure areas button
+                    Button(action: {
+                        onObscureAreas?()
+                    }) {
+                        VStack(spacing: 4) {
+                            if isProcessing {
+                                ProgressView()
+                                    .scaleEffect(0.7)
+                                    .frame(height: 22)
+                            } else {
+                                Image(systemName: "square.dashed")
+                                    .font(.system(size: 22))
+                                    .frame(height: 22)
+                            }
+                            Text(manualBoxButtonLabel)
+                                .font(.caption2)
+                                .multilineTextAlignment(.center)
+                        }
+                        .foregroundColor(.red)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 60)
+                    }
+                    .disabled(isProcessing)
+                    .opacity(isProcessing ? 0.6 : 1.0)
+
+                    // Share button
+                    Button(action: onShare) {
+                        VStack(spacing: 4) {
+                            Image(systemName: "square.and.arrow.up")
+                                .font(.system(size: 22))
+                                .frame(height: 22)
+                            Text("Share")
+                                .font(.caption2)
+                                .multilineTextAlignment(.center)
+                        }
+                        .foregroundColor(.blue)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 60)
+                    }
+                    .disabled(isProcessing)
+                    .opacity(isProcessing ? 0.6 : 1.0)
+                } else if isFaceDetectionActive {
                     // Cancel detection button
                     Button(action: {
                         onCancelDetection?()
@@ -249,6 +363,67 @@ private struct ObfuscationControlsView: View {
                     }
                     .disabled(isProcessing)
                     .opacity(isProcessing ? 0.6 : 1.0)
+                } else if isAddingBox {
+                    // Cancel add box button
+                    Button(action: {
+                        onCancelAddBox?()
+                    }) {
+                        VStack(spacing: 4) {
+                            Image(systemName: "xmark.circle")
+                                .font(.system(size: 22))
+                                .frame(height: 22)
+                            Text("Cancel")
+                                .font(.caption2)
+                                .multilineTextAlignment(.center)
+                        }
+                        .foregroundColor(.gray)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 60)
+                    }
+
+                    // Obscure areas button (conditional - only when manual boxes are selected)
+                    if hasManualBoxesSelected {
+                        Button(action: {
+                            onObscureAreas?()
+                        }) {
+                            VStack(spacing: 4) {
+                                if isProcessing {
+                                    ProgressView()
+                                        .scaleEffect(0.7)
+                                        .frame(height: 22)
+                                } else {
+                                    Image(systemName: "square.dashed")
+                                        .font(.system(size: 22))
+                                        .frame(height: 22)
+                                }
+                                Text(manualBoxButtonLabel)
+                                    .font(.caption2)
+                                    .multilineTextAlignment(.center)
+                            }
+                            .foregroundColor(.red)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 60)
+                        }
+                        .disabled(isProcessing)
+                        .opacity(isProcessing ? 0.6 : 1.0)
+                    }
+
+                    // Share button
+                    Button(action: onShare) {
+                        VStack(spacing: 4) {
+                            Image(systemName: "square.and.arrow.up")
+                                .font(.system(size: 22))
+                                .frame(height: 22)
+                            Text("Share")
+                                .font(.caption2)
+                                .multilineTextAlignment(.center)
+                        }
+                        .foregroundColor(.blue)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 60)
+                    }
+                    .disabled(isProcessing)
+                    .opacity(isProcessing ? 0.6 : 1.0)
                 } else {
                     // Detect faces button
                     Button(action: onDetectFaces) {
@@ -261,6 +436,23 @@ private struct ObfuscationControlsView: View {
                                 .multilineTextAlignment(.center)
                         }
                         .foregroundColor(.orange)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 60)
+                    }
+                    .disabled(isProcessing)
+                    .opacity(isProcessing ? 0.6 : 1.0)
+
+                    // Add Box button
+                    Button(action: onAddBox) {
+                        VStack(spacing: 4) {
+                            Image(systemName: "plus.app")
+                                .font(.system(size: 22))
+                                .frame(height: 22)
+                            Text("Add Box")
+                                .font(.caption2)
+                                .multilineTextAlignment(.center)
+                        }
+                        .foregroundColor(.green)
                         .frame(maxWidth: .infinity)
                         .frame(height: 60)
                     }
