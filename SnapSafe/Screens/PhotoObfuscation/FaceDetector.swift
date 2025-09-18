@@ -193,8 +193,8 @@ class FaceDetector {
         // Draw the scaled down image first
         smallImage.draw(at: .zero)
 
-        // Add random noise (25% probability)
-        let noiseProbability: Float = 0.25
+        // Add random noise (50% probability)
+        let noiseProbability: Float = 0.50
 
         for y in 0..<targetBlockSize {
             for x in 0..<targetBlockSize {
