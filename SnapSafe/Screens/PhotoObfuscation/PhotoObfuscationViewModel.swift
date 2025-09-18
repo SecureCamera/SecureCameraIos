@@ -23,9 +23,7 @@ final class PhotoObfuscationViewModel: ObservableObject {
     @Published var detectedFaces: [DetectedFace] = []
     @Published var processingFaces = false
     @Published var modifiedImage: UIImage?
-    @Published var showBlurConfirmation = false
-    @Published var selectedMaskMode: MaskMode = .blur
-    @Published var showMaskOptions = false
+    @Published var showObscureConfirmation = false
     
     @Published var imageFrameSize: CGSize = .zero
     
@@ -81,42 +79,15 @@ final class PhotoObfuscationViewModel: ObservableObject {
     }
     
     var maskActionTitle: String {
-        switch selectedMaskMode {
-        case .blur:
-            return "Blur Selected Faces"
-        case .pixelate:
-            return "Pixelate Selected Faces"
-        case .blackout:
-            return "Blackout Selected Faces"
-        case .noise:
-            return "Apply Noise to Selected Faces"
-        }
+        return "Obscure Selected Faces"
     }
-    
+
     var maskActionVerb: String {
-        switch selectedMaskMode {
-        case .blur:
-            return "blur"
-        case .pixelate:
-            return "pixelate"
-        case .blackout:
-            return "blackout"
-        case .noise:
-            return "apply noise to"
-        }
+        return "obscure"
     }
-    
+
     var maskButtonLabel: String {
-        switch selectedMaskMode {
-        case .blur:
-            return "Blur Faces"
-        case .pixelate:
-            return "Pixelate Faces"
-        case .blackout:
-            return "Blackout Faces"
-        case .noise:
-            return "Apply Noise"
-        }
+        return "Obscure Faces"
     }
     
     // MARK: - Image Loading
@@ -174,27 +145,26 @@ final class PhotoObfuscationViewModel: ObservableObject {
         }
     }
     
-    func toggleFaceSelection(_ face: DetectedFace) {
-        if let index = detectedFaces.firstIndex(where: { $0.id == face.id }) {
-            let updatedFaces = detectedFaces
-            updatedFaces[index].isSelected.toggle()
-            detectedFaces = updatedFaces
+    func toggleFaceSelection(_ index: Int) {
+        guard index >= 0 && index < detectedFaces.count else {
+            Logger.storage.error("ERROR: Invalid face index: \(index), valid range: 0..<\(detectedFaces.count)")
+            return
         }
+        detectedFaces[index].isSelected.toggle()
     }
     
-    func applyFaceMasking() {
+    func applyFaceObscuring() {
         guard let imageToProcess = currentImage else { return }
-        
+
         withAnimation {
             processingFaces = true
         }
-        
+
         Task(priority: .userInitiated) {
             let facesToMask = self.detectedFaces
-            let maskMode = self.selectedMaskMode
-            
-            // Process the image
-            if let maskedImage = self.faceDetector.maskFaces(in: imageToProcess, faces: facesToMask, modes: [maskMode]) {
+
+            // Process the image using pixelate mode only
+            if let maskedImage = self.faceDetector.maskFaces(in: imageToProcess, faces: facesToMask, modes: [.pixelate]) {
                 await MainActor.run {
                     withAnimation {
                         self.currentImage = maskedImage
@@ -202,7 +172,7 @@ final class PhotoObfuscationViewModel: ObservableObject {
                         self.processingFaces = false
                     }
                 }
-                
+
                 // Wait 2 seconds then reset face detection state
                 try await Task.sleep(for: .seconds(2))
                 await MainActor.run {
@@ -216,7 +186,7 @@ final class PhotoObfuscationViewModel: ObservableObject {
                 await MainActor.run {
                     self.processingFaces = false
                 }
-                Logger.storage.error("Error creating masked image")
+                Logger.storage.error("Error creating obscured image")
             }
         }
     }
@@ -347,13 +317,87 @@ final class PhotoObfuscationViewModel: ObservableObject {
             .store(in: &cancellables)
     }
     
+
     private func dismissAllAlerts() {
         // Dismiss all active alert states
-        showBlurConfirmation = false
-        showMaskOptions = false
-        
+        showObscureConfirmation = false
+
         // Dismiss any currently presented activity controller (iOS export dialog)
         currentActivityController?.dismiss(animated: false, completion: nil)
         currentActivityController = nil
+    }
+}
+
+
+extension PhotoObfuscationViewModel {
+    // Toggle using the face's UUID instead of array index (stable on reordering)
+    func toggleFaceSelection(id: UUID) {
+        guard let idx = detectedFaces.firstIndex(where: { $0.id == id }) else { return }
+        detectedFaces[idx].isSelected.toggle()
+    }
+
+    // Create a new box (e.g., 160x160) centered at the tapped image point
+    func createBox(at displayPoint: CGPoint) {
+        guard let img = currentImage else { return }
+        let imagePoint = DetectedFace.imagePoint(fromDisplay: displayPoint,
+                                                 originalSize: img.size,
+                                                 displaySize: imageFrameSize)
+        let size: CGFloat = 160
+        let rect = CGRect(x: imagePoint.x - size/2, y: imagePoint.y - size/2, width: size, height: size)
+        let clamped = clamp(rect, in: img.size)
+        detectedFaces.append(DetectedFace(bounds: clamped, isSelected: true))
+    }
+
+    // Drag move in image-space delta
+    func moveFace(id: UUID, by deltaImage: CGSize) {
+        guard let img = currentImage, let idx = detectedFaces.firstIndex(where: { $0.id == id }) else { return }
+        var r = detectedFaces[idx].bounds
+        r.origin.x += deltaImage.width
+        r.origin.y += deltaImage.height
+        detectedFaces[idx].bounds = clamp(r, in: img.size)
+    }
+
+    // Set absolute position for smooth dragging
+    func setFacePosition(id: UUID, to newBounds: CGRect) {
+        guard let img = currentImage, let idx = detectedFaces.firstIndex(where: { $0.id == id }) else { return }
+        detectedFaces[idx].bounds = clamp(newBounds, in: img.size)
+    }
+
+    // Set absolute size for smooth resizing
+    func setFaceSize(id: UUID, to newBounds: CGRect) {
+        guard let img = currentImage, let idx = detectedFaces.firstIndex(where: { $0.id == id }) else { return }
+        detectedFaces[idx].bounds = clamp(newBounds, in: img.size)
+    }
+
+    // Pinch resize around the face center; `scale` is the gesture's instantaneous factor
+    func resizeFace(id: UUID, scale: CGFloat) {
+        guard let img = currentImage, let idx = detectedFaces.firstIndex(where: { $0.id == id }) else { return }
+        let r = detectedFaces[idx].bounds
+        let center = CGPoint(x: r.midX, y: r.midY)
+
+        var newW = max(12, r.width * scale)
+        var newH = max(12, r.height * scale)
+
+        // Convert back to a rect centered at original center
+        var newRect = CGRect(x: center.x - newW/2, y: center.y - newH/2, width: newW, height: newH)
+        newRect = clamp(newRect, in: img.size)
+
+        // If clamped shrank asymmetrically, keep min size
+        newW = max(12, newRect.width)
+        newH = max(12, newRect.height)
+        detectedFaces[idx].bounds = CGRect(x: newRect.origin.x, y: newRect.origin.y, width: newW, height: newH)
+    }
+
+    // MARK: - Helpers
+
+    private func clamp(_ rect: CGRect, in imageSize: CGSize) -> CGRect {
+        var x = max(0, rect.origin.x)
+        var y = max(0, rect.origin.y)
+        var w = rect.width
+        var h = rect.height
+
+        if x + w > imageSize.width { x = min(x, imageSize.width - 1); w = imageSize.width - x }
+        if y + h > imageSize.height { y = min(y, imageSize.height - 1); h = imageSize.height - y }
+        return CGRect(x: x, y: y, width: max(1, w), height: max(1, h))
     }
 }

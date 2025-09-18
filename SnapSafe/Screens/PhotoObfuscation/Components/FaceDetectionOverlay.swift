@@ -10,93 +10,137 @@ import Foundation
 import UIKit
 
 public struct FaceDetectionOverlay: View {
-    let faces: [DetectedFace]
-    let originalSize: CGSize
-    let displaySize: CGSize
-    let isAddingBox: Bool
-    var onTap: (DetectedFace) -> Void
-    var onCreateBox: (CGPoint) -> Void
-    var onResize: (DetectedFace, CGFloat) -> Void
-    
-    // State for face resizing
-    @State private var isResizingBox = false
-    @State private var selectedFaceForResize: DetectedFace? = nil
-    @State private var currentResizeScale: CGFloat = 1.0
-    
+    public let faces: [DetectedFace]
+    public let originalSize: CGSize
+    public let displaySize: CGSize
+    public let isAddingBox: Bool
+
+    public var onTap: (UUID) -> Void
+    public var onCreateBox: (CGPoint) -> Void
+    public var onMove: (UUID, CGSize) -> Void          // image-space delta
+    public var onSetPosition: (UUID, CGRect) -> Void   // absolute position in image space
+    public var onResize: (UUID, CGFloat) -> Void       // scale factor
+    public var onSetSize: (UUID, CGRect) -> Void       // absolute size for smooth resizing
+
+    @State private var resizingId: UUID?
+    @State private var dragStartPositions: [UUID: CGRect] = [:]
+    @State private var resizeStartBounds: [UUID: CGRect] = [:]
+
+    public init(
+        faces: [DetectedFace],
+        originalSize: CGSize,
+        displaySize: CGSize,
+        isAddingBox: Bool,
+        onTap: @escaping (UUID) -> Void,
+        onCreateBox: @escaping (CGPoint) -> Void,
+        onMove: @escaping (UUID, CGSize) -> Void,
+        onSetPosition: @escaping (UUID, CGRect) -> Void,
+        onResize: @escaping (UUID, CGFloat) -> Void,
+        onSetSize: @escaping (UUID, CGRect) -> Void
+    ) {
+        self.faces = faces
+        self.originalSize = originalSize
+        self.displaySize = displaySize
+        self.isAddingBox = isAddingBox
+        self.onTap = onTap
+        self.onCreateBox = onCreateBox
+        self.onMove = onMove
+        self.onSetPosition = onSetPosition
+        self.onResize = onResize
+        self.onSetSize = onSetSize
+    }
+
     public var body: some View {
         ZStack {
-            // Add a gesture overlay to capture exact tap locations for adding boxes
+            // Tap anywhere to add a box when "add mode" is enabled
             if isAddingBox {
                 Rectangle()
                     .fill(Color.clear)
                     .contentShape(Rectangle())
                     .gesture(
                         DragGesture(minimumDistance: 0)
-                            .onEnded { gesture in
-                                onCreateBox(gesture.location)
-                            }
+                            .onEnded { g in onCreateBox(g.location) }
                     )
             }
-            
-            // Overlay each detected face with a rectangle
+
             ForEach(faces) { face in
+                let rect = face.scaledRect(originalSize: originalSize, displaySize: displaySize)
+
                 FaceBoxView(
                     face: face,
                     originalSize: originalSize,
                     displaySize: displaySize,
-                    onTap: {
-                        if !isAddingBox && !isResizingBox {
-                            onTap(face)
-                        }
-                    }
+                    onTap: { onTap(face.id) }
                 )
+                .frame(width: rect.width, height: rect.height)
+                .position(x: rect.midX, y: rect.midY)
+                // MOVE (one-finger drag)
                 .gesture(
-                    MagnificationGesture()
+                    DragGesture()
                         .onChanged { value in
-                            if !isResizingBox {
-                                // Start resizing this face
-                                isResizingBox = true
-                                selectedFaceForResize = face
-                                currentResizeScale = 1.0
+                            // Store initial position on first drag event
+                            if dragStartPositions[face.id] == nil {
+                                dragStartPositions[face.id] = face.bounds
                             }
-                            
-                            // Only resize if this is the selected face
-                            if let selectedFace = selectedFaceForResize, selectedFace.id == face.id {
-                                let delta = value / currentResizeScale
-                                currentResizeScale = value
-                                onResize(face, delta)
-                            }
+
+                            guard let startBounds = dragStartPositions[face.id] else { return }
+
+                            // Convert display translation to image space
+                            let deltaImage = DetectedFace.imageDelta(
+                                fromDisplay: value.translation,
+                                originalSize: originalSize,
+                                displaySize: displaySize
+                            )
+
+                            // Calculate new position from start position
+                            let newBounds = CGRect(
+                                x: startBounds.origin.x + deltaImage.width,
+                                y: startBounds.origin.y + deltaImage.height,
+                                width: startBounds.width,
+                                height: startBounds.height
+                            )
+
+                            onSetPosition(face.id, newBounds)
                         }
                         .onEnded { _ in
-                            isResizingBox = false
-                            selectedFaceForResize = nil
-                            currentResizeScale = 1.0
+                            // Clear stored start position when drag ends
+                            dragStartPositions[face.id] = nil
+                        }
+                )
+                // RESIZE (two-finger pinch)
+                .simultaneousGesture(
+                    MagnificationGesture()
+                        .onChanged { scale in
+                            // Store initial bounds on first resize event
+                            if resizeStartBounds[face.id] == nil {
+                                resizeStartBounds[face.id] = face.bounds
+                            }
+
+                            guard let startBounds = resizeStartBounds[face.id] else { return }
+
+                            resizingId = face.id
+
+                            // Calculate new size from original size
+                            let center = CGPoint(x: startBounds.midX, y: startBounds.midY)
+                            let newW = max(12, startBounds.width * scale)
+                            let newH = max(12, startBounds.height * scale)
+
+                            let newBounds = CGRect(
+                                x: center.x - newW/2,
+                                y: center.y - newH/2,
+                                width: newW,
+                                height: newH
+                            )
+
+                            onSetSize(face.id, newBounds)
+                        }
+                        .onEnded { _ in
+                            resizingId = nil
+                            // Clear stored start bounds when resize ends
+                            resizeStartBounds[face.id] = nil
                         }
                 )
             }
-        }
-    }
-}
-
-// Preview with sample faces
-struct FaceDetectionOverlay_Previews: PreviewProvider {
-    static var previews: some View {
-        let faces = [
-            DetectedFace(rect: CGRect(x: 50, y: 50, width: 100, height: 100)),
-            DetectedFace(rect: CGRect(x: 200, y: 150, width: 120, height: 120), isSelected: true)
-        ]
-        
-        return ZStack {
-            Color.gray
-            FaceDetectionOverlay(
-                faces: faces,
-                originalSize: CGSize(width: 400, height: 400),
-                displaySize: CGSize(width: 300, height: 300),
-                isAddingBox: false,
-                onTap: { _ in },
-                onCreateBox: { _ in },
-                onResize: { _, _ in }
-            )
         }
     }
 }

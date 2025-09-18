@@ -62,38 +62,13 @@ struct PhotoObfuscationView: View {
             .toolbarBackground(Color.black, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
         }
-        .alert("Apply Face Masking", isPresented: $viewModel.showBlurConfirmation) {
+        .alert("Obscure Faces", isPresented: $viewModel.showObscureConfirmation) {
             Button("Cancel", role: .cancel) { }
             Button(viewModel.maskActionTitle) {
-                viewModel.applyFaceMasking()
+                viewModel.applyFaceObscuring()
             }
         } message: {
             Text("Are you sure you want to \(viewModel.maskActionVerb) the selected faces? This action cannot be undone.")
-        }
-        .actionSheet(isPresented: $viewModel.showMaskOptions) {
-            ActionSheet(
-                title: Text("Select Masking Mode"),
-                message: Text("Choose how you want to obfuscate the selected faces"),
-                buttons: [
-                    .default(Text("Blur")) {
-                        viewModel.selectedMaskMode = .blur
-                        viewModel.showBlurConfirmation = true
-                    },
-                    .default(Text("Pixelate")) {
-                        viewModel.selectedMaskMode = .pixelate
-                        viewModel.showBlurConfirmation = true
-                    },
-                    .default(Text("Blackout")) {
-                        viewModel.selectedMaskMode = .blackout
-                        viewModel.showBlurConfirmation = true
-                    },
-                    .default(Text("Apply Noise")) {
-                        viewModel.selectedMaskMode = .noise
-                        viewModel.showBlurConfirmation = true
-                    },
-                    .cancel()
-                ]
-            )
         }
     }
     
@@ -133,13 +108,17 @@ struct PhotoObfuscationView: View {
                             originalSize: viewModel.currentImage?.size ?? .zero,
                             displaySize: viewModel.imageFrameSize,
                             isAddingBox: false,
-                            onTap: viewModel.toggleFaceSelection,
-                            onCreateBox: { _ in },
-                            onResize: { _, _ in }
+                            onTap: { id in viewModel.toggleFaceSelection(id: id) },
+                            onCreateBox: { pt in viewModel.createBox(at: pt) },
+                            onMove: { id, delta in viewModel.moveFace(id: id, by: delta) },
+                            onSetPosition: { id, bounds in viewModel.setFacePosition(id: id, to: bounds) },
+                            onResize: { id, scale in viewModel.resizeFace(id: id, scale: scale) },
+                            onSetSize: { id, bounds in viewModel.setFaceSize(id: id, to: bounds) }
                         )
                         .frame(width: viewModel.imageFrameSize.width, height: viewModel.imageFrameSize.height)
                         .position(x: availableSize.width / 2, y: availableSize.height / 2)
                         .clipped()
+
                     }
 
                     // Processing overlay
@@ -177,7 +156,7 @@ struct PhotoObfuscationView: View {
                     }
                 },
                 onMaskFaces: {
-                    viewModel.showMaskOptions = true
+                    viewModel.showObscureConfirmation = true
                 },
                 isFaceDetectionActive: viewModel.isFaceDetectionActive,
                 hasFacesSelected: viewModel.hasFacesSelected,
@@ -315,6 +294,8 @@ private struct ObfuscationControlsView: View {
         .animation(.easeInOut(duration: 0.2), value: isProcessing)
     }
 }
+
+
 
 // MARK: - Preview
 
