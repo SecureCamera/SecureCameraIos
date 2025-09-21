@@ -7,10 +7,7 @@
 
 import Foundation
 
-// Different masking modes for face obfuscation
+// Face obfuscation mode - only pixelate is supported
 enum MaskMode {
-    case blur
     case pixelate
-    case blackout
-    case noise
 }

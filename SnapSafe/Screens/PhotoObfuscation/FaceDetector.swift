@@ -20,7 +20,8 @@ class FaceDetector {
             return
         }
 
-        let request = VNDetectFaceRectanglesRequest()
+        // Use VNDetectFaceLandmarksRequest to get both face bounds and eye positions
+        let request = VNDetectFaceLandmarksRequest()
         let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
 
         do {
@@ -42,8 +43,39 @@ class FaceDetector {
                 let y = (1 - boundingBox.origin.y - boundingBox.height) * image.size.height
                 let width = boundingBox.width * image.size.width
 
-                // Use the bounds parameter of our new DetectedFace class
-                return DetectedFace(bounds: CGRect(x: x, y: y, width: width, height: height))
+                // Extract eye positions if available
+                var leftEye: CGPoint?
+                var rightEye: CGPoint?
+
+                if let landmarks = observation.landmarks {
+                    // Get left eye position (from the perspective of the face, not the viewer)
+                    if let leftEyePoints = landmarks.leftEye?.normalizedPoints, !leftEyePoints.isEmpty {
+                        // Calculate centroid of left eye points
+                        let avgX = leftEyePoints.map { $0.x }.reduce(0, +) / CGFloat(leftEyePoints.count)
+                        let avgY = leftEyePoints.map { $0.y }.reduce(0, +) / CGFloat(leftEyePoints.count)
+
+                        // Convert to image coordinates
+                        leftEye = CGPoint(
+                            x: boundingBox.origin.x * image.size.width + avgX * width,
+                            y: (1 - boundingBox.origin.y - avgY * boundingBox.height) * image.size.height
+                        )
+                    }
+
+                    // Get right eye position (from the perspective of the face, not the viewer)
+                    if let rightEyePoints = landmarks.rightEye?.normalizedPoints, !rightEyePoints.isEmpty {
+                        // Calculate centroid of right eye points
+                        let avgX = rightEyePoints.map { $0.x }.reduce(0, +) / CGFloat(rightEyePoints.count)
+                        let avgY = rightEyePoints.map { $0.y }.reduce(0, +) / CGFloat(rightEyePoints.count)
+
+                        // Convert to image coordinates
+                        rightEye = CGPoint(
+                            x: boundingBox.origin.x * image.size.width + avgX * width,
+                            y: (1 - boundingBox.origin.y - avgY * boundingBox.height) * image.size.height
+                        )
+                    }
+                }
+
+                return DetectedFace(bounds: CGRect(x: x, y: y, width: width, height: height), isSelected: true, leftEye: leftEye, rightEye: rightEye)
             }
 
             completion(detectedFaces)
@@ -90,7 +122,7 @@ class FaceDetector {
         }
 
         // Get the primary masking mode (using only one to avoid creating multiple image copies)
-        let primaryMode = modes.first ?? .blur
+        let primaryMode = modes.first ?? .pixelate
 
         // Create a context with the image size (reused for all operations)
         UIGraphicsBeginImageContextWithOptions(image.size, false, image.scale)
@@ -117,32 +149,15 @@ class FaceDetector {
             // Clear the face area
             context.clear(safeRect)
 
-            // Apply the appropriate masking effect
+            // Apply pixelation effect
             switch primaryMode {
-            case .blackout:
-                // For blackout, just fill with black
-                context.setFillColor(UIColor.black.cgColor)
-                context.fill(safeRect)
-
             case .pixelate:
                 // For pixelation, extract the face, pixelate it, and draw it back
                 if let faceCGImage = workingImage.cgImage?.cropping(to: safeRect),
-                   let faceImage = pixelateImage(UIImage(cgImage: faceCGImage), targetBlockSize: 8)
+                   let faceImage = pixelateImage(UIImage(cgImage: faceCGImage), face: face, targetBlockSize: 8)
                 {
                     faceImage.draw(in: safeRect)
                 }
-
-            case .blur:
-                // For blur, apply a CIFilter directly
-                if let faceCGImage = workingImage.cgImage?.cropping(to: safeRect),
-                   let blurredFace = applyBlur(to: UIImage(cgImage: faceCGImage), radius: 25.0)
-                {
-                    blurredFace.draw(in: safeRect)
-                }
-
-            case .noise:
-                // For noise, generate noise directly in the area
-                applyNoiseDirectly(to: context, in: safeRect)
             }
 
             // Restore the graphics state
@@ -154,268 +169,108 @@ class FaceDetector {
         return finalImage
     }
 
-    // Helper method to pixelate an image without creating multiple copies
-    private func pixelateImage(_ image: UIImage, targetBlockSize: Int = 8) -> UIImage? {
-        let scale = CGFloat(targetBlockSize) / max(image.size.width, image.size.height)
-        let smallSize = CGSize(width: image.size.width * scale, height: image.size.height * scale)
+    // Enhanced pixelate method following the specific algorithm:
+    // 1. Scale down to 8x8
+    // 2. Add noise (25% probability of black/white pixels)
+    // 3. Draw eye blackout line if eyes are detected
+    // 4. Scale back up to original size
+    private func pixelateImage(_ image: UIImage, face: DetectedFace, targetBlockSize: Int = 8) -> UIImage? {
+        // Step 1: Scale down to 8x8
+        let smallSize = CGSize(width: targetBlockSize, height: targetBlockSize)
 
-        // Downscale
         UIGraphicsBeginImageContextWithOptions(smallSize, false, 1.0)
         defer { UIGraphicsEndImageContext() }
 
+        // Draw the image scaled down
         image.draw(in: CGRect(origin: .zero, size: smallSize))
         guard let smallImage = UIGraphicsGetImageFromCurrentImageContext() else { return nil }
 
-        // Upscale
+        // Step 2: Add noise - create a new context to modify the small image
+        UIGraphicsBeginImageContextWithOptions(smallSize, false, 1.0)
+        guard let noiseContext = UIGraphicsGetCurrentContext() else { return nil }
+        defer { UIGraphicsEndImageContext() }
+
+        // Draw the scaled down image first
+        smallImage.draw(at: .zero)
+
+        // Add random noise (50% probability)
+        let noiseProbability: Float = 0.50
+
+        for y in 0..<targetBlockSize {
+            for x in 0..<targetBlockSize {
+                if Float.random(in: 0...1) <= noiseProbability {
+                    let color = Bool.random() ? UIColor.black : UIColor.white
+                    color.setFill()
+                    noiseContext.fill(CGRect(x: x, y: y, width: 1, height: 1))
+                }
+            }
+        }
+
+        // Step 3: Draw eye blackout line if eyes are detected
+        if let leftEye = face.leftEye, let rightEye = face.rightEye {
+            // Convert eye positions from original face coordinates to 8x8 coordinates
+            let faceRect = face.bounds
+            let leftEyeInFace = CGPoint(
+                x: leftEye.x - faceRect.origin.x,
+                y: leftEye.y - faceRect.origin.y
+            )
+            let rightEyeInFace = CGPoint(
+                x: rightEye.x - faceRect.origin.x,
+                y: rightEye.y - faceRect.origin.y
+            )
+
+            let leftEyeInSmall = CGPoint(
+                x: leftEyeInFace.x * CGFloat(targetBlockSize) / faceRect.width,
+                y: leftEyeInFace.y * CGFloat(targetBlockSize) / faceRect.height
+            )
+            let rightEyeInSmall = CGPoint(
+                x: rightEyeInFace.x * CGFloat(targetBlockSize) / faceRect.width,
+                y: rightEyeInFace.y * CGFloat(targetBlockSize) / faceRect.height
+            )
+
+            // Draw black line from edge to edge at eye level
+            UIColor.black.setStroke()
+            noiseContext.setLineWidth(1.0)
+
+            if leftEyeInSmall.x >= 0 && leftEyeInSmall.x < CGFloat(targetBlockSize) &&
+               leftEyeInSmall.y >= 0 && leftEyeInSmall.y < CGFloat(targetBlockSize) &&
+               rightEyeInSmall.x >= 0 && rightEyeInSmall.x < CGFloat(targetBlockSize) &&
+               rightEyeInSmall.y >= 0 && rightEyeInSmall.y < CGFloat(targetBlockSize) {
+                // Draw line from left edge to right edge at the eye level
+                noiseContext.move(to: CGPoint(x: 0, y: leftEyeInSmall.y))
+                noiseContext.addLine(to: CGPoint(x: CGFloat(targetBlockSize - 1), y: rightEyeInSmall.y))
+                noiseContext.strokePath()
+            } else {
+                // If both eyes aren't in bounds, draw individual points
+                if leftEyeInSmall.x >= 0 && leftEyeInSmall.x < CGFloat(targetBlockSize) &&
+                   leftEyeInSmall.y >= 0 && leftEyeInSmall.y < CGFloat(targetBlockSize) {
+                    UIColor.black.setFill()
+                    noiseContext.fill(CGRect(x: Int(leftEyeInSmall.x), y: Int(leftEyeInSmall.y), width: 1, height: 1))
+                }
+
+                if rightEyeInSmall.x >= 0 && rightEyeInSmall.x < CGFloat(targetBlockSize) &&
+                   rightEyeInSmall.y >= 0 && rightEyeInSmall.y < CGFloat(targetBlockSize) {
+                    UIColor.black.setFill()
+                    noiseContext.fill(CGRect(x: Int(rightEyeInSmall.x), y: Int(rightEyeInSmall.y), width: 1, height: 1))
+                }
+            }
+        }
+
+        guard let noisySmallImage = UIGraphicsGetImageFromCurrentImageContext() else { return nil }
+
+        // Step 4: Scale back up to original size
         UIGraphicsBeginImageContextWithOptions(image.size, false, 1.0)
         defer { UIGraphicsEndImageContext() }
 
-        smallImage.draw(in: CGRect(origin: .zero, size: image.size), blendMode: .normal, alpha: 1.0)
+        noisySmallImage.draw(in: CGRect(origin: .zero, size: image.size))
 
         return UIGraphicsGetImageFromCurrentImageContext()
     }
 
-    // Helper to apply blur without multiple intermediate images
-    private func applyBlur(to image: UIImage, radius: Float) -> UIImage? {
-        guard let ciImage = CIImage(image: image) else { return nil }
 
-        guard let filter = CIFilter(name: "CIGaussianBlur") else { return nil }
-        filter.setValue(ciImage, forKey: kCIInputImageKey)
-        filter.setValue(radius, forKey: kCIInputRadiusKey)
-
-        guard let outputCIImage = filter.outputImage else { return nil }
-
-        let context = CIContext(options: [.useSoftwareRenderer: false])
-        guard let cgImage = context.createCGImage(outputCIImage, from: outputCIImage.extent) else { return nil }
-
-        return UIImage(cgImage: cgImage)
+    // Pixelate faces with default pixelate mode
+    func pixelateFaces(in image: UIImage, faces: [DetectedFace]) -> UIImage? {
+        return maskFaces(in: image, faces: faces, modes: [.pixelate])
     }
 
-    // Apply noise directly to a context
-    private func applyNoiseDirectly(to context: CGContext, in rect: CGRect) {
-        let width = Int(rect.width)
-        let height = Int(rect.height)
-
-        // Define noise density
-        let noiseDensity = 0.3
-
-        // Generate noise points directly on the context
-        for y in 0 ..< height {
-            for x in 0 ..< width {
-                var randomByte: UInt8 = 0
-                _ = SecRandomCopyBytes(kSecRandomDefault, 1, &randomByte)
-
-                if Double(randomByte) / 255.0 < noiseDensity {
-                    let randomColor = randomByte > 127 ? UIColor.black : UIColor.white
-                    context.setFillColor(randomColor.cgColor)
-                    context.fill(CGRect(x: rect.minX + CGFloat(x), y: rect.minY + CGFloat(y), width: 1, height: 1))
-                }
-            }
-        }
-    }
-
-    // Blur faces with default blur mode
-    func blurFaces(in image: UIImage, faces: [DetectedFace]) -> UIImage? {
-        return maskFaces(in: image, faces: faces, modes: [.blur])
-    }
-
-    // MARK: - Face Masking Implementations
-
-    // Blackout a region of the image
-    private func blackout(image: UIImage, rect: CGRect) -> UIImage? {
-        UIGraphicsBeginImageContextWithOptions(image.size, false, image.scale)
-        defer { UIGraphicsEndImageContext() }
-
-        image.draw(at: .zero)
-
-        guard let context = UIGraphicsGetCurrentContext() else {
-            return nil
-        }
-
-        // Fill the rect with black
-        context.setFillColor(UIColor.black.cgColor)
-        context.fill(rect)
-
-        return UIGraphicsGetImageFromCurrentImageContext()
-    }
-
-    // Pixelate a region of the image
-    private func pixelate(image: UIImage, rect: CGRect, targetBlockSize: Int = 8, addNoise: Bool = true) -> UIImage? {
-        UIGraphicsBeginImageContextWithOptions(image.size, false, image.scale)
-        defer { UIGraphicsEndImageContext() }
-
-        image.draw(at: .zero)
-
-        guard let context = UIGraphicsGetCurrentContext(),
-              let cgImage = image.cgImage,
-              let croppedCGImage = cgImage.cropping(to: rect)
-        else {
-            return nil
-        }
-
-        // Create a face image
-        let faceImage = UIImage(cgImage: croppedCGImage)
-
-        // Step 1: Create a small pixelated version
-        let scale = CGFloat(targetBlockSize) / max(rect.width, rect.height)
-        let smallSize = CGSize(width: rect.width * scale, height: rect.height * scale)
-
-        UIGraphicsBeginImageContextWithOptions(smallSize, false, 1.0)
-        faceImage.draw(in: CGRect(origin: .zero, size: smallSize))
-        let smallImage = UIGraphicsGetImageFromCurrentImageContext()
-        UIGraphicsEndImageContext()
-
-        guard var smallImage = smallImage else { return nil }
-
-        // Step 2: Optionally add noise to the small image
-        if addNoise {
-            UIGraphicsBeginImageContextWithOptions(smallSize, false, 1.0)
-            smallImage.draw(at: .zero)
-            let noiseContext = UIGraphicsGetCurrentContext()!
-
-            // Use SecRandomCopyBytes for cryptographically secure random numbers
-            let noiseProbability = 0.25
-            var randomBytes = [UInt8](repeating: 0, count: 1)
-
-            for y in 0 ..< Int(smallSize.height) {
-                for x in 0 ..< Int(smallSize.width) {
-                    // Get random byte for probability check
-                    _ = SecRandomCopyBytes(kSecRandomDefault, 1, &randomBytes)
-                    let randValue = Float(randomBytes[0]) / 255.0
-
-                    if randValue <= Float(noiseProbability) {
-                        // Get another random byte for color determination
-                        _ = SecRandomCopyBytes(kSecRandomDefault, 1, &randomBytes)
-
-                        let color = (randomBytes[0] > 127) ? UIColor.black : UIColor.white
-                        noiseContext.setFillColor(color.cgColor)
-                        noiseContext.fill(CGRect(x: x, y: y, width: 1, height: 1))
-                    }
-                }
-            }
-
-            smallImage = UIGraphicsGetImageFromCurrentImageContext() ?? smallImage
-            UIGraphicsEndImageContext()
-        }
-
-        // Step 3: Scale back up to original size
-        UIGraphicsBeginImageContextWithOptions(rect.size, false, 1.0)
-        smallImage.draw(in: CGRect(origin: .zero, size: rect.size))
-        let pixelatedImage = UIGraphicsGetImageFromCurrentImageContext()
-        UIGraphicsEndImageContext()
-
-        // Step 4: Draw pixelated image on original
-        context.saveGState()
-        context.clip(to: rect)
-        pixelatedImage?.draw(at: rect.origin)
-        context.restoreGState()
-
-        return UIGraphicsGetImageFromCurrentImageContext()
-    }
-
-    // Apply a Gaussian blur to a region of the image
-    private func blur(image: UIImage, rect: CGRect, radius: Float = 25.0, rounds: Int = 10) -> UIImage? {
-        UIGraphicsBeginImageContextWithOptions(image.size, false, image.scale)
-        defer { UIGraphicsEndImageContext() }
-
-        image.draw(at: .zero)
-
-        guard let currentContext = UIGraphicsGetCurrentContext(),
-              let cgImage = image.cgImage,
-              let croppedCGImage = cgImage.cropping(to: rect)
-        else {
-            return nil
-        }
-
-        // Create a CIImage from the cropped CGImage
-        var ciImage = CIImage(cgImage: croppedCGImage)
-        let ciContext = CIContext()
-
-        // Create a blur filter
-        guard let blurFilter = CIFilter(name: "CIGaussianBlur") else {
-            return nil
-        }
-
-        // Apply blur multiple times for stronger effect
-        let safeRadius = min(max(radius, 0), 100) // Clamp radius between 0 and 100
-
-        for _ in 0 ..< max(rounds, 1) {
-            blurFilter.setValue(ciImage, forKey: kCIInputImageKey)
-            blurFilter.setValue(safeRadius, forKey: kCIInputRadiusKey)
-
-            if let outputImage = blurFilter.outputImage {
-                // For subsequent rounds, we use the output as the next input
-                ciImage = outputImage
-            }
-        }
-
-        // Convert back to CGImage
-        if let outputCGImage = ciContext.createCGImage(ciImage, from: ciImage.extent) {
-            // Draw the blurred image onto the original
-            currentContext.saveGState()
-            currentContext.clip(to: rect)
-            UIImage(cgImage: outputCGImage).draw(in: rect)
-            currentContext.restoreGState()
-        }
-
-        return UIGraphicsGetImageFromCurrentImageContext()
-    }
-
-    // Apply random noise to a region of the image
-    private func noise(image: UIImage, rect: CGRect) -> UIImage? {
-        UIGraphicsBeginImageContextWithOptions(image.size, false, image.scale)
-        defer { UIGraphicsEndImageContext() }
-
-        image.draw(at: .zero)
-
-        guard let context = UIGraphicsGetCurrentContext() else {
-            return nil
-        }
-
-        // Fill the area with noise
-        context.saveGState()
-        context.clip(to: rect)
-
-        let safeRect = coerceRectToImage(rect: rect, image: image)
-        let width = Int(safeRect.width)
-        let height = Int(safeRect.height)
-
-        // Create a buffer to hold random color data
-        var randomData = [UInt8](repeating: 0, count: width * height * 4) // 4 bytes per pixel (RGBA)
-
-        // Fill buffer with random values
-        for i in stride(from: 0, to: randomData.count, by: 4) {
-            var randomBytes = [UInt8](repeating: 0, count: 4)
-            _ = SecRandomCopyBytes(kSecRandomDefault, 4, &randomBytes)
-
-            randomData[i] = randomBytes[0] // R
-            randomData[i + 1] = randomBytes[1] // G
-            randomData[i + 2] = randomBytes[2] // B
-            randomData[i + 3] = 255 // A (full opacity)
-        }
-
-        // Create a CGImage from the random data
-        if let provider = CGDataProvider(data: Data(randomData) as CFData),
-           let colorSpace = CGColorSpace(name: CGColorSpace.sRGB),
-           let noiseImage = CGImage(
-               width: width,
-               height: height,
-               bitsPerComponent: 8,
-               bitsPerPixel: 32,
-               bytesPerRow: width * 4,
-               space: colorSpace,
-               bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue),
-               provider: provider,
-               decode: nil,
-               shouldInterpolate: false,
-               intent: .defaultIntent
-           )
-        {
-            context.draw(noiseImage, in: safeRect)
-        }
-
-        context.restoreGState()
-
-        return UIGraphicsGetImageFromCurrentImageContext()
-    }
 }

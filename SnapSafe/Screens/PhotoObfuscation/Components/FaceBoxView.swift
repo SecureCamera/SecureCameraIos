@@ -9,64 +9,34 @@ import SwiftUI
 import Foundation
 import UIKit
 
+
 struct FaceBoxView: View {
     let face: DetectedFace
     let originalSize: CGSize
     let displaySize: CGSize
     var onTap: () -> Void
-    
+
     // Get the scaled rectangle based on the display size
     private var scaledRect: CGRect {
-        face.scaledRect(originalSize: originalSize, displaySize: displaySize)
+        let rect = face.scaledRect(originalSize: originalSize, displaySize: displaySize)
+        return rect
     }
     
     var body: some View {
         ZStack {
+            // Invisible rectangle to make the entire area tappable
+            Rectangle()
+                .fill(Color.clear)
+                .contentShape(Rectangle())
+
             // Draw the rectangle border with color based on selection state
             Rectangle()
                 .stroke(face.isSelected ? Color.green : Color.red, lineWidth: 3)
-                .frame(
-                    width: scaledRect.width,
-                    height: scaledRect.height
-                )
-            
-            // Show resize handles for selected faces
-            if face.isSelected {
-                Group {
-                    // Corner handles
-                    Circle()
-                        .fill(Color.white)
-                        .frame(width: 12, height: 12)
-                        .position(x: scaledRect.minX, y: scaledRect.minY)
-                    
-                    Circle()
-                        .fill(Color.white)
-                        .frame(width: 12, height: 12)
-                        .position(x: scaledRect.maxX, y: scaledRect.minY)
-                    
-                    Circle()
-                        .fill(Color.white)
-                        .frame(width: 12, height: 12)
-                        .position(x: scaledRect.minX, y: scaledRect.maxY)
-                    
-                    Circle()
-                        .fill(Color.white)
-                        .frame(width: 12, height: 12)
-                        .position(x: scaledRect.maxX, y: scaledRect.maxY)
-                }
-                .overlay(
-                    Circle()
-                        .stroke(Color.black, lineWidth: 1)
-                        .frame(width: 12, height: 12)
-                )
-            }
+
         }
-        .position(
-            x: scaledRect.midX,
-            y: scaledRect.midY
-        )
-        .contentShape(Rectangle())
-        .onTapGesture(perform: onTap)
+        .onTapGesture {
+            onTap()
+        }
     }
 }
 
