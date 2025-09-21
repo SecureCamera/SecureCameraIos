@@ -362,6 +362,7 @@ final class PhotoObfuscationViewModel: ObservableObject {
 
     func startAddingBoxes() {
         isAddingBox = true
+        createBoxAtCenter()
     }
 
     func stopAddingBoxes() {
@@ -370,6 +371,15 @@ final class PhotoObfuscationViewModel: ObservableObject {
 
     func clearManualBoxes() {
         detectedFaces.removeAll { $0.isUserCreated }
+    }
+
+    func createBoxAtCenter() {
+        guard let img = currentImage else { return }
+        let centerPoint = CGPoint(x: img.size.width / 2, y: img.size.height / 2)
+        let size: CGFloat = 900
+        let rect = CGRect(x: centerPoint.x - size/2, y: centerPoint.y - size/2, width: size, height: size)
+        let clamped = clamp(rect, in: img.size)
+        detectedFaces.append(DetectedFace(bounds: clamped, isSelected: true, isUserCreated: true))
     }
     
     // MARK: - Private Methods

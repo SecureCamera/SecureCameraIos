@@ -146,30 +146,6 @@ struct PhotoObfuscationView: View {
                         .position(x: availableSize.width / 2, y: availableSize.height / 2)
                     }
 
-                    // Add box mode notice
-                    if viewModel.isAddingBox {
-                        VStack {
-                            Spacer()
-                            HStack {
-                                Spacer()
-                                VStack(spacing: 8) {
-                                    Image(systemName: "plus.app")
-                                        .font(.system(size: 24))
-                                        .foregroundColor(.white)
-
-                                    Text("Tap to add box")
-                                        .font(.headline)
-                                        .foregroundColor(.white)
-                                        .padding(.horizontal, 16)
-                                        .padding(.vertical, 8)
-                                        .background(Color.black.opacity(0.7))
-                                        .cornerRadius(20)
-                                }
-                                Spacer()
-                            }
-                            .padding(.bottom, 100) // Above the toolbar
-                        }
-                    }
                 }
             }
 
@@ -380,6 +356,23 @@ private struct ObfuscationControlsView: View {
                         .frame(maxWidth: .infinity)
                         .frame(height: 60)
                     }
+
+                    // Add Box button - always show when in adding box mode
+                    Button(action: onAddBox) {
+                        VStack(spacing: 4) {
+                            Image(systemName: "plus.app")
+                                .font(.system(size: 22))
+                                .frame(height: 22)
+                            Text("Add Box")
+                                .font(.caption2)
+                                .multilineTextAlignment(.center)
+                        }
+                        .foregroundColor(.green)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 60)
+                    }
+                    .disabled(isProcessing)
+                    .opacity(isProcessing ? 0.6 : 1.0)
 
                     // Obscure areas button (conditional - only when manual boxes are selected)
                     if hasManualBoxesSelected {

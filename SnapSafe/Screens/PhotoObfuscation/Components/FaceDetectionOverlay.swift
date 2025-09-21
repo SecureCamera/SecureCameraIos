@@ -52,16 +52,6 @@ public struct FaceDetectionOverlay: View {
 
     public var body: some View {
         ZStack {
-            // Tap anywhere to add a box when "add mode" is enabled
-            if isAddingBox {
-                Rectangle()
-                    .fill(Color.clear)
-                    .contentShape(Rectangle())
-                    .gesture(
-                        DragGesture(minimumDistance: 0)
-                            .onEnded { g in onCreateBox(g.location) }
-                    )
-            }
 
             ForEach(faces) { face in
                 let rect = face.scaledRect(originalSize: originalSize, displaySize: displaySize)
