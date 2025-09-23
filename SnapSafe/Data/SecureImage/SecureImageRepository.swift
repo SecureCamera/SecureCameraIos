@@ -37,13 +37,37 @@ public class SecureImageRepository {
     // MARK: - Directory Management
     
     func getGalleryDirectory() -> URL {
-        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        return documentsPath.appendingPathComponent(Self.photosDir)
+        let appSupportPath = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        var galleryDir = appSupportPath.appendingPathComponent(Self.photosDir)
+        
+        // Create directory and exclude from backup
+        do {
+            try FileManager.default.createDirectory(at: galleryDir, withIntermediateDirectories: true, attributes: nil)
+            var resourceValues = URLResourceValues()
+            resourceValues.isExcludedFromBackup = true
+            try galleryDir.setResourceValues(resourceValues)
+        } catch {
+            print("Failed to setup gallery directory: \(error)")
+        }
+        
+        return galleryDir
     }
     
     func getDecoyDirectory() -> URL {
-        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        return documentsPath.appendingPathComponent(Self.decoysDir)
+        let appSupportPath = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        var decoyDir = appSupportPath.appendingPathComponent(Self.decoysDir)
+        
+        // Create directory and exclude from backup
+        do {
+            try FileManager.default.createDirectory(at: decoyDir, withIntermediateDirectories: true, attributes: nil)
+            var resourceValues = URLResourceValues()
+            resourceValues.isExcludedFromBackup = true
+            try decoyDir.setResourceValues(resourceValues)
+        } catch {
+            print("Failed to setup decoy directory: \(error)")
+        }
+        
+        return decoyDir
     }
     
     private func getThumbnailsDirectory() -> URL {

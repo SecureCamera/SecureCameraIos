@@ -183,9 +183,8 @@ final class HardwareEncryptionScheme: EncryptionScheme {
         // Delete all DEKs
         let keyDir = getKeyDirectory()
         do {
-            let contents = try FileManager.default.contentsOfDirectory(at: keyDir, 
-                                                                       includingPropertiesForKeys: nil)
-            let dekFiles = contents.filter { file in 
+            let contents = try FileManager.default.contentsOfDirectory(at: keyDir, includingPropertiesForKeys: nil)
+            let dekFiles = contents.filter { file in
                 file.lastPathComponent.hasPrefix(Self.dekFilenamePrefix)
             }
             
@@ -528,11 +527,17 @@ private extension HardwareEncryptionScheme {
     // MARK: - File Management
     
     func getKeyDirectory() -> URL {
-        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-        let keyDir = documentsPath.appendingPathComponent(Self.dekDirectory)
+        let appSupportPath = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        var keyDir = appSupportPath.appendingPathComponent(Self.dekDirectory)
         
-        if !FileManager.default.fileExists(atPath: keyDir.path) {
-            try? FileManager.default.createDirectory(at: keyDir, withIntermediateDirectories: true)
+        // Create directory and exclude from backup
+        do {
+            try FileManager.default.createDirectory(at: keyDir, withIntermediateDirectories: true, attributes: nil)
+            var resourceValues = URLResourceValues()
+            resourceValues.isExcludedFromBackup = true
+            try keyDir.setResourceValues(resourceValues)
+        } catch {
+            print("Failed to setup key directory: \(error)")
         }
         
         return keyDir
