@@ -82,6 +82,9 @@ public final class UserDefaultsSettingsDataSource: SettingsDataSource {
         if store.string(forKey: PrefKeys.cipherKey.rawValue) == nil {
             store.set(Defaults.cipherKey, forKey: PrefKeys.cipherKey.rawValue)
         }
+        if store.object(forKey: PrefKeys.sessionTimeoutMs.rawValue) == nil {
+            store.set(Int(Defaults.sessionTimeoutMs), forKey: PrefKeys.sessionTimeoutMs.rawValue)
+        }
 
         // Initialize subjects from stored values (still using local `store`)
         let introStored: Bool = {

@@ -59,8 +59,10 @@ final class ContentViewModel: ObservableObject {
     
     func handleAuthenticationChange(_ authenticated: Bool) {
         if authenticated {
-            // Reset the security overlay auth state when authenticated
-            securityViewModel.authenticationComplete()
+            Task { @MainActor in
+                // Reset the security overlay auth state when authenticated
+                await securityViewModel.authenticationComplete()
+            }
         }
     }
     

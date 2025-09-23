@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import FactoryKit
 
 // MARK: - Navigation Destinations
 
@@ -23,6 +24,10 @@ enum AppDestination: Hashable {
 
 @MainActor
 final class AppNavigationState: ObservableObject {
+    
+    @Injected(\.authorizationRepository)
+    private var authorizationRepository: AuthorizationRepository
+    
     @Published var navigationPath = NavigationPath()
     @Published var presentedSheet: AppDestination?
     @Published var presentedFullScreenCover: AppDestination?
@@ -30,6 +35,8 @@ final class AppNavigationState: ObservableObject {
     // MARK: - Navigation Methods
     
     func navigate(to destination: AppDestination) {
+        authorizationRepository.keepAliveSession()
+        
         navigationPath.append(destination)
     }
     

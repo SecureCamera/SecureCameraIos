@@ -127,7 +127,7 @@ final class PINVerificationViewModel: ObservableObject {
             await setCurrentFailedAttempts(0)
             
             // Notify SecurityOverlayViewModel that authentication is complete
-            securityViewModel.authenticationComplete()
+            await securityViewModel.authenticationComplete()
             
             // Update UI state
             showError = false

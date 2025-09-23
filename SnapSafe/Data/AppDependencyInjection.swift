@@ -193,4 +193,11 @@ extension Container {
     var pinStrengthCheckUseCase: Factory<PinStrengthCheckUseCase> {
         self { PinStrengthCheckUseCase() }
     }
+    
+    var invalidateSessionUseCase: Factory<InvalidateSessionUseCase> {
+        self { @MainActor in InvalidateSessionUseCase(
+            imageRepository: self.secureImageRepository(),
+            authManager: self.authorizationRepository(),
+        ) }
+    }
 }

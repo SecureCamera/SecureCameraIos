@@ -52,6 +52,9 @@ final class SecurityOverlayViewModel: ObservableObject {
 
     @Injected(\.settingsDataSource)
     private var settings: SettingsDataSource
+    
+    @Injected(\.invalidateSessionUseCase)
+    private var invalidateSessionUseCase: InvalidateSessionUseCase
 
     private let screenCaptureManager = ScreenCaptureManager.shared
 
@@ -76,12 +79,12 @@ final class SecurityOverlayViewModel: ObservableObject {
                 await handleWillEnterForeground()
             case .background:
                 isInactive = false
-                handleDidEnterBackground()
+                await handleDidEnterBackground()
             case .inactive:
                 isInactive = true
                 // Dismiss any active alerts before showing privacy shield
                 dismissAllAlerts = true
-                updateOverlayState() // Show privacy shield for task switcher
+                await updateOverlayState() // Show privacy shield for task switcher
                 
                 // Reset dismiss flag after a brief delay
                 Task {
@@ -96,19 +99,19 @@ final class SecurityOverlayViewModel: ObservableObject {
         }
     }
 
-    func authenticationComplete() {
+    func authenticationComplete() async {
         wasInBackground = false
         needsAuthenticationAfterBackground = false
-        updateOverlayState()
+        await updateOverlayState()
     }
 
-    func resetState() {
+    func resetState() async {
         dismissAllSheets = false
         dismissAllAlerts = false
         wasInBackground = false
         needsAuthenticationAfterBackground = false
         isInactive = false
-        updateOverlayState()
+        await updateOverlayState()
     }
 
     // MARK: - Private Methods
@@ -118,7 +121,9 @@ final class SecurityOverlayViewModel: ObservableObject {
         authorizationRepository.isAuthorized
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
-                self?.updateOverlayState()
+                Task { @MainActor in
+                    await self?.updateOverlayState()
+                }
             }
             .store(in: &cancellables)
 
@@ -126,7 +131,9 @@ final class SecurityOverlayViewModel: ObservableObject {
         settings.hasCompletedIntro
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
-                self?.updateOverlayState()
+                Task { @MainActor in
+                    await self?.updateOverlayState()
+                }
             }
             .store(in: &cancellables)
 
@@ -134,7 +141,9 @@ final class SecurityOverlayViewModel: ObservableObject {
         screenCaptureManager.$isScreenBeingRecorded
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
-                self?.updateOverlayState()
+                Task { @MainActor in
+                    await self?.updateOverlayState()
+                }
             }
             .store(in: &cancellables)
     }
@@ -144,7 +153,7 @@ final class SecurityOverlayViewModel: ObservableObject {
         NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification)
             .sink { [weak self] _ in
                 Task { @MainActor in
-                    self?.handleDidEnterBackground()
+                    await self?.handleDidEnterBackground()
                 }
             }
             .store(in: &cancellables)
@@ -158,10 +167,10 @@ final class SecurityOverlayViewModel: ObservableObject {
             .store(in: &cancellables)
     }
 
-    private func handleDidEnterBackground() {
+    private func handleDidEnterBackground() async {
         Logger.security.debug("SecurityOverlay: App entered background")
         wasInBackground = true
-        updateOverlayState()
+        await updateOverlayState()
     }
 
     private func handleWillEnterForeground() async {
@@ -171,19 +180,18 @@ final class SecurityOverlayViewModel: ObservableObject {
 
         // Get current values from repositories
         let hasCompletedIntro = getCurrentValue(from: settings.hasCompletedIntro)
-        let isAuthorized = getCurrentValue(from: authorizationRepository.isAuthorized)
-
-        if wasInBackground, hasCompletedIntro, isAuthorized {
+        let hasValidSession = await authorizationRepository.checkSessionValidity()
+        
+        if !hasValidSession, wasInBackground, hasCompletedIntro {
             Logger.security.info("SecurityOverlay: Requiring authentication after background")
-
+            
+            invalidateSessionUseCase.invalidateSession()
+            
             // Set authentication required flag
             needsAuthenticationAfterBackground = true
 
             // Dismiss sheets first
             dismissAllSheets = true
-
-            // Revoke authorization to trigger authentication requirement
-            authorizationRepository.revokeAuthorization()
 
             // Reset dismiss flag after a short delay
             Task {
@@ -199,11 +207,11 @@ final class SecurityOverlayViewModel: ObservableObject {
 
         // Update last active time regardless
         authorizationRepository.keepAliveSession()
-        updateOverlayState()
+        await updateOverlayState()
     }
 
-    private func updateOverlayState() {
-        let states = determineActiveStates()
+    private func updateOverlayState() async {
+        let states = await determineActiveStates()
         let highestPriorityState = states.max(by: { $0.priority < $1.priority }) ?? .normal
 
         if currentOverlayState != highestPriorityState {
@@ -215,7 +223,7 @@ final class SecurityOverlayViewModel: ObservableObject {
         }
     }
 
-    private func determineActiveStates() -> [SecurityOverlayState] {
+    private func determineActiveStates() async -> [SecurityOverlayState] {
         var states: [SecurityOverlayState] = [.normal]
 
         // Screen recording takes highest priority
@@ -231,7 +239,7 @@ final class SecurityOverlayViewModel: ObservableObject {
 
         // Get current values from repositories
         let hasCompletedIntro = getCurrentValue(from: settings.hasCompletedIntro)
-        let isAuthorized = getCurrentValue(from: authorizationRepository.isAuthorized)
+        let isAuthorized = await authorizationRepository.checkSessionValidity()
 
         // General authentication required (for normal PIN verification flow)
         if hasCompletedIntro && !isAuthorized {
