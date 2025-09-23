@@ -77,6 +77,16 @@ struct PINSetupView: View {
                         .padding(.top, 5)
                 }
                 
+                HStack {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundColor(.orange)
+                    Text("Choose a different PIN than the one used to unlock this device!")
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .padding(.horizontal, 30)
+                .padding(.bottom, 20)
+                
                 Button(action: {
                     isPINFieldFocused = false
                     isConfirmPINFieldFocused = false
@@ -106,13 +116,6 @@ struct PINSetupView: View {
                 .padding(.top, 20)
                 
                 Spacer()
-                
-                Text("Your PIN will be required when opening the app and when it returns from background.")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 30)
-                    .padding(.bottom, 20)
             }
             .navigationBarTitle("", displayMode: .inline)
             .navigationBarHidden(true)
