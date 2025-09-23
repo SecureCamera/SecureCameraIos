@@ -148,3 +148,6 @@ public final class AuthorizationRepository {
         lastKeepAlive = .distantPast
     }
 }
+
+let MIN_PIN_LENGTH = 4
+let MAX_PIN_LENGTH = 10

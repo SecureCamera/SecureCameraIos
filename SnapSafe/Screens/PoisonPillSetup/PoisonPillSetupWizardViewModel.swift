@@ -32,8 +32,6 @@ enum PoisonPillWizardStep: Int, CaseIterable {
 
 @MainActor
 final class PoisonPillSetupWizardViewModel: ObservableObject {
-    let minPinLength = 4
-    let maxPinLength = 10
     
     // MARK: - Published Properties
     
@@ -72,15 +70,15 @@ final class PoisonPillSetupWizardViewModel: ObservableObject {
         filtered = filtered.filter { $0.isNumber }
         
         // Limit to max digits
-        if filtered.count > maxPinLength {
-            filtered = String(filtered.prefix(maxPinLength))
+        if filtered.count > MAX_PIN_LENGTH {
+            filtered = String(filtered.prefix(MAX_PIN_LENGTH))
         }
         
         return filtered
     }
     
     func isPinLengthValid(_ length: Int) -> Bool {
-        return length >= minPinLength && length <= maxPinLength
+        return length >= MIN_PIN_LENGTH && length <= MAX_PIN_LENGTH
     }
     
     var progressValue: Double {

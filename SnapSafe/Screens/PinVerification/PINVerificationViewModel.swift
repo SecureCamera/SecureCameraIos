@@ -42,11 +42,11 @@ final class PINVerificationViewModel: ObservableObject {
     // MARK: - Computed Properties
     
     var isUnlockButtonDisabled: Bool {
-        pin.count < 4 || isLoading || backoffSeconds > 0
+        pin.count < MIN_PIN_LENGTH || isLoading || backoffSeconds > 0
     }
     
     var unlockButtonBackgroundColor: Color {
-        if pin.count >= 4 && !isLoading && backoffSeconds == 0 {
+        if pin.count >= MIN_PIN_LENGTH && !isLoading && backoffSeconds == 0 {
             // Red for final attempt, blue for normal attempts
             return isLastAttempt ? Color.red : Color.blue
         } else {
@@ -98,10 +98,10 @@ final class PINVerificationViewModel: ObservableObject {
     }
     
     func updatePIN(_ newValue: String) {
-        // Limit to 4 digits
+        // Limit to 10 digits
         var filteredValue = newValue
-        if filteredValue.count > 4 {
-            filteredValue = String(filteredValue.prefix(4))
+        if filteredValue.count > MAX_PIN_LENGTH {
+            filteredValue = String(filteredValue.prefix(MAX_PIN_LENGTH))
         }
         
         // Only allow numbers

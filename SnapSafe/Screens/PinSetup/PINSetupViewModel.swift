@@ -12,9 +12,6 @@ import FactoryKit
 @MainActor
 final class PINSetupViewModel: ObservableObject {
     
-    private let maxLength: Int = 10
-    private let minLength: Int = 4
-    
     // MARK: - Published Properties
     @Published var pin: String = ""
     @Published var confirmPin: String = ""
@@ -24,8 +21,8 @@ final class PINSetupViewModel: ObservableObject {
     
     // MARK: - Computed Properties
     var isPINValid: Bool {
-        pin.count >= minLength && pin.count <= maxLength
-        && confirmPin.count >= minLength && confirmPin.count <= maxLength
+        pin.count >= MIN_PIN_LENGTH && pin.count <= MAX_PIN_LENGTH
+        && confirmPin.count >= MIN_PIN_LENGTH && confirmPin.count <= MAX_PIN_LENGTH
     }
     
     var canSubmit: Bool {
@@ -61,8 +58,8 @@ final class PINSetupViewModel: ObservableObject {
         filtered = filtered.filter { $0.isNumber }
         
         // Limit to max digits
-        if filtered.count > maxLength {
-            filtered = String(filtered.prefix(maxLength))
+        if filtered.count > MAX_PIN_LENGTH {
+            filtered = String(filtered.prefix(MAX_PIN_LENGTH))
         }
         
         return filtered
