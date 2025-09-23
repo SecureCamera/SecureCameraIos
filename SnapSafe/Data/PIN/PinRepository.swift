@@ -29,3 +29,6 @@ public protocol PinRepository {
     func activatePoisonPill() async
     func removePoisonPillPin() async
 }
+
+let MIN_PIN_LENGTH = 4
+let MAX_PIN_LENGTH = 10
