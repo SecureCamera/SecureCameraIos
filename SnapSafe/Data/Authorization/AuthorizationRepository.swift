@@ -77,14 +77,12 @@ public final class AuthorizationRepository {
     /// Calculates remaining backoff in seconds based on failed attempts and last failed timestamp
     public func calculateRemainingBackoffSeconds() async -> Int {
         let failedAttempts = await getFailedAttempts()
-        guard failedAttempts > 0 else { return 0 }
+        guard failedAttempts > 1 else { return 0 }
 
         let lastFailed = await getLastFailedAttemptTimestamp()
         guard lastFailed > 0 else { return 0 }
 
-        // Kotlin: (2 * 2^(failedAttempts - 1)) == 2^failedAttempts
-        // Cap to something reasonable if you later raise MAX_FAILED_ATTEMPTS.
-        let backoffSeconds = Int(pow(2.0, Double(failedAttempts))) // e.g., 1,2,4,8,...,1024
+        let backoffSeconds = Int(pow(2.0, Double(failedAttempts - 1)))
 
         let nowMs = Int64(clock.now.timeIntervalSince1970 * 1000.0)
         let elapsedSeconds = Int((nowMs - lastFailed) / 1000)
