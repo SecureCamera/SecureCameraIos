@@ -16,10 +16,9 @@ final class PINVerificationViewModel: ObservableObject {
     
     @Published var pin = ""
     @Published var showError = false
-    @Published var attempts = 0
     @Published var isLoading = false
     @Published var backoffSeconds = 0
-    @Published var currentFailedAttempts = 0
+    @Published var failedAttempts = 0
     
     // MARK: - Timer
     private var backoffTimer: Timer?
@@ -55,7 +54,7 @@ final class PINVerificationViewModel: ObservableObject {
     }
     
     var isLastAttempt: Bool {
-        currentFailedAttempts >= (AuthorizationRepository.MAX_FAILED_ATTEMPTS - 1)
+        failedAttempts >= (AuthorizationRepository.MAX_FAILED_ATTEMPTS - 1)
     }
     
     var unlockButtonText: String {
@@ -73,11 +72,11 @@ final class PINVerificationViewModel: ObservableObject {
     }
     
     var shouldShowAttemptsWarning: Bool {
-        currentFailedAttempts > 2
+        failedAttempts > 2
     }
     
     var attemptsWarningMessage: String {
-        let remaining = AuthorizationRepository.MAX_FAILED_ATTEMPTS - currentFailedAttempts
+        let remaining = AuthorizationRepository.MAX_FAILED_ATTEMPTS - failedAttempts
         return "Attempts remaining \(remaining)/\(AuthorizationRepository.MAX_FAILED_ATTEMPTS)"
     }
     
@@ -125,12 +124,7 @@ final class PINVerificationViewModel: ObservableObject {
             Logger.security.info("PIN verification successful")
             
             // Reset failed attempts counter on successful verification
-            attempts = 0
-            
-            // Update current failed attempts from repository after successful verification
-            Task {
-                await updateCurrentFailedAttempts()
-            }
+            await setCurrentFailedAttempts(0)
             
             // Notify SecurityOverlayViewModel that authentication is complete
             securityViewModel.authenticationComplete()
@@ -143,18 +137,18 @@ final class PINVerificationViewModel: ObservableObject {
         } else {
             // PIN verification failed
             showError = true
-            attempts += 1
+            await setCurrentFailedAttempts(failedAttempts+1)
             pin = ""
             
             Logger.security.warning("PIN verification failed", metadata: [
-                "attemptCount": .stringConvertible(attempts),
+                "attemptCount": .stringConvertible(failedAttempts),
                 "maxAttempts": .stringConvertible(AuthorizationRepository.MAX_FAILED_ATTEMPTS)
             ])
             
             // Check if we've reached the maximum failed attempts
-            if attempts >= AuthorizationRepository.MAX_FAILED_ATTEMPTS {
+            if failedAttempts >= AuthorizationRepository.MAX_FAILED_ATTEMPTS {
                 Logger.security.critical("Maximum failed PIN attempts reached, triggering security reset", metadata: [
-                    "attemptCount": .stringConvertible(attempts)
+                    "attemptCount": .stringConvertible(failedAttempts)
                 ])
                 
                 // Trigger security reset
@@ -162,6 +156,10 @@ final class PINVerificationViewModel: ObservableObject {
                     await securityResetUseCase.reset()
                 }
             } else {
+                Logger.security.info("Failed PIN verification", metadata: [
+                    "attemptCount": .stringConvertible(failedAttempts)
+                ])
+                
                 // Check for backoff time after failed attempt
                 Task {
                     await updateBackoffTime()
@@ -204,11 +202,16 @@ final class PINVerificationViewModel: ObservableObject {
     }
     
     private func updateCurrentFailedAttempts() async {
-        let failedAttempts = await authorizationRepository.getFailedAttempts()
+        let attempts = await authorizationRepository.getFailedAttempts()
         
         await MainActor.run {
-            self.currentFailedAttempts = failedAttempts
+            self.failedAttempts = attempts
         }
+    }
+    
+    private func setCurrentFailedAttempts(_ attempts: Int) async {
+        await authorizationRepository.setFailedAttempts(attempts)
+        self.failedAttempts = attempts
     }
     
     private func startBackoffTimer() {
