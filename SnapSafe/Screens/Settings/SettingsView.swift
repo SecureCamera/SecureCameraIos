@@ -110,7 +110,6 @@ struct SettingsView: View {
                         Text("5 minutes").tag(5)
                         Text("15 minutes").tag(15)
                         Text("30 minutes").tag(30)
-                        Text("Never").tag(0)
                     }
                     .onChange(of: viewModel.sessionTimeout) { _, newValue in
                         viewModel.updateSessionTimeout(newValue)
