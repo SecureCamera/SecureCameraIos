@@ -27,30 +27,24 @@ extension ExplanationStep {
     static let poisonPillSteps: [ExplanationStep] = [
         ExplanationStep(
             icon: "exclamationmark.triangle.fill",
-            title: "Emergency Security Feature",
+            title: "Setup Poison Pill",
             content: """
             What is a Poison Pill?
             
             A Poison Pill is a special emergency PIN that immediately deletes all your photos and encryption keys when entered, protecting your privacy in critical situations.
-            
-            An option of last resort
-            
-            This is your last line of defense when you have been coerced to unlock this app. You will lose all of your data, but the attack will also not get that data.
             """,
             iconColor: .orange
         ),
         
         ExplanationStep(
             icon: "person.fill.xmark",
-            title: "How It Works",
+            title: "When to use it",
             content: """
-            When to Use
-            
-            Use your Poison Pill PIN if someone forces you to unlock this app against your will.
+            This is your last line of defense when you have been coerced to unlock this app. You will lose all of your data, but the attack will also not get that data.
             
             What Happens
             
-            All photos, encryption keys, and sensitive data are permanently deleted. This action cannot be undone.
+            All photos, encryption keys, and sensitive data are permanently deleted.
             
             ⚠️ Warning: This is irreversible
             """,
@@ -59,23 +53,9 @@ extension ExplanationStep {
         
         ExplanationStep(
             icon: "photo.badge.plus",
-            title: "Decoy Photos Strategy",
+            title: "After Activation",
             content: """
-            Making It Less Suspicious
-            
-            In the case where you are coerced for your PIN, and you give over your Poison Pill PIN instead, it might be suspicious that there are no photos whatsoever in the Gallery.
-            
-            The Solution
-            
-            To solve this it is recommended you take several photos of various innocuous things, and then go into those photos in the Gallery, and mark them as "Decoy" photos.
-            
-            How It Works
-            
-            When your Poison Pill is activated, all photos EXCEPT for your Decoys will be deleted, leaving a less suspicious situation.
-            
-            💡 Pro Tip
-            
-            Either take photos of every day objects, or: take photos of something that might seem to an attacker to be of a sensetive nature, but that you will not suffer consequences for. This will justify the usage of a secure photo app in their mind.
+            Once entered, your Poison Pill PIN becomes your real PIN going forward. It is recommended to do a Security Reset of the app once the situation that forced you to use the Pill is over.
             """,
             iconColor: .orange
         )
