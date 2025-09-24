@@ -103,45 +103,6 @@ struct SettingsView: View {
                     }
                 }
 
-                // APP PIN SECTION
-                // TODO: changing your PIN ammounts to key rotation, which is not implemented yet
-//                Section(header: Text("App PIN"), footer: Text("Enter a new 4-digit PIN twice to change your app security PIN")) {
-//                    SecureField("New PIN (4 digits)", text: $viewModel.appPIN)
-//                        .keyboardType(.numberPad)
-//                        .autocorrectionDisabled(true)
-//                        .textContentType(.oneTimeCode) // Prevents keychain suggestions
-//                        .onChange(of: viewModel.appPIN) { _, newValue in
-//                            viewModel.updateAppPIN(newValue)
-//                        }
-//                    
-//                    SecureField("Confirm New PIN", text: $viewModel.confirmAppPIN)
-//                        .keyboardType(.numberPad)
-//                        .autocorrectionDisabled(true)
-//                        .textContentType(.oneTimeCode)
-//                        .onChange(of: viewModel.confirmAppPIN) { _, newValue in
-//                            viewModel.updateConfirmAppPIN(newValue)
-//                        }
-//                    
-//                    if viewModel.showPINError {
-//                        Text(viewModel.pinErrorMessage)
-//                            .foregroundColor(.red)
-//                            .font(.caption)
-//                            .padding(.vertical, 5)
-//                    }
-//                    
-//                    if viewModel.showPINSuccess {
-//                        Text("PIN updated successfully!")
-//                            .foregroundColor(.green)
-//                            .font(.caption)
-//                            .padding(.vertical, 5)
-//                    }
-//
-//                    Button("Update PIN") {
-//                        viewModel.resetAppPIN()
-//                    }
-//                    .disabled(viewModel.isUpdatePINButtonDisabled)
-//                }
-
                 // EMERGENCY ERASURE SECTION (POISON PILL)
                 Section(header: Text("Poison Pill"), footer: Text("Emergency security feature that permanently deletes all data when triggered")) {
                     HStack {
