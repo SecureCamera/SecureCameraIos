@@ -12,7 +12,7 @@ import Logging
 
 
 struct CameraContainerView: View {
-    @StateObject private var viewModel = CameraContainerViewModel()
+    @StateObject private var cameraModel = CameraViewModel()
     @EnvironmentObject private var nav: AppNavigationState
     
     // Local camera UI state
@@ -21,7 +21,7 @@ struct CameraContainerView: View {
     
     var body: some View {
         ZStack {
-            CameraView(cameraModel: viewModel.cameraModel)
+            CameraView(cameraModel: cameraModel)
                 .edgesIgnoringSafeArea(.all)
 
             // Shutter animation overlay
@@ -38,7 +38,10 @@ struct CameraContainerView: View {
                 HStack {
                     // Camera switch button
                     Button(action: {
-                        toggleCameraPosition()
+                        Task {
+                            let newPosition: AVCaptureDevice.Position = (cameraModel.cameraPosition == .back) ? .front : .back
+                            await cameraModel.switchCamera(to: newPosition)
+                        }
                     }) {
                         Image(systemName: "arrow.triangle.2.circlepath.camera")
                             .font(.system(size: 20))
@@ -54,17 +57,17 @@ struct CameraContainerView: View {
 
                     // Flash control button - disabled for front camera
                     Button(action: {
-                        Logger.ui.info("Flash button tapped, current mode: \(viewModel.currentFlashMode)")
-                        viewModel.toggleFlashMode()
+                        Logger.ui.info("Flash button tapped, current mode: \(cameraModel.flashMode)")
+                        cameraModel.toggleFlashMode()
                     }) {
-                        Image(systemName: viewModel.flashIcon(for: viewModel.currentFlashMode))
+                        Image(systemName: cameraModel.flashIcon)
                             .font(.system(size: 20))
-                            .foregroundColor(viewModel.cameraModel.cameraPosition == .front ? .gray : .white)
+                            .foregroundColor(cameraModel.cameraPosition == .front ? .gray : .white)
                             .padding(12)
                             .background(Color.black.opacity(0.6))
                             .clipShape(Circle())
                     }
-                    .disabled(viewModel.cameraModel.cameraPosition == .front)
+                    .disabled(cameraModel.cameraPosition == .front)
                     .buttonStyle(PlainButtonStyle())
                     .padding(.top, 16)
                     .padding(.trailing, 16)
@@ -78,13 +81,13 @@ struct CameraContainerView: View {
                         .fill(Color.black.opacity(0.6))
                         .frame(width: 80, height: 30)
 
-                    Text(String(format: "%.1fx", viewModel.cameraModel.zoomFactor))
+                    Text(String(format: "%.1fx", cameraModel.zoomFactor))
                         .font(.system(size: 14, weight: .bold))
                         .foregroundColor(.white)
                 }
                 // Show for all zoom levels (including 0.5x for wide angle)
-                .opacity(viewModel.cameraModel.zoomFactor != 1.0 ? 1.0 : 0.0)
-                .animation(.easeInOut, value: viewModel.cameraModel.zoomFactor)
+                .opacity(cameraModel.zoomFactor != 1.0 ? 1.0 : 0.0)
+                .animation(.easeInOut, value: cameraModel.zoomFactor)
                 .padding(.bottom, 10)
                 // Rotate the zoom indicator based on device orientation
                 .rotationEffect(Utils.getRotationAngle())
@@ -110,16 +113,16 @@ struct CameraContainerView: View {
                     // Capture button
                     Button(action: {
                         triggerShutterEffect()
-                        viewModel.capturePhoto()
+                        cameraModel.capturePhoto()
                     }) {
                         ZStack {
                             // Background circle
                             Circle()
-                                .strokeBorder(viewModel.cameraModel.isPermissionGranted ? Color.white : Color.gray, lineWidth: 4)
+                                .strokeBorder(cameraModel.isPermissionGranted ? Color.white : Color.gray, lineWidth: 4)
                                 .frame(width: 80, height: 80)
                                 .background(
                                     Circle()
-                                        .fill(viewModel.cameraModel.isPermissionGranted ? Color.white : Color.gray.opacity(0.5))
+                                        .fill(cameraModel.isPermissionGranted ? Color.white : Color.gray.opacity(0.5))
                                 )
                             // Overlay shutter icon
                             Image("snapshutter")
@@ -130,7 +133,7 @@ struct CameraContainerView: View {
                         }
                         .padding()
                     }
-                    .disabled(!viewModel.cameraModel.isPermissionGranted)
+                    .disabled(!cameraModel.isPermissionGranted)
 
                     Spacer()
                     Button(action: {
@@ -160,7 +163,7 @@ struct CameraContainerView: View {
             
             // Initial camera setup - check permissions and configure camera
             Task {
-                await viewModel.cameraModel.checkAndSetupCamera()
+                await cameraModel.checkAndSetupCamera()
             }
         }
         .onDisappear {
@@ -182,10 +185,6 @@ struct CameraContainerView: View {
         }
     }
 
-    // Toggle between front and back cameras
-    private func toggleCameraPosition() {
-        viewModel.toggleCameraPosition()
-    }
 }
 
 #Preview {

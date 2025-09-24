@@ -62,6 +62,7 @@ class CameraViewModel: NSObject, ObservableObject {
     @Published var showingFocusIndicator = false
     @Published var flashMode: AVCaptureDevice.FlashMode = .auto
     @Published var cameraPosition: AVCaptureDevice.Position = .back
+    @Published var isTogglingFlash = false
     
     private var isConfiguring = false
     private var focusResetTimer: Timer?
@@ -228,6 +229,8 @@ class CameraViewModel: NSObject, ObservableObject {
                 await MainActor.run {
                     self.currentLensType = .wideAngle
                 }
+                // Sync flash mode state after camera switch
+                self.flashMode = self.flashMode
             }
             
             guard let device = device else {
@@ -1148,6 +1151,63 @@ class CameraViewModel: NSObject, ObservableObject {
     private func updatePermissionState(granted: Bool) {
         Task { @MainActor in
             self.isPermissionGranted = granted
+        }
+    }
+    
+    func toggleFlashMode() {
+        // Prevent rapid consecutive toggles
+        guard !isTogglingFlash else { 
+            Logger.camera.debug("Flash toggle ignored - already in progress")
+            return 
+        }
+        
+        isTogglingFlash = true
+        
+        let currentMode = flashMode
+        let newMode: AVCaptureDevice.FlashMode
+        
+        switch currentMode {
+        case .auto:
+            newMode = .on
+        case .on:
+            newMode = .off
+        case .off:
+            newMode = .auto
+        @unknown default:
+            newMode = .auto
+        }
+        
+        Logger.camera.debug("Flash mode cycling", metadata: [
+            "from": .string(String(describing: currentMode)),
+            "to": .string(String(describing: newMode))
+        ])
+        
+        // Update the flash mode
+        flashMode = newMode
+        
+        Logger.camera.debug("Flash mode updated", metadata: [
+            "mode": .string(String(describing: flashMode))
+        ])
+        
+        // Re-enable toggling after a brief delay
+        Task {
+            try await Task.sleep(for: .milliseconds(100))
+            await MainActor.run {
+                self.isTogglingFlash = false
+            }
+        }
+    }
+    
+    var flashIcon: String {
+        switch flashMode {
+        case .auto:
+            return "bolt.badge.a"
+        case .on:
+            return "bolt"
+        case .off:
+            return "bolt.slash"
+        @unknown default:
+            return "bolt.badge.a"
         }
     }
 }
