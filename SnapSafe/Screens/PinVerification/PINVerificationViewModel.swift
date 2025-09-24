@@ -28,9 +28,6 @@ final class PINVerificationViewModel: ObservableObject {
     @Injected(\.authorizationRepository)
     private var authorizationRepository: AuthorizationRepository
     
-    @Injected(\.securityOverlayViewModel)
-    private var securityViewModel: SecurityOverlayViewModel
-    
     @Injected(\.verifyPinUseCase)
     private var verifyPinUseCase: VerifyPinUseCase
     
@@ -125,9 +122,6 @@ final class PINVerificationViewModel: ObservableObject {
             
             // Reset failed attempts counter on successful verification
             await setCurrentFailedAttempts(0)
-            
-            // Notify SecurityOverlayViewModel that authentication is complete
-            await securityViewModel.authenticationComplete()
             
             // Update UI state
             showError = false

@@ -27,12 +27,6 @@ struct ContentView: View {
                 .navigationDestination(for: AppDestination.self) { destination in
                     navigationDestinationView(for: destination)
                         .navigationBarHidden(destination != .gallery)
-                        .onChange(of: viewModel.isAuthenticated) { _, authenticated in
-                            // Handle authentication changes for PIN verification
-                            if destination == .pinVerification {
-                                viewModel.handleAuthenticationChange(authenticated)
-                            }
-                        }
                 }
         }
         .sheet(item: $nav.presentedSheet) { destination in

@@ -24,9 +24,6 @@ final class ContentViewModel: ObservableObject {
     @Injected(\.authorizationRepository) 
     private var authorizationRepository: AuthorizationRepository
     
-    @Injected(\.securityOverlayViewModel)
-    private var securityViewModel: SecurityOverlayViewModel
-    
     @Injected(\.locationRepository)
     private var locationManager: LocationRepository
     
@@ -55,15 +52,6 @@ final class ContentViewModel: ObservableObject {
             }
         }
         
-    }
-    
-    func handleAuthenticationChange(_ authenticated: Bool) {
-        if authenticated {
-            Task { @MainActor in
-                // Reset the security overlay auth state when authenticated
-                await securityViewModel.authenticationComplete()
-            }
-        }
     }
     
     // MARK: - Private Methods

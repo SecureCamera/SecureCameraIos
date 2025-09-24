@@ -120,9 +120,13 @@ final class SecurityOverlayViewModel: ObservableObject {
         // Monitor authorization state changes
         authorizationRepository.isAuthorized
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
+            .sink { [weak self] nowAuthorized in
                 Task { @MainActor in
-                    await self?.updateOverlayState()
+                    if(nowAuthorized) {
+                        await self?.authenticationComplete()
+                    } else {
+                        await self?.updateOverlayState()
+                    }
                 }
             }
             .store(in: &cancellables)
