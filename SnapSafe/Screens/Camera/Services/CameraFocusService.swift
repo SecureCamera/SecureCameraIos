@@ -1,0 +1,234 @@
+//
+//  CameraFocusService.swift
+//  SnapSafe
+//
+//  Created by Claude on 9/24/25.
+//
+
+import Foundation
+import AVFoundation
+import SwiftUI
+import Combine
+import Logging
+
+protocol FocusControlling: ObservableObject {
+    var focusIndicatorPoint: CGPoint? { get }
+    var showingFocusIndicator: Bool { get }
+    
+    func setupSubjectAreaChangeMonitoring(for device: AVCaptureDevice)
+    func adjustCameraSettings(at point: CGPoint, lockWhiteBalance: Bool, device: AVCaptureDevice?)
+    func showFocusIndicator(on viewPoint: CGPoint)
+    func startPeriodicFocusCheck(device: AVCaptureDevice?)
+    func stopPeriodicFocusCheck()
+    func normalizeGains(_ gains: AVCaptureDevice.WhiteBalanceGains, for device: AVCaptureDevice) -> AVCaptureDevice.WhiteBalanceGains
+}
+
+final class CameraFocusService: ObservableObject, FocusControlling {
+    
+    // MARK: - Published Properties
+    
+    @Published var focusIndicatorPoint: CGPoint? = nil
+    @Published var showingFocusIndicator = false
+    
+    // MARK: - Private Properties
+    
+    private var focusResetTimer: Timer?
+    private var lastFocusPoint: CGPoint = CGPoint(x: 0.5, y: 0.5)
+    private var focusCheckTimer: Timer?
+    private weak var currentDevice: AVCaptureDevice?
+    
+    // MARK: - Public Methods
+    
+    func setupSubjectAreaChangeMonitoring(for device: AVCaptureDevice) {
+        // Remove existing observer if any
+        if let currentDevice = currentDevice {
+            NotificationCenter.default.removeObserver(self, name: .AVCaptureDeviceSubjectAreaDidChange, object: currentDevice)
+        }
+        
+        currentDevice = device
+        
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(subjectAreaDidChange),
+            name: .AVCaptureDeviceSubjectAreaDidChange,
+            object: device
+        )
+    }
+    
+    // Tap-to-focus with optional white balance locking
+    func adjustCameraSettings(at point: CGPoint, lockWhiteBalance: Bool = false, device: AVCaptureDevice?) {
+        guard let device = device else { return }
+        lastFocusPoint = point
+        focusResetTimer?.invalidate()
+        
+        do {
+            try device.lockForConfiguration()
+            // Set focus and exposure points
+            if device.isFocusPointOfInterestSupported && device.isFocusModeSupported(.autoFocus) {
+                device.focusPointOfInterest = point
+                device.focusMode = .autoFocus
+                
+                if device.isSmoothAutoFocusSupported {
+                    device.isSmoothAutoFocusEnabled = true
+                }
+            }
+            
+            if device.isExposurePointOfInterestSupported && device.isExposureModeSupported(.autoExpose) {
+                device.exposurePointOfInterest = point
+                device.exposureMode = .continuousAutoExposure
+            }
+            
+            // Handle white balance based on lock preference
+            if device.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance) {
+                if lockWhiteBalance {
+                    device.whiteBalanceMode = .continuousAutoWhiteBalance
+                    let currentWhiteBalanceGains = device.deviceWhiteBalanceGains
+                    device.setWhiteBalanceModeLocked(with: currentWhiteBalanceGains, completionHandler: nil)
+                } else {
+                    device.whiteBalanceMode = .continuousAutoWhiteBalance
+                }
+            }
+            
+            device.unlockForConfiguration()
+            
+            // Schedule auto-focus reset with appropriate delay
+            let resetDelay = lockWhiteBalance ? 8.0 : 3.0
+            focusResetTimer = Timer.scheduledTimer(withTimeInterval: resetDelay, repeats: false) { [weak self] _ in
+                self?.resetToAutoFocus(device: device)
+            }
+        } catch {
+            Logger.camera.error("Error adjusting camera settings", metadata: [
+                "error": .string(error.localizedDescription)
+            ])
+        }
+    }
+    
+    func showFocusIndicator(on viewPoint: CGPoint) {
+        Task { @MainActor in
+            self.focusIndicatorPoint = viewPoint
+            self.showingFocusIndicator = true
+            
+            try await Task.sleep(for: .seconds(1.5))
+            withAnimation(.easeOut(duration: 0.3)) { 
+                self.showingFocusIndicator = false 
+            }
+        }
+    }
+    
+    func startPeriodicFocusCheck(device: AVCaptureDevice?) {
+        stopPeriodicFocusCheck()
+        currentDevice = device
+        
+        focusCheckTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { [weak self] _ in
+            self?.checkAndOptimizeFocus()
+        }
+    }
+    
+    func stopPeriodicFocusCheck() {
+        focusCheckTimer?.invalidate()
+        focusCheckTimer = nil
+    }
+    
+    func normalizeGains(_ gains: AVCaptureDevice.WhiteBalanceGains, for device: AVCaptureDevice) -> AVCaptureDevice.WhiteBalanceGains {
+        var normalizedGains = gains
+        normalizedGains.redGain = max(1.0, min(gains.redGain, device.maxWhiteBalanceGain))
+        normalizedGains.greenGain = max(1.0, min(gains.greenGain, device.maxWhiteBalanceGain))
+        normalizedGains.blueGain = max(1.0, min(gains.blueGain, device.maxWhiteBalanceGain))
+        return normalizedGains
+    }
+    
+    // MARK: - Private Methods
+    
+    @objc private func subjectAreaDidChange(notification: Notification) {
+        refocusCamera()
+    }
+    
+    // Refocus camera to last focus point when subject area changes
+    private func refocusCamera() {
+        guard let device = currentDevice else { return }
+        
+        if device.focusMode != .locked {
+            do {
+                try device.lockForConfiguration()
+                
+                if device.isFocusPointOfInterestSupported && device.isFocusModeSupported(.autoFocus) {
+                    device.focusPointOfInterest = lastFocusPoint
+                    device.focusMode = .autoFocus
+                }
+                
+                if device.isExposurePointOfInterestSupported && device.isExposureModeSupported(.autoExpose) {
+                    device.exposurePointOfInterest = lastFocusPoint
+                    device.exposureMode = .autoExpose
+                }
+                
+                device.unlockForConfiguration()
+                focusResetTimer?.invalidate()
+                focusResetTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [weak self] _ in
+                    self?.resetToAutoFocus(device: device)
+                }
+                
+            } catch {
+                Logger.camera.error("Error refocusing camera", metadata: [
+                    "error": .string(error.localizedDescription)
+                ])
+            }
+        }
+    }
+    
+    // Ensure continuous auto-focus remains active
+    private func checkAndOptimizeFocus() {
+        guard let device = currentDevice else { return }
+        
+        if device.focusMode != .locked {
+            do {
+                try device.lockForConfiguration()
+                
+                if device.focusMode != .continuousAutoFocus && device.isFocusModeSupported(.continuousAutoFocus) {
+                    device.focusMode = .continuousAutoFocus
+                }
+                
+                device.unlockForConfiguration()
+            } catch {
+                Logger.camera.error("Error in focus check", metadata: [
+                    "error": .string(error.localizedDescription)
+                ])
+            }
+        }
+    }
+    
+    // Return to continuous auto modes after manual adjustments
+    private func resetToAutoFocus(device: AVCaptureDevice) {
+        do {
+            try device.lockForConfiguration()
+            
+            if device.isFocusModeSupported(.continuousAutoFocus) {
+                device.focusMode = .continuousAutoFocus
+            }
+            
+            if device.isExposureModeSupported(.continuousAutoExposure) {
+                device.exposureMode = .continuousAutoExposure
+            }
+            
+            if device.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance) {
+                device.whiteBalanceMode = .continuousAutoWhiteBalance
+            }
+            
+            device.unlockForConfiguration()
+        } catch {
+            Logger.camera.error("Error resetting focus", metadata: [
+                "error": .string(error.localizedDescription)
+            ])
+        }
+    }
+    
+    // MARK: - Cleanup
+    
+    deinit {
+        stopPeriodicFocusCheck()
+        focusResetTimer?.invalidate()
+        
+        if let currentDevice = currentDevice {
+            NotificationCenter.default.removeObserver(self, name: .AVCaptureDeviceSubjectAreaDidChange, object: currentDevice)
+        }
+    }
+}
