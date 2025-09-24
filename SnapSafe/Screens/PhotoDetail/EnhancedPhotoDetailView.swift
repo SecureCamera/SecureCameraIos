@@ -100,7 +100,6 @@ struct EnhancedPhotoDetailView: View {
                     Spacer()
                 }
             }
-            .securityManaged()
             .gesture(
                 DragGesture()
                     .onChanged { value in

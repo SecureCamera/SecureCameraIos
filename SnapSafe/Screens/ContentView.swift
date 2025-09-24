@@ -16,7 +16,7 @@ import FactoryKit
 struct ContentView: View { 
     @StateObject private var viewModel = ContentViewModel()
     @InjectedObject(\.locationRepository) private var locationManager: LocationRepository
-    @InjectedObject(\.securityOverlayViewModel) private var securityViewModel: SecurityOverlayViewModel
+
     @EnvironmentObject private var nav: AppNavigationState
 
     var body: some View {
@@ -35,7 +35,6 @@ struct ContentView: View {
         .fullScreenCover(item: $nav.presentedFullScreenCover) { destination in
             navigationDestinationView(for: destination)
         }
-        // Apply unified security management
         .securityManaged()
         .onAppear {
             viewModel.onAppear()
@@ -46,11 +45,6 @@ struct ContentView: View {
         }
         .onChange(of: viewModel.isAuthenticated) { _, _ in
             navigateToRootDestination()
-        }
-        .onChange(of: securityViewModel.dismissAllSheets) { _, shouldDismiss in
-            if shouldDismiss {
-                nav.dismissAll()
-            }
         }
     }
     

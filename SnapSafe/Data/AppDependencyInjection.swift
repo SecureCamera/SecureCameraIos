@@ -133,11 +133,6 @@ extension Container {
         self { @MainActor in AppNavigationState() }.singleton
     }
     
-    @MainActor
-    var securityOverlayViewModel: Factory<SecurityOverlayViewModel> {
-        self { @MainActor in SecurityOverlayViewModel() }.singleton
-    }
-    
     var locationRepository: Factory<LocationRepository> {
         self { LocationRepository() }.singleton
     }

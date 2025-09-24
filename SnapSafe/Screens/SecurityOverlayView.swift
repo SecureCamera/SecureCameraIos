@@ -125,8 +125,8 @@ private struct PrivacyShieldContent: View {
 // MARK: - View Modifier
 
 struct SecurityManagement: ViewModifier {
-    @InjectedObject(\.securityOverlayViewModel) 
-    private var securityViewModel: SecurityOverlayViewModel
+    @StateObject private var securityViewModel = SecurityOverlayViewModel()
+    @EnvironmentObject private var nav: AppNavigationState
     
     @Environment(\.scenePhase) private var scenePhase
     
@@ -154,8 +154,7 @@ struct SecurityManagement: ViewModifier {
         }
         .onChange(of: securityViewModel.dismissAllSheets) { _, shouldDismiss in
             if shouldDismiss {
-                // This will be handled by ContentView to dismiss navigation
-                // The view model will reset the flag after a delay
+                nav.dismissAll()
             }
         }
         .animation(.easeInOut(duration: 0.15), value: securityViewModel.currentOverlayState)

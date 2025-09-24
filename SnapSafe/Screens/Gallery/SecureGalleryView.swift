@@ -229,7 +229,6 @@ struct SecureGalleryView: View {
                 }
             )
         }
-        .securityManaged()
         }
 
     // Photo grid subview

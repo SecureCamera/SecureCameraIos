@@ -115,7 +115,6 @@ struct PhotoDetailView: View {
                 viewModel.onDisappear()
             }
         }
-        .securityManaged()
     }
     
     // No additional helpers needed now

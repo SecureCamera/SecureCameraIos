@@ -210,6 +210,5 @@ struct SettingsView: View {
                 }
             }
         }
-        .securityManaged()
     }
 }
