@@ -7,6 +7,8 @@
 
 import SwiftUI
 import Combine
+import Logging
+
 
 /// Manager class to handle screen recording and screenshot detection
 class ScreenCaptureManager: ObservableObject {
@@ -48,9 +50,9 @@ class ScreenCaptureManager: ObservableObject {
             self?.isScreenBeingRecorded = UIScreen.main.isCaptured
             
             if UIScreen.main.isCaptured {
-                print("🔴 Screen recording detected!")
+                Logger.ui.info("🔴 Screen recording detected!")
             } else {
-                print("✅ Screen recording stopped")
+                Logger.ui.info("✅ Screen recording stopped")
             }
         }
     }
@@ -69,7 +71,7 @@ class ScreenCaptureManager: ObservableObject {
     
     /// Handle screenshot taken event
     private func handleScreenshotTaken() {
-        print("📸 Screenshot taken!")
+        Logger.ui.info("📸 Screenshot taken!")
         
         // Reset any existing timer
         screenshotResetTimer?.invalidate()

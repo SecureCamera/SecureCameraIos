@@ -8,6 +8,8 @@
 import Argon2Kit
 import Foundation
 import Mockable
+import Logging
+
 
 @Mockable
 protocol PinCrypto {
@@ -63,7 +65,7 @@ final class PinCryptoImpl: PinCrypto {
         do {
             return try Argon2.verify(password: password, encodedHash: encodedData)
         } catch {
-            print("PIN verification failed with Argon2 error: \(error)")
+            Logger.security.warning("PIN verification failed with Argon2 error: \(error)")
             return false
         }
     }

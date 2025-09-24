@@ -7,6 +7,8 @@
 
 import PhotosUI
 import SwiftUI
+import Logging
+
 
 // Empty state view when no photos exist
 struct EmptyGalleryView: View {
@@ -148,7 +150,7 @@ struct SecureGalleryView: View {
                 } else if viewModel.isSelecting && viewModel.hasSelection && !viewModel.isSelectingDecoys {
                     // Selection mode: Delete and Share buttons
                     Button(action: { 
-                        print("Delete button pressed in gallery view, selected photos: \(viewModel.selectedPhotoIds.count)")
+                        Logger.ui.info("Delete button pressed in gallery view, selected photos: \(viewModel.selectedPhotoIds.count)")
                         viewModel.showDeleteAlert()
                     }) {
                         Label("Delete", systemImage: "trash")
@@ -195,7 +197,7 @@ struct SecureGalleryView: View {
                 actions: {
                     Button("Cancel", role: .cancel) {}
                     Button("Delete", role: .destructive) {
-                        print("Delete confirmation button pressed, deleting \(viewModel.selectedPhotoIds.count) photos")
+                        Logger.ui.info("Delete confirmation button pressed, deleting \(viewModel.selectedPhotoIds.count) photos")
                         viewModel.deleteSelectedPhotos()
                     }
                 },

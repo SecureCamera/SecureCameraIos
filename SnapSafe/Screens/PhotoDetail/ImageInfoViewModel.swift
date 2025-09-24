@@ -9,6 +9,8 @@ import SwiftUI
 import FactoryKit
 import CoreGraphics
 import ImageIO
+import Logging
+
 
 @MainActor
 class ImageInfoViewModel: ObservableObject {
@@ -156,7 +158,7 @@ class ImageInfoViewModel: ObservableObject {
                 self.isLoading = false
             }
         } catch {
-            print("Error loading image data: \(error)")
+            Logger.storage.error("Error loading image data: \(error)")
             await MainActor.run {
                 self.isLoading = false
             }

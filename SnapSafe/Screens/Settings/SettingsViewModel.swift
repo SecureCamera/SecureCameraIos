@@ -10,6 +10,7 @@ import CoreLocation
 import Foundation
 import SwiftUI
 import FactoryKit
+import Logging
 
 
 @MainActor
@@ -80,7 +81,6 @@ final class SettingsViewModel: ObservableObject {
     /// Update sanitize file name setting
     func updateSanitizeFileName(_ newValue: Bool) {
         sanitizeFileName = newValue
-        print("Sanitize file name: \(newValue)")
         Task {
             await settingsDataSource.setSanitizeFileName(newValue)
         }
@@ -89,7 +89,6 @@ final class SettingsViewModel: ObservableObject {
     /// Update sanitize metadata setting
     func updateSanitizeMetadata(_ newValue: Bool) {
         sanitizeMetadata = newValue
-        print("Sanitize metadata: \(newValue)")
         Task {
             await settingsDataSource.setSanitizeMetadata(newValue)
         }
@@ -109,7 +108,7 @@ final class SettingsViewModel: ObservableObject {
     /// Update session timeout setting
     func updateSessionTimeout(_ newValue: Int) {
         sessionTimeout = newValue
-        print("Session timeout changed to \(newValue) minutes")
+        Logger.storage.info("Session timeout changed to \(newValue) minutes")
         Task {
             let newTimeoutMs: Int64 = Int64(newValue * 60 * 1000)
             await settingsDataSource.setSessionTimeout(newTimeoutMs)
@@ -130,7 +129,7 @@ final class SettingsViewModel: ObservableObject {
     func savePoisonPillPIN() {
         if !poisonPIN.isEmpty {
             Task {
-                print("Setting poison pill PIN")
+                Logger.storage.info("Setting poison pill PIN")
                 _ = await createPoisonPillUseCase.createPin(pppin: poisonPIN)
                 poisonPIN = ""
                 checkPoisonPillStatus()

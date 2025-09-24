@@ -6,6 +6,8 @@
 //
 
 import SwiftUI
+import Logging
+
 
 /// Privacy shield to cover content when app is inactive
 struct PrivacyShield: View {
@@ -60,7 +62,7 @@ struct ObscureWhenInactive: ViewModifier {
         .onChange(of: phase) { _, newPhase in
             // .inactive fires while the task-switcher is animating
             // .background fires a moment later
-            print("Scene phase changed to: \(newPhase)")
+            Logger.ui.debug("Scene phase changed to: \(newPhase)")
             obscured = (newPhase != .active)
         }
         // Use quick animation for immediate shield appearance

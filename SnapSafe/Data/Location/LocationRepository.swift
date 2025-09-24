@@ -10,6 +10,8 @@ import CoreGraphics
 import CoreLocation
 import Foundation
 import ImageIO
+import Logging
+
 
 class LocationRepository: NSObject, ObservableObject {
     private let locationManager = CLLocationManager()
@@ -133,6 +135,6 @@ extension LocationRepository: CLLocationManagerDelegate {
 
     // Called when there's an error getting location
     func locationManager(_: CLLocationManager, didFailWithError error: Error) {
-        print("Location Manager failed with error: \(error.localizedDescription)")
+        Logger.app.error("Location Manager failed with error: \(error.localizedDescription)")
     }
 }

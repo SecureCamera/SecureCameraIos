@@ -138,9 +138,6 @@ final class PinRepositoryTests: XCTestCase {
         let encryptedPlainData = Data("encrypted-plain".utf8)
         let expectedHashedBase64 = encryptedHashedData.base64EncodedString()
         let expectedPlainBase64 = encryptedPlainData.base64EncodedString()
-
-        let jsonString = String(data: hashedData, encoding: .utf8)!
-        print(jsonString)
         
         given(encryptionScheme).encryptWithKeyAlias(
             plain: .matching { $0 == hashedData },

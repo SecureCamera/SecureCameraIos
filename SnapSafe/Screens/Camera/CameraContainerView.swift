@@ -8,6 +8,8 @@
 import AVFoundation
 import SwiftUI
 import FactoryKit
+import Logging
+
 
 struct CameraContainerView: View {
     @StateObject private var viewModel = CameraContainerViewModel()
@@ -53,7 +55,7 @@ struct CameraContainerView: View {
 
                     // Flash control button - disabled for front camera
                     Button(action: {
-                        print("Flash button tapped, current mode: \(viewModel.currentFlashMode)")
+                        Logger.ui.info("Flash button tapped, current mode: \(viewModel.currentFlashMode)")
                         viewModel.toggleFlashMode()
                     }) {
                         Image(systemName: viewModel.flashIcon(for: viewModel.currentFlashMode))

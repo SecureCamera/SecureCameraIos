@@ -10,6 +10,7 @@ import CoreImage
 import Security
 import UIKit
 import Vision
+import Logging
 
 
 class FaceDetector {
@@ -80,7 +81,7 @@ class FaceDetector {
 
             completion(detectedFaces)
         } catch {
-            print("Face detection error: \(error.localizedDescription)")
+            Logger.app.error("Face detection error: \(error.localizedDescription)")
             completion([])
         }
     }

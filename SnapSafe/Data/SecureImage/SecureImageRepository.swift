@@ -47,7 +47,7 @@ public class SecureImageRepository {
             resourceValues.isExcludedFromBackup = true
             try galleryDir.setResourceValues(resourceValues)
         } catch {
-            print("Failed to setup gallery directory: \(error)")
+            Logger.storage.error("Failed to setup gallery directory: \(error)")
         }
         
         return galleryDir
@@ -64,7 +64,7 @@ public class SecureImageRepository {
             resourceValues.isExcludedFromBackup = true
             try decoyDir.setResourceValues(resourceValues)
         } catch {
-            print("Failed to setup decoy directory: \(error)")
+            Logger.storage.error("Failed to setup decoy directory: \(error)")
         }
         
         return decoyDir

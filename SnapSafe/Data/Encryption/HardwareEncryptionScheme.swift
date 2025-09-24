@@ -537,7 +537,7 @@ private extension HardwareEncryptionScheme {
             resourceValues.isExcludedFromBackup = true
             try keyDir.setResourceValues(resourceValues)
         } catch {
-            print("Failed to setup key directory: \(error)")
+            Logger.storage.error("Failed to setup key directory: \(error)")
         }
         
         return keyDir
