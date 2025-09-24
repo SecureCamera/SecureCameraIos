@@ -28,7 +28,6 @@ struct SettingsView: View {
     var body: some View {
         NavigationView {
             List {
-
                 
                 // SHARING SECTION
                 Section(header: Text("Sharing Options")) {
@@ -43,19 +42,6 @@ struct SettingsView: View {
                         }
 
                     Text("When enabled, personal information will be removed from photos before sharing")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .padding(.top, 4)
-                }
-
-                // PRIVACY & DETECTION SECTION
-                Section(header: Text("Privacy & Detection")) {
-                    Toggle("Face Detection", isOn: $viewModel.showFaceDetection)
-                        .onChange(of: viewModel.showFaceDetection) { _, newValue in
-                            viewModel.updateFaceDetection(newValue)
-                        }
-
-                    Text("When enabled, faces can be detected in photos for privacy protection")
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .padding(.top, 4)
@@ -81,6 +67,7 @@ struct SettingsView: View {
                         .foregroundColor(.secondary)
                         .padding(.top, 4)
                 }
+                
                 // APPEARANCE SECTION
                 Section(header: Text("Appearance")) {
                     Picker("Theme", selection: $appearanceMode) {

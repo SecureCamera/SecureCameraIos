@@ -20,9 +20,6 @@ final class SettingsViewModel: ObservableObject {
     @Published var sanitizeFileName = true
     @Published var sanitizeMetadata = true
     
-    // Privacy and detection options
-    @Published var showFaceDetection = true
-    
     // Security settings
     @Published var sessionTimeout = 5 // minutes
     @Published var appPIN = ""
@@ -60,6 +57,9 @@ final class SettingsViewModel: ObservableObject {
     @Injected(\.createPoisonPillUseCase)
     private var createPoisonPillUseCase: CreatePoisonPillUseCase
     
+    @Injected(\.settingsDataSource)
+    private var settingsDataSource: SettingsDataSource
+    
     private var cancellables = Set<AnyCancellable>()
     
     // MARK: - Initialization
@@ -81,20 +81,18 @@ final class SettingsViewModel: ObservableObject {
     func updateSanitizeFileName(_ newValue: Bool) {
         sanitizeFileName = newValue
         print("Sanitize file name: \(newValue)")
-        // TODO: Update user preferences
+        Task {
+            await settingsDataSource.setSanitizeFileName(newValue)
+        }
     }
     
     /// Update sanitize metadata setting
     func updateSanitizeMetadata(_ newValue: Bool) {
         sanitizeMetadata = newValue
         print("Sanitize metadata: \(newValue)")
-        // TODO: Update user preferences
-    }
-    
-    /// Update face detection setting
-    func updateFaceDetection(_ newValue: Bool) {
-        showFaceDetection = newValue
-        print("Face detection: \(newValue)")
+        Task {
+            await settingsDataSource.setSanitizeMetadata(newValue)
+        }
     }
     
     /// Request location permission or open settings
@@ -112,89 +110,10 @@ final class SettingsViewModel: ObservableObject {
     func updateSessionTimeout(_ newValue: Int) {
         sessionTimeout = newValue
         print("Session timeout changed to \(newValue) minutes")
-        // TODO: Update user preferences
-    }
-    
-    /// Update app PIN input with validation
-    func updateAppPIN(_ newValue: String) {
-        // Limit to 4 digits
-        var filteredValue = newValue
-        if filteredValue.count > 4 {
-            filteredValue = String(filteredValue.prefix(4))
+        Task {
+            let newTimeoutMs: Int64 = Int64(newValue * 60 * 1000)
+            await settingsDataSource.setSessionTimeout(newTimeoutMs)
         }
-        
-        // Only allow numbers
-        if !filteredValue.allSatisfy({ $0.isNumber }) {
-            filteredValue = filteredValue.filter { $0.isNumber }
-        }
-        
-        appPIN = filteredValue
-        
-        // Clear any previous errors when typing
-        if showPINError {
-            showPINError = false
-        }
-    }
-    
-    /// Update confirm app PIN input with validation
-    func updateConfirmAppPIN(_ newValue: String) {
-        // Limit to 4 digits
-        var filteredValue = newValue
-        if filteredValue.count > 4 {
-            filteredValue = String(filteredValue.prefix(4))
-        }
-        
-        // Only allow numbers
-        if !filteredValue.allSatisfy({ $0.isNumber }) {
-            filteredValue = filteredValue.filter { $0.isNumber }
-        }
-        
-        confirmAppPIN = filteredValue
-        
-        // Clear any previous errors when typing
-        if showPINError {
-            showPINError = false
-        }
-    }
-    
-    /// Reset or change the app PIN
-    /// TODO: We will need to implement Key rotation, but it untill we do, we cant just change the PIN
-    func resetAppPIN() {
-        // Reset any previous feedback
-//        showPINError = false
-//        showPINSuccess = false
-//        
-//        // Validate PIN
-//        if appPIN.count != 4 {
-//            showPINError = true
-//            pinErrorMessage = "PIN must be 4 digits"
-//            return
-//        }
-//        
-//        // Check if PINs match
-//        if appPIN != confirmAppPIN {
-//            showPINError = true
-//            pinErrorMessage = "PINs do not match"
-//            return
-//        }
-//        
-//        // Update the PIN using PIN manager
-//        //pinManager.setPIN(appPIN)
-//        
-//        // Show success message
-//        showPINSuccess = true
-//        
-//        // Clear the fields
-//        appPIN = ""
-//        confirmAppPIN = ""
-//        
-//        // Clear success message after delay
-//        Task {
-//            try await Task.sleep(nanoseconds: 3_000_000_000) // 3 seconds
-//            showPINSuccess = false
-//        }
-//        
-//        print("App PIN has been updated")
     }
     
     /// Start decoy selection process
@@ -222,16 +141,9 @@ final class SettingsViewModel: ObservableObject {
     /// Check if poison pill is currently configured
     func checkPoisonPillStatus() {
         Task {
-            do {
-                let hasPoison = await pinRepository.hasPoisonPillPin()
-                await MainActor.run {
-                    self.hasPoisonPill = hasPoison
-                }
-            } catch {
-                print("Error checking poison pill status: \(error)")
-                await MainActor.run {
-                    self.hasPoisonPill = false
-                }
+            let hasPoison = await pinRepository.hasPoisonPillPin()
+            await MainActor.run {
+                self.hasPoisonPill = hasPoison
             }
         }
     }
@@ -296,10 +208,65 @@ final class SettingsViewModel: ObservableObject {
     // MARK: - Private Methods
     
     private func setupObservers() {
-        // Add any necessary observers for dependencies
+        // Observe sanitize file name setting
+        settingsDataSource.sanitizeFileName
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] newValue in
+                self?.sanitizeFileName = newValue
+            }
+            .store(in: &cancellables)
+        
+        // Observe sanitize metadata setting
+        settingsDataSource.sanitizeMetadata
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] newValue in
+                self?.sanitizeMetadata = newValue
+            }
+            .store(in: &cancellables)
+        
+        // Observe session timeout setting
+        settingsDataSource.sessionTimeout
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] timeoutMs in
+                // Convert from milliseconds to minutes
+                let timeoutMinutes = Int(timeoutMs / 60 / 1000)
+                self?.sessionTimeout = timeoutMinutes
+            }
+            .store(in: &cancellables)
     }
     
     private func loadInitialValues() {
-        // Load any initial values from user defaults or other sources
+        Task {
+            // Load session timeout from settings
+            let timeoutMs = await settingsDataSource.getSessionTimeout()
+            let timeoutMinutes = Int(timeoutMs / 60 / 1000)
+            
+            await MainActor.run {
+                self.sessionTimeout = timeoutMinutes
+            }
+            
+            // Note: sanitizeFileName and sanitizeMetadata will be loaded via publishers
+            // in setupObservers(), so we don't need to load them explicitly here
+        }
+        
+        // Load location permission status
+        locationPermissionStatus = locationStatusDisplayText(locationManager.authorizationStatus)
+    }
+    
+    private func locationStatusDisplayText(_ status: CLAuthorizationStatus) -> String {
+        switch status {
+        case .notDetermined:
+            return "Not Asked"
+        case .restricted:
+            return "Restricted"
+        case .denied:
+            return "Denied"
+        case .authorizedWhenInUse:
+            return "When In Use"
+        case .authorizedAlways:
+            return "Always"
+        @unknown default:
+            return "Unknown"
+        }
     }
 }
