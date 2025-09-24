@@ -236,19 +236,6 @@ final class SettingsViewModel: ObservableObject {
     }
     
     private func loadInitialValues() {
-        Task {
-            // Load session timeout from settings
-            let timeoutMs = await settingsDataSource.getSessionTimeout()
-            let timeoutMinutes = Int(timeoutMs / 60 / 1000)
-            
-            await MainActor.run {
-                self.sessionTimeout = timeoutMinutes
-            }
-            
-            // Note: sanitizeFileName and sanitizeMetadata will be loaded via publishers
-            // in setupObservers(), so we don't need to load them explicitly here
-        }
-        
         // Load location permission status
         locationPermissionStatus = locationStatusDisplayText(locationManager.authorizationStatus)
     }
