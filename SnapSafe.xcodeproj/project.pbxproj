@@ -102,7 +102,6 @@
 		A91DBC792DE58191001F42ED /* SnapSafeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC522DE58191001F42ED /* SnapSafeApp.swift */; };
 		A91DBC7A2DE58191001F42ED /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A91DBC2C2DE58191001F42ED /* Preview Assets.xcassets */; };
 		A91DBC7B2DE58191001F42ED /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A91DBC3F2DE58191001F42ED /* Assets.xcassets */; };
-		A9ABCD252E751BAE00E73AE5 /* CameraPermissionRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9ABCD242E751BAE00E73AE5 /* CameraPermissionRepository.swift */; };
 		A9E6B6962E6E47B500BB6F19 /* ThumbnailCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9E6B6942E6E47B500BB6F19 /* ThumbnailCache.swift */; };
 		A9E6B6972E6E47B500BB6F19 /* SecureImageRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9E6B6932E6E47B500BB6F19 /* SecureImageRepository.swift */; };
 		A9E6B6992E6E47E700BB6F19 /* PhotoDef.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9E6B6982E6E47E700BB6F19 /* PhotoDef.swift */; };
@@ -222,7 +221,6 @@
 		A91DBC502DE58191001F42ED /* SecureGalleryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureGalleryView.swift; sourceTree = "<group>"; };
 		A91DBC512DE58191001F42ED /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		A91DBC522DE58191001F42ED /* SnapSafeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapSafeApp.swift; sourceTree = "<group>"; };
-		A9ABCD242E751BAE00E73AE5 /* CameraPermissionRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPermissionRepository.swift; sourceTree = "<group>"; };
 		A9DE37472DC5F34400679C2C /* SnapSafe.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SnapSafe.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A9DE37572DC5F34600679C2C /* SnapSafeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SnapSafeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A9DE37612DC5F34600679C2C /* SnapSafeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SnapSafeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -338,14 +336,6 @@
 				660130B92E67AD1D00D07E9C /* HashedPin.swift */,
 			);
 			path = PIN;
-			sourceTree = "<group>";
-		};
-		6660FC472E77D07300C0B617 /* Camera */ = {
-			isa = PBXGroup;
-			children = (
-				A9ABCD242E751BAE00E73AE5 /* CameraPermissionRepository.swift */,
-			);
-			path = Camera;
 			sourceTree = "<group>";
 		};
 		6660FC482E77D09200C0B617 /* Authorization */ = {
@@ -466,7 +456,6 @@
 			children = (
 				660130A82E67753600D07E9C /* AppDependencyInjection.swift */,
 				6660FC482E77D09200C0B617 /* Authorization */,
-				6660FC472E77D07300C0B617 /* Camera */,
 				660130BB2E67AD1D00D07E9C /* Encryption */,
 				667FF8262E6C9F6B00FB3E02 /* Location */,
 				A91DBC2B2DE58191001F42ED /* Models */,
@@ -855,7 +844,6 @@
 				660130BF2E67AD1D00D07E9C /* HashedPin.swift in Sources */,
 				660130C02E67AD1D00D07E9C /* PassThroughEncryptionScheme.swift in Sources */,
 				6660FC4E2E83736200C0B617 /* FileBasedSettingsDataSource.swift in Sources */,
-				A9ABCD252E751BAE00E73AE5 /* CameraPermissionRepository.swift in Sources */,
 				663C7E422E7289C300967B9E /* PhotoObfuscationView.swift in Sources */,
 				663C7E432E7289C300967B9E /* PhotoObfuscationViewModel.swift in Sources */,
 				A91DBC762DE58191001F42ED /* ScreenCaptureManager.swift in Sources */,

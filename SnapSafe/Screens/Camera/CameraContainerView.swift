@@ -14,7 +14,6 @@ import Logging
 struct CameraContainerView: View {
     @StateObject private var viewModel = CameraContainerViewModel()
     @EnvironmentObject private var nav: AppNavigationState
-    @InjectedObject(\.cameraPermissionRepository) private var cameraPermissionRepository: CameraPermissionRepository
     
     // Local camera UI state
     @State private var isShutterAnimating = false
@@ -116,11 +115,11 @@ struct CameraContainerView: View {
                         ZStack {
                             // Background circle
                             Circle()
-                                .strokeBorder(cameraPermissionRepository.isPermissionGranted ? Color.white : Color.gray, lineWidth: 4)
+                                .strokeBorder(viewModel.cameraModel.isPermissionGranted ? Color.white : Color.gray, lineWidth: 4)
                                 .frame(width: 80, height: 80)
                                 .background(
                                     Circle()
-                                        .fill(cameraPermissionRepository.isPermissionGranted ? Color.white : Color.gray.opacity(0.5))
+                                        .fill(viewModel.cameraModel.isPermissionGranted ? Color.white : Color.gray.opacity(0.5))
                                 )
                             // Overlay shutter icon
                             Image("snapshutter")
@@ -131,7 +130,7 @@ struct CameraContainerView: View {
                         }
                         .padding()
                     }
-                    .disabled(!cameraPermissionRepository.isPermissionGranted)
+                    .disabled(!viewModel.cameraModel.isPermissionGranted)
 
                     Spacer()
                     Button(action: {
@@ -158,19 +157,16 @@ struct CameraContainerView: View {
                                                   queue: .main) { _ in
                 self.deviceOrientation = UIDevice.current.orientation
             }
+            
+            // Initial camera setup - check permissions and configure camera
+            Task {
+                await viewModel.cameraModel.checkAndSetupCamera()
+            }
         }
         .onDisappear {
             // Stop monitoring orientation changes
             NotificationCenter.default.removeObserver(self, name: UIDevice.orientationDidChangeNotification, object: nil)
             UIDevice.current.endGeneratingDeviceOrientationNotifications()
-        }
-        .onAppear {
-            // Re-check camera permissions when view appears
-            // This handles the case where user denied permission initially,
-            // then granted it in Settings while app was in background
-            Task {
-                await viewModel.refreshPermissions()
-            }
         }
     }
     

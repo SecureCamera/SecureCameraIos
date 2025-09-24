@@ -21,9 +21,10 @@ class CameraViewModel: NSObject, ObservableObject {
         return false
         #endif
     }
-    var isPermissionGranted: Bool { 
-        cameraPermissionRepository.isPermissionGranted 
-    }
+    // MARK: - Camera Permission Properties
+    
+    @Published private(set) var isPermissionGranted: Bool = false
+    private var isCheckingPermission = false
     @Published var session = AVCaptureSession()
     @Published var alert = false
     @Published var output = AVCapturePhotoOutput()
@@ -48,8 +49,6 @@ class CameraViewModel: NSObject, ObservableObject {
     @Injected(\.locationRepository)
     private var locationRepository: LocationRepository
     
-    @Injected(\.cameraPermissionRepository)
-    private var cameraPermissionRepository: CameraPermissionRepository
     
     enum CameraLensType {
         case ultraWide   // 0.5x zoom
@@ -119,6 +118,10 @@ class CameraViewModel: NSObject, ObservableObject {
     override init() {
         super.init()
         
+        // Initialize with current permission state synchronously to prevent UI delays
+        let currentStatus = AVCaptureDevice.authorizationStatus(for: .video)
+        self.isPermissionGranted = (currentStatus == .authorized)
+        
         // Listen for app entering foreground to reset zoom level
         NotificationCenter.default.addObserver(
             self,
@@ -127,10 +130,14 @@ class CameraViewModel: NSObject, ObservableObject {
             object: nil
         )
         
-        Task {
-            try await Task.sleep(for: .milliseconds(100))
-            await checkAndSetupCamera()
-        }
+        // Set up notification observer for when the app becomes active
+        // (in case user changed permissions in Settings)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleAppDidBecomeActive),
+            name: UIApplication.didBecomeActiveNotification,
+            object: nil
+        )
     }
     
     deinit {
@@ -138,11 +145,18 @@ class CameraViewModel: NSObject, ObservableObject {
             NotificationCenter.default.removeObserver(self, name: .AVCaptureDeviceSubjectAreaDidChange, object: device)
         }
         NotificationCenter.default.removeObserver(self, name: UIApplication.willEnterForegroundNotification, object: nil)
+        NotificationCenter.default.removeObserver(self)
     }
     
     @objc private func handleAppWillEnterForeground() {
         Logger.camera.debug("App entering foreground, resetting zoom level")
         resetZoomLevel()
+    }
+    
+    @objc private func handleAppDidBecomeActive() {
+        // Refresh permission state when app becomes active
+        // (user might have changed permissions in Settings)
+        updatePermissionState()
     }
      
     func checkAndSetupCamera() async {
@@ -157,8 +171,8 @@ class CameraViewModel: NSObject, ObservableObject {
         }
         #endif
         
-        // Use the camera permission repository to check permissions
-        let isGranted = await cameraPermissionRepository.checkAndUpdatePermissions()
+        // Check and update camera permissions
+        let isGranted = await checkAndUpdatePermissions()
         
         if isGranted {
             Task {
@@ -1090,9 +1104,56 @@ class CameraViewModel: NSObject, ObservableObject {
             }
         }
     }
+    
+    // MARK: - Camera Permission Methods
+    
+    /// Checks and updates camera permission state
+    /// Returns true if permission is granted, false otherwise
+    func checkAndUpdatePermissions() async -> Bool {
+        guard !isCheckingPermission else {
+            return isPermissionGranted
+        }
+        
+        isCheckingPermission = true
+        defer { isCheckingPermission = false }
+        
+        let currentStatus = AVCaptureDevice.authorizationStatus(for: .video)
+        
+        switch currentStatus {
+        case .authorized:
+            updatePermissionState(granted: true)
+            return true
+            
+        case .notDetermined:
+            let granted = await AVCaptureDevice.requestAccess(for: .video)
+            updatePermissionState(granted: granted)
+            return granted
+            
+        case .denied, .restricted:
+            updatePermissionState(granted: false)
+            return false
+            
+        @unknown default:
+            updatePermissionState(granted: false)
+            return false
+        }
+    }
+    
+    /// Synchronously updates the permission state based on current authorization status
+    func updatePermissionState() {
+        let currentStatus = AVCaptureDevice.authorizationStatus(for: .video)
+        updatePermissionState(granted: currentStatus == .authorized)
+    }
+    
+    private func updatePermissionState(granted: Bool) {
+        Task { @MainActor in
+            self.isPermissionGranted = granted
+        }
+    }
 }
-    // Photo capture delegate with metadata preservation and secure storage
-    extension CameraViewModel: AVCapturePhotoCaptureDelegate {
+
+// MARK: - AVCapturePhotoCaptureDelegate
+extension CameraViewModel: AVCapturePhotoCaptureDelegate {
     func photoOutput(_: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
         if let error = error {
             Logger.camera.error("Error capturing photo", metadata: [
