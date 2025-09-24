@@ -57,7 +57,7 @@ extension Container {
     }
     
     var settingsDataSource: Factory<SettingsDataSource> {
-        self { UserDefaultsSettingsDataSource() }.shared
+        self { FileBasedSettingsDataSource() }.shared
     }
     
     var deviceInfoDataSource: Factory<DeviceInfoDataSource> {

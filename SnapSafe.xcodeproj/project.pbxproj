@@ -46,6 +46,7 @@
 		6660FC412E76984E00C0B617 /* IntroductionSlide.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6660FC402E76984E00C0B617 /* IntroductionSlide.swift */; };
 		6660FC432E76989300C0B617 /* IntroductionSlideView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6660FC422E76989300C0B617 /* IntroductionSlideView.swift */; };
 		6660FC452E77CE4B00C0B617 /* RemoveDecoyPhotoUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6660FC442E77CE4000C0B617 /* RemoveDecoyPhotoUseCase.swift */; };
+		6660FC4E2E83736200C0B617 /* FileBasedSettingsDataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6660FC4D2E83736200C0B617 /* FileBasedSettingsDataSource.swift */; };
 		667FF80E2E6A9D3000FB3E02 /* AuthorizationRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF80D2E6A9D2A00FB3E02 /* AuthorizationRepositoryTests.swift */; };
 		667FF8102E6A9EE600FB3E02 /* Clock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF80F2E6A9EE600FB3E02 /* Clock.swift */; };
 		667FF8122E6BA7F200FB3E02 /* AuthorizePinUseCaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF8112E6BA7F200FB3E02 /* AuthorizePinUseCaseTests.swift */; };
@@ -165,6 +166,7 @@
 		6660FC402E76984E00C0B617 /* IntroductionSlide.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntroductionSlide.swift; sourceTree = "<group>"; };
 		6660FC422E76989300C0B617 /* IntroductionSlideView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntroductionSlideView.swift; sourceTree = "<group>"; };
 		6660FC442E77CE4000C0B617 /* RemoveDecoyPhotoUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoveDecoyPhotoUseCase.swift; sourceTree = "<group>"; };
+		6660FC4D2E83736200C0B617 /* FileBasedSettingsDataSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileBasedSettingsDataSource.swift; sourceTree = "<group>"; };
 		667FF80D2E6A9D2A00FB3E02 /* AuthorizationRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorizationRepositoryTests.swift; sourceTree = "<group>"; };
 		667FF80F2E6A9EE600FB3E02 /* Clock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clock.swift; sourceTree = "<group>"; };
 		667FF8112E6BA7F200FB3E02 /* AuthorizePinUseCaseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorizePinUseCaseTests.swift; sourceTree = "<group>"; };
@@ -274,6 +276,7 @@
 		660130C32E67AD2200D07E9C /* UserData */ = {
 			isa = PBXGroup;
 			children = (
+				6660FC4D2E83736200C0B617 /* FileBasedSettingsDataSource.swift */,
 				660130C12E67AD2200D07E9C /* SettingsDataSource.swift */,
 				660130C22E67AD2200D07E9C /* UserDefaultsSettingsDataSource.swift */,
 			);
@@ -835,6 +838,7 @@
 				660130BE2E67AD1D00D07E9C /* EncryptionScheme.swift in Sources */,
 				660130BF2E67AD1D00D07E9C /* HashedPin.swift in Sources */,
 				660130C02E67AD1D00D07E9C /* PassThroughEncryptionScheme.swift in Sources */,
+				6660FC4E2E83736200C0B617 /* FileBasedSettingsDataSource.swift in Sources */,
 				A9ABCD252E751BAE00E73AE5 /* CameraPermissionRepository.swift in Sources */,
 				663C7E422E7289C300967B9E /* PhotoObfuscationView.swift in Sources */,
 				663C7E432E7289C300967B9E /* PhotoObfuscationViewModel.swift in Sources */,
