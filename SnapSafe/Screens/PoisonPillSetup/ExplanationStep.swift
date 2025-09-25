@@ -40,7 +40,7 @@ extension ExplanationStep {
             icon: "person.fill.xmark",
             title: "When to use it",
             content: """
-            This is your last line of defense when you have been coerced to unlock this app. You will lose all of your data, but the attack will also not get that data.
+            This is your last line of defense when you have been coerced to unlock this app. You will lose all of your data, but the attacker will also not get that data.
             
             What Happens
             
