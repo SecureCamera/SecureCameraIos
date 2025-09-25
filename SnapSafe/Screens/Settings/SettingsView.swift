@@ -29,6 +29,13 @@ struct SettingsView: View {
         NavigationView {
             List {
                 
+                // ABOUT SECTION
+                Section {
+                    NavigationLink("About SnapSafe") {
+                        AboutView()
+                    }
+                }
+                
                 // SHARING SECTION
                 Section(header: Text("Sharing Options")) {
                     Toggle("Sanitize File Name", isOn: $viewModel.sanitizeFileName)
@@ -143,7 +150,7 @@ struct SettingsView: View {
                             .padding(.top, 4)
                     }
                 }
-
+                
                 // SECURITY RESET SECTION
                 Section {
                     Button("Perform Security Reset") {

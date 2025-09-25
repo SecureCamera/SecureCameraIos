@@ -68,6 +68,12 @@
     "30 minutes" : {
 
     },
+    "About" : {
+
+    },
+    "About SnapSafe" : {
+
+    },
     "Add Box" : {
 
     },
@@ -163,6 +169,12 @@
 
     },
     "Choose how you want to obfuscate the selected faces" : {
+
+    },
+    "Come engage with our community, discover more Free and Open Source Software!" : {
+
+    },
+    "Community" : {
 
     },
     "Confirm New PIN" : {
@@ -271,6 +283,12 @@
     "For privacy and security reasons, screen recording is not allowed in SnapSafe." : {
 
     },
+    "Found a bug? Report it on GitHub:" : {
+
+    },
+    "GitHub" : {
+
+    },
     "ID" : {
 
     },
@@ -296,6 +314,9 @@
 
     },
     "ISO" : {
+
+    },
+    "Join our Discord" : {
 
     },
     "Loading image information..." : {
@@ -358,6 +379,9 @@
     "Open Settings" : {
 
     },
+    "Open Source" : {
+
+    },
     "Orientation" : {
 
     },
@@ -403,7 +427,13 @@
     "Poison pill is configured and ready" : {
 
     },
+    "Privacy" : {
+
+    },
     "Privacy & Detection" : {
+
+    },
+    "Privacy Policy" : {
 
     },
     "Processing faces..." : {
@@ -419,6 +449,12 @@
 
     },
     "Remove Poison Pill" : {
+
+    },
+    "Report Bug" : {
+
+    },
+    "Report Bugs" : {
 
     },
     "Request Location Permission" : {
@@ -479,7 +515,13 @@
     "Secure" : {
 
     },
+    "Secure Photo Storage" : {
+
+    },
     "Security" : {
+
+    },
+    "Security Features" : {
 
     },
     "Select Mask Type" : {
@@ -539,6 +581,24 @@
     "SnapSafe" : {
 
     },
+    "SnapSafe is a privacy-focused camera app designed to protect your sensitive photos with strong encryption and secure storage." : {
+
+    },
+    "SnapSafe is a secure camera app that protects your photos with end-to-end encryption and advanced security features." : {
+
+    },
+    "SnapSafe is an open source project. View the source code on GitHub:" : {
+
+    },
+    "SnapSafe stores all data locally on your device. No data is transmitted to external servers." : {
+
+    },
+    "SnapSafe stores all data locally on your device. No data is transmitted to external servers. Your photos and security settings remain completely private." : {
+
+    },
+    "SnapSafe.org" : {
+
+    },
     "Status" : {
 
     },
@@ -570,6 +630,9 @@
 
     },
     "Verifying..." : {
+
+    },
+    "Version %@" : {
 
     },
     "Warning: This will permanently delete all your data" : {

@@ -47,6 +47,8 @@
 		6660FC432E76989300C0B617 /* IntroductionSlideView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6660FC422E76989300C0B617 /* IntroductionSlideView.swift */; };
 		6660FC452E77CE4B00C0B617 /* RemoveDecoyPhotoUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6660FC442E77CE4000C0B617 /* RemoveDecoyPhotoUseCase.swift */; };
 		6660FC4E2E83736200C0B617 /* FileBasedSettingsDataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6660FC4D2E83736200C0B617 /* FileBasedSettingsDataSource.swift */; };
+		6660FC5F2E850E9200C0B617 /* AboutViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6660FC5D2E850E9200C0B617 /* AboutViewModel.swift */; };
+		6660FC602E850E9200C0B617 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6660FC5C2E850E9200C0B617 /* AboutView.swift */; };
 		667FF80E2E6A9D3000FB3E02 /* AuthorizationRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF80D2E6A9D2A00FB3E02 /* AuthorizationRepositoryTests.swift */; };
 		667FF8102E6A9EE600FB3E02 /* Clock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF80F2E6A9EE600FB3E02 /* Clock.swift */; };
 		667FF8122E6BA7F200FB3E02 /* AuthorizePinUseCaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667FF8112E6BA7F200FB3E02 /* AuthorizePinUseCaseTests.swift */; };
@@ -167,6 +169,8 @@
 		6660FC422E76989300C0B617 /* IntroductionSlideView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntroductionSlideView.swift; sourceTree = "<group>"; };
 		6660FC442E77CE4000C0B617 /* RemoveDecoyPhotoUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoveDecoyPhotoUseCase.swift; sourceTree = "<group>"; };
 		6660FC4D2E83736200C0B617 /* FileBasedSettingsDataSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileBasedSettingsDataSource.swift; sourceTree = "<group>"; };
+		6660FC5C2E850E9200C0B617 /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
+		6660FC5D2E850E9200C0B617 /* AboutViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutViewModel.swift; sourceTree = "<group>"; };
 		667FF80D2E6A9D2A00FB3E02 /* AuthorizationRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorizationRepositoryTests.swift; sourceTree = "<group>"; };
 		667FF80F2E6A9EE600FB3E02 /* Clock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clock.swift; sourceTree = "<group>"; };
 		667FF8112E6BA7F200FB3E02 /* AuthorizePinUseCaseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorizePinUseCaseTests.swift; sourceTree = "<group>"; };
@@ -352,6 +356,15 @@
 			path = Authorization;
 			sourceTree = "<group>";
 		};
+		6660FC5E2E850E9200C0B617 /* About */ = {
+			isa = PBXGroup;
+			children = (
+				6660FC5C2E850E9200C0B617 /* AboutView.swift */,
+				6660FC5D2E850E9200C0B617 /* AboutViewModel.swift */,
+			);
+			path = About;
+			sourceTree = "<group>";
+		};
 		667FF8132E6BAB4500FB3E02 /* Util */ = {
 			isa = PBXGroup;
 			children = (
@@ -368,6 +381,7 @@
 		667FF81D2E6C9DC200FB3E02 /* Screens */ = {
 			isa = PBXGroup;
 			children = (
+				6660FC5E2E850E9200C0B617 /* About */,
 				667FF8342E6D101300FB3E02 /* AppNavigation.swift */,
 				667FF8322E6D0FF800FB3E02 /* ContentView.swift */,
 				667FF83A2E6D142200FB3E02 /* ContentViewModel.swift */,
@@ -822,6 +836,8 @@
 				A91DBC652DE58191001F42ED /* PhotoDetailViewModel.swift in Sources */,
 				66A404D52E6800840054FFE7 /* PinRepositoryImpl.swift in Sources */,
 				A91DBC692DE58191001F42ED /* CamControl.swift in Sources */,
+				6660FC5F2E850E9200C0B617 /* AboutViewModel.swift in Sources */,
+				6660FC602E850E9200C0B617 /* AboutView.swift in Sources */,
 				667FF8352E6D101300FB3E02 /* AppNavigation.swift in Sources */,
 				A91DBC6D2DE58191001F42ED /* FaceDetector.swift in Sources */,
 				660130C72E67AD3A00D07E9C /* DeviceInfoDataSource.swift in Sources */,
