@@ -24,82 +24,83 @@ struct PINSetupView: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 30) {
-                Image(systemName: "lock.shield")
-                    .font(.system(size: 70))
-                    .foregroundColor(.blue)
-                    .padding(.top, 50)
-                
-                Text("Set Up Security PIN")
-                    .font(.largeTitle)
-                    .bold()
-                
-                Text("Please create a PIN to secure your photos")
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
-                
-                VStack(spacing: 20) {
-                    SecureField("Enter PIN", text: $viewModel.pin)
-                        .keyboardType(.numberPad)
-                        .textContentType(.oneTimeCode)
-                        .multilineTextAlignment(.center)
-                        .padding()
-                        .background(RoundedRectangle(cornerRadius: 8).stroke(Color.gray, lineWidth: 1))
-                        .padding(.horizontal, 50)
+            ScrollView {
+                VStack(spacing: 30) {
+                    Image(systemName: "lock.shield")
+                        .font(.system(size: 70))
+                        .foregroundColor(.blue)
+                        .padding(.top, 50)
                     
-                    SecureField("Confirm PIN", text: $viewModel.confirmPin)
-                        .keyboardType(.numberPad)
-                        .textContentType(.oneTimeCode)
-                        .multilineTextAlignment(.center)
-                        .padding()
-                        .background(RoundedRectangle(cornerRadius: 8).stroke(Color.gray, lineWidth: 1))
-                        .padding(.horizontal, 50)
-                }
-                
-                if viewModel.showError {
-                    Text(viewModel.errorMessage)
-                        .foregroundColor(.red)
-                        .font(.callout)
-                        .padding(.top, 5)
-                }
-                
-                HStack {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundColor(.orange)
-                    Text("Choose a different PIN than the one used to unlock this device!")
+                    Text("Set Up Security PIN")
+                        .font(.largeTitle)
+                        .bold()
+                    
+                    Text("Please create a PIN to secure your photos")
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
-                }
-                .padding(.horizontal, 30)
-                .padding(.bottom, 20)
-                
-                Button(action: {
-                    Task {
-                        let success = await viewModel.createPin()
-                        if success {
-                            Logger.ui.info("PIN setup complete, marking intro as completed")
-                        }
+                        .padding(.horizontal)
+                    
+                    VStack(spacing: 20) {
+                        SecureField("Enter PIN", text: $viewModel.pin)
+                            .keyboardType(.numberPad)
+                            .textContentType(.oneTimeCode)
+                            .multilineTextAlignment(.center)
+                            .padding()
+                            .background(RoundedRectangle(cornerRadius: 8).stroke(Color.gray, lineWidth: 1))
+                            .padding(.horizontal, 50)
+                        
+                        SecureField("Confirm PIN", text: $viewModel.confirmPin)
+                            .keyboardType(.numberPad)
+                            .textContentType(.oneTimeCode)
+                            .multilineTextAlignment(.center)
+                            .padding()
+                            .background(RoundedRectangle(cornerRadius: 8).stroke(Color.gray, lineWidth: 1))
+                            .padding(.horizontal, 50)
                     }
-                }) {
+                    
+                    if viewModel.showError {
+                        Text(viewModel.errorMessage)
+                            .foregroundColor(.red)
+                            .font(.callout)
+                            .padding(.top, 5)
+                    }
+                    
                     HStack {
-                        if viewModel.isLoading {
-                            ProgressView()
-                                .scaleEffect(0.8)
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundColor(.orange)
+                        Text("Choose a different PIN than the one used to unlock this device!")
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding(.horizontal, 30)
+                    .padding(.bottom, 20)
+                    
+                    Button(action: {
+                        Task {
+                            let success = await viewModel.createPin()
+                            if success {
+                                Logger.ui.info("PIN setup complete, marking intro as completed")
+                            }
+                        }
+                    }) {
+                        HStack {
+                            if viewModel.isLoading {
+                                ProgressView()
+                                    .scaleEffect(0.8)
+                                    .foregroundColor(.white)
+                            }
+                            Text(viewModel.isLoading ? "Setting PIN..." : "Set PIN")
                                 .foregroundColor(.white)
                         }
-                        Text(viewModel.isLoading ? "Setting PIN..." : "Set PIN")
-                            .foregroundColor(.white)
+                        .padding()
+                        .frame(width: 200)
+                        .background(buttonBackgroundColor)
+                        .cornerRadius(10)
                     }
-                    .padding()
-                    .frame(width: 200)
-                    .background(buttonBackgroundColor)
-                    .cornerRadius(10)
+                    .disabled(buttonDisabled)
+                    .padding(.top, 20)
+                    .padding(.bottom, 50)
                 }
-                .disabled(buttonDisabled)
-                .padding(.top, 20)
-                
-                Spacer()
             }
             .navigationBarTitle("", displayMode: .inline)
             .navigationBarHidden(true)
@@ -109,13 +110,6 @@ struct PINSetupView: View {
                 // Clear PIN content and dismiss keyboard when app goes to background or inactive
                 if newPhase == .background || newPhase == .inactive {
                     viewModel.clearPinContent()
-                }
-            }
-            .toolbar {
-                ToolbarItemGroup(placement: .keyboard) {
-                    Spacer()
-                    Button("Done") {
-                    }
                 }
             }
         }
