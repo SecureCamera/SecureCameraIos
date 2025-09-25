@@ -12,9 +12,30 @@ import FactoryKit
 @MainActor
 final class PINSetupViewModel: ObservableObject {
     
+    @Injected(\.settingsDataSource)
+    private var settings: SettingsDataSource
+    
     // MARK: - Published Properties
-    @Published var pin: String = ""
-    @Published var confirmPin: String = ""
+    @Published
+    var pin: String = "" {
+        didSet {
+            let filtered = validateAndFilterPIN(pin)
+            if pin != filtered {
+                pin = filtered
+            }
+        }
+    }
+    
+    @Published
+    var confirmPin: String = "" {
+        didSet {
+            let filtered = validateAndFilterPIN(confirmPin)
+            if confirmPin != filtered {
+                confirmPin = filtered
+            }
+        }
+    }
+    
     @Published var showError: Bool = false
     @Published var errorMessage: String = ""
     @Published var isLoading: Bool = false
@@ -65,13 +86,6 @@ final class PINSetupViewModel: ObservableObject {
         return filtered
     }
     
-    func updatePIN(_ newValue: String) {
-        pin = validateAndFilterPIN(newValue)
-    }
-    
-    func updateConfirmPIN(_ newValue: String) {
-        confirmPin = validateAndFilterPIN(newValue)
-    }
     
     // MARK: - Business Logic
     func createPin() async -> Bool {
@@ -107,6 +121,8 @@ final class PINSetupViewModel: ObservableObject {
             showError(message: "Failed to create PIN. Please try again.")
             return false
         }
+        
+        await settings.setIntroCompleted(true)
         
         return true
     }

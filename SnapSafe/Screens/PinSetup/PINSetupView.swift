@@ -11,12 +11,7 @@ import Logging
 
 struct PINSetupView: View {
     @StateObject private var viewModel = PINSetupViewModel()
-    @FocusState private var isPINFieldFocused: Bool
-    @FocusState private var isConfirmPINFieldFocused: Bool
     @Environment(\.scenePhase) private var scenePhase
-
-    @Injected(\.settingsDataSource)
-    private var settings: SettingsDataSource
     
     // Cache computed values to reduce view updates
     private var buttonDisabled: Bool {
@@ -52,10 +47,6 @@ struct PINSetupView: View {
                         .padding()
                         .background(RoundedRectangle(cornerRadius: 8).stroke(Color.gray, lineWidth: 1))
                         .padding(.horizontal, 50)
-                        .focused($isPINFieldFocused)
-                        .onChange(of: viewModel.pin) { _, newValue in
-                            viewModel.updatePIN(newValue)
-                        }
                     
                     SecureField("Confirm PIN", text: $viewModel.confirmPin)
                         .keyboardType(.numberPad)
@@ -64,10 +55,6 @@ struct PINSetupView: View {
                         .padding()
                         .background(RoundedRectangle(cornerRadius: 8).stroke(Color.gray, lineWidth: 1))
                         .padding(.horizontal, 50)
-                        .focused($isConfirmPINFieldFocused)
-                        .onChange(of: viewModel.confirmPin) { _, newValue in
-                            viewModel.updateConfirmPIN(newValue)
-                        }
                 }
                 
                 if viewModel.showError {
@@ -88,13 +75,10 @@ struct PINSetupView: View {
                 .padding(.bottom, 20)
                 
                 Button(action: {
-                    isPINFieldFocused = false
-                    isConfirmPINFieldFocused = false
                     Task {
                         let success = await viewModel.createPin()
                         if success {
                             Logger.ui.info("PIN setup complete, marking intro as completed")
-                            await settings.setIntroCompleted(true)
                         }
                     }
                 }) {
@@ -121,14 +105,9 @@ struct PINSetupView: View {
             .navigationBarHidden(true)
             .obscuredWhenInactive()
             .screenCaptureProtected()
-            .onAppear {
-                isPINFieldFocused = true
-            }
             .onChange(of: scenePhase) { _, newPhase in
                 // Clear PIN content and dismiss keyboard when app goes to background or inactive
                 if newPhase == .background || newPhase == .inactive {
-                    isPINFieldFocused = false
-                    isConfirmPINFieldFocused = false
                     viewModel.clearPinContent()
                 }
             }
@@ -136,8 +115,6 @@ struct PINSetupView: View {
                 ToolbarItemGroup(placement: .keyboard) {
                     Spacer()
                     Button("Done") {
-                        isPINFieldFocused = false
-                        isConfirmPINFieldFocused = false
                     }
                 }
             }
