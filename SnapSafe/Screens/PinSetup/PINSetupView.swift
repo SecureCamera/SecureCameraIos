@@ -47,7 +47,7 @@ struct PINSetupView: View {
                             .multilineTextAlignment(.center)
                             .padding()
                             .background(RoundedRectangle(cornerRadius: 8).stroke(Color.gray, lineWidth: 1))
-                            .padding(.horizontal, 50)
+                            .padding(.horizontal, min(50, UIScreen.main.bounds.width * 0.1))
                         
                         SecureField("Confirm PIN", text: $viewModel.confirmPin)
                             .keyboardType(.numberPad)
@@ -55,7 +55,7 @@ struct PINSetupView: View {
                             .multilineTextAlignment(.center)
                             .padding()
                             .background(RoundedRectangle(cornerRadius: 8).stroke(Color.gray, lineWidth: 1))
-                            .padding(.horizontal, 50)
+                            .padding(.horizontal, min(50, UIScreen.main.bounds.width * 0.1))
                     }
                     
                     if viewModel.showError {
@@ -93,7 +93,7 @@ struct PINSetupView: View {
                                 .foregroundColor(.white)
                         }
                         .padding()
-                        .frame(width: 200)
+                        .frame(minWidth: 200, maxWidth: 300)
                         .background(buttonBackgroundColor)
                         .cornerRadius(10)
                     }
@@ -113,6 +113,7 @@ struct PINSetupView: View {
                 }
             }
         }
+        .navigationViewStyle(.stack)
     }
 }
 
