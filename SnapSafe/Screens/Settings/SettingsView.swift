@@ -85,13 +85,6 @@ struct SettingsView: View {
 
                 // SECURITY SECTION
                 Section(header: Text("Security")) {
-                    HStack {
-                        Text("Status")
-                        Spacer()
-                        Text("Secure")
-                            .foregroundColor(.green)
-                    }
-
                     Picker("Session Timeout", selection: $viewModel.sessionTimeout) {
                         Text("1 minute").tag(1)
                         Text("5 minutes").tag(5)
