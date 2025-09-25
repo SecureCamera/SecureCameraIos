@@ -34,9 +34,9 @@ public enum SecurityOverlayState {
 final class SecurityOverlayViewModel: ObservableObject {
     // MARK: - Published Properties
 
-    @Published public var currentOverlayState: SecurityOverlayState = .normal
-    @Published public var dismissAllSheets: Bool = false
-    @Published public var dismissAllAlerts: Bool = false
+    @Published var currentOverlayState: SecurityOverlayState = .normal
+    @Published var dismissAllSheets: Bool = false
+    @Published var dismissAllAlerts: Bool = false
 
     // MARK: - Private Properties
 
@@ -102,15 +102,6 @@ final class SecurityOverlayViewModel: ObservableObject {
     func authenticationComplete() async {
         wasInBackground = false
         needsAuthenticationAfterBackground = false
-        await updateOverlayState()
-    }
-
-    func resetState() async {
-        dismissAllSheets = false
-        dismissAllAlerts = false
-        wasInBackground = false
-        needsAuthenticationAfterBackground = false
-        isInactive = false
         await updateOverlayState()
     }
 

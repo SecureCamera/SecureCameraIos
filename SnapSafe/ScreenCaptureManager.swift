@@ -85,8 +85,6 @@ class ScreenCaptureManager: ObservableObject {
                 self?.screenshotTaken = false
             }
         }
-        
-        // Here you could also log the security event, show a warning, etc.
     }
     
     /// Stop monitoring when the manager is deallocated
@@ -160,32 +158,6 @@ struct ScreenRecordingBlockerView: View {
         }
     }
 }
-
-// View shown when a screenshot is taken
-//struct ScreenshotTakenView: View {
-//    var body: some View {
-//        VStack {
-//            HStack(spacing: 15) {
-//                Image(systemName: "exclamationmark.triangle.fill")
-//                    .foregroundColor(.yellow)
-//                    .font(.system(size: 24))
-//                
-//                Text("Screenshot Captured")
-//                    .font(.system(size: 16, weight: .semibold))
-//                    .foregroundColor(.white)
-//                
-//                Spacer()
-//            }
-//            .padding()
-//            .background(Color.black.opacity(0.8))
-//            .cornerRadius(10)
-//            .padding(.horizontal)
-//            .padding(.top, 10)
-//            
-//            Spacer()
-//        }
-//    }
-//}
 
 // Extension to make the modifier easier to use
 extension View {
