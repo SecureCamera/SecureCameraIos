@@ -12,6 +12,7 @@ import Combine
 import Logging
 import FactoryKit
 
+@MainActor
 protocol PhotoCapturing: ObservableObject {
     var recentImage: UIImage? { get }
     

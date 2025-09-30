@@ -11,6 +11,7 @@ import SwiftUI
 import Combine
 import Logging
 
+@MainActor
 protocol CameraPermissionProviding: ObservableObject {
     var isPermissionGranted: Bool { get }
     

@@ -377,19 +377,6 @@ public class SecureImageRepository {
         }
     }
     
-    /// Gets a photo by name
-    func getPhotoByName(_ photoName: String) -> PhotoDef? {
-        let dir = getGalleryDirectory()
-        let photoFile = dir.appendingPathComponent(photoName)
-        
-        guard FileManager.default.fileExists(atPath: photoFile.path) else {
-            return nil
-        }
-        
-        let format = photoFile.pathExtension.isEmpty ? "jpg" : photoFile.pathExtension
-        return PhotoDef(photoName: photoName, photoFormat: format, photoFile: photoFile)
-    }
-    
     /// Deletes a single image
     @discardableResult
     func deleteImage(_ photoDef: PhotoDef, deleteDecoy: Bool = true) -> Bool {
@@ -557,37 +544,6 @@ public class SecureImageRepository {
         try? FileManager.default.removeItem(at: thumbnailFile)
     }
     
-    /// Creates a copy of an image with optional modifications
-    func saveImageCopy(_ photoDef: PhotoDef, modifiedImageData: Data? = nil) async throws -> PhotoDef {
-        let galleryDir = getGalleryDirectory()
-        let copyName = Self.generateCopyName(in: galleryDir, originalName: photoDef.photoName)
-        let copyPhotoDef = PhotoDef(photoName: copyName, photoFormat: photoDef.photoFormat, photoFile: galleryDir.appendingPathComponent(copyName))
-        
-        let imageDataToSave: Data
-        if let modifiedData = modifiedImageData {
-            imageDataToSave = modifiedData
-        } else {
-            // Use original image data
-            imageDataToSave = try await decryptJpg(photoDef)
-        }
-        
-        // Extract EXIF metadata from source image to preserve it
-        let sourceImageData = try await decryptJpg(photoDef)
-        let sourceEXIFMetadata = extractEXIFMetadata(from: sourceImageData)
-        
-        // Process with preserved EXIF metadata
-        let processedData = try processImageWithEXIFMetadata(
-            imageData: imageDataToSave,
-            preservedEXIFMetadata: sourceEXIFMetadata,
-            filename: copyPhotoDef.photoName
-        )
-        
-        // Save the copy
-        try await encryptionScheme.encryptToFile(plain: processedData, targetFile: copyPhotoDef.photoFile)
-        
-        return copyPhotoDef
-    }
-    
     // MARK: - Private Helper Methods
     
     /// Extracts EXIF metadata from image data
@@ -667,23 +623,6 @@ public class SecureImageRepository {
     }
     
     // MARK: - Helper Methods
-    
-    static func generateCopyName(in directory: URL, originalName: String) -> String {
-        let nameWithoutExtension = (originalName as NSString).deletingPathExtension
-        let pathExtension = (originalName as NSString).pathExtension
-        let ext = pathExtension.isEmpty ? "jpg" : pathExtension
-        
-        var candidate = "\(nameWithoutExtension)_cp.\(ext)"
-        var counter = 1
-        
-        while FileManager.default.fileExists(atPath: directory.appendingPathComponent(candidate).path) {
-            candidate = "\(nameWithoutExtension)_cp\(counter).\(ext)"
-            counter += 1
-        }
-        
-        return candidate
-    }
-
 
     struct PhotoMetaData {
         let name: String

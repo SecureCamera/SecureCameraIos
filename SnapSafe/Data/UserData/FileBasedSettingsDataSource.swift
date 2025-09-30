@@ -49,7 +49,6 @@ public final class FileBasedSettingsDataSource: SettingsDataSource {
     
     // MARK: - File Management
     private let fileURL: URL
-    private let jsonDecoder = JSONDecoder()
     private let jsonEncoder: JSONEncoder = {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]

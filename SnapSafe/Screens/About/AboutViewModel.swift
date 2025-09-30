@@ -29,9 +29,4 @@ final class AboutViewModel: ObservableObject {
             buildNumber = build
         }
     }
-    
-    // MARK: - Computed Properties
-    var fullVersionString: String {
-        return "\(appVersion) (\(buildNumber))"
-    }
 }

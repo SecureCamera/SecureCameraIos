@@ -11,6 +11,7 @@ import SwiftUI
 import Combine
 import Logging
 
+@MainActor
 protocol ZoomControlling: ObservableObject {
     var zoomFactor: CGFloat { get }
     var minZoom: CGFloat { get }
