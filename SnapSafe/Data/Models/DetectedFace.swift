@@ -67,53 +67,6 @@ public struct _DetectedFace: Identifiable, Hashable {
         )
     }
 
-    /// Return a resized face (center-preserving) by a scale factor in image-space.
-    public func resize(by scale: CGFloat, minSize: CGFloat = 12) -> DetectedFace {
-        let c = CGPoint(x: bounds.midX, y: bounds.midY)
-        let w = max(minSize, bounds.width * scale)
-        let h = max(minSize, bounds.height * scale)
-        let newRect = CGRect(x: c.x - w/2, y: c.y - h/2, width: w, height: h).integral
-        return DetectedFace(bounds: newRect, isSelected: isSelected, isUserCreated: isUserCreated, leftEye: leftEye, rightEye: rightEye)
-    }
-
-    /// Return a new face whose rect is clamped inside the image bounds.
-    public func clamped(to imageSize: CGSize) -> DetectedFace {
-        var x = max(0, bounds.origin.x)
-        var y = max(0, bounds.origin.y)
-        var w = bounds.width
-        var h = bounds.height
-
-        if x + w > imageSize.width { x = min(x, imageSize.width - 1); w = imageSize.width - x }
-        if y + h > imageSize.height { y = min(y, imageSize.height - 1); h = imageSize.height - y }
-
-        let r = CGRect(x: x, y: y, width: max(1, w), height: max(1, h)).integral
-        return DetectedFace(bounds: r, isSelected: isSelected, isUserCreated: isUserCreated, leftEye: leftEye, rightEye: rightEye)
-    }
-
-    /// Return a translated face by an image-space delta.
-    public func moved(by delta: CGSize) -> DetectedFace {
-        let r = bounds.offsetBy(dx: delta.width, dy: delta.height).integral
-        return DetectedFace(bounds: r, isSelected: isSelected, isUserCreated: isUserCreated, leftEye: leftEye, rightEye: rightEye)
-    }
-
-    /// Mutate this face by translating with an image-space delta.
-    public mutating func moveInPlace(by delta: CGSize) {
-        bounds = bounds.offsetBy(dx: delta.width, dy: delta.height).integral
-    }
-
-    /// Mutate this face by resizing around its center by a scale factor.
-    public mutating func resizeInPlace(by scale: CGFloat, minSize: CGFloat = 12) {
-        let c = CGPoint(x: bounds.midX, y: bounds.midY)
-        let w = max(minSize, bounds.width * scale)
-        let h = max(minSize, bounds.height * scale)
-        bounds = CGRect(x: c.x - w/2, y: c.y - h/2, width: w, height: h).integral
-    }
-
-    /// Clamp this face’s rect inside the image and update in place.
-    public mutating func clampInPlace(to imageSize: CGSize) {
-        self = clamped(to: imageSize)
-    }
-
     public func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }

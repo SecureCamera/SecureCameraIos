@@ -51,48 +51,6 @@ class LocationRepository: NSObject, ObservableObject {
         locationManager.stopUpdatingLocation()
     }
 
-    // Function to get the current location metadata for a photo
-    func getCurrentLocationMetadata() -> [String: Any]? {
-        // If the user doesn't want location data or we don't have permission, return nil
-        if !shouldIncludeLocationData || (authorizationStatus != .authorizedWhenInUse && authorizationStatus != .authorizedAlways) {
-            return nil
-        }
-
-        // If we have a location, create GPS metadata
-        if let location = lastLocation {
-            // Create GPS dictionary
-            var gpsDict: [String: Any] = [:]
-
-            // Latitude
-            let latitude = location.coordinate.latitude
-            let latitudeRef = latitude >= 0 ? "N" : "S"
-            gpsDict[String(kCGImagePropertyGPSLatitudeRef)] = latitudeRef
-            gpsDict[String(kCGImagePropertyGPSLatitude)] = abs(latitude)
-
-            // Longitude
-            let longitude = location.coordinate.longitude
-            let longitudeRef = longitude >= 0 ? "E" : "W"
-            gpsDict[String(kCGImagePropertyGPSLongitudeRef)] = longitudeRef
-            gpsDict[String(kCGImagePropertyGPSLongitude)] = abs(longitude)
-
-            // Altitude
-            if location.verticalAccuracy > 0 {
-                gpsDict[String(kCGImagePropertyGPSAltitudeRef)] = location.altitude < 0 ? 1 : 0
-                gpsDict[String(kCGImagePropertyGPSAltitude)] = abs(location.altitude)
-            }
-
-            // Timestamp
-            let dateFormatter = DateFormatter()
-            dateFormatter.dateFormat = "yyyy:MM:dd HH:mm:ss"
-            gpsDict[String(kCGImagePropertyGPSDateStamp)] = dateFormatter.string(from: location.timestamp)
-
-            // Create the GPS metadata dictionary
-            return [String(kCGImagePropertyGPSDictionary): gpsDict]
-        }
-
-        return nil
-    }
-
     // Function to get a user-friendly status string
     func getAuthorizationStatusString() -> String {
         switch authorizationStatus {

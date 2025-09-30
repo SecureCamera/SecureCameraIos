@@ -8,19 +8,19 @@
 import Foundation
 import UIKit
 
-public struct PhotoDef: Hashable, Identifiable {
+struct PhotoDef: Hashable, Identifiable {
     public let id = UUID()
-    public let photoName: String
-    public let photoFormat: String
-    public let photoFile: URL
+    let photoName: String
+    let photoFormat: String
+    let photoFile: URL
     
-    public init(photoName: String, photoFormat: String, photoFile: URL) {
+    init(photoName: String, photoFormat: String, photoFile: URL) {
         self.photoName = photoName
         self.photoFormat = photoFormat
         self.photoFile = photoFile
     }
     
-    public func dateTaken() -> Date? {
+    func dateTaken() -> Date? {
         // Extract date from filename format: "photo_yyyyMMdd_HHmmss_SS.jpg"
         let dateString = photoName.replacingOccurrences(of: "photo_", with: "")
             .replacingOccurrences(of: ".jpg", with: "")
