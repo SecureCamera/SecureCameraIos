@@ -58,6 +58,9 @@ final class SettingsViewModel: ObservableObject {
     @Injected(\.createPoisonPillUseCase)
     private var createPoisonPillUseCase: CreatePoisonPillUseCase
     
+    @Injected(\.removePoisonPillUseCase)
+    private var removePoisonPillUseCase: RemovePoisonPillUseCase
+    
     @Injected(\.settingsDataSource)
     private var settingsDataSource: SettingsDataSource
     
@@ -155,7 +158,7 @@ final class SettingsViewModel: ObservableObject {
     /// Remove the configured poison pill
     func removePoisonPill() {
         Task {
-            await pinRepository.removePoisonPillPin()
+            await removePoisonPillUseCase.removePoisonPill()
             await MainActor.run {
                 self.hasPoisonPill = false
             }

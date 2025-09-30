@@ -181,6 +181,13 @@ extension Container {
         ) }
     }
     
+    var removePoisonPillUseCase: Factory<RemovePoisonPillUseCase> {
+        self { @MainActor in RemovePoisonPillUseCase(
+            pinRepository: self.pinRepository(),
+            imageRepository: self.secureImageRepository()
+        ) }
+    }
+    
     var pinStrengthCheckUseCase: Factory<PinStrengthCheckUseCase> {
         self { PinStrengthCheckUseCase() }
     }
