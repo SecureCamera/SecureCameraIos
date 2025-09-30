@@ -220,7 +220,7 @@ final class PinRepositoryTests: XCTestCase {
             encrypted: .value(encryptedPppData), keyAlias: .value("pin_key")
         ).willReturn(pppData)
 
-        try await XCTAssertTrueAsync(try await repo.hasPoisonPillPin())
+        await XCTAssertTrueAsync(await repo.hasPoisonPillPin())
     }
 
     func test_hasPoisonPillPin_false_when_one_missing() async throws {
@@ -246,7 +246,7 @@ final class PinRepositoryTests: XCTestCase {
         given(encryptionScheme).decryptWithKeyAlias(
             encrypted: .value(encryptedPppData), keyAlias: .value("pin_key")
         ).willReturn(pppData)
-        try await XCTAssertFalseAsync(try await repo.hasPoisonPillPin())
+        await XCTAssertFalseAsync(await repo.hasPoisonPillPin())
     }
 
     func test_verifyPoisonPillPin_delegates_to_verifyPin() async throws {

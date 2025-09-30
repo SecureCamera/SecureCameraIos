@@ -13,29 +13,27 @@ import Security
 
 // MARK: - KeyCache Actor for Thread-Safe Key Management
 private actor KeyCache {
-    private var cachedKey: Data?
+    private var shardedKey: ShardedKey?
     
     func hasKey() -> Bool {
-        return cachedKey != nil
+        return shardedKey != nil
     }
     
     func getKey() -> Data? {
-        return cachedKey
+        return try! shardedKey?.reconstructKey()
     }
     
     func setKey(_ key: Data) {
         // Only set if not already cached (prevents duplicate work)
-        if cachedKey == nil {
-            cachedKey = key
+        if shardedKey == nil {
+            shardedKey = ShardedKey(key: key)
         }
     }
     
     func evictKey() {
-        // Zero the memory before releasing
-        _ = cachedKey?.withUnsafeMutableBytes { bytes in
-            memset(bytes.baseAddress!, 0, bytes.count)
-        }
-        cachedKey = nil
+        // Securely evict the sharded key
+        shardedKey?.evict()
+        shardedKey = nil
     }
 }
 
