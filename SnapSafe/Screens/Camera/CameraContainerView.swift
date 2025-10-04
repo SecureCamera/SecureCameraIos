@@ -18,10 +18,21 @@ struct CameraContainerView: View {
     // Local camera UI state
     @State private var isShutterAnimating = false
     @State private var deviceOrientation = UIDevice.current.orientation
+    @State private var showZoomSlider = false
+    @State private var isPinching = false
     
     var body: some View {
         ZStack {
-            CameraView(cameraModel: cameraModel)
+            CameraView(cameraModel: cameraModel, onPinchStarted: {
+                isPinching = true
+                withAnimation {
+                    showZoomSlider = true
+                }
+            }, onPinchChanged: {
+                isPinching = true
+            }, onPinchEnded: {
+                isPinching = false
+            })
                 .edgesIgnoringSafeArea(.all)
 
             // Shutter animation overlay
@@ -75,25 +86,36 @@ struct CameraContainerView: View {
 
                 Spacer()
 
-                // Zoom level indicator
-                ZStack {
-                    Capsule()
-                        .fill(Color.black.opacity(0.6))
-                        .frame(width: 80, height: 30)
+                // Zoom slider (full control)
+                if showZoomSlider {
+                    ZoomSliderView(cameraModel: cameraModel, isVisible: $showZoomSlider, isPinching: isPinching)
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 10)
+                } else {
+                    // Simple zoom level indicator
+                    ZStack {
+                        Capsule()
+                            .fill(Color.black.opacity(0.6))
+                            .frame(width: 80, height: 30)
 
-                    Text(String(format: "%.1fx", cameraModel.zoomFactor))
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(.white)
+                        Text(String(format: "%.1fx", cameraModel.zoomFactor))
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(.white)
+                    }
+                    .opacity(cameraModel.zoomFactor != 1.0 ? 1.0 : 0.0)
+                    .animation(.easeInOut, value: cameraModel.zoomFactor)
+                    .padding(.bottom, 10)
+                    .rotationEffect(Utils.getRotationAngle())
+                    .animation(.easeInOut, value: deviceOrientation)
+                    .onTapGesture(count: 2) {
+                        handleDoubleTabZoomIndicator()
+                    }
+                    .onTapGesture {
+                        withAnimation {
+                            showZoomSlider = true
+                        }
+                    }
                 }
-                // Show for all zoom levels (including 0.5x for wide angle)
-                .opacity(cameraModel.zoomFactor != 1.0 ? 1.0 : 0.0)
-                .animation(.easeInOut, value: cameraModel.zoomFactor)
-                .padding(.bottom, 10)
-                // Rotate the zoom indicator based on device orientation
-                .rotationEffect(Utils.getRotationAngle())
-                // Separate animation for rotation to ensure it responds to device orientation
-                // changes independent of zoom changes
-                .animation(.easeInOut, value: deviceOrientation)
 
                 HStack {
                     Button(action: {
@@ -191,6 +213,14 @@ struct CameraContainerView: View {
                 isShutterAnimating = false
             }
         }
+    }
+
+    private func handleDoubleTabZoomIndicator() {
+        Task {
+            await cameraModel.zoom(factor: 1.0)
+        }
+        let generator = UIImpactFeedbackGenerator(style: .medium)
+        generator.impactOccurred()
     }
 
 }

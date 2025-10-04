@@ -17,11 +17,13 @@ protocol ZoomControlling: ObservableObject {
     var minZoom: CGFloat { get }
     var maxZoom: CGFloat { get }
     var currentLensType: CameraLensType { get }
-    
+    var zoomDetents: [CGFloat] { get }
+
     func updateZoomLimits(for device: AVCaptureDevice?)
     func zoom(factor: CGFloat, device: AVCaptureDevice?) async
     func handlePinchGesture(scale: CGFloat, initialScale: CGFloat?, device: AVCaptureDevice?, onLensSwitch: @escaping (CameraLensType) -> Void)
     func resetZoomLevel(device: AVCaptureDevice?)
+    func snapToNearestDetent(threshold: CGFloat) async
 }
 
 @MainActor
@@ -33,20 +35,26 @@ final class CameraZoomService: ObservableObject, ZoomControlling {
     @Published var minZoom: CGFloat = 0.5
     @Published var maxZoom: CGFloat = 10.0
     @Published var currentLensType: CameraLensType = .wideAngle
-    
+
+    // MARK: - Public Properties
+
+    let zoomDetents: [CGFloat] = [0.5, 1.0, 2.0, 3.0, 5.0, 10.0]
+
     // MARK: - Private Properties
-    
+
     private var initialZoom: CGFloat = 1.0
-    
+    private weak var currentDevice: AVCaptureDevice?
+
     // MARK: - Public Methods
     
     func updateZoomLimits(for device: AVCaptureDevice?) {
         guard let device = device else { return }
-        
-        let minZoomValue: CGFloat = 1.0
+        currentDevice = device
+
+        let minZoomValue: CGFloat = 0.5
         let maxZoomValue = min(device.activeFormat.videoMaxZoomFactor, 10.0)
         let defaultZoomValue: CGFloat = 1.0
-        
+
         minZoom = minZoomValue
         maxZoom = maxZoomValue
         zoomFactor = defaultZoomValue
@@ -118,22 +126,46 @@ final class CameraZoomService: ObservableObject, ZoomControlling {
         let newZoomFactor = initialZoom + (zoomDelta * (maxZoom - minZoom))
         
         // Determine lens switching thresholds
-        let shouldUseUltraWide = newZoomFactor <= 0.9 && device != nil
-        let shouldUseWideAngle = newZoomFactor > 0.9
+        // Use ultra-wide for anything below 1.0, wide-angle for 1.0 and above
+        let shouldUseUltraWide = newZoomFactor < 1.0 && device != nil
+        let shouldUseWideAngle = newZoomFactor >= 1.0
         
         if shouldUseUltraWide && currentLensType != .ultraWide {
             // Prepare auto modes for smooth lens transition
+            Logger.camera.info("Switching to ultra-wide lens at zoom factor: \(newZoomFactor)")
             prepareAutoModesForTransition(device: device)
             currentLensType = .ultraWide
+
+            // Store the target zoom before switching
+            let targetZoom = newZoomFactor
+
             onLensSwitch(.ultraWide)
+
+            // After lens switch completes, apply the target zoom
+            Task {
+                try? await Task.sleep(for: .milliseconds(150))
+                await zoom(factor: targetZoom, device: device)
+            }
         } else if shouldUseWideAngle && currentLensType != .wideAngle {
+            Logger.camera.info("Switching to wide-angle lens at zoom factor: \(newZoomFactor)")
             prepareAutoModesForTransition(device: device)
             currentLensType = .wideAngle
+
+            // Clamp to wide-angle minimum (1.0x)
+            let targetZoom = max(1.0, newZoomFactor)
+            Logger.camera.info("Clamping zoom to \(targetZoom) for wide-angle lens")
+
             onLensSwitch(.wideAngle)
+
+            // After lens switch completes, apply the target zoom
+            Task {
+                try? await Task.sleep(for: .milliseconds(150))
+                await zoom(factor: targetZoom, device: device)
+            }
         } else {
             // Apply zoom with auto mode restoration
             restoreAutoModes(device: device)
-            
+
             Task {
                 await zoom(factor: newZoomFactor, device: device)
             }
@@ -167,10 +199,30 @@ final class CameraZoomService: ObservableObject, ZoomControlling {
     
     func updateZoomForSimulator() {
         minZoom = 0.5
-        maxZoom = 10.0  
+        maxZoom = 10.0
         zoomFactor = 1.0
     }
-    
+
+    func snapToNearestDetent(threshold: CGFloat) async {
+        let currentZoom = zoomFactor
+        var closestLevel = currentZoom
+        var minDistance = CGFloat.greatestFiniteMagnitude
+
+        for level in zoomDetents {
+            if level >= minZoom && level <= maxZoom {
+                let distance = abs(currentZoom - level)
+                if distance < minDistance && distance <= threshold {
+                    minDistance = distance
+                    closestLevel = level
+                }
+            }
+        }
+
+        if closestLevel != currentZoom {
+            await zoom(factor: closestLevel, device: currentDevice)
+        }
+    }
+
     // MARK: - Private Methods
     
     private func prepareAutoModesForTransition(device: AVCaptureDevice?) {

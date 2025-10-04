@@ -17,7 +17,10 @@ import Logging
 // SwiftUI wrapper for the camera preview
 struct CameraView: View {
     @ObservedObject var cameraModel: CameraViewModel
-    
+    var onPinchStarted: (() -> Void)?
+    var onPinchChanged: (() -> Void)?
+    var onPinchEnded: (() -> Void)?
+
     // Add a slightly darker background to emphasize the capture area
     let backgroundOpacity: Double = 0.2
 
@@ -30,7 +33,7 @@ struct CameraView: View {
                 
                 if cameraModel.isPermissionGranted {
                     // Camera preview represented by UIViewRepresentable
-                    CameraPreviewView(cameraModel: cameraModel, viewSize: geometry.size)
+                    CameraPreviewView(cameraModel: cameraModel, viewSize: geometry.size, onPinchStarted: onPinchStarted, onPinchChanged: onPinchChanged, onPinchEnded: onPinchEnded)
                         .edgesIgnoringSafeArea(.all)
 
                     // Focus indicator overlay with proper coordinates
@@ -128,10 +131,13 @@ struct FocusIndicatorView: View {
 // UIViewRepresentable for camera preview
 struct CameraPreviewView: UIViewRepresentable {
     private let sessionQueue = DispatchQueue(label: "camera.session.queue")
-    
+
     @ObservedObject var cameraModel: CameraViewModel
     var viewSize: CGSize // Store the parent view's size for coordinate conversion
-    
+    var onPinchStarted: (() -> Void)?
+    var onPinchChanged: (() -> Void)?
+    var onPinchEnded: (() -> Void)?
+
     // Standard photo aspect ratio is 4:3
     // This is the ratio of most iPhone photos in portrait mode (3:4 actually, as width:height)
     private let photoAspectRatio: CGFloat = 3.0 / 4.0 // width/height in portrait mode
@@ -456,16 +462,19 @@ struct CameraPreviewView: UIViewRepresentable {
             case .began:
                 // Store initial scale when gesture begins
                 initialScale = gesture.scale
+                parent.onPinchStarted?()
                 parent.cameraModel.handlePinchGesture(scale: gesture.scale, initialScale: initialScale)
 
             case .changed:
                 // Apply continuous updates for smoother zooming experience
                 // The continuous timer helps ensure smoother transitions
+                parent.onPinchChanged?()
                 parent.cameraModel.handlePinchGesture(scale: gesture.scale)
 
             case .ended, .cancelled, .failed:
                 // Ensure final value is applied when gesture completes
                 parent.cameraModel.handlePinchGesture(scale: gesture.scale)
+                parent.onPinchEnded?()
 
             default:
                 break
