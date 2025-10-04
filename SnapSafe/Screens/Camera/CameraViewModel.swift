@@ -8,6 +8,7 @@ import AVFoundation
 import SwiftUI
 import FactoryKit
 import Logging
+import Combine
 
 enum CameraLensType {
     case ultraWide   // 0.5x zoom
@@ -66,13 +67,23 @@ class CameraViewModel: NSObject, ObservableObject {
     @Published var flashMode: AVCaptureDevice.FlashMode = .auto
     var cameraPosition: AVCaptureDevice.Position { deviceService.cameraPosition }
     @Published var isTogglingFlash = false
-    
-    
-    
+
+    // Combine subscriptions
+    private var cancellables = Set<AnyCancellable>()
+
+
+
     // Initialize camera with delayed permission check to prevent race conditions
     override init() {
         super.init()
-        
+
+        // Observe permission changes from the service
+        permissionService.objectWillChange
+            .sink { [weak self] _ in
+                self?.objectWillChange.send()
+            }
+            .store(in: &cancellables)
+
         // Listen for app entering foreground to reset zoom level
         NotificationCenter.default.addObserver(
             self,

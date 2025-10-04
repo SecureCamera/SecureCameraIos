@@ -102,6 +102,8 @@ final class CameraPermissionService: ObservableObject, CameraPermissionProviding
     @objc private func handleAppDidBecomeActive() {
         // Refresh permission state when app becomes active
         // (user might have changed permissions in Settings)
+        // Skip if we're currently checking permissions to avoid race condition
+        guard !isCheckingPermission else { return }
         updatePermissionState()
     }
 }
