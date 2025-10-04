@@ -84,6 +84,13 @@ class CameraViewModel: NSObject, ObservableObject {
             }
             .store(in: &cancellables)
 
+        // Observe focus service changes
+        focusService.objectWillChange
+            .sink { [weak self] _ in
+                self?.objectWillChange.send()
+            }
+            .store(in: &cancellables)
+
         // Listen for app entering foreground to reset zoom level
         NotificationCenter.default.addObserver(
             self,
