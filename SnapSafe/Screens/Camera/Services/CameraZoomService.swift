@@ -127,7 +127,8 @@ final class CameraZoomService: ObservableObject, ZoomControlling {
         
         // Determine lens switching thresholds
         // Use ultra-wide for anything below 1.0, wide-angle for 1.0 and above
-        let shouldUseUltraWide = newZoomFactor < 1.0 && device != nil
+        // Only back camera supports ultra-wide
+        let shouldUseUltraWide = newZoomFactor < 1.0 && device != nil && device?.position == .back
         let shouldUseWideAngle = newZoomFactor >= 1.0
         
         if shouldUseUltraWide && currentLensType != .ultraWide {

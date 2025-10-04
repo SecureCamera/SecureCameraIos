@@ -234,7 +234,7 @@ class CameraViewModel: NSObject, ObservableObject {
         zoomService.handlePinchGesture(
             scale: scale,
             initialScale: initialScale,
-            device: cameraPosition == .back ? currentDevice : nil,
+            device: currentDevice,
             onLensSwitch: { [weak self] lensType in
                 self?.switchLensType(to: lensType)
             }
