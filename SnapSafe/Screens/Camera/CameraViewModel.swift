@@ -46,7 +46,8 @@ class CameraViewModel: NSObject, ObservableObject {
     var focusIndicatorPoint: CGPoint? { focusService.focusIndicatorPoint }
     var showingFocusIndicator: Bool { focusService.showingFocusIndicator }
     var recentImage: UIImage? { photoService.recentImage }
-    
+    var isSavingPhoto: Bool { photoService.isSavingPhoto }
+
     @Published var alert = false
     @Published var preview: AVCaptureVideoPreviewLayer!
     
@@ -86,6 +87,13 @@ class CameraViewModel: NSObject, ObservableObject {
 
         // Observe focus service changes
         focusService.objectWillChange
+            .sink { [weak self] _ in
+                self?.objectWillChange.send()
+            }
+            .store(in: &cancellables)
+
+        // Observe photo service changes
+        photoService.objectWillChange
             .sink { [weak self] _ in
                 self?.objectWillChange.send()
             }

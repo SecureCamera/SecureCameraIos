@@ -25,9 +25,10 @@ protocol PhotoCapturing: ObservableObject {
 final class PhotoCaptureService: NSObject, ObservableObject, PhotoCapturing {
     
     // MARK: - Published Properties
-    
+
     @Published var recentImage: UIImage?
-    
+    @Published var isSavingPhoto: Bool = false
+
     // MARK: - Dependencies
     
     @Injected(\.secureImageRepository)
@@ -42,6 +43,7 @@ final class PhotoCaptureService: NSObject, ObservableObject, PhotoCapturing {
     // MARK: - Public Methods
     
     func capturePhoto(flashMode: AVCaptureDevice.FlashMode, cameraPosition: AVCaptureDevice.Position, output: AVCapturePhotoOutput, preview: AVCaptureVideoPreviewLayer?, session: AVCaptureSession) {
+        isSavingPhoto = true
         let photoSettings = createAdvancedPhotoSettings()
         
         // Configure flash based on camera position
@@ -79,6 +81,7 @@ final class PhotoCaptureService: NSObject, ObservableObject, PhotoCapturing {
     }
     
     func captureMockPhoto(cameraPosition: AVCaptureDevice.Position) async {
+        isSavingPhoto = true
         Logger.camera.debug("Capturing mock photo in simulator")
         
         // Create a simple colored image for testing
@@ -150,6 +153,9 @@ final class PhotoCaptureService: NSObject, ObservableObject, PhotoCapturing {
             Logger.camera.error("Error saving mock photo", metadata: [
                 "error": .string(error.localizedDescription)
             ])
+        }
+        await MainActor.run {
+            self.isSavingPhoto = false
         }
     }
     
@@ -235,6 +241,9 @@ final class PhotoCaptureService: NSObject, ObservableObject, PhotoCapturing {
                 Logger.camera.error("Error saving photo", metadata: [
                     "error": .string(error.localizedDescription)
                 ])
+            }
+            await MainActor.run {
+                self?.isSavingPhoto = false
             }
         }
     }

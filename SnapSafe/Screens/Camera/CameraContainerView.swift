@@ -99,13 +99,21 @@ struct CameraContainerView: View {
                     Button(action: {
                         nav.presentFullScreenCover(.gallery)
                     }) {
-                        Image(systemName: "photo.on.rectangle")
-                            .font(.system(size: 24))
-                            .foregroundColor(.white)
-                            .padding()
-                            .background(Color.black.opacity(0.6))
-                            .clipShape(Circle())
+                        ZStack {
+                            Image(systemName: "photo.on.rectangle")
+                                .font(.system(size: 24))
+                                .foregroundColor(cameraModel.isSavingPhoto ? .gray : .white)
+                                .padding()
+                                .background(Color.black.opacity(0.6))
+                                .clipShape(Circle())
+                            if cameraModel.isSavingPhoto {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                    .scaleEffect(0.7)
+                            }
+                        }
                     }
+                    .disabled(cameraModel.isSavingPhoto)
                     .padding()
 
                     Spacer()
