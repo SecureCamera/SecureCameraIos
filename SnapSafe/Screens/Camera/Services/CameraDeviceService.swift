@@ -101,11 +101,14 @@ final class CameraDeviceService: ObservableObject, @preconcurrency CameraDeviceP
             if device.isFocusModeSupported(.continuousAutoFocus) {
                 device.focusMode = .continuousAutoFocus
                 device.isSmoothAutoFocusEnabled = true
-                
+
                 if device.isAutoFocusRangeRestrictionSupported {
                     device.autoFocusRangeRestriction = .none
                 }
             }
+
+            // Enable face-driven autofocus (prioritizes detected faces)
+            device.automaticallyAdjustsFaceDrivenAutoFocusEnabled = true
             
             if device.isExposureModeSupported(.continuousAutoExposure) {
                 device.exposureMode = .continuousAutoExposure
