@@ -33,7 +33,7 @@ struct ZoomSliderView: View {
                 ZStack(alignment: .leading) {
                     // Background track
                     Capsule()
-                        .fill(Color.green.opacity(0.3))
+                        .fill(Color.green.opacity(0.6))
                         .frame(height: 4)
 
                     // Tick marks and labels (tappable)
@@ -89,7 +89,7 @@ struct ZoomSliderView: View {
         .padding(.vertical, 10)
         .background(
             RoundedRectangle(cornerRadius: 8)
-                .fill(Color.black.opacity(0.7))
+                .fill(Color.black.opacity(0.3))
         )
         .frame(height: 80)
         .transition(.opacity.combined(with: .scale))
