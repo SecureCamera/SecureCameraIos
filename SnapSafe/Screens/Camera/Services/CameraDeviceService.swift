@@ -26,7 +26,7 @@ protocol CameraDeviceProviding: ObservableObject {
 
 
 @MainActor
-final class CameraDeviceService: ObservableObject, CameraDeviceProviding {
+final class CameraDeviceService: ObservableObject, @preconcurrency CameraDeviceProviding {
     
     // MARK: - Published Properties
     

@@ -5,7 +5,7 @@
 //  Created by Adam Brown on 9/6/25.
 //
 
-import AVFoundation
+@preconcurrency import AVFoundation
 import CoreGraphics
 import ImageIO
 import PhotosUI

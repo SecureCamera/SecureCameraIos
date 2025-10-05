@@ -250,7 +250,7 @@ final class PhotoCaptureService: NSObject, ObservableObject, PhotoCapturing {
 }
 
 // MARK: - AVCapturePhotoCaptureDelegate
-extension PhotoCaptureService: AVCapturePhotoCaptureDelegate {
+extension PhotoCaptureService: @preconcurrency AVCapturePhotoCaptureDelegate {
     func photoOutput(_: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
         if let error = error {
             Logger.camera.error("Error capturing photo", metadata: [

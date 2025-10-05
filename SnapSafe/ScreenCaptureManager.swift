@@ -11,6 +11,7 @@ import Logging
 
 
 /// Manager class to handle screen recording and screenshot detection
+@MainActor
 class ScreenCaptureManager: ObservableObject {
     // Singleton instance
     static let shared = ScreenCaptureManager()
@@ -36,9 +37,11 @@ class ScreenCaptureManager: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.handleCaptureChange()
+            Task { @MainActor in
+                self?.handleCaptureChange()
+            }
         }
-        
+
         // Check initial state
         handleCaptureChange()
     }
@@ -50,9 +53,9 @@ class ScreenCaptureManager: ObservableObject {
             self?.isScreenBeingRecorded = UIScreen.main.isCaptured
             
             if UIScreen.main.isCaptured {
-                Logger.ui.info("🔴 Screen recording detected!")
+                Logger.ui.info("Screen recording detected!")
             } else {
-                Logger.ui.info("✅ Screen recording stopped")
+                Logger.ui.info("Screen recording stopped")
             }
         }
     }
@@ -65,7 +68,9 @@ class ScreenCaptureManager: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.handleScreenshotTaken()
+            Task { @MainActor in
+                self?.handleScreenshotTaken()
+            }
         }
     }
     
@@ -79,10 +84,12 @@ class ScreenCaptureManager: ObservableObject {
         // Update the flag to trigger UI updates
         Task { @MainActor [weak self] in
             self?.screenshotTaken = true
-            
+
             // Reset the flag after a delay
-            self?.screenshotResetTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { _ in
-                self?.screenshotTaken = false
+            self?.screenshotResetTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { [weak self] _ in
+                Task { @MainActor in
+                    self?.screenshotTaken = false
+                }
             }
         }
     }
