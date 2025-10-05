@@ -24,17 +24,26 @@ struct CameraView: View {
     // Add a slightly darker background to emphasize the capture area
     let backgroundOpacity: Double = 0.2
 
+    @State private var showBlackOverlay = false
+
     var body: some View {
         GeometryReader { geometry in
             ZStack {
                 // Background color to emphasize the capture area
                 Color.black
                     .edgesIgnoringSafeArea(.all)
-                
+
                 if cameraModel.isPermissionGranted {
                     // Camera preview represented by UIViewRepresentable
                     CameraPreviewView(cameraModel: cameraModel, viewSize: geometry.size, onPinchStarted: onPinchStarted, onPinchChanged: onPinchChanged, onPinchEnded: onPinchEnded)
                         .edgesIgnoringSafeArea(.all)
+
+                    // Black overlay when returning from background
+                    if showBlackOverlay {
+                        Color.black
+                            .edgesIgnoringSafeArea(.all)
+                            .transition(.opacity)
+                    }
 
                     // Focus indicator overlay with proper coordinates
                     if cameraModel.showingFocusIndicator, let point = cameraModel.focusIndicatorPoint {
@@ -84,6 +93,20 @@ struct CameraView: View {
                 // Re-check camera permissions when camera view appears
                 Task {
                     await cameraModel.checkAndSetupCamera()
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
+                withAnimation {
+                    showBlackOverlay = true
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+                // Keep black overlay for a brief moment, then fade out
+                Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(300))
+                    withAnimation(.easeOut(duration: 0.3)) {
+                        showBlackOverlay = false
+                    }
                 }
             }
         }
