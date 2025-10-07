@@ -107,14 +107,23 @@ struct CameraContainerView: View {
                     .padding(.bottom, 10)
                     .rotationEffect(Utils.getRotationAngle())
                     .animation(.easeInOut, value: deviceOrientation)
-                    .onTapGesture(count: 2) {
-                        handleDoubleTabZoomIndicator()
-                    }
-                    .onTapGesture {
-                        withAnimation {
-                            showZoomSlider = true
-                        }
-                    }
+                    .gesture(
+                        // Use exclusively to properly distinguish single vs double tap
+                        TapGesture(count: 2)
+                            .onEnded { _ in
+                                Logger.camera.debug("Double tap detected on zoom indicator")
+                                handleDoubleTabZoomIndicator()
+                            }
+                            .exclusively(before:
+                                TapGesture(count: 1)
+                                    .onEnded { _ in
+                                        Logger.camera.debug("Single tap detected on zoom indicator")
+                                        withAnimation {
+                                            showZoomSlider = true
+                                        }
+                                    }
+                            )
+                    )
                 }
 
                 HStack {
@@ -216,9 +225,7 @@ struct CameraContainerView: View {
     }
 
     private func handleDoubleTabZoomIndicator() {
-        Task {
-            await cameraModel.zoom(factor: 1.0)
-        }
+        cameraModel.resetZoomLevel()
         let generator = UIImpactFeedbackGenerator(style: .medium)
         generator.impactOccurred()
     }
