@@ -110,11 +110,6 @@ struct ZoomableImageView<Overlay: View>: View {
                             let scaledHeight = imageSize.height * scale
                             let maxPanX = max(0, (scaledWidth - geometrySize.width) / 2)
                             let maxPanY = max(0, (scaledHeight - geometrySize.height) / 2)
-
-                            // Constrain pan offset
-                            let newPanX = accumulatedPan.width + value.translation.width
-                            let newPanY = accumulatedPan.height + value.translation.height
-
                             panOffset.width = max(-maxPanX - accumulatedPan.width,
                                                  min(maxPanX - accumulatedPan.width, value.translation.width))
                             panOffset.height = max(-maxPanY - accumulatedPan.height,

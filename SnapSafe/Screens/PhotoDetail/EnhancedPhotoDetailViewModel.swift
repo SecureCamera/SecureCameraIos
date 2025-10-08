@@ -66,11 +66,6 @@ class EnhancedPhotoDetailViewModel: ObservableObject {
     @inlinable internal func mayDismissByDrag() -> Bool { !isZoomed }
     @inlinable internal func mayPageHorizontally() -> Bool { !isZoomed }
     
-    // Optionally expose a setter if a child wants to toggle explicitly
-    @inlinable internal func setZoomed(_ flag: Bool) {
-        isZoomed = flag
-    }
-    
     // MARK: - Computed Properties
     
     var photoCount: Int {
