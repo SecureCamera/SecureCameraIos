@@ -19,18 +19,17 @@ class LocationRepository: NSObject, ObservableObject {
     // Published properties that can be observed by SwiftUI views
     @Published var authorizationStatus: CLAuthorizationStatus = .notDetermined
     @Published var lastLocation: CLLocation?
-    @Published var shouldIncludeLocationData: Bool = false
 
     override init() {
         super.init()
         locationManager.delegate = self
         locationManager.desiredAccuracy = kCLLocationAccuracyBest
 
-        // Load saved user preference for location data inclusion
-        shouldIncludeLocationData = UserDefaults.standard.bool(forKey: "shouldIncludeLocationData")
-
         // Get the current authorization status
         authorizationStatus = locationManager.authorizationStatus
+
+        // Start tracking if we already have permission
+        startUpdatingLocationIfAuthorized()
     }
 
     // Function to request location permission
@@ -39,9 +38,9 @@ class LocationRepository: NSObject, ObservableObject {
     }
 
     // Function to start location updates if we have permission
-    func startUpdatingLocation() {
-        // Only start updates if we have permission and the user wants location data
-        if authorizationStatus == .authorizedWhenInUse && shouldIncludeLocationData {
+    private func startUpdatingLocationIfAuthorized() {
+        // Automatically start updates if we have permission
+        if authorizationStatus == .authorizedWhenInUse || authorizationStatus == .authorizedAlways {
             locationManager.startUpdatingLocation()
         }
     }
@@ -75,11 +74,13 @@ extension LocationRepository: CLLocationManagerDelegate {
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         authorizationStatus = manager.authorizationStatus
 
-        // Start or stop location updates based on new authorization
-        if shouldIncludeLocationData && (authorizationStatus == .authorizedWhenInUse || authorizationStatus == .authorizedAlways) {
-            startUpdatingLocation()
+        // Automatically start or stop location updates based on authorization status
+        if authorizationStatus == .authorizedWhenInUse || authorizationStatus == .authorizedAlways {
+            locationManager.startUpdatingLocation()
         } else {
             stopUpdatingLocation()
+            // Clear cached location when permission is revoked
+            lastLocation = nil
         }
     }
 

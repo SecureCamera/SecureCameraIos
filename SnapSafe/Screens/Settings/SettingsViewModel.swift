@@ -77,7 +77,7 @@ final class SettingsViewModel: ObservableObject {
     
     /// Initialize values when the view appears
     func onAppear() {
-        includeLocationData = locationManager.shouldIncludeLocationData
+        // Location data inclusion is now tied directly to authorization status
         checkPoisonPillStatus()
     }
     
