@@ -70,10 +70,3 @@ struct ZoomableModifier: ViewModifier {
             }
     }
 }
-
-// Extension to make the modifier easier to use
-extension View {
-    func zoomable(scale: Binding<CGFloat>, offset: Binding<CGSize>, lastScale: Binding<CGFloat>, onZoomOut: @escaping () -> Void, onZoomChange: ((Bool) -> Void)? = nil) -> some View {
-        modifier(ZoomableModifier(scale: scale, offset: offset, lastScale: lastScale, onZoomOut: onZoomOut, onZoomChange: onZoomChange))
-    }
-}

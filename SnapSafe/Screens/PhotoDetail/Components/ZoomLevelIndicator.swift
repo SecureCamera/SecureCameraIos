@@ -15,7 +15,7 @@ struct ZoomLevelIndicator: View {
         ZStack {
             Capsule()
                 .fill(Color.black.opacity(0.7))
-                .frame(width: 70, height: 30)
+                .frame(width: 60, height: 25)
             
             Text(String(format: "%.1fx", scale))
                 .font(.system(size: 14, weight: .bold))
@@ -31,7 +31,7 @@ struct ZoomLevelIndicator_Previews: PreviewProvider {
     static var previews: some View {
         ZStack {
             Color.gray
-            ZoomLevelIndicator(scale: 2.5, isVisible: true)
+            ZoomLevelIndicator(scale: 10.0, isVisible: true)
         }
     }
 }

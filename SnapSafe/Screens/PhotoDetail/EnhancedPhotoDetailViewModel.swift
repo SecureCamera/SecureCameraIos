@@ -60,6 +60,17 @@ class EnhancedPhotoDetailViewModel: ObservableObject {
         self.onDismiss = onDismiss
     }
     
+    @Published internal var isZoomed: Bool = false
+
+    // Policy helpers (clear/consistent call sites + unit-testable)
+    @inlinable internal func mayDismissByDrag() -> Bool { !isZoomed }
+    @inlinable internal func mayPageHorizontally() -> Bool { !isZoomed }
+    
+    // Optionally expose a setter if a child wants to toggle explicitly
+    @inlinable internal func setZoomed(_ flag: Bool) {
+        isZoomed = flag
+    }
+    
     // MARK: - Computed Properties
     
     var photoCount: Int {
@@ -79,7 +90,11 @@ class EnhancedPhotoDetailViewModel: ObservableObject {
     }
     
     var overlayOpacity: Double {
-        1.0 - dismissProgress
+        // Fade out when zoomed or when dismissing
+        if isZoomed {
+            return 0.0
+        }
+        return 1.0 - dismissProgress
     }
 
     // Current photo computed properties

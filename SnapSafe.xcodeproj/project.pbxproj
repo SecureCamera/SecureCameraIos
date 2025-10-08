@@ -117,6 +117,10 @@
 		A9E6B6B52E7247D300BB6F19 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = A9E6B6B42E7247D300BB6F19 /* Localizable.xcstrings */; };
 		A9E6B6B62E7247D300BB6F19 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = A9E6B6B42E7247D300BB6F19 /* Localizable.xcstrings */; };
 		A9E6B6B72E7247D300BB6F19 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = A9E6B6B42E7247D300BB6F19 /* Localizable.xcstrings */; };
+		A9F4250C2E9322330028EB13 /* ZoomSliderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9F4250B2E9322330028EB13 /* ZoomSliderView.swift */; };
+		A9F4250E2E94D1840028EB13 /* ZoomableScrollView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9F4250D2E94D17B0028EB13 /* ZoomableScrollView.swift */; };
+		A9F425112E95CAB90028EB13 /* DismissPanGestureHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9F4250F2E95CAB90028EB13 /* DismissPanGestureHandler.swift */; };
+		A9F425122E95CAB90028EB13 /* PhotoPageViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9F425102E95CAB90028EB13 /* PhotoPageViewController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -243,6 +247,10 @@
 		A9E6B6AE2E6EAD3D00BB6F19 /* SecurityOverlayViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurityOverlayViewModel.swift; sourceTree = "<group>"; };
 		A9E6B6B02E6EAE3500BB6F19 /* SecurityOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurityOverlayView.swift; sourceTree = "<group>"; };
 		A9E6B6B42E7247D300BB6F19 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		A9F4250B2E9322330028EB13 /* ZoomSliderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoomSliderView.swift; sourceTree = "<group>"; };
+		A9F4250D2E94D17B0028EB13 /* ZoomableScrollView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoomableScrollView.swift; sourceTree = "<group>"; };
+		A9F4250F2E95CAB90028EB13 /* DismissPanGestureHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DismissPanGestureHandler.swift; sourceTree = "<group>"; };
+		A9F425102E95CAB90028EB13 /* PhotoPageViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoPageViewController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -396,6 +404,7 @@
 		667FF81D2E6C9DC200FB3E02 /* Screens */ = {
 			isa = PBXGroup;
 			children = (
+				A9F4250B2E9322330028EB13 /* ZoomSliderView.swift */,
 				6660FC5E2E850E9200C0B617 /* About */,
 				667FF8342E6D101300FB3E02 /* AppNavigation.swift */,
 				667FF8322E6D0FF800FB3E02 /* ContentView.swift */,
@@ -562,6 +571,9 @@
 				A91DBC342DE58191001F42ED /* Components */,
 				A91DBC362DE58191001F42ED /* Modifiers */,
 				A91DBC372DE58191001F42ED /* EnhancedPhotoDetailView.swift */,
+				A9F4250F2E95CAB90028EB13 /* DismissPanGestureHandler.swift */,
+				A9F425102E95CAB90028EB13 /* PhotoPageViewController.swift */,
+				A9F4250D2E94D17B0028EB13 /* ZoomableScrollView.swift */,
 				663C7E2C2E70F2E900967B9E /* EnhancedPhotoDetailViewModel.swift */,
 				A91DBC382DE58191001F42ED /* ImageInfoView.swift */,
 				663C7E2A2E70EF0C00967B9E /* ImageInfoViewModel.swift */,
@@ -789,6 +801,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A9F4250E2E94D1840028EB13 /* ZoomableScrollView.swift in Sources */,
 				667FF82B2E6CB78000FB3E02 /* getRotationAngle.swift in Sources */,
 				663C7E542E73FA3100967B9E /* PoisonPillSetupWizardViewModel.swift in Sources */,
 				6660FC672E8529F900C0B617 /* CameraPermissionService.swift in Sources */,
@@ -803,6 +816,8 @@
 				663C7E232E6FED9A00967B9E /* SecurityResetUseCase.swift in Sources */,
 				663C7E2D2E70F2E900967B9E /* EnhancedPhotoDetailViewModel.swift in Sources */,
 				663C7E242E6FED9A00967B9E /* RemovePoisonPillIUseCase.swift in Sources */,
+				A9F425112E95CAB90028EB13 /* DismissPanGestureHandler.swift in Sources */,
+				A9F425122E95CAB90028EB13 /* PhotoPageViewController.swift in Sources */,
 				663C7E252E6FED9A00967B9E /* InvalidateSessionUseCase.swift in Sources */,
 				663C7E262E6FED9A00967B9E /* AddDecoyPhotoUseCase.swift in Sources */,
 				663C7E272E6FED9A00967B9E /* PinStrengthCheckUseCase.swift in Sources */,
@@ -861,6 +876,7 @@
 				667FF8352E6D101300FB3E02 /* AppNavigation.swift in Sources */,
 				A91DBC6D2DE58191001F42ED /* FaceDetector.swift in Sources */,
 				660130C72E67AD3A00D07E9C /* DeviceInfoDataSource.swift in Sources */,
+				A9F4250C2E9322330028EB13 /* ZoomSliderView.swift in Sources */,
 				669751332E6A63D30059C5F3 /* AuthorizePinUseCase.swift in Sources */,
 				663C7E292E6FEE2500967B9E /* CameraViewModel.swift in Sources */,
 				66A404CB2E67EB7F0054FFE7 /* PinCrypto.swift in Sources */,

@@ -28,8 +28,6 @@ class PhotoDetailViewModel: ObservableObject {
     // UI state variables
     @Published var showDeleteConfirmation = false
     @Published var imageRotation: Double = 0
-    @Published var offset: CGFloat = 0
-    @Published var isSwiping: Bool = false
     
     // Zoom and pan states
     @Published var currentScale: CGFloat = 1.0
@@ -189,65 +187,7 @@ class PhotoDetailViewModel: ObservableObject {
             }
         }
     }
-    
-    func navigateToPrevious() {
-        Logger.ui.debug("PhotoDetailViewModel: navigateToPrevious called")
-        if canGoToPrevious {
-            withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-                currentIndex -= 1
-                // Reset rotation when changing photos
-                imageRotation = 0
-                // Reset zoom and pan
-                resetZoomAndPan()
-                // Reset any navigation offsets
-                offset = 0
-                isSwiping = false
-            }
-            
-            // Load the new current image
-            Task {
-                await loadCurrentImage()
-            }
-            
-            // Preload adjacent photos for smoother navigation
-            Task {
-                try await Task.sleep(for: .milliseconds(200))
-                await MainActor.run {
-                    self.preloadAdjacentPhotos()
-                }
-            }
-        }
-    }
-    
-    func navigateToNext() {
-        Logger.ui.debug("PhotoDetailViewModel: navigateToNext called")
-        if canGoToNext {
-            withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-                currentIndex += 1
-                // Reset rotation when changing photos
-                imageRotation = 0
-                // Reset zoom and pan
-                resetZoomAndPan()
-                // Reset any navigation offsets
-                offset = 0
-                isSwiping = false
-            }
-            
-            // Load the new current image
-            Task {
-                await loadCurrentImage()
-            }
-            
-            // Preload adjacent photos for smoother navigation
-            Task {
-                try await Task.sleep(for: .milliseconds(200))
-                await MainActor.run {
-                    self.preloadAdjacentPhotos()
-                }
-            }
-        }
-    }
-    
+
     // MARK: - Image Manipulation
     
     func resetZoomAndPan() {

@@ -5,117 +5,159 @@
 //  Created by Bill Booth on 5/26/25.
 //
 
+import Foundation
 import SwiftUI
+import Logging
+
+
+internal struct DismissTransformModifier: ViewModifier {
+    internal let isZoomed: Bool
+    internal let scale: CGFloat
+    internal let verticalOffset: CGFloat
+
+    internal func body(content: Content) -> some View {
+        content
+            .scaleEffect(isZoomed ? 1.0 : scale)
+            .offset(y: isZoomed ? 0 : verticalOffset)
+    }
+}
+
+internal extension View {
+    func dismissTransform(
+        isZoomed: Bool,
+        scale: CGFloat,
+        verticalOffset: CGFloat
+    ) -> some View {
+        modifier(
+            DismissTransformModifier(
+                isZoomed: isZoomed,
+                scale: scale,
+                verticalOffset: verticalOffset
+            )
+        )
+    }
+}
+
+internal struct PhotoCounterChip: View {
+    internal let text: String
+    internal let opacity: Double
+
+    internal var body: some View {
+        HStack {
+            Spacer()
+            Text(text)
+                .font(.subheadline)
+                .foregroundColor(.white)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(Color.black.opacity(0.6))
+                .cornerRadius(12)
+                .opacity(opacity)
+            Spacer()
+        }
+        .padding(.top, 50)
+    }
+}
 
 struct EnhancedPhotoDetailView: View {
     @StateObject private var viewModel: EnhancedPhotoDetailViewModel
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var nav: AppNavigationState
 
-    // Store PhotoDetailViewModels for toolbar access
-    @State private var photoDetailViewModels: [PhotoDetailViewModel] = []
-
-    init(allPhotos: [PhotoDef], initialIndex: Int, onDelete: ((PhotoDef) -> Void)? = nil, onDismiss: (() -> Void)? = nil) {
-        _viewModel = StateObject(wrappedValue: EnhancedPhotoDetailViewModel(
-            allPhotos: allPhotos,
-            initialIndex: initialIndex,
-            onDelete: onDelete,
-            onDismiss: onDismiss
-        ))
+    init(
+        allPhotos: [PhotoDef],
+        initialIndex: Int,
+        onDelete: ((PhotoDef) -> Void)? = nil,
+        onDismiss: (() -> Void)? = nil
+    ) {
+        _viewModel = StateObject(
+            wrappedValue: EnhancedPhotoDetailViewModel(
+                allPhotos: allPhotos,
+                initialIndex: initialIndex,
+                onDelete: onDelete,
+                onDismiss: onDismiss
+            )
+        )
     }
-    
+
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                // Background that fades during dismiss
+                // Background
                 Color.black
                     .opacity(viewModel.backgroundOpacity)
-                    .edgesIgnoringSafeArea(.all)
+                    .ignoresSafeArea()
 
-                TabView(selection: $viewModel.currentIndex) {
-                    ForEach(Array(viewModel.photoFiles.enumerated()), id: \.offset) { index, photoDef in
-                        PhotoDetailView(
-                            photo: photoDef,
-                            onDelete: { photoDef in
-                                viewModel.onDelete?(photoDef)
-                            },
-                            onDismiss: {}
-                        )
-                        .tag(index)
-                        .scaleEffect(viewModel.photoScaleEffect)
-                        .offset(y: viewModel.dragOffset.height)
-                    }
-                }
-                .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
+                // UIKit-based paging with proper gesture coordination
+                PhotoPageViewController(
+                    photos: viewModel.photoFiles,
+                    currentIndex: $viewModel.currentIndex,
+                    isZoomed: $viewModel.isZoomed
+                )
                 .onChange(of: viewModel.currentIndex) { _, newIndex in
                     viewModel.handleIndexChange(newIndex: newIndex)
                 }
-                .safeAreaInset(edge: .bottom) {
-                    // Fixed toolbar - outside of swipeable content
+                // Apply the dismiss transform via a tiny modifier
+                .dismissTransform(
+                    isZoomed: viewModel.isZoomed,
+                    scale: viewModel.photoScaleEffect,
+                    verticalOffset: viewModel.dragOffset.height
+                )
+
+                // Bottom toolbar
+                VStack {
+                    Spacer()
                     if viewModel.currentIndex < viewModel.photoFiles.count {
                         PhotoControlsView(
-                            onInfo: {
-                                viewModel.showImageInfo = true
-                            },
+                            onInfo: { viewModel.showImageInfo = true },
                             onObfuscate: {
-                                // Navigate to obfuscation screen
-                                if let currentPhotoDef = viewModel.currentPhotoDef {
-                                    nav.presentedFullScreenCover = .photoObfuscation(currentPhotoDef)
+                                if let current = viewModel.currentPhotoDef {
+                                    nav.presentedFullScreenCover = .photoObfuscation(current)
                                 }
                             },
-                            onShare: {
-                                viewModel.shareCurrentPhoto()
-                            },
-                            onDelete: {
-                                viewModel.showDeleteConfirmation = true
-                            },
-                            onToggleDecoy: {
-                                viewModel.toggleDecoyStatus()
-                            },
-                            isZoomed: false, // We don't have zoom state at this level yet
+                            onShare: { viewModel.shareCurrentPhoto() },
+                            onDelete: { viewModel.showDeleteConfirmation = true },
+                            onToggleDecoy: { viewModel.toggleDecoyStatus() },
+                            isZoomed: viewModel.isZoomed,
                             showDecoyButton: viewModel.isPoisonPillConfigured,
                             decoyButtonTitle: viewModel.decoyButtonTitle,
                             decoyButtonIcon: viewModel.decoyButtonIcon,
                             isDecoyOperationLoading: viewModel.isDecoyOperationLoading
                         )
+                        .padding(.bottom, 8)
                     }
                 }
 
-                // Photo counter overlay
+                // Counter overlay
                 VStack {
-                    HStack {
-                        Spacer()
-                        Text(viewModel.currentPhotoDisplayText)
-                            .font(.subheadline)
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(Color.black.opacity(0.6))
-                            .cornerRadius(12)
-                            .opacity(viewModel.overlayOpacity)
-                        Spacer()
-                    }
-                    .padding(.top, 50)
-
+                    PhotoCounterChip(
+                        text: viewModel.currentPhotoDisplayText,
+                        opacity: viewModel.overlayOpacity
+                    )
                     Spacer()
                 }
             }
+            // Vertical dismiss gesture (gated inside handlers)
             .gesture(
                 DragGesture()
                     .onChanged { value in
-                        viewModel.handleDragChanged(value, geometryHeight: geometry.size.height)
+                        guard viewModel.mayDismissByDrag() else { return }
+                        viewModel.handleDragChanged(
+                            value,
+                            geometryHeight: geometry.size.height
+                        )
                     }
                     .onEnded { value in
-                        viewModel.handleDragEnded(value, geometryHeight: geometry.size.height) {
-                            dismiss()
-                        }
+                        guard viewModel.mayDismissByDrag() else { return }
+                        viewModel.handleDragEnded(
+                            value,
+                            geometryHeight: geometry.size.height
+                        ) { dismiss() }
                     }
             )
         }
         .navigationBarHidden(true)
-        .onAppear {
-            viewModel.onAppear()
-        }
+        .onAppear { viewModel.onAppear() }
         .alert(
             "Delete Photo",
             isPresented: $viewModel.showDeleteConfirmation,
