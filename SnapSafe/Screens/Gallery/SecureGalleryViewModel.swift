@@ -12,13 +12,20 @@ import Combine
 import FactoryKit
 import Logging
 
+enum SelectionMode {
+    case none
+    case share
+    case delete
+    case decoy
+}
+
 @MainActor
 final class SecureGalleryViewModel: ObservableObject {
     // MARK: - Published Properties
-    
+
     @Published var photos: [PhotoDef] = []
     @Published var selectedPhoto: PhotoDef?
-    @Published var isSelecting: Bool = false
+    @Published var selectionMode: SelectionMode = .none
     @Published var selectedPhotoIds = Set<PhotoDef>()
     @Published var showDeleteConfirmation = false
     @Published var isShowingImagePicker = false
@@ -26,13 +33,15 @@ final class SecureGalleryViewModel: ObservableObject {
     @Published var pickerItems: [PhotosPickerItem] = []
     @Published var isImporting: Bool = false
     @Published var importProgress: Float = 0
-    
-    // Decoy selection mode
-    @Published var isSelectingDecoys: Bool = false
+
+    // Legacy support for existing code
+    var isSelecting: Bool { selectionMode != .none }
+    var isSelectingDecoys: Bool { selectionMode == .decoy }
     @Published var maxDecoys: Int = 10
     @Published var showDecoyLimitWarning: Bool = false
     @Published var showDecoyConfirmation: Bool = false
-    
+    @Published var isPoisonPillConfigured: Bool = false
+
     // MARK: - Dependencies
     
     @Injected(\.secureImageRepository)
@@ -52,7 +61,10 @@ final class SecureGalleryViewModel: ObservableObject {
     
     @Injected(\.authorizationRepository)
     private var authorizationRepository: AuthorizationRepository
-    
+
+    @Injected(\.pinRepository)
+    private var pinRepository: PinRepository
+
     private var cancellables = Set<AnyCancellable>()
     
     // Track currently presented activity controller for dismissal
@@ -61,8 +73,8 @@ final class SecureGalleryViewModel: ObservableObject {
     // MARK: - Initialization
     
     init(selectingDecoys: Bool = false) {
-        self.isSelectingDecoys = selectingDecoys
-        
+        self.selectionMode = selectingDecoys ? .decoy : .none
+
         setupObservers()
     }
     
@@ -133,6 +145,16 @@ final class SecureGalleryViewModel: ObservableObject {
     
     func onAppear() {
         loadPhotos()
+        loadPoisonPillConfiguration()
+    }
+
+    func loadPoisonPillConfiguration() {
+        Task {
+            let hasPoisonPill = await pinRepository.hasPoisonPillPin()
+            await MainActor.run {
+                isPoisonPillConfigured = hasPoisonPill
+            }
+        }
     }
     
     func onSelectedPhotoChange(_ newValue: PhotoDef?) {
@@ -167,18 +189,27 @@ final class SecureGalleryViewModel: ObservableObject {
         showDeleteConfirmation = true
     }
     
-    func startSelecting() {
-        isSelecting = true
+    func startSelecting(mode: SelectionMode) {
+        selectionMode = mode
+
+        // If entering decoy mode, pre-select all existing decoy photos
+        if mode == .decoy {
+            selectedPhotoIds.removeAll()
+            for photoDef in photos {
+                if secureImageRepository.isDecoyPhoto(photoDef) {
+                    selectedPhotoIds.insert(photoDef)
+                }
+            }
+        }
     }
-    
+
     func cancelSelecting() {
-        isSelecting = false
+        selectionMode = .none
         selectedPhotoIds.removeAll()
     }
-    
+
     func exitDecoyMode() {
-        isSelectingDecoys = false
-        isSelecting = false
+        selectionMode = .none
         selectedPhotoIds.removeAll()
     }
     
@@ -264,7 +295,7 @@ final class SecureGalleryViewModel: ObservableObject {
         // Clear selection and exit selection mode immediately
         // for better UI responsiveness
         selectedPhotoIds.removeAll()
-        isSelecting = false
+        selectionMode = .none
 
         // Process deletions in a background queue
         Task.detached(priority: .userInitiated) { [weak self] in
@@ -337,8 +368,7 @@ final class SecureGalleryViewModel: ObservableObject {
             }
             
             // Reset selection and exit decoy mode
-            isSelectingDecoys = false
-            isSelecting = false
+            selectionMode = .none
             selectedPhotoIds.removeAll()
         }
     }
@@ -494,8 +524,8 @@ final class SecureGalleryViewModel: ObservableObject {
                         }
                     }
 
-                    // Enable selection mode
-                    self.isSelecting = true
+                    // Enable decoy selection mode
+                    self.selectionMode = .decoy
                 }
             }
         }

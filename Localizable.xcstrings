@@ -346,6 +346,9 @@
     "Mask Mode" : {
 
     },
+    "More" : {
+
+    },
     "Never" : {
 
     },
@@ -524,6 +527,9 @@
     "Security Features" : {
 
     },
+    "Select for Decoys" : {
+
+    },
     "Select Mask Type" : {
 
     },
@@ -531,6 +537,9 @@
 
     },
     "Select Photos" : {
+
+    },
+    "Select to Delete" : {
 
     },
     "Session Timeout" : {

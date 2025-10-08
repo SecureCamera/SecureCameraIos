@@ -108,7 +108,7 @@ struct SecureGalleryView: View {
                         Text(viewModel.decoyCountText)
                             .font(.caption)
                             .foregroundColor(viewModel.decoyCountTextColor)
-                        
+
                         Button("Save") {
                             viewModel.showDecoyConfirmationAlert()
                         }
@@ -121,11 +121,28 @@ struct SecureGalleryView: View {
                         }
                         .foregroundColor(.red)
                     } else {
-                        Button {
-                            viewModel.startSelecting()
+                        Menu {
+                            Button {
+                                viewModel.startSelecting(mode: .share)
+                            } label: {
+                                Label("Select Photos", systemImage: "checkmark.circle")
+                            }
+
+                            Button {
+                                viewModel.startSelecting(mode: .delete)
+                            } label: {
+                                Label("Select to Delete", systemImage: "trash")
+                            }
+
+                            if viewModel.isPoisonPillConfigured {
+                                Button {
+                                    viewModel.startSelecting(mode: .decoy)
+                                } label: {
+                                    Label("Select for Decoys", systemImage: "shield")
+                                }
+                            }
                         } label: {
-                            Label("Select Photos", systemImage: "ellipsis.circle")
-                                .background(.blue)
+                            Label("More", systemImage: "ellipsis.circle")
                         }
                     }
                 }
@@ -133,35 +150,45 @@ struct SecureGalleryView: View {
             
             // Bottom toolbar with main action buttons
             ToolbarItemGroup(placement: .bottomBar) {
-                if !viewModel.isSelectingDecoys && !viewModel.isSelecting {
-                    // Normal mode: Import and Refresh buttons
+                switch viewModel.selectionMode {
+                case .none:
+                    // Normal mode: Import button only
                     PhotosPicker(selection: $viewModel.pickerItems, matching: .images, photoLibrary: .shared()) {
                         Label("Import", systemImage: "square.and.arrow.down")
                     }
                     .onChange(of: viewModel.pickerItems) { _, newItems in
                         viewModel.processPickerItems(newItems)
                     }
-                    
+
                     Spacer()
-                    
-//                    Button(action: viewModel.loadPhotos) {
-//                        Label("Refresh", systemImage: "arrow.clockwise")
-//                    }
-                } else if viewModel.isSelecting && viewModel.hasSelection && !viewModel.isSelectingDecoys {
-                    // Selection mode: Delete and Share buttons
-                    Button(action: { 
-                        Logger.ui.info("Delete button pressed in gallery view, selected photos: \(viewModel.selectedPhotoIds.count)")
-                        viewModel.showDeleteAlert()
-                    }) {
-                        Label("Delete", systemImage: "trash")
-                            .foregroundColor(.red)
+
+                case .share:
+                    // Share mode: Share button (only show when photos selected)
+                    if viewModel.hasSelection {
+                        Spacer()
+
+                        Button(action: viewModel.shareSelectedPhotos) {
+                            Label("Share", systemImage: "square.and.arrow.up")
+                        }
                     }
-                    
-                    Spacer()
-                    
-                    Button(action: viewModel.shareSelectedPhotos) {
-                        Label("Share", systemImage: "square.and.arrow.up")
+
+                case .delete:
+                    // Delete mode: Delete button (only show when photos selected)
+                    if viewModel.hasSelection {
+                        Button(action: {
+                            Logger.ui.info("Delete button pressed in gallery view, selected photos: \(viewModel.selectedPhotoIds.count)")
+                            viewModel.showDeleteAlert()
+                        }) {
+                            Label("Delete", systemImage: "trash")
+                                .foregroundColor(.red)
+                        }
+
+                        Spacer()
                     }
+
+                case .decoy:
+                    // Decoy mode: no bottom toolbar actions
+                    EmptyView()
                 }
             }
         }
