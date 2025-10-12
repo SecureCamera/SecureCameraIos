@@ -131,13 +131,6 @@
 			remoteGlobalIDString = A9DE37462DC5F34400679C2C;
 			remoteInfo = SnapSafe;
 		};
-		A9DE37622DC5F34600679C2C /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = A9DE373F2DC5F34400679C2C /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = A9DE37462DC5F34400679C2C;
-			remoteInfo = SnapSafe;
-		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
@@ -239,7 +232,6 @@
 		A91DBC522DE58191001F42ED /* SnapSafeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapSafeApp.swift; sourceTree = "<group>"; };
 		A9DE37472DC5F34400679C2C /* SnapSafe.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SnapSafe.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A9DE37572DC5F34600679C2C /* SnapSafeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SnapSafeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		A9DE37612DC5F34600679C2C /* SnapSafeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SnapSafeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A9E6B6932E6E47B500BB6F19 /* SecureImageRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureImageRepository.swift; sourceTree = "<group>"; };
 		A9E6B6942E6E47B500BB6F19 /* ThumbnailCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailCache.swift; sourceTree = "<group>"; };
 		A9E6B6982E6E47E700BB6F19 /* PhotoDef.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoDef.swift; sourceTree = "<group>"; };
@@ -271,13 +263,6 @@
 			files = (
 				660130A22E676F5B00D07E9C /* FactoryTesting in Frameworks */,
 				66A404DA2E694E2C0054FFE7 /* Mockable in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		A9DE375E2DC5F34600679C2C /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -605,7 +590,6 @@
 				A9DE37482DC5F34400679C2C /* Products */,
 				A91DBC532DE58191001F42ED /* SnapSafe */,
 				A9DE375A2DC5F34600679C2C /* SnapSafeTests */,
-				A9DE37642DC5F34600679C2C /* SnapSafeUITests */,
 			);
 			sourceTree = "<group>";
 		};
@@ -614,7 +598,6 @@
 			children = (
 				A9DE37472DC5F34400679C2C /* SnapSafe.app */,
 				A9DE37572DC5F34600679C2C /* SnapSafeTests.xctest */,
-				A9DE37612DC5F34600679C2C /* SnapSafeUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -630,13 +613,6 @@
 				66A404D62E694A450054FFE7 /* PinRepositoryTest.swift */,
 			);
 			path = SnapSafeTests;
-			sourceTree = "<group>";
-		};
-		A9DE37642DC5F34600679C2C /* SnapSafeUITests */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = SnapSafeUITests;
 			sourceTree = "<group>";
 		};
 		A9E6B6952E6E47B500BB6F19 /* SecureImage */ = {
@@ -696,26 +672,6 @@
 			productReference = A9DE37572DC5F34600679C2C /* SnapSafeTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		A9DE37602DC5F34600679C2C /* SnapSafeUITests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = A9DE37712DC5F34600679C2C /* Build configuration list for PBXNativeTarget "SnapSafeUITests" */;
-			buildPhases = (
-				A9DE375D2DC5F34600679C2C /* Sources */,
-				A9DE375E2DC5F34600679C2C /* Frameworks */,
-				A9DE375F2DC5F34600679C2C /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				A9DE37632DC5F34600679C2C /* PBXTargetDependency */,
-			);
-			name = SnapSafeUITests;
-			packageProductDependencies = (
-			);
-			productName = SnapSafeUITests;
-			productReference = A9DE37612DC5F34600679C2C /* SnapSafeUITests.xctest */;
-			productType = "com.apple.product-type.bundle.ui-testing";
-		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -732,10 +688,6 @@
 					A9DE37562DC5F34600679C2C = {
 						CreatedOnToolsVersion = 16.2;
 						LastSwiftMigration = 1640;
-						TestTargetID = A9DE37462DC5F34400679C2C;
-					};
-					A9DE37602DC5F34600679C2C = {
-						CreatedOnToolsVersion = 16.2;
 						TestTargetID = A9DE37462DC5F34400679C2C;
 					};
 				};
@@ -762,7 +714,6 @@
 			targets = (
 				A9DE37462DC5F34400679C2C /* SnapSafe */,
 				A9DE37562DC5F34600679C2C /* SnapSafeTests */,
-				A9DE37602DC5F34600679C2C /* SnapSafeUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -914,13 +865,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		A9DE375D2DC5F34600679C2C /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -928,11 +872,6 @@
 			isa = PBXTargetDependency;
 			target = A9DE37462DC5F34400679C2C /* SnapSafe */;
 			targetProxy = A9DE37582DC5F34600679C2C /* PBXContainerItemProxy */;
-		};
-		A9DE37632DC5F34600679C2C /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = A9DE37462DC5F34400679C2C /* SnapSafe */;
-			targetProxy = A9DE37622DC5F34600679C2C /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -1149,7 +1088,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "snapsafe.Snap-SafeTests";
+				PRODUCT_BUNDLE_IDENTIFIER = snapsafe.SnapSafeTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
@@ -1168,46 +1107,12 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "snapsafe.Snap-SafeTests";
+				PRODUCT_BUNDLE_IDENTIFIER = snapsafe.SnapSafeTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SnapSafe.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/SnapSafe";
-			};
-			name = Release;
-		};
-		A9DE37722DC5F34600679C2C /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = BP75F4S5N3;
-				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "snapsafe.Snap-SafeUITests";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = SnapSafe;
-			};
-			name = Debug;
-		};
-		A9DE37732DC5F34600679C2C /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 8P3G3HT4J5;
-				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "snapsafe.Snap-SafeUITests";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = SnapSafe;
 			};
 			name = Release;
 		};
@@ -1237,15 +1142,6 @@
 			buildConfigurations = (
 				A9DE376F2DC5F34600679C2C /* Debug */,
 				A9DE37702DC5F34600679C2C /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Debug;
-		};
-		A9DE37712DC5F34600679C2C /* Build configuration list for PBXNativeTarget "SnapSafeUITests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				A9DE37722DC5F34600679C2C /* Debug */,
-				A9DE37732DC5F34600679C2C /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
