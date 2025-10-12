@@ -4,7 +4,7 @@
 .DS_Store
 
 ############################################################
-##  Xcode build artefacts
+##  Xcode build artifacts
 ############################################################
 build/
 DerivedData/
@@ -38,14 +38,15 @@ Carthage/Checkouts/
 Carthage/Build/
 
 ############################################################
-##  Fastlane artefacts
+##  Fastlane artifacts
 ############################################################
 fastlane/report.xml
 fastlane/screenshots/**/*.png
 fastlane/test_output/
+test_output/
 
 ############################################################
-##  Debug / archive artefacts
+##  Debug / archive artifacts
 ############################################################
 *.ipa
 *.dSYM*
@@ -59,3 +60,6 @@ playground.xcworkspace
 
 # local config
 Configs/LocalOverrides.xcconfig
+
+# ruby
+vendor/

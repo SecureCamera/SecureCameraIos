@@ -83,22 +83,10 @@
     "Aperture" : {
 
     },
-    "App PIN" : {
-
-    },
     "Appearance" : {
 
     },
-    "Apply Face Masking" : {
-
-    },
-    "Apply Noise" : {
-
-    },
     "Are you sure you want to %@ the selected faces? This action cannot be undone." : {
-
-    },
-    "Are you sure you want to %@ the selected faces? This will permanently modify the photo." : {
 
     },
     "Are you sure you want to delete %lld photo%@? This action cannot be undone." : {
@@ -132,15 +120,6 @@
     "Basic Information" : {
 
     },
-    "Biometric Authentication" : {
-
-    },
-    "Blackout" : {
-
-    },
-    "Blur" : {
-
-    },
     "Camera" : {
 
     },
@@ -156,19 +135,10 @@
     "Cancel" : {
 
     },
-    "Cancel Detection" : {
-
-    },
     "Choose a different PIN than the one used to unlock this device!" : {
 
     },
     "Choose how the app appears. System follows your device's appearance setting." : {
-
-    },
-    "Choose how to mask the selected faces" : {
-
-    },
-    "Choose how you want to obfuscate the selected faces" : {
 
     },
     "Come engage with our community, discover more Free and Open Source Software!" : {
@@ -177,28 +147,16 @@
     "Community" : {
 
     },
-    "Confirm New PIN" : {
-
-    },
     "Confirm PIN" : {
 
     },
     "Continue" : {
 
     },
-    "Continue Setup" : {
-
-    },
-    "Create a 4-digit PIN that will trigger emergency deletion" : {
-
-    },
     "Create a PIN that will trigger emergency deletion" : {
 
     },
     "Date Information" : {
-
-    },
-    "Date Modified" : {
 
     },
     "Date Taken" : {
@@ -222,28 +180,13 @@
     "Detect Faces" : {
 
     },
-    "Detecting faces..." : {
-
-    },
     "Done" : {
 
     },
     "Emergency Data Deletion" : {
 
     },
-    "Emergency Erasure" : {
-
-    },
-    "Emergency Security Feature" : {
-
-    },
     "Emergency security feature that permanently deletes all data when triggered" : {
-
-    },
-    "Enter 4-digit PIN" : {
-
-    },
-    "Enter a new 4-digit PIN twice to change your app security PIN" : {
 
     },
     "Enter new PIN" : {
@@ -262,19 +205,10 @@
         }
       }
     },
-    "Face Detection" : {
-
-    },
-    "Faces Detected" : {
-
-    },
     "File Size" : {
 
     },
     "Filename" : {
-
-    },
-    "Filter Photos" : {
 
     },
     "Focal Length" : {
@@ -289,12 +223,6 @@
     "GitHub" : {
 
     },
-    "ID" : {
-
-    },
-    "If this PIN is entered, all photos will be immediately deleted" : {
-
-    },
     "Image Information" : {
 
     },
@@ -302,9 +230,6 @@
 
     },
     "Importing photos..." : {
-
-    },
-    "Include Location Data" : {
 
     },
     "Info" : {
@@ -331,9 +256,6 @@
     "Location" : {
 
     },
-    "Make sure you understand the consequences before setting up a poison pill PIN" : {
-
-    },
     "Manage Permission in Settings" : {
 
     },
@@ -343,16 +265,7 @@
     "Mask Faces" : {
 
     },
-    "Mask Mode" : {
-
-    },
     "More" : {
-
-    },
-    "Never" : {
-
-    },
-    "New PIN (4 digits)" : {
 
     },
     "No camera information available" : {
@@ -362,9 +275,6 @@
 
     },
     "No photos yet" : {
-
-    },
-    "Noise" : {
 
     },
     "Obfuscate" : {
@@ -400,22 +310,10 @@
     "Photo Detail" : {
 
     },
-    "Photo Details" : {
-
-    },
     "Photo Obfuscation" : {
 
     },
     "PIN" : {
-
-    },
-    "PIN updated successfully!" : {
-
-    },
-    "Pixelate" : {
-
-    },
-    "Please create a 4-digit PIN to secure your photos" : {
 
     },
     "Please create a PIN to secure your photos" : {
@@ -433,9 +331,6 @@
     "Privacy" : {
 
     },
-    "Privacy & Detection" : {
-
-    },
     "Privacy Policy" : {
 
     },
@@ -443,9 +338,6 @@
 
     },
     "Raw Metadata" : {
-
-    },
-    "Remember this PIN carefully. When entered, it will immediately and permanently delete all photos and encryption keys." : {
 
     },
     "Remove" : {
@@ -463,19 +355,10 @@
     "Request Location Permission" : {
 
     },
-    "Require PIN when app resumes" : {
-
-    },
     "Reset" : {
 
     },
-    "Reset All Security Settings" : {
-
-    },
     "Reset Security Settings" : {
-
-    },
-    "Resets all security settings to default values. Does not delete photos." : {
 
     },
     "Resets everything, deletes all photos and encryption keys." : {
@@ -503,19 +386,10 @@
     "Save Decoy Selection" : {
 
     },
-    "Save Emergency PIN" : {
-
-    },
-    "Save Poison Pill PIN" : {
-
-    },
     "Screen Recording Detected" : {
 
     },
     "Screenshot Captured" : {
-
-    },
-    "Secure" : {
 
     },
     "Secure Photo Storage" : {
@@ -524,16 +398,7 @@
     "Security" : {
 
     },
-    "Security Features" : {
-
-    },
     "Select for Decoys" : {
-
-    },
-    "Select Mask Type" : {
-
-    },
-    "Select Masking Mode" : {
 
     },
     "Select Photos" : {
@@ -543,9 +408,6 @@
 
     },
     "Session Timeout" : {
-
-    },
-    "Set Emergency PIN" : {
 
     },
     "Set PIN" : {
@@ -593,22 +455,13 @@
     "SnapSafe is a privacy-focused camera app designed to protect your sensitive photos with strong encryption and secure storage." : {
 
     },
-    "SnapSafe is a secure camera app that protects your photos with end-to-end encryption and advanced security features." : {
-
-    },
     "SnapSafe is an open source project. View the source code on GitHub:" : {
 
     },
     "SnapSafe stores all data locally on your device. No data is transmitted to external servers." : {
 
     },
-    "SnapSafe stores all data locally on your device. No data is transmitted to external servers. Your photos and security settings remain completely private." : {
-
-    },
     "SnapSafe.org" : {
-
-    },
-    "Status" : {
 
     },
     "Tap anywhere on the image to add a custom box" : {
@@ -617,16 +470,10 @@
     "Tap faces to select them for masking. Pinch to resize boxes." : {
 
     },
-    "Tap to add box" : {
-
-    },
     "The camera app that minds its own business." : {
 
     },
     "Theme" : {
-
-    },
-    "This feature is irreversible" : {
 
     },
     "Too Many Decoys" : {
@@ -635,19 +482,10 @@
     "Unlock" : {
 
     },
-    "Update PIN" : {
-
-    },
     "Verifying..." : {
 
     },
     "Version %@" : {
-
-    },
-    "Warning: This will permanently delete all your data" : {
-
-    },
-    "When enabled, faces can be detected in photos for privacy protection" : {
 
     },
     "When enabled, location data will be embedded in newly captured photos. Location requires permission and GPS availability." : {
@@ -660,9 +498,6 @@
 
     },
     "You can select a maximum of %lld decoy photos. Please deselect some photos before saving." : {
-
-    },
-    "Your PIN will be required when opening the app and when it returns from background." : {
 
     }
   },
