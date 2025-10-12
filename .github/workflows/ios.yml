@@ -1,4 +1,5 @@
-name: iOS build
+name: iOS Build and Test
+
 permissions:
   contents: read
   pull-requests: write
@@ -10,37 +11,51 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
-    name: Build and Test default scheme using any available iPhone simulator
+  test:
+    name: Run iOS Tests
     runs-on: macos-latest
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: List available Xcode versions
         run: ls /Applications | grep Xcode
-      - name: Set Xcode version 16.2
-        run: sudo xcode-select -s /Applications/Xcode_16.2.app
-      - name: Show current version of Xcode
+
+      - name: Set Xcode version
+        run: sudo xcode-select -s /Applications/Xcode_26.0.1.app
+
+      - name: Show Xcode version
         run: xcodebuild -version
-      - name: xcpretty install
-        run: gem install xcpretty
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Set Default Scheme
-        run: |
-          scheme_list=$(xcodebuild -list -json | tr -d "\n")
-          default=$(echo $scheme_list | ruby -e "require 'json'; puts JSON.parse(STDIN.gets)['project']['targets'][0]")
-          echo $default | cat >default
-          echo Using default scheme: $default
-      - name: Build
-        env:
-          scheme: ${{ 'default' }}
-          platform: ${{ 'iOS Simulator' }}
-        run: |
-          xcodebuild -project SnapSafe.xcodeproj/ -scheme SnapSafe -configuration Debug -sdk iphonesimulator18.2 -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.2' -derivedDataPath ./build CODE_SIGNING_ALLOWED=NO clean build-for-testing | xcpretty
-      - name: Test
-        env:
-          scheme: ${{ 'default' }}
-          platform: ${{ 'iOS Simulator' }}
-        run: |
-          xcodebuild -project SnapSafe.xcodeproj/ -scheme SnapSafe -configuration Debug -sdk iphonesimulator18.2 -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.2' -derivedDataPath ./build CODE_SIGNING_ALLOWED=NO test-without-building | xcpretty
-          
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+          ruby-version: '3.4'
+
+      - name: Install dependencies
+        run: bundle install
+
+      - name: Run tests with fastlane
+        run: bundle exec fastlane scan
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            fastlane/test_output/
+            fastlane/test_output/*.junit
+            fastlane/test_output/*.html
+            fastlane/test_output/*.xcresult
+          retention-days: 30
+
+      - name: Publish test results
+        if: always()
+        uses: EnricoMi/publish-unit-test-result-action/macos@v2
+        with:
+          files: |
+            fastlane/test_output/*.junit
+          check_name: iOS Test Results

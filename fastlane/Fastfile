@@ -1,0 +1,56 @@
+opt_out_usage
+
+# This file contains the fastlane.tools configuration
+# You can find the documentation at https://docs.fastlane.tools
+#
+# For a list of all available actions, check out
+#
+#     https://docs.fastlane.tools/actions
+#
+# For a list of all available plugins, check out
+#
+#     https://docs.fastlane.tools/plugins/available-plugins
+#
+
+# Uncomment the line if you want fastlane to automatically update itself
+# update_fastlane
+
+default_platform(:ios)
+
+platform :ios do
+  desc "Run unit tests"
+  lane :test do
+    run_tests(
+      scheme: "SnapSafe",
+      devices: ["iPhone 17", "iPad Pro 11-inch (M4)"],
+      only_testing: ["SnapSafeTests"]
+    )
+  end
+  desc "Run tests on multiple iOS versions and device types"
+  lane :run_multi_version_tests do
+    # Test against latest and latest minus 1
+    ios_versions = ['18.5', '26.0']
+
+    # Test on both iPhone and iPad
+    device_types = [
+      { name: 'iPhone 17', type: 'iPhone' },
+      { name: 'iPad Pro 11-inch (M4)', type: 'iPad' }
+    ]
+
+    ios_versions.each do |version|
+      device_types.each do |device|
+        UI.message "Testing on #{device[:name]} with iOS #{version}..."
+
+        run_tests(
+          scheme: "SnapSafe",
+          device: "#{device[:name]} (#{version})",
+          only_testing: ["SnapSafeTests"],
+          output_directory: ".fastlane/test_output/#{version.gsub('.', '_')}_#{device[:type]}"
+        )
+      end
+    end
+  end
+end
+
+
+

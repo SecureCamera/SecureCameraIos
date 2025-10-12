@@ -1,0 +1,23 @@
+# For more information about this configuration visit
+# https://docs.fastlane.tools/actions/scan/#scanfile
+
+# In general, you can use the options available
+# fastlane scan --help
+
+scheme("SnapSafe")
+devices(["iPhone 17", "iPad Pro 11-inch (M4)"])
+
+# Generate xcresult bundle which can be opened in Xcode for detailed results
+result_bundle(true)
+
+# Also generate junit for CI integration
+output_types("junit")
+output_directory("./fastlane/test_output")
+
+# The xcresult bundle will be in test_output/SnapSafe.xcresult
+# You can open it with: open fastlane/test_output/SnapSafe.xcresult
+
+# clean(true)
+
+# Enable skip_build to skip debug builds for faster test performance
+skip_build(false)

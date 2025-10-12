@@ -32,6 +32,16 @@ Verify the setting is **disabled** (the default).
 
 # Contributing
 
+## Running Fastlane
+
+To run tests for a single version, 
+
+`bundle exec fastlane test`
+
+To run the release tests, run all the same tests against more than just the latest supported version.
+
+`bundle exec fastlane run_multi_version_tests`
+
 ## Code Formatting
 Use swiftformat to do this.
 
