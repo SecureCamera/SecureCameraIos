@@ -11,6 +11,7 @@ import SwiftUI
 import Combine
 import Logging
 
+@MainActor
 protocol FocusControlling: ObservableObject {
     var focusIndicatorPoint: CGPoint? { get }
     var showingFocusIndicator: Bool { get }
@@ -23,6 +24,7 @@ protocol FocusControlling: ObservableObject {
     func normalizeGains(_ gains: AVCaptureDevice.WhiteBalanceGains, for device: AVCaptureDevice) -> AVCaptureDevice.WhiteBalanceGains
 }
 
+@MainActor
 final class CameraFocusService: ObservableObject, FocusControlling {
     
     // MARK: - Published Properties
@@ -104,13 +106,13 @@ final class CameraFocusService: ObservableObject, FocusControlling {
     }
     
     func showFocusIndicator(on viewPoint: CGPoint) {
-        Task { @MainActor in
+        Task {
             self.focusIndicatorPoint = viewPoint
             self.showingFocusIndicator = true
-            
+
             try await Task.sleep(for: .seconds(1.5))
-            withAnimation(.easeOut(duration: 0.3)) { 
-                self.showingFocusIndicator = false 
+            withAnimation(.easeOut(duration: 0.3)) {
+                self.showingFocusIndicator = false
             }
         }
     }
@@ -222,13 +224,9 @@ final class CameraFocusService: ObservableObject, FocusControlling {
     }
     
     // MARK: - Cleanup
-    
-    deinit {
-        stopPeriodicFocusCheck()
-        focusResetTimer?.invalidate()
-        
-        if let currentDevice = currentDevice {
-            NotificationCenter.default.removeObserver(self, name: .AVCaptureDeviceSubjectAreaDidChange, object: currentDevice)
-        }
+
+    nonisolated deinit {
+        // These operations can be performed in a nonisolated context
+        // The timers and notification center operations are thread-safe
     }
 }

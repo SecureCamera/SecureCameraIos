@@ -6,7 +6,7 @@
 //
 
 
-public protocol Clock {
+public protocol Clock: Sendable {
 	var now: Date { get }
 }
 

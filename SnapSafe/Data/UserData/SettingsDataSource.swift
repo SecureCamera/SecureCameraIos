@@ -11,7 +11,7 @@ import Mockable
 
 
 @Mockable
-public protocol SettingsDataSource {
+public protocol SettingsDataSource: Sendable {
     // MARK: - Intro state
     /// Check if the user has completed the introduction
     var hasCompletedIntro: AnyPublisher<Bool, Never> { get }

@@ -10,7 +10,7 @@ import FactoryKit
 import Logging
 
 
-final class AddDecoyPhotoUseCase {
+final class AddDecoyPhotoUseCase: @unchecked Sendable {
     private let pinRepository: PinRepository
     private let encryptionScheme: EncryptionScheme
     private let imageRepository: SecureImageRepository

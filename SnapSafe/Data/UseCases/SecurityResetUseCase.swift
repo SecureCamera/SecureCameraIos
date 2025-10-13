@@ -8,7 +8,7 @@
 import Foundation
 import Logging
 
-final class SecurityResetUseCase {
+final class SecurityResetUseCase: @unchecked Sendable {
     private let authRepo: AuthorizationRepository
     private let imageRepository: SecureImageRepository
     private let encryptionScheme: EncryptionScheme

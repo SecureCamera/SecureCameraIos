@@ -8,7 +8,7 @@
 import Logging
 
 
-public final class CreatePinUseCase {
+public final class CreatePinUseCase: @unchecked Sendable {
     private let authorizationRepository: AuthorizationRepository
     private let encryptionScheme: EncryptionScheme
     private let pinRepository: PinRepository

@@ -12,7 +12,7 @@ import Logging
 
 
 @Mockable
-protocol PinCrypto {
+protocol PinCrypto: Sendable {
     func hashPin(pin: String, deviceId: Data) -> HashedPin
     func verifyPin(pin: String, stored: HashedPin, deviceId: Data) -> Bool
 }

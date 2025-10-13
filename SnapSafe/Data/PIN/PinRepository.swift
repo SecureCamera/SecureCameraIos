@@ -8,7 +8,7 @@
 import Mockable
 
 @Mockable
-public protocol PinRepository {
+public protocol PinRepository: Sendable {
     // MARK: - Core PIN APIs
 
     func setAppPin(_ pin: String) async

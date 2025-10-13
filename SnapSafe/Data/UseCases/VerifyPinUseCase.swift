@@ -8,7 +8,7 @@
 import Foundation
 import Logging
 
-public final class VerifyPinUseCase {
+public final class VerifyPinUseCase: @unchecked Sendable {
     private let authRepo: AuthorizationRepository
     private let imageRepo: SecureImageRepository
     private let pinRepository: PinRepository

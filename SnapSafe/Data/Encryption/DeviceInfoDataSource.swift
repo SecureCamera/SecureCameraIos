@@ -10,14 +10,14 @@ import Mockable
 import UIKit
 
 @Mockable
-protocol DeviceInfoDataSource {
+protocol DeviceInfoDataSource: Sendable {
     func getDeviceIdentifier() async -> Data
 }
 
 final class DeviceInfoDataSourceImpl: DeviceInfoDataSource {
 
     func getDeviceIdentifier() async -> Data {
-        let vendorId = UIDevice.current.identifierForVendor?.uuidString ?? ""
+        let vendorId = await UIDevice.current.identifierForVendor?.uuidString ?? ""
         let manufacturer = "Apple"
         let model = DeviceInfoDataSourceImpl.machineIdentifier()
 

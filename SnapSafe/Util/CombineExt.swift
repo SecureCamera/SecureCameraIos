@@ -8,12 +8,12 @@
 import Combine
 
 
-extension Publisher {
+extension Publisher where Output: Sendable {
     /// Awaits the first value this publisher emits.
     func firstValue() async -> Output? {
         await withTaskCancellationHandler {
             await withCheckedContinuation { continuation in
-                var cancellable: AnyCancellable?
+                nonisolated(unsafe) var cancellable: AnyCancellable?
                 cancellable = self.first().sink(
                     receiveCompletion: { _ in
                         continuation.resume(returning: nil)
@@ -29,7 +29,7 @@ extension Publisher {
             // Handle task cancellation by cancelling the subscription
         }
     }
-    
+
     /// Awaits the first value this publisher emits, or returns `defaultValue` if none are emitted.
     func firstValue(or defaultValue: Output) async -> Output {
         // Use AsyncSequence bridge
@@ -41,10 +41,10 @@ extension Publisher {
     }
 }
 
-func runBlocking<T>(_ work: @escaping () async throws -> T) rethrows -> T {
+func runBlocking<T: Sendable>(_ work: @escaping @Sendable () async throws -> T) rethrows -> T {
+    nonisolated(unsafe) var result: Result<T, Error>!
     let semaphore = DispatchSemaphore(value: 0)
-    var result: Result<T, Error>!
-    
+
     Task {
         do {
             let value = try await work()
@@ -54,7 +54,7 @@ func runBlocking<T>(_ work: @escaping () async throws -> T) rethrows -> T {
         }
         semaphore.signal()
     }
-    
+
     semaphore.wait()
     return try! result.get()
 }

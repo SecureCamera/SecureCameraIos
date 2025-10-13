@@ -3,7 +3,7 @@ import Foundation
 import Logging
 import Security
 
-class PinRepositoryImpl: PinRepository {
+class PinRepositoryImpl: PinRepository, @unchecked Sendable {
     private let dataSource: SettingsDataSource
     private let encryptionScheme: EncryptionScheme
     private let deviceInfo: DeviceInfoDataSource

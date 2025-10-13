@@ -26,12 +26,12 @@ private struct SettingsData: Codable {
 
 // MARK: - File-based Implementation
 
-public final class FileBasedSettingsDataSource: SettingsDataSource {
+public final class FileBasedSettingsDataSource: SettingsDataSource, @unchecked Sendable {
     // MARK: - Combine subjects (reflect stored values)
-    private let hasCompletedIntroSubject: CurrentValueSubject<Bool, Never>
-    private let sanitizeFileNameSubject: CurrentValueSubject<Bool, Never>
-    private let sanitizeMetadataSubject: CurrentValueSubject<Bool, Never>
-    private let sessionTimeoutSubject: CurrentValueSubject<Int64, Never>
+    private nonisolated(unsafe) let hasCompletedIntroSubject: CurrentValueSubject<Bool, Never>
+    private nonisolated(unsafe) let sanitizeFileNameSubject: CurrentValueSubject<Bool, Never>
+    private nonisolated(unsafe) let sanitizeMetadataSubject: CurrentValueSubject<Bool, Never>
+    private nonisolated(unsafe) let sessionTimeoutSubject: CurrentValueSubject<Int64, Never>
 
     // MARK: - Public publishers
     public var hasCompletedIntro: AnyPublisher<Bool, Never> { hasCompletedIntroSubject.eraseToAnyPublisher() }
@@ -45,7 +45,7 @@ public final class FileBasedSettingsDataSource: SettingsDataSource {
 
     // MARK: - Thread Safety
     private let queue = DispatchQueue(label: "com.snapsafe.settings", qos: .utility, attributes: .concurrent)
-    private var _settingsData: SettingsData
+    private nonisolated(unsafe) var _settingsData: SettingsData
     
     // MARK: - File Management
     private let fileURL: URL
