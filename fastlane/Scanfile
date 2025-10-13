@@ -5,6 +5,7 @@
 # fastlane scan --help
 
 scheme("SnapSafe")
+project "SnapSafe.xcodeproj"
 devices(["iPhone 17", "iPad Pro 11-inch (M4)"])
 
 # Generate xcresult bundle which can be opened in Xcode for detailed results
