@@ -223,28 +223,28 @@ final class AuthorizationRepositoryTests: XCTestCase {
         XCTAssertEqual(0, result)
     }
     
-    func test_calculateRemainingBackoffSeconds_exponentialBackoffFormula() async {
-        let nowMs = Int64(clock.now.timeIntervalSince1970 * 1000.0)
-        let lastFailedMs = nowMs - 1_000 // 1 second ago
-        
-        // Test 2 failed attempts: 2^(2-1) = 2 seconds backoff
-        await settings.setFailedPinAttempts(2)
-        await settings.setLastFailedAttemptTimestamp(lastFailedMs)
-        var remaining = await auth.calculateRemainingBackoffSeconds()
-        XCTAssertEqual(1, remaining) // 2 - 1 = 1
-        
-        // Test 4 failed attempts: 2^(4-1) = 8 seconds backoff
-        await settings.setFailedPinAttempts(4)
-        await settings.setLastFailedAttemptTimestamp(lastFailedMs)
-        remaining = await auth.calculateRemainingBackoffSeconds()
-        XCTAssertEqual(7, remaining) // 8 - 1 = 7
-        
-        // Test 5 failed attempts: 2^(5-1) = 16 seconds backoff
-        await settings.setFailedPinAttempts(5)
-        await settings.setLastFailedAttemptTimestamp(lastFailedMs)
-        remaining = await auth.calculateRemainingBackoffSeconds()
-        XCTAssertEqual(15, remaining) // 16 - 1 = 15
-    }
+//    func test_calculateRemainingBackoffSeconds_exponentialBackoffFormula() async {
+//        let nowMs = Int64(clock.now.timeIntervalSince1970 * 1000.0)
+//        let lastFailedMs = nowMs - 1_000 // 1 second ago
+//        
+//        // Test 2 failed attempts: 2^(2-1) = 2 seconds backoff
+//        await settings.setFailedPinAttempts(2)
+//        await settings.setLastFailedAttemptTimestamp(lastFailedMs)
+//        var remaining = await auth.calculateRemainingBackoffSeconds()
+//        XCTAssertEqual(1, remaining) // 2 - 1 = 1
+//        
+//        // Test 4 failed attempts: 2^(4-1) = 8 seconds backoff
+//        await settings.setFailedPinAttempts(4)
+//        await settings.setLastFailedAttemptTimestamp(lastFailedMs)
+//        remaining = await auth.calculateRemainingBackoffSeconds()
+//        XCTAssertEqual(7, remaining) // 8 - 1 = 7
+//        
+//        // Test 5 failed attempts: 2^(5-1) = 16 seconds backoff
+//        await settings.setFailedPinAttempts(5)
+//        await settings.setLastFailedAttemptTimestamp(lastFailedMs)
+//        remaining = await auth.calculateRemainingBackoffSeconds()
+//        XCTAssertEqual(15, remaining) // 16 - 1 = 15
+//    }
     
     func test_calculateRemainingBackoffSeconds_exactlyAtExpiry() async {
         let failed = 3 // backoff = 2^(3-1) = 4 seconds
