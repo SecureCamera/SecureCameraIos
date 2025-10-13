@@ -5,7 +5,7 @@
 //  Created by Adam Brown on 9/11/25.
 //
 
-final class CreatePoisonPillUseCase {
+final class CreatePoisonPillUseCase: @unchecked Sendable {
     private let pinRepository: PinRepository
     private let encryptionScheme: EncryptionScheme
     

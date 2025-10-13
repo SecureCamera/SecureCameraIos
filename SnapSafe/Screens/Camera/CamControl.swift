@@ -14,6 +14,7 @@ import UIKit
 import FactoryKit
 import Logging
 
+@MainActor
 class SecureCameraController: UIViewController, AVCapturePhotoCaptureDelegate {
     private var captureSession: AVCaptureSession!
     private var photoOutput: AVCapturePhotoOutput!
@@ -146,7 +147,7 @@ class SecureCameraController: UIViewController, AVCapturePhotoCaptureDelegate {
         photoOutput.capturePhoto(with: settings, delegate: self)
     }
 
-    func photoOutput(_: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
+    nonisolated func photoOutput(_: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
         guard error == nil else {
             // Handle photo capture error
             Logger.camera.error("Error capturing photo", metadata: [
@@ -156,7 +157,7 @@ class SecureCameraController: UIViewController, AVCapturePhotoCaptureDelegate {
         }
     }
 
-    func photoOutput(_: AVCapturePhotoOutput, didFinishCapturingDeferredPhotoProxy proxy: AVCaptureDeferredPhotoProxy?, error: Error?) {
+    nonisolated func photoOutput(_: AVCapturePhotoOutput, didFinishCapturingDeferredPhotoProxy proxy: AVCaptureDeferredPhotoProxy?, error: Error?) {
         guard error == nil else {
             Logger.camera.error("Error with deferred photo", metadata: [
                 "error": .string(error!.localizedDescription)

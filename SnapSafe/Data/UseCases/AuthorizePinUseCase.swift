@@ -6,7 +6,7 @@
 //
 
 
-public final class AuthorizePinUseCase {
+public final class AuthorizePinUseCase: @unchecked Sendable {
 	private let authRepository: AuthorizationRepository
 	private let pinRepository: PinRepository
 

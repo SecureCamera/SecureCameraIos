@@ -11,7 +11,7 @@ import FactoryKit
 
 
 /// Manages user authorization state, including PIN verification and session expiration.
-public final class AuthorizationRepository {
+public final class AuthorizationRepository: @unchecked Sendable {
     // MARK: - Constants
     public static let MAX_FAILED_ATTEMPTS = 10
 

@@ -7,7 +7,7 @@
 
 import Foundation
 
-final class RemovePoisonPillUseCase {
+final class RemovePoisonPillUseCase: @unchecked Sendable {
     private let pinRepository: PinRepository
     private let imageRepository: SecureImageRepository
     

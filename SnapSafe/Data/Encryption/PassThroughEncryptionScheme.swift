@@ -7,8 +7,8 @@
 
 import Foundation
 
-final class PassThroughEncryptionScheme: EncryptionScheme {
-    private var cachedKey: Data?
+final class PassThroughEncryptionScheme: EncryptionScheme, @unchecked Sendable {
+    private nonisolated(unsafe) var cachedKey: Data?
     
     func encryptToFile(plain: Data, targetFile: URL) async throws {
         try plain.write(to: targetFile)

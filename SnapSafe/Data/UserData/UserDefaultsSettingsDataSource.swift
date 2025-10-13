@@ -34,12 +34,12 @@ public enum Defaults {
 
 // MARK: - UserDefaults Impl
 
-public final class UserDefaultsSettingsDataSource: SettingsDataSource {
+public final class UserDefaultsSettingsDataSource: SettingsDataSource, @unchecked Sendable {
     // MARK: - Combine subjects (reflect stored values)
-    private let hasCompletedIntroSubject: CurrentValueSubject<Bool, Never>
-    private let sanitizeFileNameSubject: CurrentValueSubject<Bool, Never>
-    private let sanitizeMetadataSubject: CurrentValueSubject<Bool, Never>
-    private let sessionTimeoutSubject: CurrentValueSubject<Int64, Never>
+    private nonisolated(unsafe) let hasCompletedIntroSubject: CurrentValueSubject<Bool, Never>
+    private nonisolated(unsafe) let sanitizeFileNameSubject: CurrentValueSubject<Bool, Never>
+    private nonisolated(unsafe) let sanitizeMetadataSubject: CurrentValueSubject<Bool, Never>
+    private nonisolated(unsafe) let sessionTimeoutSubject: CurrentValueSubject<Int64, Never>
 
 
     // MARK: - Public publishers
@@ -53,7 +53,7 @@ public final class UserDefaultsSettingsDataSource: SettingsDataSource {
     public let sanitizeMetadataDefault: Bool
 
     // MARK: - Storage + JSON
-    private let defaults: UserDefaults
+    private nonisolated(unsafe) let defaults: UserDefaults
     private let jsonDecoder = JSONDecoder()
     private let jsonEncoder = jsonEncoderFactory()
 
