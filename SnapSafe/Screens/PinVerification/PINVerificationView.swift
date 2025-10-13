@@ -113,14 +113,6 @@ struct PINVerificationView: View {
         }
         .obscuredWhenInactive()
         .screenCaptureProtected()
-        .toolbar {
-            ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
-                Button("Done") {
-                    isPINFieldFocused = false
-                }
-            }
-        }
     }
 }
 
