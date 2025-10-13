@@ -37,6 +37,9 @@ jobs:
       - name: Install dependencies
         run: bundle install
 
+      - name: List available schemes
+        run: xcodebuild -list -project SnapSafe.xcodeproj
+
       - name: Run tests with fastlane
         run: bundle exec fastlane scan
 
