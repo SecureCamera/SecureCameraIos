@@ -41,7 +41,7 @@ jobs:
         run: xcodebuild -list -project SnapSafe.xcodeproj
 
       - name: Run tests with fastlane
-        run: bundle exec fastlane scan
+        run: bundle exec fastlane test
 
       - name: Upload test results
         if: always()
