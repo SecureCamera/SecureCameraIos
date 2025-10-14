@@ -40,8 +40,17 @@ jobs:
       - name: List available schemes
         run: xcodebuild -list -project SnapSafe.xcodeproj
 
-      - name: Run tests with fastlane
-        run: bundle exec fastlane test
+      - name: Run tests with fastlane (non-parallel)
+        run: |
+          set -o pipefail
+          RESULTDIR="$RUNNER_TEMP/xcresult/$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT-$(date +%s)"
+          mkdir -p "$RESULTDIR"
+          bundle exec fastlane scan \
+            scheme:"SnapSafe" \
+            result_bundle:true \
+            disable_concurrent_testing:true \
+            output_directory:"$RESULTDIR" \
+            open_report:false
 
       - name: Upload test results
         if: always()
