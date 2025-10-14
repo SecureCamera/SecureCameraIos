@@ -63,3 +63,6 @@ Configs/LocalOverrides.xcconfig
 
 # ruby
 vendor/
+
+# fastlane snapshot
+screenshots/
