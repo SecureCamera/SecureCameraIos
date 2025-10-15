@@ -63,6 +63,7 @@ platform :ios do
   desc "Build release IPA"
   lane :build_release do
     build_app(
+      project: "SnapSafe.xcodeproj",
       scheme: "SnapSafe",
       export_method: "app-store",
       output_directory: "./build",
@@ -73,6 +74,7 @@ platform :ios do
   desc "Upload to TestFlight"
   lane :beta do
     build_app(
+      project: "SnapSafe.xcodeproj",
       scheme: "SnapSafe",
       export_method: "app-store"
     )
@@ -85,6 +87,7 @@ platform :ios do
   desc "Build and upload to App Store Connect"
   lane :deploy do
     build_app(
+      project: "SnapSafe.xcodeproj",
       scheme: "SnapSafe",
       export_method: "app-store"
     )
