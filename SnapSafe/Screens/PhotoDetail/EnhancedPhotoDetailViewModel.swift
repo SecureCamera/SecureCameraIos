@@ -280,6 +280,18 @@ class EnhancedPhotoDetailViewModel: ObservableObject {
                         }
 
                         await MainActor.run {
+                            // Configure popover presentation for iPad
+                            if let popoverController = activityController.popoverPresentationController {
+                                popoverController.sourceView = presentingViewController.view
+                                popoverController.sourceRect = CGRect(
+                                    x: presentingViewController.view.bounds.midX,
+                                    y: presentingViewController.view.bounds.midY,
+                                    width: 0,
+                                    height: 0
+                                )
+                                popoverController.permittedArrowDirections = []
+                            }
+
                             presentingViewController.present(activityController, animated: true)
                         }
                     }
