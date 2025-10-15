@@ -108,7 +108,11 @@ final class CameraDeviceService: ObservableObject, @preconcurrency CameraDeviceP
             }
 
             // Enable face-driven autofocus (prioritizes detected faces)
-            device.automaticallyAdjustsFaceDrivenAutoFocusEnabled = true
+            // Only available on rear cameras with autofocus support
+            // Front cameras don't support this feature and will crash if enabled
+            if position == .back && device.isFocusModeSupported(.continuousAutoFocus) {
+                device.automaticallyAdjustsFaceDrivenAutoFocusEnabled = true
+            }
             
             if device.isExposureModeSupported(.continuousAutoExposure) {
                 device.exposureMode = .continuousAutoExposure
