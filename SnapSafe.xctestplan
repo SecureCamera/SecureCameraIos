@@ -30,7 +30,7 @@
       "parallelizable" : true,
       "target" : {
         "containerPath" : "container:SnapSafe.xcodeproj",
-        "identifier" : "A9DE37602DC5F34600679C2C",
+        "identifier" : "A9C449122E9CC85800CFE854",
         "name" : "SnapSafeUITests"
       }
     }
