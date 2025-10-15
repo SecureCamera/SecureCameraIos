@@ -138,8 +138,8 @@ struct EnhancedPhotoDetailView: View {
                 }
             }
             // Vertical dismiss gesture (gated inside handlers)
-            .gesture(
-                DragGesture()
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 20)
                     .onChanged { value in
                         guard viewModel.mayDismissByDrag() else { return }
                         viewModel.handleDragChanged(
