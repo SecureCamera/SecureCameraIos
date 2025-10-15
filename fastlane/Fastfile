@@ -59,6 +59,43 @@ platform :ios do
       end
     end
   end
+
+  desc "Build release IPA"
+  lane :build_release do
+    build_app(
+      scheme: "SnapSafe",
+      export_method: "app-store",
+      output_directory: "./build",
+      output_name: "SnapSafe.ipa"
+    )
+  end
+
+  desc "Upload to TestFlight"
+  lane :beta do
+    build_app(
+      scheme: "SnapSafe",
+      export_method: "app-store"
+    )
+
+    upload_to_testflight(
+      skip_waiting_for_build_processing: true
+    )
+  end
+
+  desc "Build and upload to App Store Connect"
+  lane :deploy do
+    build_app(
+      scheme: "SnapSafe",
+      export_method: "app-store"
+    )
+
+    upload_to_app_store(
+      skip_screenshots: true,
+      skip_metadata: true,
+      submit_for_review: false,
+      force: true
+    )
+  end
 end
 
 
