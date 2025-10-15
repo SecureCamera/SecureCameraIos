@@ -21,11 +21,12 @@ struct PINVerificationView: View {
                 .padding(.top, 50)
             
             Text("SnapSafe")
+                .foregroundColor(.primary)
                 .font(.largeTitle)
                 .bold()
-            
+
             Text("Enter your PIN to continue")
-                .foregroundColor(Color(UIColor.lightText))
+                .foregroundColor(.secondary)
             
             if viewModel.shouldShowAttemptsWarning {
                 Text(viewModel.attemptsWarningMessage)
@@ -34,12 +35,12 @@ struct PINVerificationView: View {
                     .padding(.top, 5)
             }
             
-            SecureField("PIN", text: $viewModel.pin, prompt: Text("PIN").foregroundColor(Color(UIColor.lightText)))
+            SecureField("PIN", text: $viewModel.pin, prompt: Text("PIN").foregroundColor(.secondary))
                 .keyboardType(.numberPad)
                 .textContentType(.oneTimeCode)
                 .multilineTextAlignment(.center)
                 .padding()
-                .foregroundColor(Color(UIColor.lightText))
+                .foregroundColor(.primary)
                 .overlay(
                     RoundedRectangle(cornerRadius: 8)
                         .stroke(Color(UIColor.systemGray3), lineWidth: 1)

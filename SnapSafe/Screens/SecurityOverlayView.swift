@@ -17,14 +17,27 @@ struct SecurityOverlayView: View {
     var body: some View {
         ZStack {
             // Background for all overlay states
-            Color.black
+            backgroundColor
                 .opacity(backgroundOpacity)
                 .edgesIgnoringSafeArea(.all)
-            
+
             // Content based on state
             overlayContent
         }
         .transition(.opacity.animation(.easeInOut(duration: 0.2)))
+    }
+
+    private var backgroundColor: Color {
+        switch state {
+        case .normal:
+            return Color.clear
+        case .screenRecording, .privacyShield:
+            // Use black for screen recording and privacy shield
+            return Color.black
+        case .requiresAuthentication:
+            // Use system background for authentication (adapts to light/dark mode)
+            return Color(UIColor.systemBackground)
+        }
     }
     
     @ViewBuilder
