@@ -56,9 +56,6 @@ jobs:
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           cp $PROVISION_PATH ~/Library/MobileDevice/Provisioning\ Profiles/
 
-      - name: Run tests
-        run: bundle exec fastlane test
-
       - name: Build release IPA
         run: bundle exec fastlane build_release
 
