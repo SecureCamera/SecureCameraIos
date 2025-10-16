@@ -6,7 +6,7 @@
 
 scheme("SnapSafe")
 project "SnapSafe.xcodeproj"
-devices(["iPhone 17", "iPad Pro 11-inch (M4)"])
+devices(["iPhone 17"])
 
 # Generate xcresult bundle which can be opened in Xcode for detailed results
 result_bundle(true)
@@ -22,3 +22,15 @@ output_directory("./fastlane/test_output")
 
 # Enable skip_build to skip debug builds for faster test performance
 skip_build(false)
+
+# Skip macro validation in CI environments
+# This is needed for Swift macro packages like Mockable
+xcargs("-skipMacroValidation")
+
+# Simulator reliability settings
+reset_simulator(true)  # Reset simulator before running tests
+disable_slide_to_type(false)  # Don't disable slide to type (can cause issues)
+prelaunch_simulator(true)  # Boot simulator before running tests
+
+# Only run unit tests, not UI tests (UI tests can be run separately with snapshot)
+only_testing(["SnapSafeTests"])

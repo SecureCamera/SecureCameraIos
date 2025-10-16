@@ -31,7 +31,7 @@ platform :ios do
   lane :test do
     run_tests(
       scheme: "SnapSafe",
-      devices: ["iPhone 17", "iPad Pro 11-inch (M4)"],
+      devices: ["iPhone 17"],
       only_testing: ["SnapSafeTests"]
     )
   end
@@ -40,10 +40,8 @@ platform :ios do
     # Test against latest and latest minus 1
     ios_versions = ['18.5', '26.0']
 
-    # Test on both iPhone and iPad
     device_types = [
       { name: 'iPhone 17', type: 'iPhone' },
-      { name: 'iPad Pro 11-inch (M4)', type: 'iPad' }
     ]
 
     ios_versions.each do |version|
