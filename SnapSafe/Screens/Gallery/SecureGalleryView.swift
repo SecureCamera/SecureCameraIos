@@ -94,9 +94,7 @@ struct SecureGalleryView: View {
                 }) {
                     HStack {
                         Image(systemName: "chevron.left")
-                        Text("Back")
                     }
-                    .foregroundColor(.blue)
                 }
             }
             
