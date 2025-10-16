@@ -51,6 +51,9 @@ public struct ZoomableScrollView<Content: View>: UIViewRepresentable {
         // Enable simultaneous pan and pinch gestures (allows 2-finger pan during/after pinch)
         scrollView.panGestureRecognizer.maximumNumberOfTouches = 2
 
+        // Store reference to coordinator for bounds observation
+        context.coordinator.scrollView = scrollView
+
         let hosted = context.coordinator.hostingController
         hosted.view.backgroundColor = .clear
         hosted.view.translatesAutoresizingMaskIntoConstraints = false
@@ -97,6 +100,13 @@ public struct ZoomableScrollView<Content: View>: UIViewRepresentable {
                 self.isZoomed = false
             }
         }
+
+        // Handle bounds changes (rotation)
+        let currentBounds = uiView.bounds.size
+        if context.coordinator.lastBoundsSize != currentBounds {
+            context.coordinator.lastBoundsSize = currentBounds
+            context.coordinator.handleBoundsChange(uiView)
+        }
     }
 
     public func makeCoordinator() -> Coordinator {
@@ -108,6 +118,8 @@ public struct ZoomableScrollView<Content: View>: UIViewRepresentable {
         fileprivate let hostingController: UIHostingController<Content>
         private var isZoomedBinding: Binding<Bool>
         private var isZooming: Bool = false
+        weak var scrollView: UIScrollView?
+        var lastBoundsSize: CGSize = .zero
 
         internal init(isZoomed: Binding<Bool>, content: Content) {
             self.hostingController = UIHostingController(rootView: content)
@@ -172,8 +184,53 @@ public struct ZoomableScrollView<Content: View>: UIViewRepresentable {
             scrollView.zoom(to: rect, animated: true)
         }
 
+        // Handle bounds changes (e.g., rotation)
+        fileprivate func handleBoundsChange(_ scrollView: UIScrollView) {
+            guard let view = hostingController.view else { return }
+
+            // If zoomed, maintain the center point
+            if scrollView.zoomScale > scrollView.minimumZoomScale {
+                // Get the current center point in content coordinates
+                let centerX = scrollView.contentOffset.x + scrollView.bounds.width / 2
+                let centerY = scrollView.contentOffset.y + scrollView.bounds.height / 2
+
+                // Calculate the relative position (0-1)
+                let relativeX = centerX / scrollView.contentSize.width
+                let relativeY = centerY / scrollView.contentSize.height
+
+                // After layout, recalculate offset to maintain the same relative position
+                DispatchQueue.main.async { [weak scrollView] in
+                    guard let scrollView = scrollView else { return }
+
+                    // Calculate new center position
+                    let newCenterX = relativeX * scrollView.contentSize.width
+                    let newCenterY = relativeY * scrollView.contentSize.height
+
+                    // Calculate new offset
+                    let newOffsetX = max(0, min(newCenterX - scrollView.bounds.width / 2,
+                                                 scrollView.contentSize.width - scrollView.bounds.width))
+                    let newOffsetY = max(0, min(newCenterY - scrollView.bounds.height / 2,
+                                                 scrollView.contentSize.height - scrollView.bounds.height))
+
+                    scrollView.contentOffset = CGPoint(x: newOffsetX, y: newOffsetY)
+                    self.centerContentIfNeeded(scrollView)
+                }
+            } else {
+                // Not zoomed - reset offset and center using insets
+                // This prevents the content from being stuck to the top-left
+                scrollView.contentOffset = .zero
+
+                // Need to wait for layout to complete before centering
+                DispatchQueue.main.async { [weak scrollView] in
+                    guard let scrollView = scrollView else { return }
+                    scrollView.contentOffset = .zero
+                    self.centerContentIfNeeded(scrollView)
+                }
+            }
+        }
+
         // Center the content when it's smaller than the bounds (Photos-like)
-        private func centerContentIfNeeded(_ scrollView: UIScrollView) {
+        fileprivate func centerContentIfNeeded(_ scrollView: UIScrollView) {
             guard let view = hostingController.view else { return }
             let boundsSize = scrollView.bounds.size
             let contentSize = view.frame.size
