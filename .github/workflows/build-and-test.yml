@@ -3,6 +3,7 @@ name: iOS Build and Test
 permissions:
   contents: read
   pull-requests: write
+  checks: write
 
 on:
   push:
@@ -19,14 +20,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: List available Xcode versions
-        run: ls /Applications | grep Xcode
-
       - name: Set Xcode version
         run: sudo xcode-select -s /Applications/Xcode_26.0.1.app
 
-      - name: Show Xcode version
-        run: xcodebuild -version
+      - name: Use the exact SPM lockfile
+        run: |
+          # Ensure we use the committed lockfile, do not re-resolve
+          xcodebuild -resolvePackageDependencies \
+            -project SnapSafe.xcodeproj \
+            -scheme SnapSafe
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
@@ -34,23 +36,16 @@ jobs:
           bundler-cache: true
           ruby-version: '3.4'
 
-      - name: Install dependencies
+      - name: Install ruby dependencies for fastlane
         run: bundle install
 
-      - name: List available schemes
-        run: xcodebuild -list -project SnapSafe.xcodeproj
-
-      - name: Run tests with fastlane (non-parallel)
+      - name: Disable macro validation
         run: |
-          set -o pipefail
-          RESULTDIR="$RUNNER_TEMP/xcresult/$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT-$(date +%s)"
-          mkdir -p "$RESULTDIR"
-          bundle exec fastlane scan \
-            scheme:"SnapSafe" \
-            result_bundle:true \
-            disable_concurrent_testing:true \
-            output_directory:"$RESULTDIR" \
-            open_report:false
+          defaults write com.apple.dt.Xcode IDESkipMacroFingerprintValidation -bool YES
+
+      - name: Run tests
+        run: |
+          bundle exec fastlane test
 
       - name: Upload test results
         if: always()
@@ -59,8 +54,10 @@ jobs:
           name: test-results
           path: |
             fastlane/test_output/
+            # 'fastlane scan' creates these
             fastlane/test_output/*.junit
             fastlane/test_output/*.html
+            # xcodebuild creates this
             fastlane/test_output/*.xcresult
           retention-days: 30
 
