@@ -120,6 +120,8 @@
 		A9F4250E2E94D1840028EB13 /* ZoomableScrollView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9F4250D2E94D17B0028EB13 /* ZoomableScrollView.swift */; };
 		A9F425112E95CAB90028EB13 /* DismissPanGestureHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9F4250F2E95CAB90028EB13 /* DismissPanGestureHandler.swift */; };
 		A9F425122E95CAB90028EB13 /* PhotoPageViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9F425102E95CAB90028EB13 /* PhotoPageViewController.swift */; };
+		A9F9DD4A2EA07209003FC66E /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9F9DD492EA07209003FC66E /* AppDelegate.swift */; };
+		A9F9DD4E2EA0735A003FC66E /* OrientationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9F9DD4D2EA0735A003FC66E /* OrientationManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -250,6 +252,8 @@
 		A9F4250D2E94D17B0028EB13 /* ZoomableScrollView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoomableScrollView.swift; sourceTree = "<group>"; };
 		A9F4250F2E95CAB90028EB13 /* DismissPanGestureHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DismissPanGestureHandler.swift; sourceTree = "<group>"; };
 		A9F425102E95CAB90028EB13 /* PhotoPageViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoPageViewController.swift; sourceTree = "<group>"; };
+		A9F9DD492EA07209003FC66E /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		A9F9DD4D2EA0735A003FC66E /* OrientationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrientationManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -396,6 +400,7 @@
 			children = (
 				663C7E3C2E71542E00967B9E /* Logging */,
 				667FF8282E6CAE0C00FB3E02 /* CombineExt.swift */,
+				A9F9DD4D2EA0735A003FC66E /* OrientationManager.swift */,
 				66DE21CE2E69750600AC94DA /* Json.swift */,
 				667FF80F2E6A9EE600FB3E02 /* Clock.swift */,
 				66A404CC2E67F0960054FFE7 /* DataExt.swift */,
@@ -589,6 +594,7 @@
 		A91DBC532DE58191001F42ED /* SnapSafe */ = {
 			isa = PBXGroup;
 			children = (
+				A9F9DD492EA07209003FC66E /* AppDelegate.swift */,
 				A91DBC4F2DE58191001F42ED /* ScreenCaptureManager.swift */,
 				A91DBC522DE58191001F42ED /* SnapSafeApp.swift */,
 				A91DBC3F2DE58191001F42ED /* Assets.xcassets */,
@@ -826,6 +832,7 @@
 				663C7E252E6FED9A00967B9E /* InvalidateSessionUseCase.swift in Sources */,
 				663C7E262E6FED9A00967B9E /* AddDecoyPhotoUseCase.swift in Sources */,
 				663C7E272E6FED9A00967B9E /* PinStrengthCheckUseCase.swift in Sources */,
+				A9F9DD4E2EA0735A003FC66E /* OrientationManager.swift in Sources */,
 				6660FC452E77CE4B00C0B617 /* RemoveDecoyPhotoUseCase.swift in Sources */,
 				A9E6B6992E6E47E700BB6F19 /* PhotoDef.swift in Sources */,
 				667FF83D2E6D16C700FB3E02 /* CameraContainerView.swift in Sources */,
@@ -866,6 +873,7 @@
 				A91DBC622DE58191001F42ED /* ImageInfoView.swift in Sources */,
 				A9E6B6B12E6EAE3500BB6F19 /* SecurityOverlayView.swift in Sources */,
 				66A404CD2E67F0960054FFE7 /* DataExt.swift in Sources */,
+				A9F9DD4A2EA07209003FC66E /* AppDelegate.swift in Sources */,
 				663C7E312E712E9000967B9E /* HardwareEncryptionScheme.swift in Sources */,
 				663C7E3D2E71542E00967B9E /* LoggingConfiguration.swift in Sources */,
 				663C7E3E2E71542E00967B9E /* Logger+Extensions.swift in Sources */,

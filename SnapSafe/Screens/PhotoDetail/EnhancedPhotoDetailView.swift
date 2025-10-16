@@ -157,6 +157,7 @@ struct EnhancedPhotoDetailView: View {
             )
         }
         .navigationBarHidden(true)
+        .supportedOrientations(.allButUpsideDown)
         .onAppear { viewModel.onAppear() }
         .alert(
             "Delete Photo",

@@ -11,9 +11,10 @@ import Logging
 
 @main
 struct SnapSafeApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var nav = Container.shared.appNavigation()
     @AppStorage("appearanceMode") private var appearanceMode: AppearanceMode = .system
-    
+
     init() {
         LoggingConfiguration.configure()
     }
