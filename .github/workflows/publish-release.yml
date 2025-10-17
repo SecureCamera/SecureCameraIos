@@ -9,6 +9,7 @@ jobs:
   build-and-publish-github-release:
     name: Build and publish GitHub release
     runs-on: macos-latest
+    timeout-minutes: 30
     permissions:
       contents: write
 
@@ -87,6 +88,7 @@ jobs:
     name: Build and publish to App Store
     runs-on: macos-latest
     needs: build-and-publish-github-release
+    timeout-minutes: 30
 
     steps:
       - name: Checkout code
