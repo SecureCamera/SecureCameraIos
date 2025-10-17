@@ -122,8 +122,19 @@ class CameraViewModel: NSObject, ObservableObject {
     }
     
     @objc private func handleAppWillEnterForeground() {
-        Logger.camera.debug("App entering foreground, resetting zoom level")
+        Logger.camera.debug("App entering foreground, restarting camera and resetting zoom")
+        restartCameraSessionIfNeeded()
         resetZoomLevel()
+    }
+
+    func restartCameraSessionIfNeeded() {
+        let session = self.session
+        if !session.isRunning {
+            Logger.camera.info("Camera session not running, restarting...")
+            DispatchQueue.global(qos: .userInitiated).async {
+                session.startRunning()
+            }
+        }
     }
     
      
