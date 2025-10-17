@@ -63,7 +63,7 @@ platform :ios do
     build_app(
       project: "SnapSafe.xcodeproj",
       scheme: "SnapSafe",
-      export_method: "app-store",
+      export_method: "app-store-connect",
       output_directory: "./build",
       output_name: "SnapSafe.ipa"
     )
@@ -74,7 +74,7 @@ platform :ios do
     build_app(
       project: "SnapSafe.xcodeproj",
       scheme: "SnapSafe",
-      export_method: "app-store"
+      export_method: "app-store-connect"
     )
 
     upload_to_testflight(
@@ -87,7 +87,7 @@ platform :ios do
     build_app(
       project: "SnapSafe.xcodeproj",
       scheme: "SnapSafe",
-      export_method: "app-store"
+      export_method: "app-store-connect"
     )
 
     upload_to_app_store(
