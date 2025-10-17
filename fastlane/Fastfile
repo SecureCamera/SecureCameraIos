@@ -65,7 +65,12 @@ platform :ios do
       scheme: "SnapSafe",
       export_method: "app-store",
       output_directory: "./build",
-      output_name: "SnapSafe.ipa"
+      output_name: "SnapSafe.ipa",
+      export_options: {
+        provisioningProfiles: {
+          "com.darkrockstudios.apps.snapsafe" => "SnapSafe Distribution"
+        }
+      }
     )
   end
 
@@ -98,6 +103,3 @@ platform :ios do
     )
   end
 end
-
-
-
