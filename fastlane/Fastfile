@@ -60,10 +60,10 @@ platform :ios do
 
   desc "Build release IPA"
   lane :build_release do
-    build_app(
+    gym(
       project: "SnapSafe.xcodeproj",
       scheme: "SnapSafe",
-      export_method: "app-store-connect",
+      export_method: "app-store",
       output_directory: "./build",
       output_name: "SnapSafe.ipa"
     )
@@ -71,10 +71,10 @@ platform :ios do
 
   desc "Upload to TestFlight"
   lane :beta do
-    build_app(
+    gym(
       project: "SnapSafe.xcodeproj",
       scheme: "SnapSafe",
-      export_method: "app-store-connect"
+      export_method: "app-store"
     )
 
     upload_to_testflight(
@@ -84,10 +84,10 @@ platform :ios do
 
   desc "Build and upload to App Store Connect"
   lane :deploy do
-    build_app(
+    gym(
       project: "SnapSafe.xcodeproj",
       scheme: "SnapSafe",
-      export_method: "app-store-connect"
+      export_method: "app-store"
     )
 
     upload_to_app_store(
