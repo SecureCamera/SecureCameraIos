@@ -106,23 +106,28 @@ class CameraViewModel: NSObject, ObservableObject {
             }
             .store(in: &cancellables)
 
-        // Listen for app entering foreground to reset zoom level
+        // Listen for app lifecycle events to restart camera and reset zoom
         NotificationCenter.default.addObserver(
             self,
-            selector: #selector(handleAppWillEnterForeground),
+            selector: #selector(handleAppBecameActive),
+            name: UIApplication.didBecomeActiveNotification,
+            object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleAppBecameActive),
             name: UIApplication.willEnterForegroundNotification,
             object: nil
         )
     }
-    
+
     deinit {
         // Remove our own notification observers
-        NotificationCenter.default.removeObserver(self, name: UIApplication.willEnterForegroundNotification, object: nil)
         NotificationCenter.default.removeObserver(self)
     }
-    
-    @objc private func handleAppWillEnterForeground() {
-        Logger.camera.debug("App entering foreground, restarting camera and resetting zoom")
+
+    @objc private func handleAppBecameActive() {
+        Logger.camera.info("App became active, restarting camera and resetting zoom")
         restartCameraSessionIfNeeded()
         resetZoomLevel()
     }
