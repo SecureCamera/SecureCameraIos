@@ -12,6 +12,11 @@ import PhotosUI
 import SwiftUI
 import FactoryKit
 
+// Notification name for opening camera from App Intent
+extension Notification.Name {
+    static let openCamera = Notification.Name("com.snapsafe.openCamera")
+}
+
 
 struct ContentView: View { 
     @StateObject private var viewModel = ContentViewModel()
@@ -45,6 +50,13 @@ struct ContentView: View {
         }
         .onChange(of: viewModel.isAuthenticated) { _, _ in
             navigateToRootDestination()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .openCamera)) { _ in
+            // Handle camera intent from Action Button
+            if viewModel.isAuthenticated {
+                nav.clearNavigationStack()
+                nav.navigate(to: .camera)
+            }
         }
     }
     
