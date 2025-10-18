@@ -195,6 +195,7 @@ struct SecureGalleryView: View {
             viewModel.onSelectedPhotoChange(newValue)
         }
         .fullScreenCover(item: $viewModel.selectedPhoto) { photoDef in
+            Group {
                 // Find the index of the selected photo in the photos array
                 if let initialIndex = viewModel.photos.firstIndex(where: { $0.photoName == photoDef.photoName }) {
                     EnhancedPhotoDetailView(
@@ -216,6 +217,8 @@ struct SecureGalleryView: View {
                     )
                 }
             }
+            .securityManaged()
+        }
             .alert(
                 viewModel.deleteAlertTitle,
                 isPresented: $viewModel.showDeleteConfirmation,

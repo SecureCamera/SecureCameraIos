@@ -102,6 +102,7 @@ struct PhotoDetailView: View {
             .sheet(isPresented: $viewModel.showImageInfo) {
                 if let photoDef = viewModel.currentPhotoDef {
                     ImageInfoView(photoDef: photoDef)
+                        .securityManaged()
                 }
             }
             .onAppear {
