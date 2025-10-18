@@ -118,7 +118,8 @@ platform :ios do
       skip_screenshots: true,
       skip_metadata: true,
       submit_for_review: false,
-      force: false
+      force: false,
+      precheck_include_in_app_purchases: false
     )
   end
 end
