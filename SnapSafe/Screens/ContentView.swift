@@ -36,9 +36,11 @@ struct ContentView: View {
         }
         .sheet(item: $nav.presentedSheet) { destination in
             navigationDestinationView(for: destination)
+                .securityManaged()
         }
         .fullScreenCover(item: $nav.presentedFullScreenCover) { destination in
             navigationDestinationView(for: destination)
+                .securityManaged()
         }
         .securityManaged()
         .onAppear {
