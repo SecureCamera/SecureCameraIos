@@ -15,53 +15,51 @@ struct PhotoObfuscationView: View {
         _viewModel = StateObject(wrappedValue:
             PhotoObfuscationViewModel(
                 photoDef: photoDef,
-                onSave: { _ in navigator.presentedFullScreenCover = nil },
-                onDismiss: { navigator.presentedFullScreenCover = nil }
+                onSave: { _ in navigator.navigateBack() },
+                onDismiss: { navigator.navigateBack() }
             )
         )
     }
-    
+
     private func onDismiss() {
-        nav.presentedFullScreenCover = nil
+        nav.navigateBack()
     }
     
     var body: some View {
-        NavigationView {
-            ZStack {
-                Color.black
-                    .ignoresSafeArea()
-                
-                if viewModel.isImageLoading {
-                    ProgressView("Loading image...")
-                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                        .foregroundColor(.white)
-                } else {
-                    imageContent
-                }
-            }
-            .navigationTitle("Photo Obfuscation")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
-                        viewModel.cancel()
-                        onDismiss()
-                    }
+        ZStack {
+            Color.black
+                .ignoresSafeArea()
+
+            if viewModel.isImageLoading {
+                ProgressView("Loading image...")
+                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
                     .foregroundColor(.white)
-                }
-                
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Save") {
-                        viewModel.saveChanges()
-                        onDismiss()
-                    }
-                    .foregroundColor(.blue)
-                    .fontWeight(.semibold)
-                }
+            } else {
+                imageContent
             }
-            .toolbarBackground(Color.black, for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
         }
+        .navigationTitle("Photo Obfuscation")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button("Cancel") {
+                    viewModel.cancel()
+                    onDismiss()
+                }
+                .foregroundColor(.white)
+            }
+
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button("Save") {
+                    viewModel.saveChanges()
+                    onDismiss()
+                }
+                .foregroundColor(.blue)
+                .fontWeight(.semibold)
+            }
+        }
+        .toolbarBackground(Color.black, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
         .alert("Obscure Faces", isPresented: $viewModel.showObscureConfirmation) {
             Button("Cancel", role: .cancel) { }
             Button(viewModel.maskActionTitle) {

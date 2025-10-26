@@ -128,7 +128,7 @@ struct CameraContainerView: View {
 
                 HStack {
                     Button(action: {
-                        nav.presentFullScreenCover(.gallery)
+                        nav.navigate(to:.gallery)
                     }) {
                         ZStack {
                             Image(systemName: "photo.on.rectangle")
@@ -176,7 +176,7 @@ struct CameraContainerView: View {
 
                     Spacer()
                     Button(action: {
-                        nav.presentSheet(.settings)
+                        nav.navigate(to:.settings)
                     }) {
                         Image(systemName: "gear")
                             .font(.system(size: 24))

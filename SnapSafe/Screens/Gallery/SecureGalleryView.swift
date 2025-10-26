@@ -29,7 +29,8 @@ struct SecureGalleryView: View {
     @AppStorage("showFaceDetection") private var showFaceDetection = true // Using AppStorage to share with Settings
     @StateObject private var viewModel: SecureGalleryViewModel
     @Environment(\.dismiss) private var dismiss
-    
+    @EnvironmentObject private var nav: AppNavigationState
+
     // Callback for dismissing the gallery
     let onDismiss: (() -> Void)?
 
@@ -47,8 +48,7 @@ struct SecureGalleryView: View {
 
 
     var body: some View {
-        NavigationStack {
-            ZStack {
+        ZStack {
             Group {
                 if viewModel.photos.isEmpty {
                     EmptyGalleryView(onDismiss: { 
@@ -83,21 +83,22 @@ struct SecureGalleryView: View {
         .navigationTitle(viewModel.navigationTitle)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            // Back button in the leading position
-            ToolbarItem(placement: .navigationBarLeading) {
-                Button(action: {
-                    if viewModel.isSelectingDecoys {
+            // Back button in the leading position (only for decoy selection mode)
+            if viewModel.isSelectingDecoys {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: {
                         viewModel.exitDecoyMode()
-                    }
-                    onDismiss?()
-                    dismiss()
-                }) {
-                    HStack {
-                        Image(systemName: "chevron.left")
+                        onDismiss?()
+                        dismiss()
+                    }) {
+                        HStack {
+                            Image(systemName: "chevron.left")
+                            Text("Back")
+                        }
                     }
                 }
             }
-            
+
             // Action buttons in the trailing position (simplified for top toolbar)
             ToolbarItem(placement: .navigationBarTrailing) {
                 HStack(spacing: 16) {
@@ -192,30 +193,15 @@ struct SecureGalleryView: View {
         }
         .onAppear(perform: viewModel.onAppear)
         .onChange(of: viewModel.selectedPhoto) { _, newValue in
-            viewModel.onSelectedPhotoChange(newValue)
-        }
-        .fullScreenCover(item: $viewModel.selectedPhoto) { photoDef in
+            if let photoDef = newValue {
                 // Find the index of the selected photo in the photos array
                 if let initialIndex = viewModel.photos.firstIndex(where: { $0.photoName == photoDef.photoName }) {
-                    EnhancedPhotoDetailView(
-                        allPhotos: viewModel.photos,
-                        initialIndex: initialIndex,
-                        onDelete: { _ in viewModel.onAppear() },
-                        onDismiss: {
-                            viewModel.clearMemoryForAllPhotos()
-                        }
-                    )
-                } else {
-                    // Fallback if photo not found in array
-                    PhotoDetailView(
-                        photo: photoDef,
-                        onDelete: { _ in viewModel.onAppear() },
-                        onDismiss: {
-                            viewModel.clearMemoryForPhoto(photoDef)
-                        }
-                    )
+                    nav.navigate(to: .photoDetail(allPhotos: viewModel.photos, initialIndex: initialIndex))
                 }
+                // Reset selectedPhoto so it can be selected again
+                viewModel.selectedPhoto = nil
             }
+        }
             .alert(
                 viewModel.deleteAlertTitle,
                 isPresented: $viewModel.showDeleteConfirmation,
@@ -255,7 +241,6 @@ struct SecureGalleryView: View {
                     Text(viewModel.decoyConfirmationMessage)
                 }
             )
-        }
         }
 
     // Photo grid subview
