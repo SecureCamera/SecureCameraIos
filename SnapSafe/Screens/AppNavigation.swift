@@ -16,6 +16,7 @@ enum AppDestination: Hashable {
     case pinSetup
     case pinVerification
     case camera
+    case photoDetail(allPhotos: [PhotoDef], initialIndex: Int)
     case photoObfuscation(PhotoDef)
     case poisonPillSetupWizard
 }
@@ -85,6 +86,7 @@ extension AppDestination: Identifiable {
         case .pinSetup: return "pinSetup"
         case .pinVerification: return "pinVerification"
         case .camera: return "camera"
+        case .photoDetail(_, let initialIndex): return "photoDetail_\(initialIndex)"
         case .photoObfuscation(let photoDef): return "photoObfuscation_\(photoDef.photoName)"
         case .poisonPillSetupWizard: return "poisonPillSetupWizard"
         }

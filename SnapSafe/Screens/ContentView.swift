@@ -31,16 +31,16 @@ struct ContentView: View {
                 .navigationBarHidden(true)
                 .navigationDestination(for: AppDestination.self) { destination in
                     navigationDestinationView(for: destination)
-                        .navigationBarHidden(destination != .gallery)
+                        .navigationBarHidden(shouldHideNavigationBar(for: destination))
                 }
         }
+        .securityManaged()
         .sheet(item: $nav.presentedSheet) { destination in
             navigationDestinationView(for: destination)
         }
         .fullScreenCover(item: $nav.presentedFullScreenCover) { destination in
             navigationDestinationView(for: destination)
         }
-        .securityManaged()
         .onAppear {
             viewModel.onAppear()
             navigateToRootDestination()
@@ -78,8 +78,19 @@ struct ContentView: View {
         }
     }
     
+    // MARK: - Navigation Helper Methods
+
+    private func shouldHideNavigationBar(for destination: AppDestination) -> Bool {
+        switch destination {
+        case .gallery, .photoObfuscation, .settings:
+            return false
+        default:
+            return true
+        }
+    }
+
     // MARK: - Navigation Destination Views
-    
+
     @ViewBuilder
     private func navigationDestinationView(for destination: AppDestination) -> some View {
         switch destination {
@@ -87,7 +98,7 @@ struct ContentView: View {
             SettingsView()
         case .gallery:
             SecureGalleryView(onDismiss: {
-                nav.dismissFullScreenCover()
+                nav.navigateBack()
             })
         case .pinSetup:
             PINSetupIntroView()
@@ -95,6 +106,13 @@ struct ContentView: View {
             PINVerificationView()
         case .camera:
             CameraContainerView()
+        case .photoDetail(let allPhotos, let initialIndex):
+            EnhancedPhotoDetailView(
+                allPhotos: allPhotos,
+                initialIndex: initialIndex,
+                onDelete: nil,
+                onDismiss: nil
+            )
         case .photoObfuscation(let photoDef):
             PhotoObfuscationView(photoDef: photoDef, navigator: nav)
         case .poisonPillSetupWizard:

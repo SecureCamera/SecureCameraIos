@@ -112,7 +112,7 @@ struct EnhancedPhotoDetailView: View {
                             onInfo: { viewModel.showImageInfo = true },
                             onObfuscate: {
                                 if let current = viewModel.currentPhotoDef {
-                                    nav.presentedFullScreenCover = .photoObfuscation(current)
+                                    nav.navigate(to: .photoObfuscation(current))
                                 }
                             },
                             onShare: { viewModel.shareCurrentPhoto() },

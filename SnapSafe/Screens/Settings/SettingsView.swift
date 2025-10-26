@@ -26,8 +26,7 @@ struct SettingsView: View {
     @EnvironmentObject private var nav: AppNavigationState
 
     var body: some View {
-        NavigationView {
-            List {
+        List {
                 
                 // ABOUT SECTION
                 Section {
@@ -209,6 +208,5 @@ struct SettingsView: View {
                     })
                 }
             }
-        }
     }
 }
