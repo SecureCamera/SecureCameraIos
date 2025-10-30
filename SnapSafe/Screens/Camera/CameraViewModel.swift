@@ -119,6 +119,12 @@ class CameraViewModel: NSObject, ObservableObject {
             name: UIApplication.willEnterForegroundNotification,
             object: nil
         )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleAppWillResignActive),
+            name: UIApplication.willResignActiveNotification,
+            object: nil
+        )
     }
 
     deinit {
@@ -132,12 +138,27 @@ class CameraViewModel: NSObject, ObservableObject {
         resetZoomLevel()
     }
 
+    @objc private func handleAppWillResignActive() {
+        Logger.camera.info("App will resign active, stopping camera")
+        stopCameraSession()
+    }
+
     func restartCameraSessionIfNeeded() {
         let session = self.session
         if !session.isRunning {
             Logger.camera.info("Camera session not running, restarting...")
             DispatchQueue.global(qos: .userInitiated).async {
                 session.startRunning()
+            }
+        }
+    }
+
+    func stopCameraSession() {
+        let session = self.session
+        if session.isRunning {
+            Logger.camera.info("Stopping camera session")
+            DispatchQueue.global(qos: .userInitiated).async {
+                session.stopRunning()
             }
         }
     }
