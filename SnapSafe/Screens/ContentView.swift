@@ -34,13 +34,13 @@ struct ContentView: View {
                         .navigationBarHidden(shouldHideNavigationBar(for: destination))
                 }
         }
-        .securityManaged()
         .sheet(item: $nav.presentedSheet) { destination in
             navigationDestinationView(for: destination)
         }
         .fullScreenCover(item: $nav.presentedFullScreenCover) { destination in
             navigationDestinationView(for: destination)
         }
+        .securityManaged()
         .onAppear {
             viewModel.onAppear()
             navigateToRootDestination()
