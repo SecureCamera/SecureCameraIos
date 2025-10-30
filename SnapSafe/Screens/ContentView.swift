@@ -36,9 +36,11 @@ struct ContentView: View {
         }
         .sheet(item: $nav.presentedSheet) { destination in
             navigationDestinationView(for: destination)
+                .securityManaged()
         }
         .fullScreenCover(item: $nav.presentedFullScreenCover) { destination in
             navigationDestinationView(for: destination)
+                .securityManaged()
         }
         .securityManaged()
         .onAppear {
@@ -113,6 +115,8 @@ struct ContentView: View {
                 onDelete: nil,
                 onDismiss: nil
             )
+        case .photoInfo(let photoDef):
+            ImageInfoView(photoDef: photoDef)
         case .photoObfuscation(let photoDef):
             PhotoObfuscationView(photoDef: photoDef, navigator: nav)
         case .poisonPillSetupWizard:

@@ -109,7 +109,11 @@ struct EnhancedPhotoDetailView: View {
                     Spacer()
                     if viewModel.currentIndex < viewModel.photoFiles.count {
                         PhotoControlsView(
-                            onInfo: { viewModel.showImageInfo = true },
+                            onInfo: {
+                                if let current = viewModel.currentPhotoDef {
+                                    nav.presentSheet(.photoInfo(current))
+                                }
+                            },
                             onObfuscate: {
                                 if let current = viewModel.currentPhotoDef {
                                     nav.navigate(to: .photoObfuscation(current))
@@ -173,10 +177,5 @@ struct EnhancedPhotoDetailView: View {
                 Text("Are you sure you want to delete this photo? This action cannot be undone.")
             }
         )
-        .sheet(isPresented: $viewModel.showImageInfo) {
-            if let photoDef = viewModel.currentPhotoDef {
-                ImageInfoView(photoDef: photoDef)
-            }
-        }
     }
 }
