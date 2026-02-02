@@ -47,7 +47,7 @@ struct CameraContainerView: View {
             VStack {
                 // Top control bar with flash toggle and camera switch
                 HStack {
-                    // Camera switch button
+                    // Camera switch button - disabled while recording
                     Button(action: {
                         Task {
                             let newPosition: AVCaptureDevice.Position = (cameraModel.cameraPosition == .back) ? .front : .back
@@ -56,29 +56,30 @@ struct CameraContainerView: View {
                     }) {
                         Image(systemName: "arrow.triangle.2.circlepath.camera")
                             .font(.system(size: 20))
-                            .foregroundColor(.white)
+                            .foregroundColor(cameraModel.isRecording ? .gray : .white)
                             .padding(12)
                             .background(Color.black.opacity(0.6))
                             .clipShape(Circle())
                     }
+                    .disabled(cameraModel.isRecording)
                     .padding(.top, 16)
                     .padding(.leading, 16)
-                    
+
                     Spacer()
 
-                    // Flash control button - disabled for front camera
+                    // Flash control button - disabled for front camera and while recording
                     Button(action: {
                         Logger.ui.info("Flash button tapped, current mode: \(cameraModel.flashMode)")
                         cameraModel.toggleFlashMode()
                     }) {
                         Image(systemName: cameraModel.flashIcon)
                             .font(.system(size: 20))
-                            .foregroundColor(cameraModel.cameraPosition == .front ? .gray : .white)
+                            .foregroundColor((cameraModel.cameraPosition == .front || cameraModel.isRecording) ? .gray : .white)
                             .padding(12)
                             .background(Color.black.opacity(0.6))
                             .clipShape(Circle())
                     }
-                    .disabled(cameraModel.cameraPosition == .front)
+                    .disabled(cameraModel.cameraPosition == .front || cameraModel.isRecording)
                     .buttonStyle(PlainButtonStyle())
                     .padding(.top, 16)
                     .padding(.trailing, 16)
@@ -126,6 +127,36 @@ struct CameraContainerView: View {
                     )
                 }
 
+                // Recording duration indicator
+                if cameraModel.isRecording {
+                    HStack(spacing: 8) {
+                        Circle()
+                            .fill(Color.red)
+                            .frame(width: 10, height: 10)
+                        Text(formatDuration(cameraModel.recordingDurationMs))
+                            .font(.system(.body, design: .monospaced))
+                            .foregroundColor(.white)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(Color.black.opacity(0.6))
+                    .cornerRadius(8)
+                    .padding(.bottom, 8)
+                }
+
+                // Mode toggle (Photo / Video)
+                Picker("Capture Mode", selection: Binding(
+                    get: { cameraModel.captureMode },
+                    set: { cameraModel.switchCaptureMode(to: $0) }
+                )) {
+                    Image(systemName: "camera.fill").tag(CaptureMode.photo)
+                    Image(systemName: "video.fill").tag(CaptureMode.video)
+                }
+                .pickerStyle(.segmented)
+                .frame(width: 120)
+                .disabled(cameraModel.isRecording)
+                .padding(.bottom, 16)
+
                 HStack {
                     Button(action: {
                         nav.navigate(to:.gallery)
@@ -133,7 +164,7 @@ struct CameraContainerView: View {
                         ZStack {
                             Image(systemName: "photo.on.rectangle")
                                 .font(.system(size: 24))
-                                .foregroundColor(cameraModel.isSavingPhoto ? .gray : .white)
+                                .foregroundColor((cameraModel.isSavingPhoto || cameraModel.isRecording) ? .gray : .white)
                                 .padding()
                                 .background(Color.black.opacity(0.6))
                                 .clipShape(Circle())
@@ -144,47 +175,77 @@ struct CameraContainerView: View {
                             }
                         }
                     }
-                    .disabled(cameraModel.isSavingPhoto)
+                    .disabled(cameraModel.isSavingPhoto || cameraModel.isRecording)
                     .padding()
 
                     Spacer()
 
-                    // Capture button
-                    Button(action: {
-                        triggerShutterEffect()
-                        cameraModel.capturePhoto()
-                    }) {
-                        ZStack {
-                            // Background circle
-                            Circle()
-                                .strokeBorder(cameraModel.isPermissionGranted ? Color.white : Color.gray, lineWidth: 4)
-                                .frame(width: 80, height: 80)
-                                .background(
-                                    Circle()
-                                        .fill(cameraModel.isPermissionGranted ? Color.white : Color.gray.opacity(0.5))
-                                )
-                            // Overlay shutter icon
-                            Image("snapshutter")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 90, height: 90)
-                                .foregroundColor(.black)
+                    // Capture button - conditional based on mode
+                    if cameraModel.captureMode == .photo {
+                        // Photo capture button
+                        Button(action: {
+                            triggerShutterEffect()
+                            cameraModel.capturePhoto()
+                        }) {
+                            ZStack {
+                                Circle()
+                                    .strokeBorder(cameraModel.isPermissionGranted ? Color.white : Color.gray, lineWidth: 4)
+                                    .frame(width: 80, height: 80)
+                                    .background(
+                                        Circle()
+                                            .fill(cameraModel.isPermissionGranted ? Color.white : Color.gray.opacity(0.5))
+                                    )
+                                Image("snapshutter")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 90, height: 90)
+                                    .foregroundColor(.black)
+                            }
+                            .padding()
                         }
-                        .padding()
+                        .disabled(!cameraModel.isPermissionGranted)
+                    } else {
+                        // Video record button
+                        Button(action: {
+                            cameraModel.toggleRecording()
+                        }) {
+                            ZStack {
+                                Circle()
+                                    .strokeBorder(cameraModel.isRecording ? Color.red : Color.white, lineWidth: 4)
+                                    .frame(width: 80, height: 80)
+                                    .background(
+                                        Circle()
+                                            .fill(cameraModel.isRecording ? Color.red : Color.red.opacity(0.8))
+                                    )
+                                // Show stop icon when recording, record icon when not
+                                if cameraModel.isRecording {
+                                    RoundedRectangle(cornerRadius: 4)
+                                        .fill(Color.white)
+                                        .frame(width: 28, height: 28)
+                                } else {
+                                    Circle()
+                                        .fill(Color.white)
+                                        .frame(width: 28, height: 28)
+                                }
+                            }
+                            .padding()
+                        }
+                        .disabled(!cameraModel.isPermissionGranted)
                     }
-                    .disabled(!cameraModel.isPermissionGranted)
 
                     Spacer()
+
                     Button(action: {
                         nav.navigate(to:.settings)
                     }) {
                         Image(systemName: "gear")
                             .font(.system(size: 24))
-                            .foregroundColor(.white)
+                            .foregroundColor(cameraModel.isRecording ? .gray : .white)
                             .padding()
                             .background(Color.black.opacity(0.6))
                             .clipShape(Circle())
                     }
+                    .disabled(cameraModel.isRecording)
                     .padding()
                 }
                 .padding(.bottom)
@@ -230,6 +291,12 @@ struct CameraContainerView: View {
         generator.impactOccurred()
     }
 
+    private func formatDuration(_ milliseconds: Int64) -> String {
+        let totalSeconds = Int(milliseconds / 1000)
+        let minutes = totalSeconds / 60
+        let seconds = totalSeconds % 60
+        return String(format: "%02d:%02d", minutes, seconds)
+    }
 }
 
 #Preview {

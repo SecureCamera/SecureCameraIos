@@ -28,13 +28,14 @@ class CameraViewModel: NSObject, ObservableObject {
         #endif
     }
     // MARK: - Services
-    
+
     private let permissionService = CameraPermissionService()
     private let deviceService = CameraDeviceService()
     private let zoomService = CameraZoomService()
     private let focusService = CameraFocusService()
     private let photoService = PhotoCaptureService()
-    
+    private let videoService = VideoCaptureService()
+
     var isPermissionGranted: Bool { permissionService.isPermissionGranted }
     var session: AVCaptureSession { deviceService.session }
     var output: AVCapturePhotoOutput { deviceService.output }
@@ -48,8 +49,13 @@ class CameraViewModel: NSObject, ObservableObject {
     var recentImage: UIImage? { photoService.recentImage }
     var isSavingPhoto: Bool { photoService.isSavingPhoto }
 
+    // Video capture properties
+    var isRecording: Bool { videoService.isRecording }
+    var recordingDurationMs: Int64 { videoService.recordingDurationMs }
+
     @Published var alert = false
     @Published var preview: AVCaptureVideoPreviewLayer!
+    @Published var captureMode: CaptureMode = .photo
     
     
     @Injected(\.secureImageRepository)
@@ -106,6 +112,13 @@ class CameraViewModel: NSObject, ObservableObject {
             }
             .store(in: &cancellables)
 
+        // Observe video service changes
+        videoService.objectWillChange
+            .sink { [weak self] _ in
+                self?.objectWillChange.send()
+            }
+            .store(in: &cancellables)
+
         // Listen for app lifecycle events to restart camera and reset zoom
         NotificationCenter.default.addObserver(
             self,
@@ -140,6 +153,10 @@ class CameraViewModel: NSObject, ObservableObject {
 
     @objc private func handleAppWillResignActive() {
         Logger.camera.info("App will resign active, stopping camera")
+        // Stop any active recording before stopping session
+        if isRecording {
+            stopRecording()
+        }
         stopCameraSession()
     }
 
@@ -250,7 +267,7 @@ class CameraViewModel: NSObject, ObservableObject {
             return
         }
         #endif
-        
+
         photoService.capturePhoto(
             flashMode: flashMode,
             cameraPosition: cameraPosition,
@@ -259,8 +276,60 @@ class CameraViewModel: NSObject, ObservableObject {
             session: session
         )
     }
-    
-    
+
+    // MARK: - Capture Mode & Video Recording
+
+    /// Switch between photo and video capture modes
+    func switchCaptureMode(to mode: CaptureMode) {
+        guard mode != captureMode else { return }
+
+        // Stop any active recording before switching modes
+        if isRecording {
+            stopRecording()
+        }
+
+        captureMode = mode
+        deviceService.configureForMode(mode)
+
+        Logger.camera.info("Switched capture mode to: \(String(describing: mode))")
+    }
+
+    /// Start video recording
+    @discardableResult
+    func startRecording() -> URL? {
+        #if DEBUG && targetEnvironment(simulator)
+        if isRunningInSimulator {
+            Logger.camera.warning("Video recording not supported in simulator")
+            return nil
+        }
+        #endif
+
+        guard captureMode == .video else {
+            Logger.camera.warning("Cannot start recording - not in video mode")
+            return nil
+        }
+
+        return videoService.startRecording(
+            session: session,
+            movieOutput: deviceService.movieOutput,
+            preview: preview
+        )
+    }
+
+    /// Stop video recording
+    func stopRecording() {
+        videoService.stopRecording()
+    }
+
+    /// Toggle video recording state
+    func toggleRecording() {
+        if isRecording {
+            stopRecording()
+        } else {
+            startRecording()
+        }
+    }
+
     // Smooth zoom with lens-specific adjustments and auto mode restoration
     func zoom(factor: CGFloat) async {
         await zoomService.zoom(factor: factor, device: currentDevice)

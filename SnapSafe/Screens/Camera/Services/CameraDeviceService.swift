@@ -14,12 +14,14 @@ import Logging
 protocol CameraDeviceProviding: ObservableObject {
     var session: AVCaptureSession { get }
     var output: AVCapturePhotoOutput { get }
+    var movieOutput: AVCaptureMovieFileOutput { get }
     var currentDevice: AVCaptureDevice? { get }
     var cameraPosition: AVCaptureDevice.Position { get }
-    
+
     func setupCamera(for position: AVCaptureDevice.Position, lensType: CameraLensType) async
     func switchCamera(to position: AVCaptureDevice.Position) async
     func switchLensType(to lensType: CameraLensType)
+    func configureForMode(_ mode: CaptureMode)
     func getUltraWideDevice() -> AVCaptureDevice?
     func getWideAngleDevice(position: AVCaptureDevice.Position) -> AVCaptureDevice?
 }
@@ -29,24 +31,29 @@ protocol CameraDeviceProviding: ObservableObject {
 final class CameraDeviceService: ObservableObject, @preconcurrency CameraDeviceProviding {
     
     // MARK: - Published Properties
-    
+
     @Published var session = AVCaptureSession()
     @Published var output = AVCapturePhotoOutput()
+    @Published var movieOutput = AVCaptureMovieFileOutput()
     @Published private(set) var currentDevice: AVCaptureDevice?
     @Published var cameraPosition: AVCaptureDevice.Position = .back
-    
+    @Published private(set) var currentCaptureMode: CaptureMode = .photo
+
     // MARK: - Private Properties
-    
+
     private var wideAngleDevice: AVCaptureDevice?
     private var ultraWideDevice: AVCaptureDevice?
+    private var audioInput: AVCaptureDeviceInput?
     private var isConfiguring = false
-    
+
     // MARK: - Initialization
-    
+
     init() {
         // Initialize session configuration
-        session.sessionPreset = .photo
-        session.automaticallyConfiguresApplicationAudioSession = false
+        // Use .high preset to support both photo and video capture
+        session.sessionPreset = .high
+        // Allow automatic audio session configuration for video recording
+        session.automaticallyConfiguresApplicationAudioSession = true
     }
     
     // MARK: - Public Methods
@@ -130,13 +137,18 @@ final class CameraDeviceService: ObservableObject, @preconcurrency CameraDeviceP
             if session.canAddInput(input) {
                 session.addInput(input)
             }
-            
+
             // Add photo output
             if session.canAddOutput(output) {
                 session.addOutput(output)
                 configurePhotoOutputForMaxQuality()
             }
-            
+
+            // Add movie output (keep both attached for smooth mode switching)
+            if session.canAddOutput(movieOutput) {
+                session.addOutput(movieOutput)
+            }
+
             session.commitConfiguration()
             
         } catch {
@@ -200,8 +212,96 @@ final class CameraDeviceService: ObservableObject, @preconcurrency CameraDeviceP
         return AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: position)
     }
     
+    // MARK: - Capture Mode Configuration
+
+    func configureForMode(_ mode: CaptureMode) {
+        guard !isConfiguring else { return }
+        guard mode != currentCaptureMode else { return }
+
+        isConfiguring = true
+
+        // Capture references for use in background queue
+        let session = self.session
+        let currentAudioInput = self.audioInput
+
+        // Run session configuration on background queue to avoid blocking UI
+        DispatchQueue.global(qos: .userInitiated).async {
+            var newAudioInput: AVCaptureDeviceInput?
+
+            session.beginConfiguration()
+
+            switch mode {
+            case .photo:
+                // Remove audio input if present (not needed for photos)
+                if let audioInput = currentAudioInput, session.inputs.contains(audioInput) {
+                    session.removeInput(audioInput)
+                }
+
+            case .video:
+                // Add audio input for video recording (if not already present)
+                if currentAudioInput == nil {
+                    if let audioDevice = AVCaptureDevice.default(for: .audio) {
+                        do {
+                            let audioInput = try AVCaptureDeviceInput(device: audioDevice)
+                            if session.canAddInput(audioInput) {
+                                session.addInput(audioInput)
+                                newAudioInput = audioInput
+                            }
+                        } catch {
+                            Logger.camera.error("Failed to add audio input: \(error.localizedDescription)")
+                        }
+                    }
+                } else {
+                    newAudioInput = currentAudioInput
+                }
+            }
+
+            session.commitConfiguration()
+
+            // Update state on main thread
+            Task { @MainActor [weak self, newAudioInput] in
+                self?.audioInput = newAudioInput
+                self?.currentCaptureMode = mode
+                self?.isConfiguring = false
+                Logger.camera.info("Configured camera for mode: \(String(describing: mode))")
+            }
+        }
+    }
+
+    // MARK: - Audio Input Management
+
+    private func addAudioInput() {
+        guard audioInput == nil else { return }
+
+        guard let audioDevice = AVCaptureDevice.default(for: .audio) else {
+            Logger.camera.warning("No audio device available")
+            return
+        }
+
+        do {
+            let input = try AVCaptureDeviceInput(device: audioDevice)
+            if session.canAddInput(input) {
+                session.addInput(input)
+                audioInput = input
+                Logger.camera.debug("Added audio input")
+            }
+        } catch {
+            Logger.camera.error("Failed to add audio input: \(error.localizedDescription)")
+        }
+    }
+
+    private func removeAudioInput() {
+        guard let audioInput = audioInput else { return }
+
+        if session.inputs.contains(audioInput) {
+            session.removeInput(audioInput)
+        }
+        self.audioInput = nil
+        Logger.camera.debug("Removed audio input")
+    }
+
     // MARK: - Private Methods
-    
+
     private func configurePhotoOutputForMaxQuality() {
         output.maxPhotoQualityPrioritization = .quality
     }

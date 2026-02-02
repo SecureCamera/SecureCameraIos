@@ -51,6 +51,7 @@
 		6660FC602E850E9200C0B617 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6660FC5C2E850E9200C0B617 /* AboutView.swift */; };
 		6660FC672E8529F900C0B617 /* CameraPermissionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6660FC632E8529F900C0B617 /* CameraPermissionService.swift */; };
 		6660FC682E8529F900C0B617 /* PhotoCaptureService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6660FC652E8529F900C0B617 /* PhotoCaptureService.swift */; };
+		66FFC0DE2F3A000100C0B617 /* VideoCaptureService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66FFC0DE2F3A000000C0B617 /* VideoCaptureService.swift */; };
 		6660FC692E8529F900C0B617 /* CameraDeviceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6660FC612E8529F900C0B617 /* CameraDeviceService.swift */; };
 		6660FC6A2E8529F900C0B617 /* CameraZoomService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6660FC642E8529F900C0B617 /* CameraZoomService.swift */; };
 		6660FC6B2E8529F900C0B617 /* CameraFocusService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6660FC622E8529F900C0B617 /* CameraFocusService.swift */; };
@@ -111,6 +112,7 @@
 		A9E6B6962E6E47B500BB6F19 /* ThumbnailCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9E6B6942E6E47B500BB6F19 /* ThumbnailCache.swift */; };
 		A9E6B6972E6E47B500BB6F19 /* SecureImageRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9E6B6932E6E47B500BB6F19 /* SecureImageRepository.swift */; };
 		A9E6B6992E6E47E700BB6F19 /* PhotoDef.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9E6B6982E6E47E700BB6F19 /* PhotoDef.swift */; };
+		A9FFC0DE2F3A000100BB6F19 /* VideoDef.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9FFC0DE2F3A000000BB6F19 /* VideoDef.swift */; };
 		A9E6B69B2E6E487400BB6F19 /* PhotoMetaData.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9E6B69A2E6E487400BB6F19 /* PhotoMetaData.swift */; };
 		A9E6B6AF2E6EAD3D00BB6F19 /* SecurityOverlayViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9E6B6AE2E6EAD3D00BB6F19 /* SecurityOverlayViewModel.swift */; };
 		A9E6B6B12E6EAE3500BB6F19 /* SecurityOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9E6B6B02E6EAE3500BB6F19 /* SecurityOverlayView.swift */; };
@@ -187,6 +189,7 @@
 		6660FC632E8529F900C0B617 /* CameraPermissionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPermissionService.swift; sourceTree = "<group>"; };
 		6660FC642E8529F900C0B617 /* CameraZoomService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraZoomService.swift; sourceTree = "<group>"; };
 		6660FC652E8529F900C0B617 /* PhotoCaptureService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoCaptureService.swift; sourceTree = "<group>"; };
+		66FFC0DE2F3A000000C0B617 /* VideoCaptureService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoCaptureService.swift; sourceTree = "<group>"; };
 		6660FC6C2E8BB2F800C0B617 /* ShardedKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShardedKey.swift; sourceTree = "<group>"; };
 		6660FC6E2E8BB41600C0B617 /* ShardedKeyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShardedKeyTests.swift; sourceTree = "<group>"; };
 		667FF80D2E6A9D2A00FB3E02 /* AuthorizationRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorizationRepositoryTests.swift; sourceTree = "<group>"; };
@@ -245,6 +248,7 @@
 		A9E6B6932E6E47B500BB6F19 /* SecureImageRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureImageRepository.swift; sourceTree = "<group>"; };
 		A9E6B6942E6E47B500BB6F19 /* ThumbnailCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailCache.swift; sourceTree = "<group>"; };
 		A9E6B6982E6E47E700BB6F19 /* PhotoDef.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoDef.swift; sourceTree = "<group>"; };
+		A9FFC0DE2F3A000000BB6F19 /* VideoDef.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoDef.swift; sourceTree = "<group>"; };
 		A9E6B69A2E6E487400BB6F19 /* PhotoMetaData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoMetaData.swift; sourceTree = "<group>"; };
 		A9E6B6AE2E6EAD3D00BB6F19 /* SecurityOverlayViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurityOverlayViewModel.swift; sourceTree = "<group>"; };
 		A9E6B6B02E6EAE3500BB6F19 /* SecurityOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurityOverlayView.swift; sourceTree = "<group>"; };
@@ -393,6 +397,7 @@
 				6660FC632E8529F900C0B617 /* CameraPermissionService.swift */,
 				6660FC642E8529F900C0B617 /* CameraZoomService.swift */,
 				6660FC652E8529F900C0B617 /* PhotoCaptureService.swift */,
+				66FFC0DE2F3A000000C0B617 /* VideoCaptureService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -542,6 +547,7 @@
 			children = (
 				A9E6B69A2E6E487400BB6F19 /* PhotoMetaData.swift */,
 				A9E6B6982E6E47E700BB6F19 /* PhotoDef.swift */,
+				A9FFC0DE2F3A000000BB6F19 /* VideoDef.swift */,
 				A91DBC252DE58191001F42ED /* AppearanceMode.swift */,
 				A91DBC262DE58191001F42ED /* DetectedFace.swift */,
 				A91DBC272DE58191001F42ED /* MaskMode.swift */,
@@ -732,7 +738,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2600;
-				LastUpgradeCheck = 1620;
+				LastUpgradeCheck = 2600;
 				TargetAttributes = {
 					A9C449122E9CC85800CFE854 = {
 						CreatedOnToolsVersion = 26.0.1;
@@ -819,6 +825,7 @@
 				663C7E542E73FA3100967B9E /* PoisonPillSetupWizardViewModel.swift in Sources */,
 				6660FC672E8529F900C0B617 /* CameraPermissionService.swift in Sources */,
 				6660FC682E8529F900C0B617 /* PhotoCaptureService.swift in Sources */,
+				66FFC0DE2F3A000100C0B617 /* VideoCaptureService.swift in Sources */,
 				6660FC692E8529F900C0B617 /* CameraDeviceService.swift in Sources */,
 				6660FC6A2E8529F900C0B617 /* CameraZoomService.swift in Sources */,
 				6660FC6B2E8529F900C0B617 /* CameraFocusService.swift in Sources */,
@@ -837,6 +844,7 @@
 				A9F9DD4E2EA0735A003FC66E /* OrientationManager.swift in Sources */,
 				6660FC452E77CE4B00C0B617 /* RemoveDecoyPhotoUseCase.swift in Sources */,
 				A9E6B6992E6E47E700BB6F19 /* PhotoDef.swift in Sources */,
+				A9FFC0DE2F3A000100BB6F19 /* VideoDef.swift in Sources */,
 				667FF83D2E6D16C700FB3E02 /* CameraContainerView.swift in Sources */,
 				A91DBC552DE58191001F42ED /* DetectedFace.swift in Sources */,
 				667FF82D2E6CC06900FB3E02 /* SettingsViewModel.swift in Sources */,
@@ -958,11 +966,15 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.darkrockstudios.apps.snapsafe.SnapSafeUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 6.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 				TEST_TARGET_NAME = SnapSafe;
 			};
 			name = Debug;
@@ -979,11 +991,15 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.darkrockstudios.apps.snapsafe.SnapSafeUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 6.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 				TEST_TARGET_NAME = SnapSafe;
 			};
 			name = Release;
@@ -1046,6 +1062,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -1102,6 +1119,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -1116,14 +1134,15 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"SnapSafe/Preview Content\"";
-				DEVELOPMENT_TEAM = 8P3G3HT4J5;
+				DEVELOPMENT_TEAM = BP75F4S5N3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Snap-Safe-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = SnapSafe;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.photography";
-				INFOPLIST_KEY_NSCameraUsageDescription = "This app needs camera access so you can take photos that are encrypted and stored locally.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "This app needs camera access so you can take photos and videos that are encrypted and stored locally.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "This lets the app tag your photos with where they were taken.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "This app needs microphone access to record audio with your videos.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -1166,8 +1185,9 @@
 				INFOPLIST_FILE = "Snap-Safe-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = SnapSafe;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.photography";
-				INFOPLIST_KEY_NSCameraUsageDescription = "This app needs camera access so you can take photos that are encrypted and stored locally.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "This app needs camera access so you can take photos and videos that are encrypted and stored locally.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "This lets the app tag your photos with where they were taken.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "This app needs microphone access to record audio with your videos.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -1205,9 +1225,13 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = snapsafe.SnapSafeTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SnapSafe.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/SnapSafe";
 			};
 			name = Debug;
@@ -1218,15 +1242,19 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 8P3G3HT4J5;
+				DEVELOPMENT_TEAM = BP75F4S5N3;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = snapsafe.SnapSafeTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SnapSafe.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/SnapSafe";
 			};
 			name = Release;
