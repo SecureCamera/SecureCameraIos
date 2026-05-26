@@ -57,16 +57,16 @@ struct CameraView: View {
                     VStack(spacing: 20) {
                         Image(systemName: "camera.fill")
                             .font(.system(size: 60))
-                            .foregroundColor(.white.opacity(0.6))
+                            .foregroundStyle(.white.opacity(0.6))
                         
                         Text("Camera Access Disabled")
                             .font(.title2)
                             .fontWeight(.semibold)
-                            .foregroundColor(.white)
+                            .foregroundStyle(.white)
                         
                         Text("Camera access is required to take photos. Please enable camera access in Settings.")
                             .font(.body)
-                            .foregroundColor(.white.opacity(0.8))
+                            .foregroundStyle(.white.opacity(0.8))
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 40)
                         
@@ -80,11 +80,11 @@ struct CameraView: View {
                                 Text("Open Settings")
                             }
                             .font(.callout)
-                            .foregroundColor(.white)
+                            .foregroundStyle(.white)
                             .padding(.horizontal, 24)
                             .padding(.vertical, 12)
                             .background(Color.blue)
-                            .cornerRadius(8)
+                            .clipShape(.rect(cornerRadius: 8))
                         }
                     }
                 }

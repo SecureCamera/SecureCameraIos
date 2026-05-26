@@ -36,7 +36,7 @@ struct PhotoControlsView: View {
                             .font(.caption2)
                             .multilineTextAlignment(.center)
                     }
-                    .foregroundColor(.red)
+                    .foregroundStyle(.red)
                     .frame(maxWidth: .infinity)
                     .frame(height: 60)
                 }
@@ -51,7 +51,7 @@ struct PhotoControlsView: View {
                             .font(.caption2)
                             .multilineTextAlignment(.center)
                     }
-                    .foregroundColor(.blue)
+                    .foregroundStyle(.blue)
                     .frame(maxWidth: .infinity)
                     .frame(height: 60)
                 }
@@ -66,7 +66,7 @@ struct PhotoControlsView: View {
                             .font(.caption2)
                             .multilineTextAlignment(.center)
                     }
-                    .foregroundColor(.blue)
+                    .foregroundStyle(.blue)
                     .frame(maxWidth: .infinity)
                     .frame(height: 60)
                 }
@@ -90,7 +90,7 @@ struct PhotoControlsView: View {
                                 .font(.caption2)
                                 .multilineTextAlignment(.center)
                         }
-                        .foregroundColor(.red)
+                        .foregroundStyle(.red)
                         .frame(maxWidth: .infinity)
                     .frame(height: 60)
                     }
@@ -108,7 +108,7 @@ struct PhotoControlsView: View {
                             .font(.caption2)
                             .multilineTextAlignment(.center)
                     }
-                    .foregroundColor(.blue)
+                    .foregroundStyle(.blue)
                     .frame(maxWidth: .infinity)
                     .frame(height: 60)
                 }

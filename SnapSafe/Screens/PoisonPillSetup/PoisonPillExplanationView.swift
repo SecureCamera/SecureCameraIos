@@ -25,7 +25,7 @@ struct PoisonPillExplanationView: View {
                 // Header Icon
                 Image(systemName: step.icon)
                     .font(.system(size: 80))
-                    .foregroundColor(step.iconColor)
+                    .foregroundStyle(step.iconColor)
                     .padding(.top, 20)
                 
                 // Title
@@ -68,14 +68,14 @@ struct PoisonPillExplanationView: View {
                     Text(firstLine)
                         .font(.headline)
                         .fontWeight(.semibold)
-                        .foregroundColor(.primary)
+                        .foregroundStyle(.primary)
                 }
                 
                 if lines.count > 1 {
                     let remainingText = lines.dropFirst().joined(separator: "\n")
                     Text(remainingText)
                         .font(.callout)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                         .multilineTextAlignment(.leading)
                 }
             }
@@ -97,13 +97,13 @@ struct PoisonPillExplanationView: View {
                             Text(trimmedLine)
                                 .font(.title2)
                                 .fontWeight(.semibold)
-                                .foregroundColor(step.iconColor)
+                                .foregroundStyle(step.iconColor)
                                 .padding(.top, index == 0 ? 0 : 15)
                         } else {
                             // Regular content
                             Text(trimmedLine)
                                 .font(.body)
-                                .foregroundColor(.primary)
+                                .foregroundStyle(.primary)
                                 .multilineTextAlignment(.leading)
                                 .lineSpacing(4)
                         }

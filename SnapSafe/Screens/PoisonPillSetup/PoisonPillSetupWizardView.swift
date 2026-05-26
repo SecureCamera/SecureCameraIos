@@ -42,11 +42,11 @@ struct PoisonPillSetupWizardView: View {
                                 Image(systemName: "arrow.right")
                                     .font(.subheadline)
                             }
-                            .foregroundColor(.white)
+                            .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
                             .frame(height: 50)
                             .background(Color.orange)
-                            .cornerRadius(12)
+                            .clipShape(.rect(cornerRadius: 12))
                         }
                         .padding(.horizontal, 20)
                         .padding(.top, 20)
@@ -71,7 +71,7 @@ struct PoisonPillSetupWizardView: View {
                 Button("Cancel") {
                     handleCancel()
                 }
-                .foregroundColor(viewModel.isLoading ? .gray : .secondary)
+                .foregroundStyle(viewModel.isLoading ? .gray : .secondary)
                 .disabled(viewModel.isLoading)
                 
                 Spacer()
@@ -86,7 +86,7 @@ struct PoisonPillSetupWizardView: View {
                     Button("Back") {
                         viewModel.goToPreviousStep()
                     }
-                    .foregroundColor(viewModel.isLoading ? .gray : .orange)
+                    .foregroundStyle(viewModel.isLoading ? .gray : .orange)
                     .disabled(viewModel.isLoading)
                 } else {
                     // Invisible button for balance

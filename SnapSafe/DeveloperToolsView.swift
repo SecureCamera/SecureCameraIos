@@ -22,20 +22,20 @@ struct DeveloperToolsView: View {
                     }) {
                         HStack {
                             Image(systemName: "video.badge.waveform")
-                                .foregroundColor(.blue)
+                                .foregroundStyle(.blue)
                             
                             VStack(alignment: .leading) {
                                 Text("Video Export Test")
                                     .font(.headline)
                                 Text("Test video creation and export functionality on simulator")
                                     .font(.caption)
-                                    .foregroundColor(.secondary)
+                                    .foregroundStyle(.secondary)
                             }
                             
                             Spacer()
                             
                             Image(systemName: "chevron.right")
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(.secondary)
                                 .font(.caption)
                         }
                     }

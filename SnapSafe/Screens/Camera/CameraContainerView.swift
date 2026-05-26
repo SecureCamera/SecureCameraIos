@@ -46,11 +46,11 @@ struct CameraContainerView: View {
                         .frame(width: 200)
                     Text("Encrypting video... \(Int(cameraModel.encryptionProgress * 100))%")
                         .font(.caption)
-                        .foregroundColor(.white)
+                        .foregroundStyle(.white)
                 }
                 .padding(20)
                 .background(Color.black.opacity(0.7))
-                .cornerRadius(12)
+                .clipShape(.rect(cornerRadius: 12))
             }
 
             controlsOverlay
@@ -159,7 +159,7 @@ struct CameraContainerView: View {
         }) {
             Image(systemName: "arrow.triangle.2.circlepath.camera")
                 .font(.system(size: 20))
-                .foregroundColor(cameraModel.isRecording ? .gray : .white)
+                .foregroundStyle(cameraModel.isRecording ? .gray : .white)
                 .padding(12)
                 .background(Color.black.opacity(0.6))
                 .clipShape(Circle())
@@ -175,7 +175,7 @@ struct CameraContainerView: View {
         }) {
             Image(systemName: cameraModel.flashIcon)
                 .font(.system(size: 20))
-                .foregroundColor((cameraModel.cameraPosition == .front || cameraModel.isRecording) ? .gray : .white)
+                .foregroundStyle((cameraModel.cameraPosition == .front || cameraModel.isRecording) ? .gray : .white)
                 .padding(12)
                 .background(Color.black.opacity(0.6))
                 .clipShape(Circle())
@@ -193,12 +193,12 @@ struct CameraContainerView: View {
                 .frame(width: 10, height: 10)
             Text(formatDuration(cameraModel.recordingDurationMs))
                 .font(.system(.body, design: .monospaced))
-                .foregroundColor(.white)
+                .foregroundStyle(.white)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
         .background(Color.black.opacity(0.6))
-        .cornerRadius(8)
+        .clipShape(.rect(cornerRadius: 8))
         .accessibilityLabel("Recording: \(formatDuration(cameraModel.recordingDurationMs))")
         .accessibilityAddTraits(.updatesFrequently)
     }
@@ -210,7 +210,7 @@ struct CameraContainerView: View {
                 .frame(width: 80, height: 30)
             Text(String(format: "%.1fx", cameraModel.zoomFactor))
                 .font(.system(size: 14, weight: .bold))
-                .foregroundColor(.white)
+                .foregroundStyle(.white)
         }
         .opacity(cameraModel.zoomFactor != 1.0 ? 1.0 : 0.0)
         .animation(.easeInOut, value: cameraModel.zoomFactor)
@@ -254,7 +254,7 @@ struct CameraContainerView: View {
             ZStack {
                 Image(systemName: "photo.on.rectangle")
                     .font(.title2)
-                    .foregroundColor(
+                    .foregroundStyle(
                         (cameraModel.isSavingPhoto || cameraModel.isRecording || cameraModel.isEncryptingVideo)
                             ? .gray : .white
                     )
@@ -278,7 +278,7 @@ struct CameraContainerView: View {
         Button(action: { nav.navigate(to: .settings) }) {
             Image(systemName: "gear")
                 .font(.title2)
-                .foregroundColor((cameraModel.isRecording || cameraModel.isEncryptingVideo) ? .gray : .white)
+                .foregroundStyle((cameraModel.isRecording || cameraModel.isEncryptingVideo) ? .gray : .white)
                 .padding()
                 .background(Color.black.opacity(0.6))
                 .clipShape(Circle())
@@ -323,7 +323,7 @@ struct CameraContainerView: View {
                     .resizable()
                     .scaledToFit()
                     .frame(width: 90, height: 90)
-                    .foregroundColor(.black)
+                    .foregroundStyle(.black)
             }
             .padding()
         }

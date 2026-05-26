@@ -75,24 +75,24 @@ private struct ScreenRecordingBlockerContent: View {
             // Warning icon
             Image(systemName: "record.circle")
                 .font(.system(size: 80))
-                .foregroundColor(.red)
+                .foregroundStyle(.red)
                 .padding(.top, 60)
                 .accessibilityHidden(true)
             
             // Warning message
             Text("Screen Recording Detected")
                 .font(.title2.bold())
-                .foregroundColor(.white)
+                .foregroundStyle(.white)
             
             Text("For privacy and security reasons, screen recording is not allowed in SnapSafe.")
                 .font(.callout)
-                .foregroundColor(.gray)
+                .foregroundStyle(.gray)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
             
             Text("Please stop recording to continue using the app.")
                 .font(.callout.bold())
-                .foregroundColor(.white)
+                .foregroundStyle(.white)
                 .padding(.top, 20)
             
             Spacer()
@@ -117,19 +117,19 @@ private struct PrivacyShieldContent: View {
             // App logo/icon
             Image(systemName: "lock.shield.fill")
                 .font(.system(size: 100))
-                .foregroundColor(.white)
+                .foregroundStyle(.white)
                 .padding(.top, 60)
                 .accessibilityHidden(true)
 
             // App name
             Text("SnapSafe")
                 .font(.largeTitle.bold())
-                .foregroundColor(.white)
+                .foregroundStyle(.white)
 
             // Privacy message
             Text("The camera app that minds its own business.")
                 .font(.title3)
-                .foregroundColor(.gray)
+                .foregroundStyle(.gray)
 
             Spacer()
         }
@@ -192,19 +192,19 @@ struct ScreenshotTakenView: View {
         VStack {
             HStack(spacing: 15) {
                 Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundColor(.yellow)
+                    .foregroundStyle(.yellow)
                     .font(.title2)
                     .accessibilityHidden(true)
                 
                 Text("Screenshot Captured")
                     .font(.callout.bold())
-                    .foregroundColor(.white)
+                    .foregroundStyle(.white)
                 
                 Spacer()
             }
             .padding()
             .background(Color.black.opacity(0.8))
-            .cornerRadius(10)
+            .clipShape(.rect(cornerRadius: 10))
             .padding(.horizontal)
             .padding(.top, 10)
             
