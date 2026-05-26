@@ -47,11 +47,11 @@ internal struct PhotoCounterChip: View {
             Spacer()
             Text(text)
                 .font(.subheadline)
-                .foregroundColor(.white)
+                .foregroundStyle(.white)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background(Color.black.opacity(0.6))
-                .cornerRadius(12)
+                .clipShape(.rect(cornerRadius: 12))
                 .opacity(opacity)
             Spacer()
         }

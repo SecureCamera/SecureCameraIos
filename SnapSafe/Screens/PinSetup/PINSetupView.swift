@@ -28,7 +28,7 @@ struct PINSetupView: View {
                 VStack(spacing: 30) {
                     Image(systemName: "lock.shield")
                         .font(.system(size: 70))
-                        .foregroundColor(.blue)
+                        .foregroundStyle(.blue)
                         .padding(.top, 50)
                         .accessibilityHidden(true)
                     
@@ -37,7 +37,7 @@ struct PINSetupView: View {
                         .bold()
                     
                     Text("Please create a PIN to secure your photos")
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal)
                     
@@ -61,16 +61,16 @@ struct PINSetupView: View {
                     
                     if viewModel.showError {
                         Text(viewModel.errorMessage)
-                            .foregroundColor(.red)
+                            .foregroundStyle(.red)
                             .font(.callout)
                             .padding(.top, 5)
                     }
                     
                     HStack {
                         Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundColor(.orange)
+                            .foregroundStyle(.orange)
                         Text("Choose a different PIN than the one used to unlock this device!")
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
                     }
                     .padding(.horizontal, 30)
@@ -88,15 +88,15 @@ struct PINSetupView: View {
                             if viewModel.isLoading {
                                 ProgressView()
                                     .scaleEffect(0.8)
-                                    .foregroundColor(.white)
+                                    .foregroundStyle(.white)
                             }
                             Text(viewModel.isLoading ? "Setting PIN..." : "Set PIN")
-                                .foregroundColor(.white)
+                                .foregroundStyle(.white)
                         }
                         .padding()
                         .frame(minWidth: 200, maxWidth: 300)
                         .background(buttonBackgroundColor)
-                        .cornerRadius(10)
+                        .clipShape(.rect(cornerRadius: 10))
                     }
                     .disabled(buttonDisabled)
                     .padding(.top, 20)

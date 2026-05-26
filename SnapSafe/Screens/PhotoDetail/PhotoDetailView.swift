@@ -55,7 +55,7 @@ struct PhotoDetailView: View {
                     if !viewModel.photoFiles.isEmpty {
                         Text("\(viewModel.currentIndex + 1) of \(viewModel.photoFiles.count)")
                             .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                             .padding(.top, 8)
                             .opacity(isZoomed ? 0.5 : 1.0) // Fade when zoomed
                     }

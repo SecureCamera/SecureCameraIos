@@ -37,7 +37,7 @@ struct PhotoCell: View {
                 .aspectRatio(contentMode: .fill) // Use .fill to cover the entire cell
                 .frame(width: cellSize, height: cellSize)
                 .clipped() // Clip any overflow
-                .cornerRadius(10)
+                .clipShape(.rect(cornerRadius: 10))
                 .overlay(
                     RoundedRectangle(cornerRadius: 10)
                         .stroke(isSelected ? Color.blue : Color.clear, lineWidth: 3)
@@ -59,7 +59,7 @@ struct PhotoCell: View {
                         Spacer()
                         Image(systemName: "checkmark.circle.fill")
                             .font(.title2)
-                            .foregroundColor(.blue)
+                            .foregroundStyle(.blue)
                             .background(Circle().fill(Color.white))
                             .padding(5)
                     }
@@ -74,7 +74,7 @@ struct PhotoCell: View {
                     HStack {
                         Image(systemName: "shield.fill")
                             .font(.callout)
-                            .foregroundColor(.white.opacity(0.75))
+                            .foregroundStyle(.white.opacity(0.75))
                             .padding(5)
                         Spacer()
                     }

@@ -24,7 +24,7 @@ struct ZoomSliderView: View {
             // Current zoom level display
             Text(String(format: "%.1fx", cameraModel.zoomFactor))
                 .font(.system(size: 16, weight: .bold))
-                .foregroundColor(.white)
+                .foregroundStyle(.white)
                 .rotationEffect(Utils.getRotationAngle())
                 .animation(.easeInOut, value: deviceOrientation)
 
@@ -47,7 +47,7 @@ struct ZoomSliderView: View {
                             // Label
                             Text(formatZoomLabel(level))
                                 .font(.system(size: 10, weight: level == 1.0 ? .bold : .regular))
-                                .foregroundColor(.white)
+                                .foregroundStyle(.white)
                                 .rotationEffect(Utils.getRotationAngle())
                                 .animation(.easeInOut, value: deviceOrientation)
                         }

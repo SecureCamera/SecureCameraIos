@@ -33,7 +33,7 @@ struct PhotoObfuscationView: View {
             if viewModel.isImageLoading {
                 ProgressView("Loading image...")
                     .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                    .foregroundColor(.white)
+                    .foregroundStyle(.white)
             } else {
                 imageContent
             }
@@ -46,7 +46,7 @@ struct PhotoObfuscationView: View {
                     viewModel.cancel()
                     onDismiss()
                 }
-                .foregroundColor(.white)
+                .foregroundStyle(.white)
             }
 
             ToolbarItem(placement: .navigationBarTrailing) {
@@ -54,7 +54,7 @@ struct PhotoObfuscationView: View {
                     viewModel.saveChanges()
                     onDismiss()
                 }
-                .foregroundColor(.blue)
+                .foregroundStyle(.blue)
                 .fontWeight(.semibold)
             }
         }
@@ -138,7 +138,7 @@ struct PhotoObfuscationView: View {
                                 .scaleEffect(1.5)
 
                             Text("Processing faces...")
-                                .foregroundColor(.white)
+                                .foregroundStyle(.white)
                                 .padding(.top)
                         }
                         .position(x: availableSize.width / 2, y: availableSize.height / 2)
@@ -226,7 +226,7 @@ private struct ObfuscationControlsView: View {
                                 .font(.caption2)
                                 .multilineTextAlignment(.center)
                         }
-                        .foregroundColor(.gray)
+                        .foregroundStyle(.gray)
                         .frame(maxWidth: .infinity)
                         .frame(height: 60)
                     }
@@ -251,7 +251,7 @@ private struct ObfuscationControlsView: View {
                                 .font(.caption2)
                                 .multilineTextAlignment(.center)
                         }
-                        .foregroundColor(.red)
+                        .foregroundStyle(.red)
                         .frame(maxWidth: .infinity)
                         .frame(height: 60)
                     }
@@ -268,7 +268,7 @@ private struct ObfuscationControlsView: View {
                                 .font(.caption2)
                                 .multilineTextAlignment(.center)
                         }
-                        .foregroundColor(.blue)
+                        .foregroundStyle(.blue)
                         .frame(maxWidth: .infinity)
                         .frame(height: 60)
                     }
@@ -287,7 +287,7 @@ private struct ObfuscationControlsView: View {
                                 .font(.caption2)
                                 .multilineTextAlignment(.center)
                         }
-                        .foregroundColor(.gray)
+                        .foregroundStyle(.gray)
                         .frame(maxWidth: .infinity)
                         .frame(height: 60)
                     }
@@ -313,7 +313,7 @@ private struct ObfuscationControlsView: View {
                                     .font(.caption2)
                                     .multilineTextAlignment(.center)
                             }
-                            .foregroundColor(.red)
+                            .foregroundStyle(.red)
                             .frame(maxWidth: .infinity)
                             .frame(height: 60)
                         }
@@ -331,7 +331,7 @@ private struct ObfuscationControlsView: View {
                                 .font(.caption2)
                                 .multilineTextAlignment(.center)
                         }
-                        .foregroundColor(.blue)
+                        .foregroundStyle(.blue)
                         .frame(maxWidth: .infinity)
                         .frame(height: 60)
                     }
@@ -350,7 +350,7 @@ private struct ObfuscationControlsView: View {
                                 .font(.caption2)
                                 .multilineTextAlignment(.center)
                         }
-                        .foregroundColor(.gray)
+                        .foregroundStyle(.gray)
                         .frame(maxWidth: .infinity)
                         .frame(height: 60)
                     }
@@ -365,7 +365,7 @@ private struct ObfuscationControlsView: View {
                                 .font(.caption2)
                                 .multilineTextAlignment(.center)
                         }
-                        .foregroundColor(.green)
+                        .foregroundStyle(.green)
                         .frame(maxWidth: .infinity)
                         .frame(height: 60)
                     }
@@ -391,7 +391,7 @@ private struct ObfuscationControlsView: View {
                                     .font(.caption2)
                                     .multilineTextAlignment(.center)
                             }
-                            .foregroundColor(.red)
+                            .foregroundStyle(.red)
                             .frame(maxWidth: .infinity)
                             .frame(height: 60)
                         }
@@ -409,7 +409,7 @@ private struct ObfuscationControlsView: View {
                                 .font(.caption2)
                                 .multilineTextAlignment(.center)
                         }
-                        .foregroundColor(.blue)
+                        .foregroundStyle(.blue)
                         .frame(maxWidth: .infinity)
                         .frame(height: 60)
                     }
@@ -426,7 +426,7 @@ private struct ObfuscationControlsView: View {
                                 .font(.caption2)
                                 .multilineTextAlignment(.center)
                         }
-                        .foregroundColor(.orange)
+                        .foregroundStyle(.orange)
                         .frame(maxWidth: .infinity)
                         .frame(height: 60)
                     }
@@ -443,7 +443,7 @@ private struct ObfuscationControlsView: View {
                                 .font(.caption2)
                                 .multilineTextAlignment(.center)
                         }
-                        .foregroundColor(.green)
+                        .foregroundStyle(.green)
                         .frame(maxWidth: .infinity)
                         .frame(height: 60)
                     }
@@ -460,7 +460,7 @@ private struct ObfuscationControlsView: View {
                                 .font(.caption2)
                                 .multilineTextAlignment(.center)
                         }
-                        .foregroundColor(.blue)
+                        .foregroundStyle(.blue)
                         .frame(maxWidth: .infinity)
                         .frame(height: 60)
                     }

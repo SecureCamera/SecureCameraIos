@@ -21,30 +21,30 @@ struct FaceDetectionControlsView: View {
             HStack {
                 Button(action: onCancel) {
                     Label("Cancel", systemImage: "xmark")
-                        .foregroundColor(.white)
+                        .foregroundStyle(.white)
                         .padding(10)
                         .background(Color.gray)
-                        .cornerRadius(8)
+                        .clipShape(.rect(cornerRadius: 8))
                 }
                 
                 Spacer()
                 
                 Button(action: onAddBox) {
                     Label("Add Box", systemImage: "plus.rectangle")
-                        .foregroundColor(.white)
+                        .foregroundStyle(.white)
                         .padding(10)
                         .background(isAddingBox ? Color.green : Color.blue)
-                        .cornerRadius(8)
+                        .clipShape(.rect(cornerRadius: 8))
                 }
                 
                 Spacer()
                 
                 Button(action: onMask) {
                     Label("Mask Faces", systemImage: "eye.slash")
-                        .foregroundColor(.white)
+                        .foregroundStyle(.white)
                         .padding(10)
                         .background(hasFacesSelected ? Color.blue : Color.gray)
-                        .cornerRadius(8)
+                        .clipShape(.rect(cornerRadius: 8))
                 }
                 .disabled(!hasFacesSelected)
             }
@@ -53,23 +53,23 @@ struct FaceDetectionControlsView: View {
             if isAddingBox {
                 Text("Tap anywhere on the image to add a custom box")
                     .font(.caption)
-                    .foregroundColor(.green)
+                    .foregroundStyle(.green)
                     .padding(.horizontal)
             } else {
                 Text("Tap faces to select them for masking. Pinch to resize boxes.")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                     .padding(.horizontal)
             }
             
             if faceCount == 0 {
                 Text("No faces detected")
                     .font(.callout)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
             } else {
                 Text("\(faceCount) faces detected, \(selectedCount) selected")
                     .font(.callout)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
             }
         }
         .padding(.bottom, 10)

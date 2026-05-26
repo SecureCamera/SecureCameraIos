@@ -19,7 +19,7 @@ struct ZoomLevelIndicator: View {
             
             Text(String(format: "%.1fx", scale))
                 .font(.footnote.bold())
-                .foregroundColor(.white)
+                .foregroundStyle(.white)
         }
         .opacity(isVisible && scale != 1.0 ? 1.0 : 0.0)
         .animation(.easeInOut(duration: 0.2), value: scale)

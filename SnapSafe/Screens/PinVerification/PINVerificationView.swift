@@ -17,31 +17,31 @@ struct PINVerificationView: View {
         VStack(spacing: 30) {
             Image(systemName: "lock.shield")
                 .font(.system(size: 70))
-                .foregroundColor(.blue)
+                .foregroundStyle(.blue)
                 .padding(.top, 50)
                 .accessibilityHidden(true)   // decorative — text labels provide context
             
             Text("SnapSafe")
-                .foregroundColor(.primary)
+                .foregroundStyle(.primary)
                 .font(.largeTitle)
                 .bold()
 
             Text("Enter your PIN to continue")
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
             
             if viewModel.shouldShowAttemptsWarning {
                 Text(viewModel.attemptsWarningMessage)
-                    .foregroundColor(.red)
+                    .foregroundStyle(.red)
                     .font(.callout)
                     .padding(.top, 5)
             }
             
-            SecureField("PIN", text: $viewModel.pin, prompt: Text("PIN").foregroundColor(.secondary))
+            SecureField("PIN", text: $viewModel.pin, prompt: Text("PIN").foregroundStyle(.secondary))
                 .keyboardType(.numberPad)
                 .textContentType(.oneTimeCode)
                 .multilineTextAlignment(.center)
                 .padding()
-                .foregroundColor(.primary)
+                .foregroundStyle(.primary)
                 .overlay(
                     RoundedRectangle(cornerRadius: 8)
                         .stroke(Color(UIColor.systemGray3), lineWidth: 1)
@@ -61,7 +61,7 @@ struct PINVerificationView: View {
             
             if viewModel.showError {
                 Text(viewModel.errorMessage)
-                    .foregroundColor(.red)
+                    .foregroundStyle(.red)
                     .font(.callout)
                     .padding(.top, 5)
             }
@@ -73,20 +73,20 @@ struct PINVerificationView: View {
                 HStack {
                     if viewModel.isLastAttempt {
                         Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundColor(.white)
+                            .foregroundStyle(.white)
                     }
                     if viewModel.isLoading {
                         ProgressView()
                             .scaleEffect(0.8)
-                            .foregroundColor(.white)
+                            .foregroundStyle(.white)
                     }
                     Text(viewModel.unlockButtonText)
-                        .foregroundColor(.white)
+                        .foregroundStyle(.white)
                 }
                 .padding()
                 .frame(width: 200)
                 .background(viewModel.unlockButtonBackgroundColor)
-                .cornerRadius(10)
+                .clipShape(.rect(cornerRadius: 10))
             }
             .disabled(viewModel.isUnlockButtonDisabled)
             .padding(.top, 20)
@@ -95,7 +95,7 @@ struct PINVerificationView: View {
             
             if viewModel.shouldShowAttemptsWarning {
                 Text("10 failed attempts will result in a full data wipe.\nALL PHOTOS WILL BE LOST!")
-                    .foregroundColor(.red)
+                    .foregroundStyle(.red)
                     .font(.callout)
                     .padding(.top, 5)
                     .accessibilityLabel("Warning: 10 failed attempts will result in a full data wipe. All photos will be lost.")

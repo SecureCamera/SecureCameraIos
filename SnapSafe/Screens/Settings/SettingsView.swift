@@ -49,7 +49,7 @@ struct SettingsView: View {
 
                     Text("When enabled, personal information will be removed from photos before sharing")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                         .padding(.top, 4)
                 }
 
@@ -59,7 +59,7 @@ struct SettingsView: View {
                         Text("Permission Status")
                         Spacer()
                         Text(locationRepository.getAuthorizationStatusString())
-                            .foregroundColor(viewModel.locationStatusColor)
+                            .foregroundStyle(viewModel.locationStatusColor)
                     }
                     
                     Button {
@@ -70,7 +70,7 @@ struct SettingsView: View {
 
                     Text("When enabled, location data will be embedded in newly captured photos. Location requires permission and GPS availability.")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                         .padding(.top, 4)
                 }
                 
@@ -85,7 +85,7 @@ struct SettingsView: View {
                     
                     Text("Choose how the app appears. System follows your device's appearance setting.")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                         .padding(.top, 4)
                 }
 
@@ -112,13 +112,13 @@ struct SettingsView: View {
                             
                             Text(viewModel.hasPoisonPill ? "Poison pill is configured and ready" : "Set up a special PIN that will immediately delete all photos and encryption keys")
                                 .font(.caption)
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(.secondary)
                         }
                         
                         Spacer()
                         
                         Image(systemName: viewModel.hasPoisonPill ? "checkmark.shield.fill" : "exclamationmark.triangle.fill")
-                            .foregroundColor(viewModel.hasPoisonPill ? .green : .orange)
+                            .foregroundStyle(viewModel.hasPoisonPill ? .green : .orange)
                             .font(.title3)
                             .accessibilityHidden(true)
                     }
@@ -127,13 +127,13 @@ struct SettingsView: View {
                         Button("Remove Poison Pill") {
                             viewModel.doShowRemovePoisonPillConfirmation()
                         }
-                        .foregroundColor(.red)
+                        .foregroundStyle(.red)
                     } else {
                         Button("Setup Poison Pill") {
                             nav.dismissAll()
                             nav.navigate(to: .poisonPillSetupWizard)
                         }
-                        .foregroundColor(.orange)
+                        .foregroundStyle(.orange)
                     }
                 }
                 
@@ -146,7 +146,7 @@ struct SettingsView: View {
 
                         Text("Decoy photos will be shown when emergency PIN is entered")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                             .padding(.top, 4)
                     }
                 }
@@ -156,12 +156,12 @@ struct SettingsView: View {
                     Button("Perform Security Reset") {
                         viewModel.showSecurityResetConfirmation()
                     }
-                    .foregroundColor(.red)
+                    .foregroundStyle(.red)
 
                 } footer: {
                     Text("Resets everything, deletes all photos and encryption keys.")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
                 
             }

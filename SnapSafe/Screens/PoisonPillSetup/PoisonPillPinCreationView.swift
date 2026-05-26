@@ -29,7 +29,7 @@ struct PoisonPillPinCreationView: View {
                 // Header Icon
                 Image(systemName: "lock.trianglebadge.exclamationmark")
                     .font(.system(size: 70))
-                    .foregroundColor(.orange)
+                    .foregroundStyle(.orange)
                     .padding(.top, max(30, geometry.safeAreaInsets.top + 20))
             
             // Title
@@ -39,7 +39,7 @@ struct PoisonPillPinCreationView: View {
             
             // Subtitle
             Text("Create a PIN that will trigger emergency deletion")
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
             
@@ -81,7 +81,7 @@ struct PoisonPillPinCreationView: View {
             // Error Message
             if showError {
                 Text(errorMessage)
-                    .foregroundColor(.red)
+                    .foregroundStyle(.red)
                     .font(.callout)
                     .padding(.top, 5)
             }
@@ -89,12 +89,12 @@ struct PoisonPillPinCreationView: View {
             // Warning
             HStack {
                 Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundColor(.red)
+                    .foregroundStyle(.red)
                     .font(.caption)
                 Text("When entered, this PIN it will immediately and permanently delete all photos and encryption keys.")
                     .font(.caption)
                     .fontWeight(.semibold)
-                    .foregroundColor(.red)
+                    .foregroundStyle(.red)
             }
             .padding(.horizontal, 30)
             
@@ -108,15 +108,15 @@ struct PoisonPillPinCreationView: View {
                         if isLoading {
                             ProgressView()
                                 .scaleEffect(0.8)
-                                .foregroundColor(.white)
+                                .foregroundStyle(.white)
                         }
                         Text(isLoading ? "Setting up..." : "Setup Poison Pill")
-                            .foregroundColor(.white)
+                            .foregroundStyle(.white)
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
                     .background(canProceed ? Color.orange : Color.gray)
-                    .cornerRadius(10)
+                    .clipShape(.rect(cornerRadius: 10))
                 }
                 .disabled(!canProceed)
             }

@@ -52,7 +52,7 @@ struct VideoPlayerView: View {
                     }) {
                         Image(systemName: "chevron.left")
                             .font(.title2)
-                            .foregroundColor(.white)
+                            .foregroundStyle(.white)
                             .padding(12)
                             .background(Color.black.opacity(0.4))
                             .clipShape(Circle())
@@ -73,7 +73,7 @@ struct VideoPlayerView: View {
                         }) {
                             Image(systemName: viewModel.isPlaying ? "pause.fill" : "play.fill")
                                 .font(.title)
-                                .foregroundColor(.white)
+                                .foregroundStyle(.white)
                                 .padding()
                         }
 
@@ -86,7 +86,7 @@ struct VideoPlayerView: View {
 
                         if let duration = viewModel.duration {
                             Text("\(viewModel.currentTime.formattedTime) / \(duration.formattedTime)")
-                                .foregroundColor(.white)
+                                .foregroundStyle(.white)
                                 .font(.caption)
                                 .monospacedDigit()
                                 .padding(.trailing)
@@ -117,26 +117,26 @@ struct VideoPlayerView: View {
             VStack(spacing: 20) {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .font(.system(size: 50))
-                    .foregroundColor(.white)
+                    .foregroundStyle(.white)
                 
                 Text("Playback Error")
                     .font(.title)
-                    .foregroundColor(.white)
+                    .foregroundStyle(.white)
                 
                 Text(error.localizedDescription)
                     .font(.subheadline)
-                    .foregroundColor(.white.opacity(0.8))
+                    .foregroundStyle(.white.opacity(0.8))
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 30)
                 
                 Button(action: onRetry) {
                     Text("Retry")
                         .font(.headline)
-                        .foregroundColor(.black)
+                        .foregroundStyle(.black)
                         .padding(.horizontal, 30)
                         .padding(.vertical, 10)
                         .background(Color.white)
-                        .cornerRadius(8)
+                        .clipShape(.rect(cornerRadius: 8))
                 }
             }
         }

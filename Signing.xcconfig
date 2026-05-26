@@ -1,0 +1,3 @@
+CODE_SIGN_STYLE = Automatic
+DEVELOPMENT_TEAM = ABCDE12345    // the org's ID (not your personal one, we will use a different ID here later maybe)
+#include? "Configs/LocalOverrides.xcconfig"   // relative to project root, your local config

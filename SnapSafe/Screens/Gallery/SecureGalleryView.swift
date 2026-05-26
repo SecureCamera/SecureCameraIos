@@ -19,7 +19,7 @@ struct EmptyGalleryView: View {
         VStack {
             Text("No photos yet")
                 .font(.title)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
                 .accessibilityLabel("Gallery is empty. Use the camera to take your first photo.")
         }
     }
@@ -70,7 +70,7 @@ struct SecureGalleryView: View {
 
                     Text("\(Int(viewModel.importProgress * 100))%")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
                 .frame(width: 200)
                 .padding()
@@ -106,18 +106,18 @@ struct SecureGalleryView: View {
                     if viewModel.isSelectingDecoys {
                         Text(viewModel.decoyCountText)
                             .font(.caption)
-                            .foregroundColor(viewModel.decoyCountTextColor)
+                            .foregroundStyle(viewModel.decoyCountTextColor)
 
                         Button("Save") {
                             viewModel.showDecoyConfirmationAlert()
                         }
-                        .foregroundColor(.blue)
+                        .foregroundStyle(.blue)
                         .disabled(viewModel.isSaveDecoyButtonDisabled)
                     } else if viewModel.isSelecting {
                         Button("Cancel") {
                             viewModel.cancelSelecting()
                         }
-                        .foregroundColor(.red)
+                        .foregroundStyle(.red)
                     } else {
                         Menu {
                             Button {
@@ -175,7 +175,7 @@ struct SecureGalleryView: View {
                             viewModel.showDeleteAlert()
                         }) {
                             Label("Delete", systemImage: "trash")
-                                .foregroundColor(.red)
+                                .foregroundStyle(.red)
                         }
 
                         Spacer()
@@ -295,11 +295,11 @@ struct VideoCellView: View {
                 VStack(spacing: 8) {
                     Image(systemName: "video.fill")
                         .font(.title)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
 
                     Text(item.mediaName)
                         .font(.caption2)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
 
@@ -309,10 +309,10 @@ struct VideoCellView: View {
                         Spacer()
                         Image(systemName: "film")
                             .font(.caption)
-                            .foregroundColor(.white)
+                            .foregroundStyle(.white)
                             .padding(4)
                             .background(Color.black.opacity(0.6))
-                            .cornerRadius(4)
+                            .clipShape(.rect(cornerRadius: 4))
                             .padding(4)
                     }
                     Spacer()
@@ -325,7 +325,7 @@ struct VideoCellView: View {
                         HStack {
                             Spacer()
                             Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                                .foregroundColor(isSelected ? .blue : .white)
+                                .foregroundStyle(isSelected ? .blue : .white)
                                 .font(.title2)
                                 .shadow(radius: 2)
                                 .padding(6)

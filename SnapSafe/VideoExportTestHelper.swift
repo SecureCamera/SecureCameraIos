@@ -270,7 +270,7 @@ struct VideoExportTestView: View {
                 
                 Text(testStatus)
                     .font(.body)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
                 
@@ -313,7 +313,7 @@ struct VideoExportTestView: View {
                 
                 Text("Note: This tests video export functionality without requiring camera hardware. Perfect for simulator testing!")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
             }

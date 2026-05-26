@@ -140,7 +140,7 @@ struct ContentView: View {
             } else {
                 Text("Video Export Testing requires iOS 18+")
                     .font(.title2)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
             }
         }
     }
