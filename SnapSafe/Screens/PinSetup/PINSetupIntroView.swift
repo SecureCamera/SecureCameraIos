@@ -88,7 +88,7 @@ struct PINSetupIntroView: View {
                                         Text("Continue")
                                             .fontWeight(.medium)
                                         Image(systemName: "arrow.right")
-                                            .font(.system(size: 14, weight: .medium))
+                                            .font(.subheadline)
                                     }
                                     .foregroundColor(.white)
                                     .frame(maxWidth: .infinity)
@@ -108,7 +108,7 @@ struct PINSetupIntroView: View {
                                     Text(isLastIntroSlide ? "Set Up PIN" : "Continue")
                                         .fontWeight(.medium)
                                     Image(systemName: "arrow.right")
-                                        .font(.system(size: 14, weight: .medium))
+                                        .font(.subheadline)
                                 }
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
