@@ -14,7 +14,7 @@ struct DeveloperToolsView: View {
     @EnvironmentObject private var nav: AppNavigationState
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             List {
                 Section("Testing Tools") {
                     Button(action: {

@@ -19,7 +19,7 @@ struct ImageInfoView: View {
     }
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             if viewModel.isLoading {
                 ProgressView("Loading image information...")
                     .navigationTitle("Image Information")

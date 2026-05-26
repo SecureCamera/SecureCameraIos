@@ -162,7 +162,7 @@ struct PoisonPillPinCreationView: View {
     @Previewable @State var errorMessage = ""
     @Previewable @State var isLoading = false
     
-    return NavigationView {
+    return NavigationStack {
         PoisonPillPinCreationView(
             pin: $pin,
             confirmPin: $confirmPin,

@@ -262,7 +262,7 @@ struct VideoExportTestView: View {
     @State private var showingResults = false
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             VStack(spacing: 20) {
                 Text("Video Export Simulator Test")
                     .font(.title2)
@@ -424,7 +424,7 @@ struct TestResultsView: View {
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             List(results, id: \.self) { result in
                 Text(result)
                     .font(.body)

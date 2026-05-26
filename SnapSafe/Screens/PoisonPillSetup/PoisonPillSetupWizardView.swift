@@ -18,7 +18,7 @@ struct PoisonPillSetupWizardView: View {
     }
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             VStack(spacing: 0) {
                 // Progress Indicator
                 progressHeader
