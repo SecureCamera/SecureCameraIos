@@ -58,7 +58,7 @@ struct PhotoCell: View {
                     HStack {
                         Spacer()
                         Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 24))
+                            .font(.title2)
                             .foregroundColor(.blue)
                             .background(Circle().fill(Color.white))
                             .padding(5)
@@ -73,7 +73,7 @@ struct PhotoCell: View {
                     Spacer()
                     HStack {
                         Image(systemName: "shield.fill")
-                            .font(.system(size: 16))
+                            .font(.callout)
                             .foregroundColor(.white.opacity(0.75))
                             .padding(5)
                         Spacer()

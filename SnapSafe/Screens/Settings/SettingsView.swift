@@ -119,7 +119,7 @@ struct SettingsView: View {
                         
                         Image(systemName: viewModel.hasPoisonPill ? "checkmark.shield.fill" : "exclamationmark.triangle.fill")
                             .foregroundColor(viewModel.hasPoisonPill ? .green : .orange)
-                            .font(.system(size: 20))
+                            .font(.title3)
                             .accessibilityHidden(true)
                     }
                     

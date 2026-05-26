@@ -294,7 +294,7 @@ struct VideoCellView: View {
 
                 VStack(spacing: 8) {
                     Image(systemName: "video.fill")
-                        .font(.system(size: 30))
+                        .font(.title)
                         .foregroundColor(.secondary)
 
                     Text(item.mediaName)

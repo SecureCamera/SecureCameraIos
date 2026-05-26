@@ -18,7 +18,7 @@ struct ZoomLevelIndicator: View {
                 .frame(width: 60, height: 25)
             
             Text(String(format: "%.1fx", scale))
-                .font(.system(size: 14, weight: .bold))
+                .font(.footnote.bold())
                 .foregroundColor(.white)
         }
         .opacity(isVisible && scale != 1.0 ? 1.0 : 0.0)
