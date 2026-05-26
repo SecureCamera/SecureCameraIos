@@ -165,8 +165,7 @@ struct CameraContainerView: View {
                 .clipShape(Circle())
         }
         .disabled(cameraModel.isRecording)
-        .accessibilityLabel(cameraModel.cameraPosition == .back ? "Rear camera" : "Front camera")
-        .accessibilityHint("Double-tap to switch camera")
+        .accessibilityLabel(cameraModel.cameraPosition == .back ? "Switch to front camera" : "Switch to rear camera")
     }
 
     private var flashButton: some View {
@@ -271,7 +270,7 @@ struct CameraContainerView: View {
         }
         .disabled(cameraModel.isSavingPhoto || cameraModel.isRecording || cameraModel.isEncryptingVideo)
         .padding()
-        .accessibilityLabel("Open gallery")
+        .accessibilityLabel("Gallery")
         .accessibilityHint(cameraModel.isSavingPhoto ? "Saving photo" : "")
     }
 
