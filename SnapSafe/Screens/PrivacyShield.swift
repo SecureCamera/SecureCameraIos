@@ -28,12 +28,12 @@ struct PrivacyShield: View {
                 
                 // App name
                 Text("SnapSafe")
-                    .font(.system(size: 32, weight: .bold))
+                    .font(.largeTitle.bold())
                     .foregroundColor(.white)
-                
+
                 // Privacy message
                 Text("The camera app that minds its own business.")
-                    .font(.system(size: 20, weight: .medium))
+                    .font(.title3)
                     .foregroundColor(.gray)
                 
                 Spacer()

@@ -197,7 +197,7 @@ struct ScreenshotTakenView: View {
                     .accessibilityHidden(true)
                 
                 Text("Screenshot Captured")
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.callout.bold())
                     .foregroundColor(.white)
                 
                 Spacer()
