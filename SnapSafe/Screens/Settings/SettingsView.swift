@@ -202,7 +202,7 @@ struct SettingsView: View {
                 // Reset the selection flag when the sheet is dismissed
                 viewModel.stopSelectingDecoys()
             } content: {
-                NavigationView {
+                NavigationStack {
                     // Initialize SecureGalleryView in decoy selection mode
                     SecureGalleryView(selectingDecoys: true, onDismiss: {
                         viewModel.stopSelectingDecoys()

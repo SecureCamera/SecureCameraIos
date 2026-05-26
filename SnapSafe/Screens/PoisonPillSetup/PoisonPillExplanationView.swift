@@ -132,19 +132,19 @@ struct PoisonPillExplanationView: View {
 }
 
 #Preview("Step 1") {
-    NavigationView {
+    NavigationStack {
         PoisonPillExplanationView(step: ExplanationStep.poisonPillSteps[0])
     }
 }
 
 #Preview("Step 2") {
-    NavigationView {
+    NavigationStack {
         PoisonPillExplanationView(step: ExplanationStep.poisonPillSteps[1])
     }
 }
 
 #Preview("Step 3") {
-    NavigationView {
+    NavigationStack {
         PoisonPillExplanationView(step: ExplanationStep.poisonPillSteps[2])
     }
 }
