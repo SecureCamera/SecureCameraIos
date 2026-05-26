@@ -19,8 +19,7 @@ struct ImageInfoView: View {
     }
     
     var body: some View {
-        NavigationStack {
-            if viewModel.isLoading {
+        if viewModel.isLoading {
                 ProgressView("Loading image information...")
                     .navigationTitle("Image Information")
                     .navigationBarTitleDisplayMode(.inline)
@@ -169,7 +168,6 @@ struct ImageInfoView: View {
                         }
                     }
                 }
-            }
         }
     }
 }

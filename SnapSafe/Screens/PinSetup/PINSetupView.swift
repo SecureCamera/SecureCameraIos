@@ -23,8 +23,7 @@ struct PINSetupView: View {
     }
     
     var body: some View {
-        NavigationStack {
-            ScrollView {
+        ScrollView {
                 VStack(spacing: 30) {
                     Image(systemName: "lock.shield")
                         .font(.system(size: 70))
@@ -113,7 +112,6 @@ struct PINSetupView: View {
                     viewModel.clearPinContent()
                 }
             }
-        }
     }
 }
 

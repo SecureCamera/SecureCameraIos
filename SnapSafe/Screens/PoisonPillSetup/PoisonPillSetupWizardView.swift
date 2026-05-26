@@ -18,8 +18,7 @@ struct PoisonPillSetupWizardView: View {
     }
     
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
+        VStack(spacing: 0) {
                 // Progress Indicator
                 progressHeader
                 
@@ -55,11 +54,9 @@ struct PoisonPillSetupWizardView: View {
                     .background(Color(UIColor.systemBackground))
                 }
             }
-            .navigationBarTitleDisplayMode(.inline)
             .navigationBarHidden(true)
             .obscuredWhenInactive()
             .screenCaptureProtected()
-        }
     }
     
     // MARK: - Progress Header
