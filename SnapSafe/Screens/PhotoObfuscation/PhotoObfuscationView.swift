@@ -220,7 +220,7 @@ private struct ObfuscationControlsView: View {
                     }) {
                         VStack(spacing: 4) {
                             Image(systemName: "xmark.circle")
-                                .font(.system(size: 22))
+                                .font(.title3)
                                 .frame(height: 22)
                             Text("Cancel")
                                 .font(.caption2)
@@ -244,7 +244,7 @@ private struct ObfuscationControlsView: View {
                                     .frame(height: 22)
                             } else {
                                 Image(systemName: "square.dashed")
-                                    .font(.system(size: 22))
+                                    .font(.title3)
                                     .frame(height: 22)
                             }
                             Text(manualBoxButtonLabel)
@@ -262,7 +262,7 @@ private struct ObfuscationControlsView: View {
                     Button(action: onShare) {
                         VStack(spacing: 4) {
                             Image(systemName: "square.and.arrow.up")
-                                .font(.system(size: 22))
+                                .font(.title3)
                                 .frame(height: 22)
                             Text("Share")
                                 .font(.caption2)
@@ -281,7 +281,7 @@ private struct ObfuscationControlsView: View {
                     }) {
                         VStack(spacing: 4) {
                             Image(systemName: "xmark.circle")
-                                .font(.system(size: 22))
+                                .font(.title3)
                                 .frame(height: 22)
                             Text("Cancel")
                                 .font(.caption2)
@@ -306,7 +306,7 @@ private struct ObfuscationControlsView: View {
                                         .frame(height: 22)
                                 } else {
                                     Image(systemName: "face.dashed.fill")
-                                        .font(.system(size: 22))
+                                        .font(.title3)
                                         .frame(height: 22)
                                 }
                                 Text(maskButtonLabel)
@@ -325,7 +325,7 @@ private struct ObfuscationControlsView: View {
                     Button(action: onShare) {
                         VStack(spacing: 4) {
                             Image(systemName: "square.and.arrow.up")
-                                .font(.system(size: 22))
+                                .font(.title3)
                                 .frame(height: 22)
                             Text("Share")
                                 .font(.caption2)
@@ -344,7 +344,7 @@ private struct ObfuscationControlsView: View {
                     }) {
                         VStack(spacing: 4) {
                             Image(systemName: "xmark.circle")
-                                .font(.system(size: 22))
+                                .font(.title3)
                                 .frame(height: 22)
                             Text("Cancel")
                                 .font(.caption2)
@@ -359,7 +359,7 @@ private struct ObfuscationControlsView: View {
                     Button(action: onAddBox) {
                         VStack(spacing: 4) {
                             Image(systemName: "plus.app")
-                                .font(.system(size: 22))
+                                .font(.title3)
                                 .frame(height: 22)
                             Text("Add Box")
                                 .font(.caption2)
@@ -384,7 +384,7 @@ private struct ObfuscationControlsView: View {
                                         .frame(height: 22)
                                 } else {
                                     Image(systemName: "square.dashed")
-                                        .font(.system(size: 22))
+                                        .font(.title3)
                                         .frame(height: 22)
                                 }
                                 Text(manualBoxButtonLabel)
@@ -403,7 +403,7 @@ private struct ObfuscationControlsView: View {
                     Button(action: onShare) {
                         VStack(spacing: 4) {
                             Image(systemName: "square.and.arrow.up")
-                                .font(.system(size: 22))
+                                .font(.title3)
                                 .frame(height: 22)
                             Text("Share")
                                 .font(.caption2)
@@ -420,7 +420,7 @@ private struct ObfuscationControlsView: View {
                     Button(action: onDetectFaces) {
                         VStack(spacing: 4) {
                             Image(systemName: "face.dashed")
-                                .font(.system(size: 22))
+                                .font(.title3)
                                 .frame(height: 22)
                             Text("Detect Faces")
                                 .font(.caption2)
@@ -437,7 +437,7 @@ private struct ObfuscationControlsView: View {
                     Button(action: onAddBox) {
                         VStack(spacing: 4) {
                             Image(systemName: "plus.app")
-                                .font(.system(size: 22))
+                                .font(.title3)
                                 .frame(height: 22)
                             Text("Add Box")
                                 .font(.caption2)
@@ -454,7 +454,7 @@ private struct ObfuscationControlsView: View {
                     Button(action: onShare) {
                         VStack(spacing: 4) {
                             Image(systemName: "square.and.arrow.up")
-                                .font(.system(size: 22))
+                                .font(.title3)
                                 .frame(height: 22)
                             Text("Share")
                                 .font(.caption2)

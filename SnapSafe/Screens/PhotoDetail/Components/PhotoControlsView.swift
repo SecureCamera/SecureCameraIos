@@ -30,7 +30,7 @@ struct PhotoControlsView: View {
                 Button(action: onDelete) {
                     VStack(spacing: 4) {
                         Image(systemName: "trash")
-                            .font(.system(size: 22))
+                            .font(.title3)
                             .frame(height: 22)
                         Text("Delete")
                             .font(.caption2)
@@ -45,7 +45,7 @@ struct PhotoControlsView: View {
                 Button(action: onInfo) {
                     VStack(spacing: 4) {
                         Image(systemName: "info.circle")
-                            .font(.system(size: 22))
+                            .font(.title3)
                             .frame(height: 22)
                         Text("Info")
                             .font(.caption2)
@@ -60,7 +60,7 @@ struct PhotoControlsView: View {
                 Button(action: onObfuscate) {
                     VStack(spacing: 4) {
                         Image(systemName: "face.dashed")
-                            .font(.system(size: 22))
+                            .font(.title3)
                             .frame(height: 22)
                         Text("Obfuscate")
                             .font(.caption2)
@@ -83,7 +83,7 @@ struct PhotoControlsView: View {
                                     .frame(height: 22)
                             } else {
                                 Image(systemName: decoyButtonIcon)
-                                    .font(.system(size: 22))
+                                    .font(.title3)
                                     .frame(height: 22)
                             }
                             Text(decoyButtonTitle)
@@ -102,7 +102,7 @@ struct PhotoControlsView: View {
                 Button(action: onShare) {
                     VStack(spacing: 4) {
                         Image(systemName: "square.and.arrow.up")
-                            .font(.system(size: 22))
+                            .font(.title3)
                             .frame(height: 22)
                         Text("Share")
                             .font(.caption2)
