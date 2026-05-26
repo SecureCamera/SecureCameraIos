@@ -7,6 +7,7 @@
 
 import AVFoundation
 import CoreGraphics
+import CryptoKit
 import ImageIO
 import PhotosUI
 import SwiftUI
@@ -71,6 +72,11 @@ struct ContentView: View {
     }
     
     private var currentRootDestination: AppDestination {
+        #if DEBUG
+        if CommandLine.arguments.contains("-SkipAuthentication") {
+            return .camera
+        }
+        #endif
         if viewModel.hasCompletedIntro == false {
             return .pinSetup
         } else if !viewModel.isAuthenticated {
@@ -84,8 +90,10 @@ struct ContentView: View {
 
     private func shouldHideNavigationBar(for destination: AppDestination) -> Bool {
         switch destination {
-        case .gallery, .photoObfuscation, .settings:
+        case .gallery, .photoObfuscation, .settings, .videoExportTest:
             return false
+        case .videoPlayer:
+            return true
         default:
             return true
         }
@@ -121,6 +129,19 @@ struct ContentView: View {
             PhotoObfuscationView(photoDef: photoDef, navigator: nav)
         case .poisonPillSetupWizard:
             PoisonPillSetupWizardView()
+        case .videoPlayer(let videoDef, let keyData):
+            VideoPlayerView(
+                videoDef: videoDef,
+                encryptionKey: keyData.map { SymmetricKey(data: $0) }
+            )
+        case .videoExportTest:
+            if #available(iOS 18.0, *) {
+                VideoExportTestView()
+            } else {
+                Text("Video Export Testing requires iOS 18+")
+                    .font(.title2)
+                    .foregroundColor(.secondary)
+            }
         }
     }
 }

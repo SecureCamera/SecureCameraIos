@@ -5,7 +5,7 @@
 //  Created by Bill Booth on 5/3/25.
 //
 
-import AVFoundation
+@preconcurrency import AVFoundation
 import CoreGraphics
 import CoreLocation
 import ImageIO
@@ -99,7 +99,7 @@ class SecureCameraController: UIViewController, AVCapturePhotoCaptureDelegate {
             NotificationCenter.default.addObserver(
                 self,
                 selector: #selector(subjectAreaDidChange),
-                name: .AVCaptureDeviceSubjectAreaDidChange,
+                name: AVCaptureDevice.subjectAreaDidChangeNotification,
                 object: backCamera
             )
 

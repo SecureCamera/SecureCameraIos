@@ -186,7 +186,5 @@ struct PoisonPillSetupWizardView: View {
 }
 
 #Preview("Step 2 - PIN Creation") {
-    let view = PoisonPillSetupWizardView()
-    
-    //view.viewModel.currentStep = .pinCreation
+    PoisonPillSetupWizardView()
 }

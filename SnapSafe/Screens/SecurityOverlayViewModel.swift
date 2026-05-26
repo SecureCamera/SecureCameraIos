@@ -219,6 +219,12 @@ final class SecurityOverlayViewModel: ObservableObject {
     }
 
     private func determineActiveStates() async -> [SecurityOverlayState] {
+        #if DEBUG
+        if CommandLine.arguments.contains("-SkipAuthentication") {
+            return [.normal]
+        }
+        #endif
+
         var states: [SecurityOverlayState] = [.normal]
 
         // Screen recording takes highest priority

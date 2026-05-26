@@ -8,9 +8,10 @@
 import PhotosUI
 import SwiftUI
 import Logging
+import CryptoKit
 
 
-// Empty state view when no photos exist
+// Empty state view when no media exist
 struct EmptyGalleryView: View {
     let onDismiss: () -> Void
 
@@ -24,39 +25,38 @@ struct EmptyGalleryView: View {
 }
 
 
-// Gallery view to display the stored photos
+// Gallery view to display stored photos and videos
 struct SecureGalleryView: View {
-    @AppStorage("showFaceDetection") private var showFaceDetection = true // Using AppStorage to share with Settings
-    @StateObject private var viewModel: SecureGalleryViewModel
+    @AppStorage("showFaceDetection") private var showFaceDetection = true
+    @StateObject private var viewModel: MixedMediaGalleryViewModel
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var nav: AppNavigationState
 
-    // Callback for dismissing the gallery
     let onDismiss: (() -> Void)?
 
-    // Initializers
+    // Standard initializer
     init(onDismiss: (() -> Void)? = nil) {
         self.onDismiss = onDismiss
-        self._viewModel = StateObject(wrappedValue: SecureGalleryViewModel())
+        self._viewModel = StateObject(wrappedValue: MixedMediaGalleryViewModel())
     }
 
     // Initializer for decoy selection mode
     init(selectingDecoys: Bool, onDismiss: (() -> Void)? = nil) {
         self.onDismiss = onDismiss
-        self._viewModel = StateObject(wrappedValue: SecureGalleryViewModel(selectingDecoys: selectingDecoys))
+        self._viewModel = StateObject(wrappedValue: MixedMediaGalleryViewModel(selectingDecoys: selectingDecoys))
     }
 
 
     var body: some View {
         ZStack {
             Group {
-                if viewModel.photos.isEmpty {
-                    EmptyGalleryView(onDismiss: { 
+                if viewModel.mediaItems.isEmpty {
+                    EmptyGalleryView(onDismiss: {
                         onDismiss?()
-                        dismiss() 
+                        dismiss()
                     })
                 } else {
-                    photosGridView
+                    mediaGridView
                 }
             }
 
@@ -99,11 +99,10 @@ struct SecureGalleryView: View {
                 }
             }
 
-            // Action buttons in the trailing position (simplified for top toolbar)
+            // Action buttons in the trailing position
             ToolbarItem(placement: .navigationBarTrailing) {
                 HStack(spacing: 16) {
                     if viewModel.isSelectingDecoys {
-                        // Count label and Save button for decoy selection
                         Text(viewModel.decoyCountText)
                             .font(.caption)
                             .foregroundColor(viewModel.decoyCountTextColor)
@@ -114,7 +113,6 @@ struct SecureGalleryView: View {
                         .foregroundColor(.blue)
                         .disabled(viewModel.isSaveDecoyButtonDisabled)
                     } else if viewModel.isSelecting {
-                        // Cancel selection button
                         Button("Cancel") {
                             viewModel.cancelSelecting()
                         }
@@ -124,7 +122,7 @@ struct SecureGalleryView: View {
                             Button {
                                 viewModel.startSelecting(mode: .share)
                             } label: {
-                                Label("Select Photos", systemImage: "checkmark.circle")
+                                Label("Select Items", systemImage: "checkmark.circle")
                             }
 
                             Button {
@@ -146,12 +144,11 @@ struct SecureGalleryView: View {
                     }
                 }
             }
-            
+
             // Bottom toolbar with main action buttons
             ToolbarItemGroup(placement: .bottomBar) {
                 switch viewModel.selectionMode {
                 case .none:
-                    // Normal mode: Import button only
                     PhotosPicker(selection: $viewModel.pickerItems, matching: .images, photoLibrary: .shared()) {
                         Label("Import", systemImage: "square.and.arrow.down")
                     }
@@ -162,20 +159,18 @@ struct SecureGalleryView: View {
                     Spacer()
 
                 case .share:
-                    // Share mode: Share button (only show when photos selected)
                     if viewModel.hasSelection {
                         Spacer()
 
-                        Button(action: viewModel.shareSelectedPhotos) {
+                        Button(action: viewModel.shareSelectedMedia) {
                             Label("Share", systemImage: "square.and.arrow.up")
                         }
                     }
 
                 case .delete:
-                    // Delete mode: Delete button (only show when photos selected)
                     if viewModel.hasSelection {
                         Button(action: {
-                            Logger.ui.info("Delete button pressed in gallery view, selected photos: \(viewModel.selectedPhotoIds.count)")
+                            Logger.ui.info("Delete button pressed in gallery view, selected items: \(viewModel.selectedMediaIds.count)")
                             viewModel.showDeleteAlert()
                         }) {
                             Label("Delete", systemImage: "trash")
@@ -186,83 +181,158 @@ struct SecureGalleryView: View {
                     }
 
                 case .decoy:
-                    // Decoy mode: no bottom toolbar actions
                     EmptyView()
                 }
             }
         }
         .onAppear(perform: viewModel.onAppear)
-        .onChange(of: viewModel.selectedPhoto) { _, newValue in
-            if let photoDef = newValue {
-                // Find the index of the selected photo in the photos array
+        .onChange(of: viewModel.selectedMediaItem) { _, newValue in
+            guard let item = newValue else { return }
+            viewModel.selectedMediaItem = nil
+
+            if let photoDef = item.photoDef {
                 if let initialIndex = viewModel.photos.firstIndex(where: { $0.photoName == photoDef.photoName }) {
                     nav.navigate(to: .photoDetail(allPhotos: viewModel.photos, initialIndex: initialIndex))
                 }
-                // Reset selectedPhoto so it can be selected again
-                viewModel.selectedPhoto = nil
+            } else if let videoDef = item.videoDef {
+                let keyData = item.encryptionKey.flatMap { key -> Data? in
+                    key.withUnsafeBytes { Data($0) }
+                }
+                nav.navigate(to: .videoPlayer(videoDef, keyData))
             }
         }
-            .alert(
-                viewModel.deleteAlertTitle,
-                isPresented: $viewModel.showDeleteConfirmation,
-                actions: {
-                    Button("Cancel", role: .cancel) {}
-                    Button("Delete", role: .destructive) {
-                        Logger.ui.info("Delete confirmation button pressed, deleting \(viewModel.selectedPhotoIds.count) photos")
-                        viewModel.deleteSelectedPhotos()
-                    }
-                },
-                message: {
-                    Text(viewModel.deleteAlertMessage)
+        .alert(
+            viewModel.deleteAlertTitle,
+            isPresented: $viewModel.showDeleteConfirmation,
+            actions: {
+                Button("Cancel", role: .cancel) {}
+                Button("Delete", role: .destructive) {
+                    Logger.ui.info("Delete confirmation button pressed, deleting \(viewModel.selectedMediaIds.count) items")
+                    viewModel.deleteSelectedMedia()
                 }
-            )
-            .alert(
-                "Too Many Decoys",
-                isPresented: $viewModel.showDecoyLimitWarning,
-                actions: {
-                    Button("OK", role: .cancel) {}
-                },
-                message: {
-                    Text(viewModel.decoyLimitWarningMessage)
+            },
+            message: {
+                Text(viewModel.deleteAlertMessage)
+            }
+        )
+        .alert(
+            "Too Many Decoys",
+            isPresented: $viewModel.showDecoyLimitWarning,
+            actions: {
+                Button("OK", role: .cancel) {}
+            },
+            message: {
+                Text(viewModel.decoyLimitWarningMessage)
+            }
+        )
+        .alert(
+            "Save Decoy Selection",
+            isPresented: $viewModel.showDecoyConfirmation,
+            actions: {
+                Button("Cancel", role: .cancel) {}
+                Button("Save") {
+                    viewModel.saveDecoySelections()
+                    onDismiss?()
+                    dismiss()
                 }
-            )
-            .alert(
-                "Save Decoy Selection",
-                isPresented: $viewModel.showDecoyConfirmation,
-                actions: {
-                    Button("Cancel", role: .cancel) {}
-                    Button("Save") {
-                        viewModel.saveDecoySelections()
-                        onDismiss?()
-                        dismiss()
-                    }
-                },
-                message: {
-                    Text(viewModel.decoyConfirmationMessage)
-                }
-            )
-        }
+            },
+            message: {
+                Text(viewModel.decoyConfirmationMessage)
+            }
+        )
+    }
 
-    // Photo grid subview
-    private var photosGridView: some View {
+    // Mixed media grid subview
+    private var mediaGridView: some View {
         ScrollView {
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 10) {
-                ForEach(viewModel.photos) { photo in
-                    PhotoCell(
-                        photo: photo,
-                        isSelected: viewModel.selectedPhotoIds.contains(photo),
-                        isSelecting: viewModel.isSelecting,
-                        onTap: {
-                            viewModel.handlePhotoTap(photo)
-                        },
-                        onDelete: {
-                            viewModel.prepareToDeleteSinglePhoto(photo)
-                        }
-                    )
+                ForEach(viewModel.mediaItems) { item in
+                    if let photoDef = item.photoDef {
+                        PhotoCell(
+                            photo: photoDef,
+                            isSelected: viewModel.isSelected(item),
+                            isSelecting: viewModel.isSelecting,
+                            onTap: {
+                                viewModel.handleMediaTap(item)
+                            },
+                            onDelete: {
+                                viewModel.prepareToDeleteSingleMedia(item)
+                            }
+                        )
+                    } else if item.mediaType == .video {
+                        VideoCellView(
+                            item: item,
+                            isSelected: viewModel.isSelected(item),
+                            isSelecting: viewModel.isSelecting,
+                            onTap: {
+                                viewModel.handleMediaTap(item)
+                            }
+                        )
+                    }
                 }
             }
             .padding()
         }
     }
+}
 
+// MARK: - Video Cell View
+
+struct VideoCellView: View {
+    let item: GalleryMediaItem
+    let isSelected: Bool
+    let isSelecting: Bool
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color(.systemGray5))
+                    .aspectRatio(1, contentMode: .fit)
+
+                VStack(spacing: 8) {
+                    Image(systemName: "video.fill")
+                        .font(.system(size: 30))
+                        .foregroundColor(.secondary)
+
+                    Text(item.mediaName)
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+
+                // Video badge
+                VStack {
+                    HStack {
+                        Spacer()
+                        Image(systemName: "film")
+                            .font(.caption)
+                            .foregroundColor(.white)
+                            .padding(4)
+                            .background(Color.black.opacity(0.6))
+                            .cornerRadius(4)
+                            .padding(4)
+                    }
+                    Spacer()
+                }
+
+                // Selection checkmark overlay
+                if isSelecting {
+                    VStack {
+                        Spacer()
+                        HStack {
+                            Spacer()
+                            Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                                .foregroundColor(isSelected ? .blue : .white)
+                                .font(.title2)
+                                .shadow(radius: 2)
+                                .padding(6)
+                        }
+                    }
+                }
+            }
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
 }

@@ -25,6 +25,12 @@ extension Logger {
     
     /// Logger for general application events
     static let app = Logger(label: "com.snapsafe.app")
+
+    /// Logger for video operations (encryption, decryption, playback)
+    static let video = Logger(label: "com.snapsafe.video")
+
+    /// Logger for media gallery operations
+    static let media = Logger(label: "com.snapsafe.media")
     
     /// Creates a logger with a specific subsystem for more granular logging
     static func subsystem(_ name: String, category: String) -> Logger {

@@ -198,4 +198,11 @@ extension Container {
             authManager: self.authorizationRepository(),
         ) }
     }
+
+    // MARK: - Video
+
+    @MainActor
+    var videoEncryptionService: Factory<VideoEncryptionService> {
+        self { @MainActor in VideoEncryptionService() }.shared
+    }
 }

@@ -186,7 +186,7 @@ public struct ZoomableScrollView<Content: View>: UIViewRepresentable {
 
         // Handle bounds changes (e.g., rotation)
         fileprivate func handleBoundsChange(_ scrollView: UIScrollView) {
-            guard let view = hostingController.view else { return }
+            guard hostingController.view != nil else { return }
 
             // If zoomed, maintain the center point
             if scrollView.zoomScale > scrollView.minimumZoomScale {

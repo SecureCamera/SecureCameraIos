@@ -4,11 +4,12 @@
 //
 //  Created by Bill Booth on 5/24/25.
 //
-import AVFoundation
+@preconcurrency import AVFoundation
 import SwiftUI
 import FactoryKit
 import Logging
 import Combine
+import CryptoKit
 
 enum CameraLensType {
     case ultraWide   // 0.5x zoom
@@ -56,16 +57,25 @@ class CameraViewModel: NSObject, ObservableObject {
     @Published var alert = false
     @Published var preview: AVCaptureVideoPreviewLayer!
     @Published var captureMode: CaptureMode = .photo
-    
-    
+
+    // Video encryption state
+    @Published var isEncryptingVideo: Bool = false
+    @Published var encryptionProgress: Double = 0
+
     @Injected(\.secureImageRepository)
     private var secureImageRepository: SecureImageRepository
-    
+
     @Injected(\.clock)
     private var clock: Clock
-    
+
     @Injected(\.locationRepository)
     private var locationRepository: LocationRepository
+
+    @Injected(\.videoEncryptionService)
+    private var videoEncryptionService: VideoEncryptionService
+
+    @Injected(\.encryptionScheme)
+    private var encryptionScheme: EncryptionScheme
     
     
     
@@ -83,6 +93,11 @@ class CameraViewModel: NSObject, ObservableObject {
     // Initialize camera with delayed permission check to prevent race conditions
     override init() {
         super.init()
+
+        // Wire video recording callback to trigger encryption
+        videoService.onRecordingFinished = { [weak self] outputURL in
+            self?.encryptRecordedVideo(at: outputURL)
+        }
 
         // Observe permission changes from the service
         permissionService.objectWillChange
@@ -458,6 +473,54 @@ class CameraViewModel: NSObject, ObservableObject {
             return "bolt.slash"
         @unknown default:
             return "bolt.badge.a"
+        }
+    }
+
+    // MARK: - Video Encryption
+
+    private func encryptRecordedVideo(at movURL: URL) {
+        Task {
+            do {
+                let keyData = try await encryptionScheme.getDerivedKey()
+                let symmetricKey = SymmetricKey(data: keyData)
+
+                // Build .secv output path alongside the .mov
+                let secvURL = movURL.deletingPathExtension().appendingPathExtension(SECVFileFormat.FILE_EXTENSION)
+
+                // Create empty output file (FileHandle(forWritingTo:) requires it to exist)
+                FileManager.default.createFile(atPath: secvURL.path, contents: nil)
+
+                isEncryptingVideo = true
+                encryptionProgress = 0
+
+                let (progress, _) = videoEncryptionService.encryptVideo(
+                    inputURL: movURL,
+                    outputURL: secvURL,
+                    encryptionKey: symmetricKey
+                )
+
+                // Observe progress
+                progress
+                    .receive(on: DispatchQueue.main)
+                    .sink { [weak self] value in
+                        self?.encryptionProgress = value
+                        if value >= 1.0 {
+                            self?.isEncryptingVideo = false
+                            // Delete the temp .mov file
+                            try? FileManager.default.removeItem(at: movURL)
+                            Logger.camera.info("Video encrypted and temp file deleted", metadata: [
+                                "output": .string(secvURL.lastPathComponent)
+                            ])
+                        }
+                    }
+                    .store(in: &cancellables)
+
+            } catch {
+                isEncryptingVideo = false
+                Logger.camera.error("Failed to encrypt video", metadata: [
+                    "error": .string(error.localizedDescription)
+                ])
+            }
         }
     }
 }

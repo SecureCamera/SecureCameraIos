@@ -99,7 +99,9 @@ struct ZoomSliderView: View {
             NotificationCenter.default.addObserver(forName: UIDevice.orientationDidChangeNotification,
                                                   object: nil,
                                                   queue: .main) { _ in
-                self.deviceOrientation = UIDevice.current.orientation
+                Task { @MainActor in
+                    self.deviceOrientation = UIDevice.current.orientation
+                }
             }
         }
         .onDisappear {
@@ -227,9 +229,11 @@ struct ZoomSliderView: View {
         guard !isDragging && !isPinching else { return }
         cancelHideTimer()
         hideTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { _ in
-            guard !self.isDragging && !self.isPinching else { return }
-            withAnimation {
-                self.isVisible = false
+            Task { @MainActor in
+                guard !self.isDragging && !self.isPinching else { return }
+                withAnimation {
+                    self.isVisible = false
+                }
             }
         }
     }

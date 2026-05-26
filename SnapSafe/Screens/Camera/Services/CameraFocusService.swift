@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import AVFoundation
+@preconcurrency import AVFoundation
 import SwiftUI
 import Combine
 import Logging
@@ -44,7 +44,7 @@ final class CameraFocusService: ObservableObject, FocusControlling {
     func setupSubjectAreaChangeMonitoring(for device: AVCaptureDevice) {
         // Remove existing observer if any
         if let currentDevice = currentDevice {
-            NotificationCenter.default.removeObserver(self, name: .AVCaptureDeviceSubjectAreaDidChange, object: currentDevice)
+            NotificationCenter.default.removeObserver(self, name: AVCaptureDevice.subjectAreaDidChangeNotification, object: currentDevice)
         }
         
         currentDevice = device
@@ -52,7 +52,7 @@ final class CameraFocusService: ObservableObject, FocusControlling {
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(subjectAreaDidChange),
-            name: .AVCaptureDeviceSubjectAreaDidChange,
+            name: AVCaptureDevice.subjectAreaDidChangeNotification,
             object: device
         )
     }
@@ -96,7 +96,9 @@ final class CameraFocusService: ObservableObject, FocusControlling {
             // Schedule auto-focus reset with appropriate delay
             let resetDelay = lockWhiteBalance ? 8.0 : 3.0
             focusResetTimer = Timer.scheduledTimer(withTimeInterval: resetDelay, repeats: false) { [weak self] _ in
-                self?.resetToAutoFocus(device: device)
+                Task { @MainActor [weak self] in
+                    self?.resetToAutoFocus(device: device)
+                }
             }
         } catch {
             Logger.camera.error("Error adjusting camera settings", metadata: [
@@ -122,7 +124,9 @@ final class CameraFocusService: ObservableObject, FocusControlling {
         currentDevice = device
         
         focusCheckTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { [weak self] _ in
-            self?.checkAndOptimizeFocus()
+            Task { @MainActor [weak self] in
+                self?.checkAndOptimizeFocus()
+            }
         }
     }
     
@@ -166,7 +170,9 @@ final class CameraFocusService: ObservableObject, FocusControlling {
                 device.unlockForConfiguration()
                 focusResetTimer?.invalidate()
                 focusResetTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [weak self] _ in
-                    self?.resetToAutoFocus(device: device)
+                    Task { @MainActor [weak self] in
+                        self?.resetToAutoFocus(device: device)
+                    }
                 }
                 
             } catch {

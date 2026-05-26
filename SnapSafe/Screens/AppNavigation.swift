@@ -20,6 +20,8 @@ enum AppDestination: Hashable {
     case photoInfo(PhotoDef)
     case photoObfuscation(PhotoDef)
     case poisonPillSetupWizard
+    case videoPlayer(VideoDef, Data?)
+    case videoExportTest // For testing video export on simulator
 }
 
 // MARK: - Navigation State
@@ -91,6 +93,8 @@ extension AppDestination: Identifiable {
         case .photoInfo(let photoDef): return "photoInfo_\(photoDef.photoName)"
         case .photoObfuscation(let photoDef): return "photoObfuscation_\(photoDef.photoName)"
         case .poisonPillSetupWizard: return "poisonPillSetupWizard"
+        case .videoPlayer(let videoDef, _): return "videoPlayer_\(videoDef.videoName)"
+        case .videoExportTest: return "videoExportTest"
         }
     }
 }

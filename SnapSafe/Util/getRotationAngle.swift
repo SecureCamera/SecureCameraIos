@@ -9,7 +9,7 @@ import SwiftUI
 
 // Get rotation angle for the zoom indicator based on device orientation
 public struct Utils {
-    public static func getRotationAngle() -> Angle {
+    @MainActor public static func getRotationAngle() -> Angle {
         switch UIDevice.current.orientation {
         case .landscapeLeft:
             return Angle(degrees: 90)
