@@ -16,6 +16,7 @@ struct ZoomSliderView: View {
     @State private var hideTimer: Timer?
     @State private var deviceOrientation = UIDevice.current.orientation
     @State private var lastDetentLevel: CGFloat?
+    @State private var hapticTrigger = 0
     private let snapThreshold: CGFloat = 0.25
     private let hapticThreshold: CGFloat = 0.1
 
@@ -92,6 +93,7 @@ struct ZoomSliderView: View {
                 .fill(Color.black.opacity(0.3))
         )
         .frame(height: 80)
+        .sensoryFeedback(.impact(weight: .light), trigger: hapticTrigger)
         .transition(.opacity.combined(with: .scale))
         .onAppear {
             scheduleHide()
@@ -221,8 +223,7 @@ struct ZoomSliderView: View {
     }
 
     private func triggerHapticFeedback() {
-        let generator = UIImpactFeedbackGenerator(style: .light)
-        generator.impactOccurred()
+        hapticTrigger += 1
     }
 
     func scheduleHide() {
