@@ -50,6 +50,7 @@ struct PINVerificationView: View {
                 .focused($isPINFieldFocused)
                 .disabled(viewModel.isLoading)
                 .onChange(of: viewModel.pin) { _, newValue in
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
                     viewModel.updatePIN(newValue)
                 }
                 .onChange(of: viewModel.isLoading) { _, isLoading in
@@ -114,6 +115,11 @@ struct PINVerificationView: View {
             if newPhase == .background || newPhase == .inactive {
                 isPINFieldFocused = false
                 viewModel.clearPinContent()
+            }
+        }
+        .onChange(of: viewModel.showError) { _, showError in
+            if showError {
+                UINotificationFeedbackGenerator().notificationOccurred(.error)
             }
         }
         .obscuredWhenInactive()

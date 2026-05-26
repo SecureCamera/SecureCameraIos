@@ -307,6 +307,7 @@ struct CameraContainerView: View {
 
     private var photoShutterButton: some View {
         Button(action: {
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
             triggerShutterEffect()
             cameraModel.capturePhoto()
         }) {
@@ -332,7 +333,11 @@ struct CameraContainerView: View {
     }
 
     private var videoRecordButton: some View {
-        Button(action: { cameraModel.toggleRecording() }) {
+        Button(action: {
+            let style: UIImpactFeedbackGenerator.FeedbackStyle = cameraModel.isRecording ? .medium : .heavy
+            UIImpactFeedbackGenerator(style: style).impactOccurred()
+            cameraModel.toggleRecording()
+        }) {
             ZStack {
                 Circle()
                     .strokeBorder(cameraModel.isRecording ? Color.red : Color.white, lineWidth: 4)
