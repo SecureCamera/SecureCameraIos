@@ -79,7 +79,7 @@ struct CameraView: View {
                                 Image(systemName: "gear")
                                 Text("Open Settings")
                             }
-                            .font(.system(size: 16, weight: .medium))
+                            .font(.callout)
                             .foregroundColor(.white)
                             .padding(.horizontal, 24)
                             .padding(.vertical, 12)

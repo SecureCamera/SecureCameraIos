@@ -253,7 +253,7 @@ struct CameraContainerView: View {
         Button(action: { nav.navigate(to: .gallery) }) {
             ZStack {
                 Image(systemName: "photo.on.rectangle")
-                    .font(.system(size: 24))
+                    .font(.title2)
                     .foregroundColor(
                         (cameraModel.isSavingPhoto || cameraModel.isRecording || cameraModel.isEncryptingVideo)
                             ? .gray : .white
@@ -277,7 +277,7 @@ struct CameraContainerView: View {
     private var settingsButton: some View {
         Button(action: { nav.navigate(to: .settings) }) {
             Image(systemName: "gear")
-                .font(.system(size: 24))
+                .font(.title2)
                 .foregroundColor((cameraModel.isRecording || cameraModel.isEncryptingVideo) ? .gray : .white)
                 .padding()
                 .background(Color.black.opacity(0.6))
