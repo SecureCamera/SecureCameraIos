@@ -90,7 +90,7 @@ struct ContentView: View {
 
     private func shouldHideNavigationBar(for destination: AppDestination) -> Bool {
         switch destination {
-        case .gallery, .photoObfuscation, .settings, .videoExportTest:
+        case .gallery, .photoObfuscation, .settings, .videoExportTest, .photoInfo:
             return false
         case .videoPlayer:
             return true
