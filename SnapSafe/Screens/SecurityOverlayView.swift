@@ -77,20 +77,21 @@ private struct ScreenRecordingBlockerContent: View {
                 .font(.system(size: 80))
                 .foregroundColor(.red)
                 .padding(.top, 60)
+                .accessibilityHidden(true)
             
             // Warning message
             Text("Screen Recording Detected")
-                .font(.system(size: 24, weight: .bold))
+                .font(.title2.bold())
                 .foregroundColor(.white)
             
             Text("For privacy and security reasons, screen recording is not allowed in SnapSafe.")
-                .font(.system(size: 16))
+                .font(.callout)
                 .foregroundColor(.gray)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
             
             Text("Please stop recording to continue using the app.")
-                .font(.system(size: 16, weight: .semibold))
+                .font(.callout.bold())
                 .foregroundColor(.white)
                 .padding(.top, 20)
             
@@ -118,17 +119,18 @@ private struct PrivacyShieldContent: View {
                 .font(.system(size: 100))
                 .foregroundColor(.white)
                 .padding(.top, 60)
-            
+                .accessibilityHidden(true)
+
             // App name
             Text("SnapSafe")
-                .font(.system(size: 32, weight: .bold))
+                .font(.largeTitle.bold())
                 .foregroundColor(.white)
-            
+
             // Privacy message
             Text("The camera app that minds its own business.")
-                .font(.system(size: 20, weight: .medium))
+                .font(.title3)
                 .foregroundColor(.gray)
-            
+
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -191,7 +193,8 @@ struct ScreenshotTakenView: View {
             HStack(spacing: 15) {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .foregroundColor(.yellow)
-                    .font(.system(size: 24))
+                    .font(.title2)
+                    .accessibilityHidden(true)
                 
                 Text("Screenshot Captured")
                     .font(.system(size: 16, weight: .semibold))

@@ -24,6 +24,7 @@ struct PrivacyShield: View {
                     .font(.system(size: 100))
                     .foregroundColor(.white)
                     .padding(.top, 60)
+                    .accessibilityHidden(true)
                 
                 // App name
                 Text("SnapSafe")
