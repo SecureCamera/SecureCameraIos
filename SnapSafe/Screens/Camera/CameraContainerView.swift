@@ -19,6 +19,8 @@ struct CameraContainerView: View {
     @State private var showZoomSlider = false
     @State private var isPinching = false
     @State private var isLandscape = false
+    @State private var shutterFeedbackTrigger = 0
+    @State private var zoomResetTrigger = 0
 
     var body: some View {
         ZStack {
@@ -233,6 +235,7 @@ struct CameraContainerView: View {
         .accessibilityLabel(String(format: "Zoom: %.1f×", cameraModel.zoomFactor))
         .accessibilityHint("Double-tap to reset zoom. Single-tap to open slider.")
         .accessibilityAddTraits(.isButton)
+        .sensoryFeedback(.impact(weight: .medium), trigger: zoomResetTrigger)
     }
 
     private var modePicker: some View {
@@ -307,7 +310,7 @@ struct CameraContainerView: View {
 
     private var photoShutterButton: some View {
         Button(action: {
-            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            shutterFeedbackTrigger += 1
             triggerShutterEffect()
             cameraModel.capturePhoto()
         }) {
@@ -328,14 +331,13 @@ struct CameraContainerView: View {
             .padding()
         }
         .disabled(!cameraModel.isPermissionGranted)
+        .sensoryFeedback(.impact(weight: .medium), trigger: shutterFeedbackTrigger)
         .accessibilityLabel("Take photo")
         .accessibilityHint(cameraModel.isPermissionGranted ? "" : "Camera access required")
     }
 
     private var videoRecordButton: some View {
         Button(action: {
-            let style: UIImpactFeedbackGenerator.FeedbackStyle = cameraModel.isRecording ? .medium : .heavy
-            UIImpactFeedbackGenerator(style: style).impactOccurred()
             cameraModel.toggleRecording()
         }) {
             ZStack {
@@ -360,6 +362,12 @@ struct CameraContainerView: View {
             .padding()
         }
         .disabled(!cameraModel.isPermissionGranted)
+        .sensoryFeedback(.impact(weight: .heavy), trigger: cameraModel.isRecording) { old, new in
+            old == false && new == true
+        }
+        .sensoryFeedback(.impact(weight: .medium), trigger: cameraModel.isRecording) { old, new in
+            old == true && new == false
+        }
         .accessibilityLabel(cameraModel.isRecording ? "Stop recording" : "Start recording")
         .accessibilityHint(cameraModel.isPermissionGranted ? "" : "Camera access required")
     }
@@ -378,8 +386,7 @@ struct CameraContainerView: View {
 
     private func handleDoubleTabZoomIndicator() {
         cameraModel.resetZoomLevel()
-        let generator = UIImpactFeedbackGenerator(style: .medium)
-        generator.impactOccurred()
+        zoomResetTrigger += 1
     }
 
     private func formatDuration(_ milliseconds: Int64) -> String {
