@@ -20,6 +20,7 @@ struct EmptyGalleryView: View {
             Text("No photos yet")
                 .font(.title)
                 .foregroundColor(.secondary)
+                .accessibilityLabel("Gallery is empty. Use the camera to take your first photo.")
         }
     }
 }
@@ -334,5 +335,8 @@ struct VideoCellView: View {
             }
         }
         .buttonStyle(PlainButtonStyle())
+        .accessibilityLabel("Video: \(item.mediaName)")
+        .accessibilityHint(isSelecting ? "Double-tap to \(isSelected ? "deselect" : "select")" : "Double-tap to open")
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 }

@@ -38,7 +38,6 @@ struct PhotoCell: View {
                 .frame(width: cellSize, height: cellSize)
                 .clipped() // Clip any overflow
                 .cornerRadius(10)
-                .onTapGesture(perform: onTap)
                 .overlay(
                     RoundedRectangle(cornerRadius: 10)
                         .stroke(isSelected ? Color.blue : Color.clear, lineWidth: 3)
@@ -81,7 +80,14 @@ struct PhotoCell: View {
                     }
                 }
             }
-        }.task {
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Photo: \(photo.photoName)")
+        .accessibilityHint(isSelecting ? "Double-tap to \(isSelected ? "deselect" : "select")" : "Double-tap to open")
+        .accessibilityAddTraits(isSelected ? [.isSelected, .isButton] : [.isButton])
+        .accessibilityActivationPoint(.center)
+        .onTapGesture(perform: onTap)
+        .task {
             thumbnail = await self.secureImageRepository.readThumbnail(photo)
             isDecoy = secureImageRepository.isDecoyPhoto(photo)
         }
