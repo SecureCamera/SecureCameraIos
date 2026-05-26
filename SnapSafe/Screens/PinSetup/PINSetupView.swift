@@ -30,6 +30,7 @@ struct PINSetupView: View {
                         .font(.system(size: 70))
                         .foregroundColor(.blue)
                         .padding(.top, 50)
+                        .accessibilityHidden(true)
                     
                     Text("Set Up Security PIN")
                         .font(.largeTitle)

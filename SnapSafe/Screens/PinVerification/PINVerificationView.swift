@@ -19,6 +19,7 @@ struct PINVerificationView: View {
                 .font(.system(size: 70))
                 .foregroundColor(.blue)
                 .padding(.top, 50)
+                .accessibilityHidden(true)   // decorative — text labels provide context
             
             Text("SnapSafe")
                 .foregroundColor(.primary)
@@ -88,12 +89,15 @@ struct PINVerificationView: View {
             }
             .disabled(viewModel.isUnlockButtonDisabled)
             .padding(.top, 20)
+            .accessibilityLabel(viewModel.unlockButtonText)
+            .accessibilityHint(viewModel.isLastAttempt ? "Warning: one attempt remaining before data wipe" : "")
             
             if viewModel.shouldShowAttemptsWarning {
                 Text("10 failed attempts will result in a full data wipe.\nALL PHOTOS WILL BE LOST!")
                     .foregroundColor(.red)
                     .font(.callout)
                     .padding(.top, 5)
+                    .accessibilityLabel("Warning: 10 failed attempts will result in a full data wipe. All photos will be lost.")
             }
             
             Spacer()
