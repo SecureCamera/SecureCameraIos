@@ -13,6 +13,14 @@ import FactoryKit
 import Logging
 import CryptoKit
 
+/// Gallery selection modes.
+enum SelectionMode {
+    case none
+    case share
+    case delete
+    case decoy
+}
+
 /// Enhanced gallery view model that supports both photos and videos.
 @MainActor
 final class MixedMediaGalleryViewModel: ObservableObject {
