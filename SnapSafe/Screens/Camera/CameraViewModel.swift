@@ -484,6 +484,14 @@ class CameraViewModel: NSObject, ObservableObject {
                 let keyData = try await encryptionScheme.getDerivedKey()
                 let symmetricKey = SymmetricKey(data: keyData)
 
+                // Generate the gallery thumbnail from the plaintext .mov now,
+                // while it still exists (it is deleted after encryption).
+                let videoName = movURL.deletingPathExtension().lastPathComponent
+                await secureImageRepository.generateAndStoreVideoThumbnail(
+                    forVideoNamed: videoName,
+                    fromPlaintextVideo: movURL
+                )
+
                 // Build .secv output path alongside the .mov
                 let secvURL = movURL.deletingPathExtension().appendingPathExtension(SECVFileFormat.FILE_EXTENSION)
 

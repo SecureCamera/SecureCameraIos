@@ -182,4 +182,8 @@ final class VideoTestableSecureImageRepository: SecureImageRepository {
     override func getVideosDirectory() -> URL {
         testDirectory.appendingPathComponent(SecureImageRepository.videosDir)
     }
+
+    override func getVideoThumbnailsDirectory() -> URL {
+        testDirectory.appendingPathComponent(SecureImageRepository.videoThumbnailsDir)
+    }
 }
