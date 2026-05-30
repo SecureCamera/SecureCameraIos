@@ -142,13 +142,23 @@ extension Container {
     var secureImageRepository: Factory<SecureImageRepository> {
         self { @MainActor in SecureImageRepository(
             thumbnailCache: self.thumbnailCache(),
-            encryptionScheme: self.encryptionScheme()
+            encryptionScheme: self.encryptionScheme(),
+            videoEncryptionService: self.videoEncryptionService()
         ) }.singleton
     }
-    
+
     @MainActor
     var addDecoyPhotoUseCase: Factory<AddDecoyPhotoUseCase> {
         self { @MainActor in AddDecoyPhotoUseCase(
+            pinRepository: self.pinRepository(),
+            encryptionScheme: self.encryptionScheme(),
+            imageRepository: self.secureImageRepository()
+        ) }
+    }
+
+    @MainActor
+    var addDecoyVideoUseCase: Factory<AddDecoyVideoUseCase> {
+        self { @MainActor in AddDecoyVideoUseCase(
             pinRepository: self.pinRepository(),
             encryptionScheme: self.encryptionScheme(),
             imageRepository: self.secureImageRepository()
