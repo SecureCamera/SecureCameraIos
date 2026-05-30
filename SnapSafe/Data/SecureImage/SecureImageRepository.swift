@@ -12,6 +12,7 @@ import CoreLocation
 import UniformTypeIdentifiers
 import ImageIO
 import CryptoKit
+import AVFoundation
 
 @MainActor
 public class SecureImageRepository {
@@ -21,6 +22,7 @@ public class SecureImageRepository {
     static let photosDir = "photos"
     static let decoysDir = "decoys"
     static let videosDir = "videos"
+    static let videoThumbnailsDir = "videoThumbnails"
     static let thumbnailsDir = ".thumbnails"
     static let maxDecoyPhotos = 10
     
@@ -95,6 +97,27 @@ public class SecureImageRepository {
         return videosDir
     }
 
+    /// Durable, encrypted storage for video thumbnails. Unlike photo thumbnails
+    /// (regenerated from the encrypted photo on demand), video thumbnails are
+    /// generated once at record time from the plaintext `.mov` and cannot be
+    /// recreated afterwards, so they live in Application Support rather than the
+    /// purgeable caches directory.
+    func getVideoThumbnailsDirectory() -> URL {
+        let appSupportPath = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        var dir = appSupportPath.appendingPathComponent(Self.videoThumbnailsDir)
+
+        do {
+            try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true, attributes: nil)
+            var resourceValues = URLResourceValues()
+            resourceValues.isExcludedFromBackup = true
+            try dir.setResourceValues(resourceValues)
+        } catch {
+            Logger.storage.error("Failed to setup video thumbnails directory: \(error)")
+        }
+
+        return dir
+    }
+
     private func getThumbnailsDirectory() -> URL {
         let cachesPath = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
         let thumbnailsDir = cachesPath.appendingPathComponent(Self.thumbnailsDir)
@@ -116,6 +139,7 @@ public class SecureImageRepository {
     /// Deletes all images and thumbnails and evicts all in-memory data.
     func securityFailureReset() {
         deleteAllImages()
+        deleteAllVideoThumbnails()
         clearAllThumbnails()
         evictKey()
     }
@@ -126,6 +150,9 @@ public class SecureImageRepository {
         // intact (deleteNonDecoyImages() consumes and removes that directory).
         deleteNonDecoyVideos()
         deleteNonDecoyImages()
+        // Video thumbnails are derived from real video frames; destroy them all.
+        // (Decoy videos fall back to the placeholder icon after the pill.)
+        deleteAllVideoThumbnails()
         clearAllThumbnails()
         evictKey()
     }
@@ -613,6 +640,88 @@ public class SecureImageRepository {
             return true
         } catch {
             return false
+        }
+    }
+
+    // MARK: - Video Thumbnails
+
+    private func getVideoThumbnailFile(forVideoNamed name: String) -> URL {
+        return getVideoThumbnailsDirectory().appendingPathComponent(name).appendingPathExtension("jpg")
+    }
+
+    /// Generates a thumbnail from a plaintext video file (e.g. the temporary
+    /// `.mov` that exists at record time) and stores it encrypted. Call this
+    /// while the plaintext file still exists; the thumbnail cannot be recreated
+    /// once the video is encrypted and the plaintext is deleted.
+    func generateAndStoreVideoThumbnail(forVideoNamed name: String, fromPlaintextVideo url: URL) async {
+        guard let image = await Self.generateThumbnail(fromVideoAt: url) else {
+            Logger.storage.error("Failed to generate video thumbnail", metadata: ["video": .string(name)])
+            return
+        }
+        await storeVideoThumbnail(image, forVideoNamed: name)
+    }
+
+    /// Stores an already-generated thumbnail image, encrypted with the current key.
+    func storeVideoThumbnail(_ image: UIImage, forVideoNamed name: String) async {
+        guard let jpeg = image.jpegData(compressionQuality: 0.7) else { return }
+        do {
+            let dir = getVideoThumbnailsDirectory()
+            if !FileManager.default.fileExists(atPath: dir.path) {
+                try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            }
+            let file = dir.appendingPathComponent(name).appendingPathExtension("jpg")
+            try await encryptionScheme.encryptToFile(plain: jpeg, targetFile: file)
+            thumbnailCache.putVideoThumbnail(name, image)
+        } catch {
+            Logger.storage.error("Failed to store video thumbnail: \(error)")
+        }
+    }
+
+    /// Reads (and decrypts) a video's thumbnail, if one exists.
+    func readVideoThumbnail(_ videoDef: VideoDef) async -> UIImage? {
+        if let cached = thumbnailCache.getVideoThumbnail(videoDef.videoName) {
+            return cached
+        }
+        let file = getVideoThumbnailFile(forVideoNamed: videoDef.videoName)
+        guard FileManager.default.fileExists(atPath: file.path) else { return nil }
+        do {
+            let data = try await encryptionScheme.decryptFile(file)
+            guard let image = UIImage(data: data) else { return nil }
+            thumbnailCache.putVideoThumbnail(videoDef.videoName, image)
+            return image
+        } catch {
+            Logger.storage.error("Failed to read video thumbnail: \(error)")
+            return nil
+        }
+    }
+
+    func deleteVideoThumbnail(forVideoNamed name: String) {
+        thumbnailCache.evictVideoThumbnail(name)
+        try? FileManager.default.removeItem(at: getVideoThumbnailFile(forVideoNamed: name))
+    }
+
+    /// Removes all video thumbnails. Used on poison-pill activation and security
+    /// reset — these thumbnails are derived from real video frames and must be
+    /// destroyed along with the videos themselves.
+    func deleteAllVideoThumbnails() {
+        try? FileManager.default.removeItem(at: getVideoThumbnailsDirectory())
+    }
+
+    private static func generateThumbnail(fromVideoAt url: URL) async -> UIImage? {
+        let asset = AVURLAsset(url: url)
+        let generator = AVAssetImageGenerator(asset: asset)
+        generator.appliesPreferredTrackTransform = true
+        generator.maximumSize = CGSize(width: 600, height: 600)
+        // Allow some tolerance so very short clips still yield a frame.
+        generator.requestedTimeToleranceBefore = CMTime(seconds: 1, preferredTimescale: 600)
+        generator.requestedTimeToleranceAfter = CMTime(seconds: 1, preferredTimescale: 600)
+
+        do {
+            let result = try await generator.image(at: CMTime(seconds: 0, preferredTimescale: 600))
+            return UIImage(cgImage: result.image)
+        } catch {
+            Logger.storage.error("AVAssetImageGenerator failed: \(error)")
+            return nil
         }
     }
 

@@ -347,6 +347,8 @@ final class MixedMediaGalleryViewModel: ObservableObject {
                     secureImageRepository.deleteImage(photoDef)
                 } else if let videoDef = mediaItem.videoDef {
                     try? FileManager.default.removeItem(at: videoDef.videoFile)
+                    secureImageRepository.deleteVideoThumbnail(forVideoNamed: videoDef.videoName)
+                    _ = secureImageRepository.removeDecoyVideo(videoDef)
                 }
             }
 

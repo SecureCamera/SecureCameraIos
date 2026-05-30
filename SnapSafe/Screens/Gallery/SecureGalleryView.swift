@@ -9,6 +9,7 @@ import PhotosUI
 import SwiftUI
 import Logging
 import CryptoKit
+import FactoryKit
 
 
 // Empty state view when no media exist
@@ -313,37 +314,63 @@ struct VideoCellView: View {
     let isSelecting: Bool
     let onTap: () -> Void
 
+    @Injected(\.secureImageRepository)
+    private var secureImageRepository: SecureImageRepository
+
+    @State private var thumbnail: UIImage? = nil
+    @State private var isDecoy: Bool = false
+
+    private let cellSize: CGFloat = 100
+
     var body: some View {
         Button(action: onTap) {
             ZStack {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color(.systemGray5))
-                    .aspectRatio(1, contentMode: .fit)
-
-                VStack(spacing: 8) {
-                    Image(systemName: "video.fill")
-                        .font(.title)
-                        .foregroundStyle(.secondary)
-
-                    Text(item.mediaName)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
+                // Thumbnail (or placeholder while loading / when unavailable)
+                ZStack {
+                    if let thumbnail {
+                        Image(uiImage: thumbnail)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                    } else {
+                        Color(.systemGray5)
+                        Image(systemName: "video.fill")
+                            .font(.title)
+                            .foregroundStyle(.secondary)
+                    }
                 }
+                .frame(width: cellSize, height: cellSize)
+                .clipped()
+                .clipShape(.rect(cornerRadius: 8))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(isSelected ? Color.blue : Color.clear, lineWidth: 3)
+                )
 
-                // Video badge
+                // Play badge (top-trailing) marks the item as a video
                 VStack {
                     HStack {
                         Spacer()
-                        Image(systemName: "film")
-                            .font(.caption)
+                        Image(systemName: "play.circle.fill")
+                            .font(.title3)
                             .foregroundStyle(.white)
-                            .padding(4)
-                            .background(Color.black.opacity(0.6))
-                            .clipShape(.rect(cornerRadius: 4))
+                            .shadow(radius: 2)
                             .padding(4)
                     }
                     Spacer()
+                }
+
+                // Decoy indicator (bottom-leading)
+                if isDecoy {
+                    VStack {
+                        Spacer()
+                        HStack {
+                            Image(systemName: "shield.fill")
+                                .font(.callout)
+                                .foregroundStyle(.white.opacity(0.75))
+                                .padding(5)
+                            Spacer()
+                        }
+                    }
                 }
 
                 // Selection checkmark overlay
@@ -361,10 +388,17 @@ struct VideoCellView: View {
                     }
                 }
             }
+            .frame(width: cellSize, height: cellSize)
         }
         .buttonStyle(PlainButtonStyle())
         .accessibilityLabel("Video: \(item.mediaName)")
         .accessibilityHint(isSelecting ? "Double-tap to \(isSelected ? "deselect" : "select")" : "Double-tap to open")
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+        .task {
+            if let videoDef = item.videoDef {
+                thumbnail = await secureImageRepository.readVideoThumbnail(videoDef)
+                isDecoy = secureImageRepository.isDecoyVideo(videoDef)
+            }
+        }
     }
 }
