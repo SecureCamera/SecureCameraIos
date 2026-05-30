@@ -246,14 +246,23 @@ final class VideoEncryptionService: VideoEncryptionServiceProtocol {
         var chunksProcessed: UInt64 = 0
 
         for chunkIndex in 0..<trailer.totalChunks {
-            // Calculate chunk position
+            // Calculate chunk position. Every chunk before the last occupies a
+            // full-size slot (chunkSize + IV + tag), so this offset is correct
+            // even though the final chunk's data may be smaller.
+            let fullChunkSize = UInt64(trailer.chunkSize)
             let chunkDataSize = Int(trailer.chunkSize) + SECVFileFormat.IV_SIZE + SECVFileFormat.AUTH_TAG_SIZE
             let chunkStart = UInt64(chunkIndex) * UInt64(chunkDataSize)
+
+            // The final chunk is usually smaller than chunkSize. AES-GCM ciphertext
+            // has the same length as the plaintext, so read only this chunk's real
+            // size — reading a full chunkSize would swallow the auth tag (and the
+            // index/trailer) and fail with fileIOError.
+            let thisChunkSize = min(fullChunkSize, trailer.originalSize - UInt64(chunkIndex) * fullChunkSize)
 
             // Read IV + ciphertext + auth tag
             try inputFile.seek(toOffset: chunkStart)
             let ivData = try inputFile.read(upToCount: SECVFileFormat.IV_SIZE)
-            let ciphertextData = try inputFile.read(upToCount: Int(trailer.chunkSize))
+            let ciphertextData = try inputFile.read(upToCount: Int(thisChunkSize))
             let tagData = try inputFile.read(upToCount: SECVFileFormat.AUTH_TAG_SIZE)
 
             guard let ivData = ivData, ivData.count == SECVFileFormat.IV_SIZE,
