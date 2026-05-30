@@ -53,8 +53,7 @@ struct SecureGalleryView: View {
             Group {
                 if viewModel.mediaItems.isEmpty {
                     EmptyGalleryView(onDismiss: {
-                        onDismiss?()
-                        dismiss()
+                        if let onDismiss { onDismiss() } else { dismiss() }
                     })
                 } else {
                     mediaGridView
@@ -89,8 +88,7 @@ struct SecureGalleryView: View {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(action: {
                         viewModel.exitDecoyMode()
-                        onDismiss?()
-                        dismiss()
+                        if let onDismiss { onDismiss() } else { dismiss() }
                     }) {
                         HStack {
                             Image(systemName: "chevron.left")
@@ -233,8 +231,7 @@ struct SecureGalleryView: View {
                 Button("Cancel", role: .cancel) {}
                 Button("Save") {
                     viewModel.saveDecoySelections()
-                    onDismiss?()
-                    dismiss()
+                    if let onDismiss { onDismiss() } else { dismiss() }
                 }
             },
             message: {
