@@ -19,6 +19,7 @@ public class SecureImageRepository {
     
     static let photosDir = "photos"
     static let decoysDir = "decoys"
+    static let videosDir = "videos"
     static let thumbnailsDir = ".thumbnails"
     static let maxDecoyPhotos = 10
     
@@ -70,6 +71,23 @@ public class SecureImageRepository {
         return decoyDir
     }
     
+    func getVideosDirectory() -> URL {
+        let appSupportPath = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        var videosDir = appSupportPath.appendingPathComponent(Self.videosDir)
+
+        // Create directory and exclude from backup
+        do {
+            try FileManager.default.createDirectory(at: videosDir, withIntermediateDirectories: true, attributes: nil)
+            var resourceValues = URLResourceValues()
+            resourceValues.isExcludedFromBackup = true
+            try videosDir.setResourceValues(resourceValues)
+        } catch {
+            Logger.storage.error("Failed to setup videos directory: \(error)")
+        }
+
+        return videosDir
+    }
+
     private func getThumbnailsDirectory() -> URL {
         let cachesPath = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
         let thumbnailsDir = cachesPath.appendingPathComponent(Self.thumbnailsDir)
@@ -97,6 +115,9 @@ public class SecureImageRepository {
     
     /// Deletes all images that haven't been flagged as benign
     func activatePoisonPill() {
+        // Delete non-decoy videos first, while the decoy directory is still
+        // intact (deleteNonDecoyImages() consumes and removes that directory).
+        deleteNonDecoyVideos()
         deleteNonDecoyImages()
         clearAllThumbnails()
         evictKey()
@@ -436,7 +457,39 @@ public class SecureImageRepository {
         // Remove decoy directory
         try? FileManager.default.removeItem(at: getDecoyDirectory())
     }
-    
+
+    /// Deletes all videos that haven't been flagged as decoys.
+    ///
+    /// Videos live in a separate directory from photos, so wiping the photo
+    /// gallery alone leaves them intact. A video is treated as a decoy only if
+    /// a file with the same name exists in the decoy directory; everything else
+    /// is destroyed. (Decoy selection is currently photo-only, so in practice
+    /// every video is destroyed.)
+    ///
+    /// Must run before `deleteNonDecoyImages()`, which removes the decoy
+    /// directory used for the decoy check here.
+    private func deleteNonDecoyVideos() {
+        let videosDir = getVideosDirectory()
+        let decoyDir = getDecoyDirectory()
+
+        guard FileManager.default.fileExists(atPath: videosDir.path) else { return }
+
+        do {
+            let files = try FileManager.default.contentsOfDirectory(at: videosDir, includingPropertiesForKeys: nil)
+            for file in files {
+                let decoyEquivalent = decoyDir.appendingPathComponent(file.lastPathComponent)
+                let isDecoy = FileManager.default.fileExists(atPath: decoyEquivalent.path)
+                if !isDecoy {
+                    try? FileManager.default.removeItem(at: file)
+                }
+            }
+        } catch {
+            Logger.storage.error("Failed to delete non-decoy videos during poison pill activation", metadata: [
+                "error": .string(error.localizedDescription)
+            ])
+        }
+    }
+
     // MARK: - Decoy Operations
     
     private func getDecoyFile(_ photoDef: PhotoDef) -> URL {
