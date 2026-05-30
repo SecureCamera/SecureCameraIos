@@ -64,7 +64,7 @@ final class FakeEncryptionScheme: EncryptionScheme {
         // No-op for testing
     }
     
-    func securityFailureReset() async throws {
+    func securityFailureReset() async {
         // No-op for testing
     }
     
