@@ -40,6 +40,12 @@ final class MixedMediaGalleryViewModel: ObservableObject {
     @Published var showDecoyConfirmation: Bool = false
     @Published var isPoisonPillConfigured: Bool = false
 
+    /// Set while `saveDecoySelections()` is running. Decoy videos are re-encrypted
+    /// with the poison-pill key, which can take a while for large videos.
+    @Published var isSavingDecoys: Bool = false
+    @Published var decoySaveTotal: Int = 0
+    @Published var decoySaveCompleted: Int = 0
+
     // MARK: - Dependencies
 
     @Injected(\.secureImageRepository)
@@ -156,7 +162,7 @@ final class MixedMediaGalleryViewModel: ObservableObject {
     }
 
     var isSaveDecoyButtonDisabled: Bool {
-        selectedMediaIds.isEmpty
+        selectedMediaIds.isEmpty || isSavingDecoys
     }
 
     var deleteAlertTitle: String {
@@ -404,37 +410,51 @@ final class MixedMediaGalleryViewModel: ObservableObject {
 
     // MARK: - Decoy Operations
 
-    func saveDecoySelections() {
-        Task {
-            for item in mediaItems {
-                let isCurrentlySelected = selectedMediaIds.contains(item.id)
+    func saveDecoySelections() async {
+        // Only items whose decoy state actually changes need work.
+        let pending = mediaItems.filter { selectedMediaIds.contains($0.id) != isItemDecoy($0) }
 
-                if let photoDef = item.photoDef {
-                    let isCurrentlyDecoy = secureImageRepository.isDecoyPhoto(photoDef)
-                    if isCurrentlyDecoy && !isCurrentlySelected {
-                        _ = removeDecoyPhotoUseCase.removeDecoyPhoto(photoDef)
-                    } else if isCurrentlySelected && !isCurrentlyDecoy {
-                        let success = await addDecoyPhotoUseCase.addDecoyPhoto(photoDef: photoDef)
-                        if !success {
-                            Logger.ui.error("Failed to add decoy photo")
-                        }
+        guard !pending.isEmpty else {
+            selectionMode = .none
+            selectedMediaIds.removeAll()
+            return
+        }
+
+        decoySaveTotal = pending.count
+        decoySaveCompleted = 0
+        isSavingDecoys = true
+        // Give SwiftUI a beat to paint the overlay (and start the spinner
+        // animation) before the synchronous re-encryption work begins.
+        try? await Task.sleep(nanoseconds: 50_000_000)
+
+        for item in pending {
+            let isSelected = selectedMediaIds.contains(item.id)
+
+            if let photoDef = item.photoDef {
+                if isSelected {
+                    if await addDecoyPhotoUseCase.addDecoyPhoto(photoDef: photoDef) == false {
+                        Logger.ui.error("Failed to add decoy photo")
                     }
-                } else if let videoDef = item.videoDef {
-                    let isCurrentlyDecoy = secureImageRepository.isDecoyVideo(videoDef)
-                    if isCurrentlyDecoy && !isCurrentlySelected {
-                        _ = secureImageRepository.removeDecoyVideo(videoDef)
-                    } else if isCurrentlySelected && !isCurrentlyDecoy {
-                        let success = await addDecoyVideoUseCase.addDecoyVideo(videoDef: videoDef)
-                        if !success {
-                            Logger.ui.error("Failed to add decoy video")
-                        }
+                } else {
+                    _ = removeDecoyPhotoUseCase.removeDecoyPhoto(photoDef)
+                }
+            } else if let videoDef = item.videoDef {
+                if isSelected {
+                    if await addDecoyVideoUseCase.addDecoyVideo(videoDef: videoDef) == false {
+                        Logger.ui.error("Failed to add decoy video")
                     }
+                } else {
+                    _ = secureImageRepository.removeDecoyVideo(videoDef)
                 }
             }
 
-            selectionMode = .none
-            selectedMediaIds.removeAll()
+            decoySaveCompleted += 1
+            await Task.yield()
         }
+
+        isSavingDecoys = false
+        selectionMode = .none
+        selectedMediaIds.removeAll()
     }
 
     // MARK: - Sharing Operations

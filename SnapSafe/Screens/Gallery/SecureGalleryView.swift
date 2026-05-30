@@ -79,6 +79,34 @@ struct SecureGalleryView: View {
                         .shadow(radius: 5)
                 )
             }
+
+            // Decoy save / re-encryption overlay
+            if viewModel.isSavingDecoys {
+                Color.black.opacity(0.25)
+                    .ignoresSafeArea()
+
+                VStack(spacing: 12) {
+                    ProgressView()
+                        .controlSize(.large)
+
+                    Text("Saving decoy media…")
+                        .font(.callout)
+
+                    if viewModel.decoySaveTotal > 1 {
+                        Text("\(viewModel.decoySaveCompleted) of \(viewModel.decoySaveTotal)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .padding(24)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color(.systemBackground))
+                        .shadow(radius: 5)
+                )
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Saving decoy media")
+            }
         }
         .navigationTitle(viewModel.navigationTitle)
         .navigationBarTitleDisplayMode(.inline)
@@ -95,6 +123,7 @@ struct SecureGalleryView: View {
                             Text("Back")
                         }
                     }
+                    .disabled(viewModel.isSavingDecoys)
                 }
             }
 
@@ -230,8 +259,10 @@ struct SecureGalleryView: View {
             actions: {
                 Button("Cancel", role: .cancel) {}
                 Button("Save") {
-                    viewModel.saveDecoySelections()
-                    if let onDismiss { onDismiss() } else { dismiss() }
+                    Task {
+                        await viewModel.saveDecoySelections()
+                        if let onDismiss { onDismiss() } else { dismiss() }
+                    }
                 }
             },
             message: {
