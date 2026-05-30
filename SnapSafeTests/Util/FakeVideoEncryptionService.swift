@@ -30,12 +30,29 @@ final class FakeVideoEncryptionService: VideoEncryptionServiceProtocol {
 
     func decryptVideoForSharing(inputURL: URL, outputURL: URL, encryptionKey: SymmetricKey) async throws {
         decryptForSharingCalled = true
+        try requireExistingOutput(outputURL)
         try Self.decryptedMarker.write(to: outputURL)
     }
 
     func encryptVideoForDecoy(inputURL: URL, outputURL: URL, encryptionKey: SymmetricKey) async throws {
         encryptForDecoyCalled = true
+        try requireExistingOutput(outputURL)
         try Self.reEncryptedMarker.write(to: outputURL)
+    }
+
+    /// The real `VideoEncryptionService` opens its output with
+    /// `FileHandle(forWritingTo:)`, which requires the file to already exist.
+    /// Model that precondition so tests catch callers that forget to pre-create
+    /// the output file.
+    private func requireExistingOutput(_ outputURL: URL) throws {
+        guard FileManager.default.fileExists(atPath: outputURL.path) else {
+            throw NSError(
+                domain: "FakeVideoEncryptionService",
+                code: 1,
+                userInfo: [NSLocalizedDescriptionKey:
+                    "output file must exist before writing: \(outputURL.lastPathComponent)"]
+            )
+        }
     }
 
     func validateSECVFile(fileURL: URL) -> Bool { true }
