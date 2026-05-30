@@ -14,7 +14,7 @@ final class SECVFileFormatTests: XCTestCase {
         // Create a test trailer
         let trailer = SECVFileFormat.SecvTrailer(
             version: SECVFileFormat.VERSION,
-            chunkSize: SECVFileFormat.DEFAULT_CHUNK_SIZE,
+            chunkSize: UInt32(SECVFileFormat.DEFAULT_CHUNK_SIZE),
             totalChunks: 42,
             originalSize: 10485760 // 10MB
         )
@@ -39,7 +39,7 @@ final class SECVFileFormatTests: XCTestCase {
         // Create a test chunk index entry
         let entry = SECVFileFormat.ChunkIndexEntry(
             offset: 1048576,
-            encryptedSize: 1048576 + SECVFileFormat.IV_SIZE + SECVFileFormat.AUTH_TAG_SIZE
+            encryptedSize: UInt32(1048576 + SECVFileFormat.IV_SIZE + SECVFileFormat.AUTH_TAG_SIZE)
         )
 
         // Convert to data
@@ -78,7 +78,7 @@ final class SECVFileFormatTests: XCTestCase {
         // Test with a 10MB file and 10 chunks
         let fileSize: UInt64 = 10_485_760
         let totalChunks: UInt64 = 10
-        let indexTablePosition = SECVFileFormat.calculateIndexTablePosition(fileSize: fileSize, totalChunks: totalChunks)
+        let indexTablePosition = SECVFileFormat.calculateIndexTablePosition(fileLength: fileSize, totalChunks: totalChunks)
         
         let expectedPosition = fileSize - UInt64(SECVFileFormat.TRAILER_SIZE) - (totalChunks * UInt64(SECVFileFormat.CHUNK_INDEX_ENTRY_SIZE))
         XCTAssertEqual(indexTablePosition, expectedPosition, "Index table position calculation should be correct")
@@ -87,7 +87,7 @@ final class SECVFileFormatTests: XCTestCase {
     func testPlaintextOffsetCalculation() {
         // Test offset calculation for chunk index 5 with 1MB chunks
         let chunkIndex: UInt64 = 5
-        let chunkSize: UInt32 = SECVFileFormat.DEFAULT_CHUNK_SIZE
+        let chunkSize: UInt32 = UInt32(SECVFileFormat.DEFAULT_CHUNK_SIZE)
         let offset = SECVFileFormat.calculatePlaintextOffset(chunkIndex: chunkIndex, chunkSize: chunkSize)
         
         let expectedOffset = chunkIndex * UInt64(chunkSize)

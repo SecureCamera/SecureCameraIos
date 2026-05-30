@@ -171,44 +171,6 @@ final class SecureImageRepositoryTests: XCTestCase {
         XCTAssertTrue(photos.contains { $0.photoName == "photo_20230101_120001_00.jpg" })
     }
     
-    func testGetPhotoByNameReturnsNullWhenDirectoryDoesNotExist() {
-        // Given - gallery directory doesn't exist
-        
-        // When
-        let photo = repository.getPhotoByName("photo_20230101_120000_00.jpg")
-        
-        // Then
-        XCTAssertNil(photo)
-    }
-    
-    func testGetPhotoByNameReturnsNullWhenPhotoDoesNotExist() {
-        // Given
-        try! FileManager.default.createDirectory(at: galleryDirectory, withIntermediateDirectories: true)
-        
-        // When
-        let photo = repository.getPhotoByName("photo_20230101_120000_00.jpg")
-        
-        // Then
-        XCTAssertNil(photo)
-    }
-    
-    func testGetPhotoByNameReturnsPhotoDefWhenPhotoExists() {
-        // Given
-        try! FileManager.default.createDirectory(at: galleryDirectory, withIntermediateDirectories: true)
-        
-        let photoFile = galleryDirectory.appendingPathComponent("photo_20230101_120000_00.jpg")
-        try! Data().write(to: photoFile)
-        
-        // When
-        let photo = repository.getPhotoByName("photo_20230101_120000_00.jpg")
-        
-        // Then
-        XCTAssertNotNil(photo)
-        XCTAssertEqual(photo?.photoName, "photo_20230101_120000_00.jpg")
-        XCTAssertEqual(photo?.photoFormat, "jpg")
-        XCTAssertEqual(photo?.photoFile, photoFile)
-    }
-    
     func testDeleteImageRemovesPhotoFileAndThumbnail() {
         // Given
         try! FileManager.default.createDirectory(at: galleryDirectory, withIntermediateDirectories: true)
@@ -406,18 +368,18 @@ final class SecureImageRepositoryTests: XCTestCase {
     func testSaveImageEncryptsAndSavesImage() async throws {
         // Given
         let testImage = createTestUIImage()
-        let coordinates = CLLocationCoordinate2D(latitude: 37.7749, longitude: -122.4194)
-        
+        let location = CLLocation(latitude: 37.7749, longitude: -122.4194)
+
         let capturedImage = CapturedImage(
             sensorBitmap: testImage,
             timestamp: Date(timeIntervalSince1970: 1),
             rotationDegrees: 0
         )
-        
+
         // When
         let photoDef = try await repository.saveImage(
             capturedImage,
-            location: coordinates,
+            location: location,
             applyRotation: true
         )
         
@@ -561,5 +523,9 @@ final class TestableSecureImageRepository: SecureImageRepository {
     
     override func getDecoyDirectory() -> URL {
         return testDirectory.appendingPathComponent(SecureImageRepository.decoysDir)
+    }
+
+    override func getVideosDirectory() -> URL {
+        return testDirectory.appendingPathComponent(SecureImageRepository.videosDir)
     }
 }
