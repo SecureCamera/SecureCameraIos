@@ -603,6 +603,9 @@ public class SecureImageRepository {
             }
 
             // Decrypt the original (real key) to a temporary plaintext file.
+            // The video encryption service opens the output via
+            // FileHandle(forWritingTo:), so the output file must exist first.
+            FileManager.default.createFile(atPath: tempURL.path, contents: nil)
             try await videoEncryptionService.decryptVideoForSharing(
                 inputURL: videoDef.videoFile,
                 outputURL: tempURL,
@@ -614,6 +617,7 @@ public class SecureImageRepository {
             if FileManager.default.fileExists(atPath: decoyFile.path) {
                 try FileManager.default.removeItem(at: decoyFile)
             }
+            FileManager.default.createFile(atPath: decoyFile.path, contents: nil)
             try await videoEncryptionService.encryptVideoForDecoy(
                 inputURL: tempURL,
                 outputURL: decoyFile,
