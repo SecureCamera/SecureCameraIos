@@ -11,6 +11,7 @@ import UIKit
 import CoreLocation
 import UniformTypeIdentifiers
 import ImageIO
+import CryptoKit
 
 @MainActor
 public class SecureImageRepository {
@@ -27,12 +28,18 @@ public class SecureImageRepository {
     
     let thumbnailCache: ThumbnailCache
     private let encryptionScheme: EncryptionScheme
-    
+    private let videoEncryptionService: VideoEncryptionServiceProtocol
+
     // MARK: - Initialization
-    
-    init(thumbnailCache: ThumbnailCache, encryptionScheme: EncryptionScheme) {
+
+    init(
+        thumbnailCache: ThumbnailCache,
+        encryptionScheme: EncryptionScheme,
+        videoEncryptionService: VideoEncryptionServiceProtocol = VideoEncryptionService()
+    ) {
         self.thumbnailCache = thumbnailCache
         self.encryptionScheme = encryptionScheme
+        self.videoEncryptionService = videoEncryptionService
     }
     
     // MARK: - Directory Management
@@ -458,35 +465,34 @@ public class SecureImageRepository {
         try? FileManager.default.removeItem(at: getDecoyDirectory())
     }
 
-    /// Deletes all videos that haven't been flagged as decoys.
+    /// Destroys every video that hasn't been flagged as a decoy, and replaces
+    /// each decoy video with its decoy copy.
     ///
-    /// Videos live in a separate directory from photos, so wiping the photo
-    /// gallery alone leaves them intact. A video is treated as a decoy only if
-    /// a file with the same name exists in the decoy directory; everything else
-    /// is destroyed. (Decoy selection is currently photo-only, so in practice
-    /// every video is destroyed.)
+    /// A decoy video is stored in the decoy directory re-encrypted with the
+    /// poison-pill key (the original in the videos directory is encrypted with
+    /// the real key, which the poison pill destroys). So for decoy videos we
+    /// move the decoy copy into the videos directory, overwriting the original.
     ///
     /// Must run before `deleteNonDecoyImages()`, which removes the decoy
-    /// directory used for the decoy check here.
+    /// directory this relies on.
     private func deleteNonDecoyVideos() {
         let videosDir = getVideosDirectory()
-        let decoyDir = getDecoyDirectory()
+        let decoyVideoFiles = getDecoyVideoFiles()
+        let decoyVideoNames = Set(decoyVideoFiles.map { $0.lastPathComponent })
 
-        guard FileManager.default.fileExists(atPath: videosDir.path) else { return }
-
-        do {
-            let files = try FileManager.default.contentsOfDirectory(at: videosDir, includingPropertiesForKeys: nil)
-            for file in files {
-                let decoyEquivalent = decoyDir.appendingPathComponent(file.lastPathComponent)
-                let isDecoy = FileManager.default.fileExists(atPath: decoyEquivalent.path)
-                if !isDecoy {
-                    try? FileManager.default.removeItem(at: file)
-                }
+        // 1. Destroy every video that isn't a decoy.
+        if let files = try? FileManager.default.contentsOfDirectory(at: videosDir, includingPropertiesForKeys: nil) {
+            for file in files where !decoyVideoNames.contains(file.lastPathComponent) {
+                try? FileManager.default.removeItem(at: file)
             }
-        } catch {
-            Logger.storage.error("Failed to delete non-decoy videos during poison pill activation", metadata: [
-                "error": .string(error.localizedDescription)
-            ])
+        }
+
+        // 2. Replace each decoy video's original (real-key) file with its
+        //    poison-pill-key copy from the decoy directory.
+        for decoyFile in decoyVideoFiles {
+            let target = videosDir.appendingPathComponent(decoyFile.lastPathComponent)
+            try? FileManager.default.removeItem(at: target)
+            try? FileManager.default.moveItem(at: decoyFile, to: target)
         }
     }
 
@@ -515,12 +521,103 @@ public class SecureImageRepository {
     func isDecoyPhoto(_ photoDef: PhotoDef) -> Bool {
         return FileManager.default.fileExists(atPath: getDecoyFile(photoDef).path)
     }
-    
-    /// Gets the number of decoy photos
+
+    /// Gets the total number of decoys (photos + videos); the limit is shared.
     func numDecoys() -> Int {
-        return getDecoyFiles().count
+        return getDecoyFiles().count + getDecoyVideoFiles().count
     }
-    
+
+    // MARK: - Decoy Video Operations
+
+    private func getDecoyVideoFile(_ videoDef: VideoDef) -> URL {
+        return getDecoyDirectory().appendingPathComponent(videoDef.videoFile.lastPathComponent)
+    }
+
+    private func getDecoyVideoFiles() -> [URL] {
+        let dir = getDecoyDirectory()
+
+        guard FileManager.default.fileExists(atPath: dir.path) else {
+            return []
+        }
+
+        do {
+            let files = try FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)
+            return files.filter { $0.hasDirectoryPath == false && $0.pathExtension.lowercased() == "secv" }
+        } catch {
+            return []
+        }
+    }
+
+    /// Checks if a video is marked as a decoy.
+    func isDecoyVideo(_ videoDef: VideoDef) -> Bool {
+        return FileManager.default.fileExists(atPath: getDecoyVideoFile(videoDef).path)
+    }
+
+    /// Adds a video as a decoy: decrypts it with the current key and re-encrypts
+    /// the plaintext with the poison-pill key into the decoy directory, so it
+    /// remains playable after the poison pill destroys the real key.
+    func addDecoyVideoWithKey(_ videoDef: VideoDef, keyData: Data) async -> Bool {
+        guard numDecoys() < Self.maxDecoyPhotos else {
+            return false
+        }
+
+        let tempURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension("mov")
+        defer { try? FileManager.default.removeItem(at: tempURL) }
+
+        do {
+            let currentKey = SymmetricKey(data: try await encryptionScheme.getDerivedKey())
+            let poisonKey = SymmetricKey(data: keyData)
+
+            let decoyDir = getDecoyDirectory()
+            if !FileManager.default.fileExists(atPath: decoyDir.path) {
+                try FileManager.default.createDirectory(at: decoyDir, withIntermediateDirectories: true)
+            }
+
+            // Decrypt the original (real key) to a temporary plaintext file.
+            try await videoEncryptionService.decryptVideoForSharing(
+                inputURL: videoDef.videoFile,
+                outputURL: tempURL,
+                encryptionKey: currentKey
+            )
+
+            // Re-encrypt with the poison-pill key into the decoy directory.
+            let decoyFile = getDecoyVideoFile(videoDef)
+            if FileManager.default.fileExists(atPath: decoyFile.path) {
+                try FileManager.default.removeItem(at: decoyFile)
+            }
+            try await videoEncryptionService.encryptVideoForDecoy(
+                inputURL: tempURL,
+                outputURL: decoyFile,
+                encryptionKey: poisonKey
+            )
+
+            return true
+        } catch {
+            Logger.security.error("Failed to add decoy video: \(error)")
+            return false
+        }
+    }
+
+    /// Removes a video's decoy copy.
+    @discardableResult
+    func removeDecoyVideo(_ videoDef: VideoDef) -> Bool {
+        let decoyFile = getDecoyVideoFile(videoDef)
+        guard FileManager.default.fileExists(atPath: decoyFile.path) else {
+            return false
+        }
+
+        do {
+            try FileManager.default.removeItem(at: decoyFile)
+            return true
+        } catch {
+            return false
+        }
+    }
+
+    // MARK: - Decoy Photo Operations
+
     /// Adds a photo as decoy with specific key
     func addDecoyPhotoWithKey(_ photoDef: PhotoDef, keyData: Data) async -> Bool {
         guard numDecoys() < Self.maxDecoyPhotos else {

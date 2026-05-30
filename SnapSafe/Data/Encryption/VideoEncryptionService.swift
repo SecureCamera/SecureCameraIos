@@ -33,6 +33,11 @@ protocol VideoEncryptionServiceProtocol {
     /// Use this instead of decryptVideo when the caller needs the file ready before proceeding.
     func decryptVideoForSharing(inputURL: URL, outputURL: URL, encryptionKey: SymmetricKey) async throws
 
+    /// Encrypt a video file using SECV format, awaiting completion before returning.
+    /// Use this when the caller needs the encrypted file ready before proceeding
+    /// (e.g. re-encrypting a decoy video with the poison-pill key).
+    func encryptVideoForDecoy(inputURL: URL, outputURL: URL, encryptionKey: SymmetricKey) async throws
+
     /// Validate that a file has proper SECV format.
     /// - Parameter fileURL: URL of the file to validate
     /// - Returns: True if the file has valid SECV format
@@ -111,6 +116,10 @@ final class VideoEncryptionService: VideoEncryptionServiceProtocol {
 
     func decryptVideoForSharing(inputURL: URL, outputURL: URL, encryptionKey: SymmetricKey) async throws {
         try await decryptVideoFile(inputURL: inputURL, outputURL: outputURL, encryptionKey: encryptionKey, progressHandler: { _ in })
+    }
+
+    func encryptVideoForDecoy(inputURL: URL, outputURL: URL, encryptionKey: SymmetricKey) async throws {
+        try await encryptVideoFile(inputURL: inputURL, outputURL: outputURL, encryptionKey: encryptionKey, progressHandler: { _ in })
     }
 
     /// Validate that a file has proper SECV format.

@@ -2,9 +2,9 @@
 //  PoisonPillVideoDeletionTests.swift
 //  SnapSafeTests
 //
-//  Verifies that activating the poison pill destroys videos that are not
-//  marked as decoys. Regression test for a bug where videos survived the
-//  poison pill because only the photo gallery was wiped.
+//  Verifies poison-pill video handling: non-decoy videos are destroyed, while
+//  decoy videos are re-encrypted with the poison-pill key and survive (and are
+//  swapped in to replace the original real-key file).
 //
 
 import XCTest
@@ -32,7 +32,8 @@ final class PoisonPillVideoDeletionTests: XCTestCase {
         repository = VideoTestableSecureImageRepository(
             tempDirectory: tempDirectory,
             thumbnailCache: FakeThumbnailCache(),
-            encryptionScheme: FakeEncryptionScheme()
+            encryptionScheme: FakeEncryptionScheme(),
+            videoEncryptionService: FakeVideoEncryptionService()
         )
     }
 
@@ -84,31 +85,69 @@ final class PoisonPillVideoDeletionTests: XCTestCase {
                        "Non-decoy video should be destroyed when the poison pill is activated")
     }
 
-    /// Guards the decoy check (and the ordering relative to the photo wipe, which
-    /// removes the decoy directory): a video that has a matching decoy backup is
-    /// preserved while a non-decoy video alongside it is destroyed.
-    func testActivatePoisonPillPreservesVideosMarkedAsDecoys() throws {
-        try FileManager.default.createDirectory(at: decoyDirectory, withIntermediateDirectories: true)
+    /// Adding a decoy video re-encrypts it with the poison-pill key into the
+    /// decoy directory and marks it as a decoy.
+    func testAddDecoyVideoReEncryptsAndMarksDecoy() async throws {
         try FileManager.default.createDirectory(at: videosDirectory, withIntermediateDirectories: true)
 
-        // A "decoy" video: present in videos dir with a matching decoy backup.
-        let decoyVideo = videosDirectory.appendingPathComponent("video_decoy.secv")
-        try Data().write(to: decoyVideo)
-        let decoyVideoBackup = decoyDirectory.appendingPathComponent("video_decoy.secv")
-        try Data().write(to: decoyVideoBackup)
+        let videoFile = videosDirectory.appendingPathComponent("video_20230101_120000.secv")
+        try Data("original-real-key".utf8).write(to: videoFile)
+        let videoDef = VideoDef(videoName: "video_20230101_120000", videoFormat: "secv", videoFile: videoFile)
 
-        // A regular (non-decoy) video.
+        let fakeVideo = FakeVideoEncryptionService()
+        let repo = VideoTestableSecureImageRepository(
+            tempDirectory: tempDirectory,
+            thumbnailCache: FakeThumbnailCache(),
+            encryptionScheme: FakeEncryptionScheme(),
+            videoEncryptionService: fakeVideo
+        )
+
+        // When
+        let success = await repo.addDecoyVideoWithKey(videoDef, keyData: Data(repeating: 0xAB, count: 32))
+
+        // Then
+        XCTAssertTrue(success)
+        XCTAssertTrue(fakeVideo.decryptForSharingCalled, "Should decrypt the original with the current key")
+        XCTAssertTrue(fakeVideo.encryptForDecoyCalled, "Should re-encrypt with the poison-pill key")
+        XCTAssertTrue(repo.isDecoyVideo(videoDef), "Video should be marked as a decoy")
+
+        let decoyCopy = decoyDirectory.appendingPathComponent("video_20230101_120000.secv")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: decoyCopy.path))
+        XCTAssertEqual(try Data(contentsOf: decoyCopy), FakeVideoEncryptionService.reEncryptedMarker)
+    }
+
+    /// End-to-end: mark a video as a decoy, then activate the poison pill. The
+    /// decoy video survives and its file is replaced by the poison-pill-key copy,
+    /// while a non-decoy video alongside it is destroyed.
+    func testActivatePoisonPillReplacesDecoyVideoWithReEncryptedCopy() async throws {
+        try FileManager.default.createDirectory(at: videosDirectory, withIntermediateDirectories: true)
+
+        // Decoy video — original encrypted with the (now-doomed) real key.
+        let decoyVideoFile = videosDirectory.appendingPathComponent("video_decoy.secv")
+        try Data("original-real-key".utf8).write(to: decoyVideoFile)
+        let decoyVideoDef = VideoDef(videoName: "video_decoy", videoFormat: "secv", videoFile: decoyVideoFile)
+
+        // Non-decoy video.
         let regularVideo = videosDirectory.appendingPathComponent("video_regular.secv")
-        try Data().write(to: regularVideo)
+        try Data("regular".utf8).write(to: regularVideo)
+
+        // Mark the decoy video (re-encrypts into the decoy dir with the poison key).
+        let added = await repository.addDecoyVideoWithKey(decoyVideoDef, keyData: Data(repeating: 0xAB, count: 32))
+        XCTAssertTrue(added)
+        XCTAssertTrue(repository.isDecoyVideo(decoyVideoDef))
 
         // When
         repository.activatePoisonPill()
 
-        // Then
-        XCTAssertTrue(FileManager.default.fileExists(atPath: decoyVideo.path),
-                      "A decoy-backed video should survive poison pill activation")
+        // Then - decoy video survives and now holds the poison-pill-key bytes.
+        XCTAssertTrue(FileManager.default.fileExists(atPath: decoyVideoFile.path),
+                      "Decoy video should survive poison pill activation")
+        XCTAssertEqual(try Data(contentsOf: decoyVideoFile), FakeVideoEncryptionService.reEncryptedMarker,
+                       "Decoy video should be replaced by its poison-pill-key copy")
+
+        // And the non-decoy video is destroyed.
         XCTAssertFalse(FileManager.default.fileExists(atPath: regularVideo.path),
-                       "A non-decoy video should be destroyed")
+                       "Non-decoy video should be destroyed")
     }
 }
 
@@ -118,9 +157,18 @@ final class PoisonPillVideoDeletionTests: XCTestCase {
 final class VideoTestableSecureImageRepository: SecureImageRepository {
     private let testDirectory: URL
 
-    init(tempDirectory: URL, thumbnailCache: ThumbnailCache, encryptionScheme: EncryptionScheme) {
+    init(
+        tempDirectory: URL,
+        thumbnailCache: ThumbnailCache,
+        encryptionScheme: EncryptionScheme,
+        videoEncryptionService: VideoEncryptionServiceProtocol
+    ) {
         self.testDirectory = tempDirectory
-        super.init(thumbnailCache: thumbnailCache, encryptionScheme: encryptionScheme)
+        super.init(
+            thumbnailCache: thumbnailCache,
+            encryptionScheme: encryptionScheme,
+            videoEncryptionService: videoEncryptionService
+        )
     }
 
     override func getGalleryDirectory() -> URL {

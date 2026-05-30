@@ -57,6 +57,9 @@ final class MixedMediaGalleryViewModel: ObservableObject {
     @Injected(\.removeDecoyPhotoUseCase)
     private var removeDecoyPhotoUseCase: RemoveDecoyPhotoUseCase
 
+    @Injected(\.addDecoyVideoUseCase)
+    private var addDecoyVideoUseCase: AddDecoyVideoUseCase
+
     @Injected(\.prepareForSharingUseCase)
     private var prepareForSharingUseCase: PrepareForSharingUseCase
 
@@ -121,12 +124,24 @@ final class MixedMediaGalleryViewModel: ObservableObject {
     }
 
     var currentDecoyCount: Int {
-        mediaItems.compactMap { $0.photoDef }.filter { secureImageRepository.isDecoyPhoto($0) }.count
+        let photoDecoys = mediaItems.compactMap { $0.photoDef }.filter { secureImageRepository.isDecoyPhoto($0) }.count
+        let videoDecoys = mediaItems.compactMap { $0.videoDef }.filter { secureImageRepository.isDecoyVideo($0) }.count
+        return photoDecoys + videoDecoys
+    }
+
+    /// Whether the given media item is currently marked as a decoy.
+    private func isItemDecoy(_ item: GalleryMediaItem) -> Bool {
+        if let photoDef = item.photoDef {
+            return secureImageRepository.isDecoyPhoto(photoDef)
+        } else if let videoDef = item.videoDef {
+            return secureImageRepository.isDecoyVideo(videoDef)
+        }
+        return false
     }
 
     var navigationTitle: String {
         if isSelectingDecoys {
-            return "Select Decoy Photos"
+            return "Select Decoy Media"
         } else {
             return "Secure Gallery"
         }
@@ -153,11 +168,11 @@ final class MixedMediaGalleryViewModel: ObservableObject {
     }
 
     var decoyConfirmationMessage: String {
-        "Are you sure you want to save these \(selectedMediaIds.count) photos as decoys? These will be shown when the emergency PIN is entered."
+        "Are you sure you want to save these \(selectedMediaIds.count) items as decoys? These will be shown when the emergency PIN is entered."
     }
 
     var decoyLimitWarningMessage: String {
-        "You can select a maximum of \(maxDecoys) decoy photos. Please deselect some photos before saving."
+        "You can select a maximum of \(maxDecoys) decoy items. Please deselect some before saving."
     }
 
     // MARK: - Media Loading
@@ -182,10 +197,8 @@ final class MixedMediaGalleryViewModel: ObservableObject {
             mediaItems = allMedia
 
             if isSelectingDecoys {
-                for item in allMedia {
-                    if let photoDef = item.photoDef, secureImageRepository.isDecoyPhoto(photoDef) {
-                        selectedMediaIds.insert(item.id)
-                    }
+                for item in allMedia where isItemDecoy(item) {
+                    selectedMediaIds.insert(item.id)
                 }
             }
         }
@@ -263,10 +276,8 @@ final class MixedMediaGalleryViewModel: ObservableObject {
 
         if mode == .decoy {
             selectedMediaIds.removeAll()
-            for item in mediaItems {
-                if let photoDef = item.photoDef, secureImageRepository.isDecoyPhoto(photoDef) {
-                    selectedMediaIds.insert(item.id)
-                }
+            for item in mediaItems where isItemDecoy(item) {
+                selectedMediaIds.insert(item.id)
             }
         }
     }
@@ -396,16 +407,27 @@ final class MixedMediaGalleryViewModel: ObservableObject {
     func saveDecoySelections() {
         Task {
             for item in mediaItems {
-                guard let photoDef = item.photoDef else { continue }
                 let isCurrentlySelected = selectedMediaIds.contains(item.id)
-                let isCurrentlyDecoy = secureImageRepository.isDecoyPhoto(photoDef)
 
-                if isCurrentlyDecoy && !isCurrentlySelected {
-                    _ = removeDecoyPhotoUseCase.removeDecoyPhoto(photoDef)
-                } else if isCurrentlySelected && !isCurrentlyDecoy {
-                    let success = await addDecoyPhotoUseCase.addDecoyPhoto(photoDef: photoDef)
-                    if !success {
-                        Logger.ui.error("Failed to add decoy photo")
+                if let photoDef = item.photoDef {
+                    let isCurrentlyDecoy = secureImageRepository.isDecoyPhoto(photoDef)
+                    if isCurrentlyDecoy && !isCurrentlySelected {
+                        _ = removeDecoyPhotoUseCase.removeDecoyPhoto(photoDef)
+                    } else if isCurrentlySelected && !isCurrentlyDecoy {
+                        let success = await addDecoyPhotoUseCase.addDecoyPhoto(photoDef: photoDef)
+                        if !success {
+                            Logger.ui.error("Failed to add decoy photo")
+                        }
+                    }
+                } else if let videoDef = item.videoDef {
+                    let isCurrentlyDecoy = secureImageRepository.isDecoyVideo(videoDef)
+                    if isCurrentlyDecoy && !isCurrentlySelected {
+                        _ = secureImageRepository.removeDecoyVideo(videoDef)
+                    } else if isCurrentlySelected && !isCurrentlyDecoy {
+                        let success = await addDecoyVideoUseCase.addDecoyVideo(videoDef: videoDef)
+                        if !success {
+                            Logger.ui.error("Failed to add decoy video")
+                        }
                     }
                 }
             }

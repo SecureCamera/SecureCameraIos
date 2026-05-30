@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		06380B44AA837F59C33FFAF0 /* AddDecoyVideoUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = E60E8772D487C47F35C819B2 /* AddDecoyVideoUseCase.swift */; };
 		660130A02E676F5B00D07E9C /* FactoryKit in Frameworks */ = {isa = PBXBuildFile; productRef = 6601309F2E676F5B00D07E9C /* FactoryKit */; };
 		660130A22E676F5B00D07E9C /* FactoryTesting in Frameworks */ = {isa = PBXBuildFile; productRef = 660130A12E676F5B00D07E9C /* FactoryTesting */; };
 		660130A92E67753600D07E9C /* AppDependencyInjection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 660130A82E67753600D07E9C /* AppDependencyInjection.swift */; };
@@ -143,6 +144,7 @@
 		A9F9DDA42EA1C980003FC66E /* CameraCaptureIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9F9DDA32EA1C980003FC66E /* CameraCaptureIntent.swift */; };
 		A9FFC0DE2F3A000100BB6F19 /* VideoDef.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9FFC0DE2F3A000000BB6F19 /* VideoDef.swift */; };
 		D54FBF5A0C3BABB963AB33CF /* FakeEncryptionScheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2414533D313F8BEF8E1DB17D /* FakeEncryptionScheme.swift */; };
+		E81315B178D3FB88663F856F /* FakeVideoEncryptionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2AD9082F22CD2A9FC7CD33B /* FakeVideoEncryptionService.swift */; };
 		F5928EF067F8CDFB35D572D3 /* FakeThumbnailCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 177F44BD6B96C2A8659FAC80 /* FakeThumbnailCache.swift */; };
 /* End PBXBuildFile section */
 
@@ -240,6 +242,7 @@
 		66DE21CE2E69750600AC94DA /* Json.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Json.swift; sourceTree = "<group>"; };
 		66FFC0DE2F3A000000C0B617 /* VideoCaptureService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoCaptureService.swift; sourceTree = "<group>"; };
 		73AE08F5261FA581EF832FE5 /* VerifyPinUseCaseTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VerifyPinUseCaseTests.swift; sourceTree = "<group>"; };
+		A2AD9082F22CD2A9FC7CD33B /* FakeVideoEncryptionService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FakeVideoEncryptionService.swift; sourceTree = "<group>"; };
 		A91DBB422DE41BAE001F42ED /* SnapSafe.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = SnapSafe.xctestplan; sourceTree = "<group>"; };
 		A91DBC252DE58191001F42ED /* AppearanceMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppearanceMode.swift; sourceTree = "<group>"; };
 		A91DBC262DE58191001F42ED /* DetectedFace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetectedFace.swift; sourceTree = "<group>"; };
@@ -296,6 +299,7 @@
 		ADA2FF82666960557F17548E /* SecureImageRepositoryTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SecureImageRepositoryTests.swift; sourceTree = "<group>"; };
 		DBCDFD42CA72A9C8FA98EDCD /* SECVFileFormatTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SECVFileFormatTests.swift; sourceTree = "<group>"; };
 		DCC41CA572369E73F5CB7451 /* PoisonPillVideoDeletionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PoisonPillVideoDeletionTests.swift; sourceTree = "<group>"; };
+		E60E8772D487C47F35C819B2 /* AddDecoyVideoUseCase.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AddDecoyVideoUseCase.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -348,6 +352,7 @@
 			children = (
 				2414533D313F8BEF8E1DB17D /* FakeEncryptionScheme.swift */,
 				177F44BD6B96C2A8659FAC80 /* FakeThumbnailCache.swift */,
+				A2AD9082F22CD2A9FC7CD33B /* FakeVideoEncryptionService.swift */,
 			);
 			name = Util;
 			path = Util;
@@ -598,6 +603,7 @@
 				663C7E212E6FED9A00967B9E /* RemovePoisonPillIUseCase.swift */,
 				663C7E222E6FED9A00967B9E /* SecurityResetUseCase.swift */,
 				663C7E4B2E729DF800967B9E /* VerifyPinUseCase.swift */,
+				E60E8772D487C47F35C819B2 /* AddDecoyVideoUseCase.swift */,
 			);
 			path = UseCases;
 			sourceTree = "<group>";
@@ -1013,6 +1019,7 @@
 				A91DBC772DE58191001F42ED /* SecureGalleryView.swift in Sources */,
 				A91DBC782DE58191001F42ED /* SettingsView.swift in Sources */,
 				A91DBC792DE58191001F42ED /* SnapSafeApp.swift in Sources */,
+				06380B44AA837F59C33FFAF0 /* AddDecoyVideoUseCase.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1033,6 +1040,7 @@
 				71A1063EE417231D3E6A771B /* SECVFileFormatTests.swift in Sources */,
 				78BAE12E96629EA55F066179 /* SecureImageRepositoryTests.swift in Sources */,
 				7CBC61415276C81597CDBF80 /* VerifyPinUseCaseTests.swift in Sources */,
+				E81315B178D3FB88663F856F /* FakeVideoEncryptionService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
