@@ -283,7 +283,7 @@ private extension HardwareEncryptionScheme {
             // Encrypt and store the DEK using hardware-backed key
             let encryptedDek = try encryptWithHardwareKey(plain: dekBytes, keyAlias: Self.keyAlias)
             let dekFile = getDekFile(hashedPin: hashedPin)
-            try encryptedDek.write(to: dekFile)
+            try encryptedDek.write(to: dekFile, options: [.completeFileProtection, .atomic])
             
             logger.info("Encrypted and stored DEK", metadata: [
                 "file": .string(dekFile.lastPathComponent),
@@ -521,26 +521,29 @@ private extension HardwareEncryptionScheme {
         
         return decryptedData as Data
     }
-    
-    // MARK: - File Management
-    
+}
+
+// MARK: - File Management
+extension HardwareEncryptionScheme {
+
     func getKeyDirectory() -> URL {
         let appSupportPath = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         var keyDir = appSupportPath.appendingPathComponent(Self.dekDirectory)
-        
-        // Create directory and exclude from backup
+
+        // Create directory, set file protection, and exclude from backup
         do {
             try FileManager.default.createDirectory(at: keyDir, withIntermediateDirectories: true, attributes: nil)
             var resourceValues = URLResourceValues()
             resourceValues.isExcludedFromBackup = true
             try keyDir.setResourceValues(resourceValues)
+            try FileManager.default.setAttributes([.protectionKey: FileProtectionType.complete], ofItemAtPath: keyDir.path)
         } catch {
             Logger.storage.error("Failed to setup key directory: \(error)")
         }
-        
+
         return keyDir
     }
-    
+
     func getDekFile(hashedPin: HashedPin) -> URL {
         // Hash the pin hash to create a safe filename (similar to Android implementation)
         guard let pinData = Data(base64URLString: hashedPin.hash) else {
@@ -551,7 +554,7 @@ private extension HardwareEncryptionScheme {
             .replacingOccurrences(of: "/", with: "_")
             .replacingOccurrences(of: "+", with: "-")
             .replacingOccurrences(of: "=", with: "")
-        
+
         return getKeyDirectory().appendingPathComponent("\(Self.dekFilenamePrefix)_\(hashString)")
     }
 }
