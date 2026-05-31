@@ -23,6 +23,7 @@ public class SecureImageRepository {
     static let decoysDir = "decoys"
     static let videosDir = "videos"
     static let videoThumbnailsDir = "videoThumbnails"
+    static let decoyVideoThumbnailsDir = "decoyVideoThumbnails"
     static let thumbnailsDir = ".thumbnails"
     static let maxDecoyPhotos = 10
     
@@ -118,6 +119,27 @@ public class SecureImageRepository {
         return dir
     }
 
+    /// Decoy video thumbnails: re-encrypted with the poison-pill key at mark time
+    /// and restored into `videoThumbnails/` when the poison pill activates (the
+    /// real-key thumbnails are destroyed then, so decoy videos would otherwise
+    /// lose their thumbnail). Kept separate so it is not wiped by
+    /// `deleteAllVideoThumbnails()` or the decoy directory cleanup.
+    func getDecoyVideoThumbnailsDirectory() -> URL {
+        let appSupportPath = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        var dir = appSupportPath.appendingPathComponent(Self.decoyVideoThumbnailsDir)
+
+        do {
+            try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true, attributes: nil)
+            var resourceValues = URLResourceValues()
+            resourceValues.isExcludedFromBackup = true
+            try dir.setResourceValues(resourceValues)
+        } catch {
+            Logger.storage.error("Failed to setup decoy video thumbnails directory: \(error)")
+        }
+
+        return dir
+    }
+
     private func getThumbnailsDirectory() -> URL {
         let cachesPath = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
         let thumbnailsDir = cachesPath.appendingPathComponent(Self.thumbnailsDir)
@@ -140,6 +162,7 @@ public class SecureImageRepository {
     func securityFailureReset() {
         deleteAllImages()
         deleteAllVideoThumbnails()
+        deleteAllDecoyVideoThumbnails()
         clearAllThumbnails()
         evictKey()
     }
@@ -150,9 +173,11 @@ public class SecureImageRepository {
         // intact (deleteNonDecoyImages() consumes and removes that directory).
         deleteNonDecoyVideos()
         deleteNonDecoyImages()
-        // Video thumbnails are derived from real video frames; destroy them all.
-        // (Decoy videos fall back to the placeholder icon after the pill.)
+        // Video thumbnails are derived from real video frames; destroy them all,
+        // then restore the poison-pill-key thumbnails for the surviving decoy
+        // videos so they still show a thumbnail in the gallery.
         deleteAllVideoThumbnails()
+        restoreDecoyVideoThumbnails()
         clearAllThumbnails()
         evictKey()
     }
@@ -624,6 +649,10 @@ public class SecureImageRepository {
                 encryptionKey: poisonKey
             )
 
+            // Preserve a poison-pill-key copy of the thumbnail so the decoy video
+            // still shows a thumbnail after the poison pill destroys the real one.
+            await storeDecoyVideoThumbnail(forVideoNamed: videoDef.videoName, poisonKeyData: keyData)
+
             return true
         } catch {
             Logger.security.error("Failed to add decoy video: \(error)")
@@ -634,6 +663,9 @@ public class SecureImageRepository {
     /// Removes a video's decoy copy.
     @discardableResult
     func removeDecoyVideo(_ videoDef: VideoDef) -> Bool {
+        // Also drop the decoy thumbnail copy (if any).
+        removeDecoyVideoThumbnail(forVideoNamed: videoDef.videoName)
+
         let decoyFile = getDecoyVideoFile(videoDef)
         guard FileManager.default.fileExists(atPath: decoyFile.path) else {
             return false
@@ -709,6 +741,62 @@ public class SecureImageRepository {
     /// destroyed along with the videos themselves.
     func deleteAllVideoThumbnails() {
         try? FileManager.default.removeItem(at: getVideoThumbnailsDirectory())
+    }
+
+    private func getDecoyVideoThumbnailFile(forVideoNamed name: String) -> URL {
+        return getDecoyVideoThumbnailsDirectory().appendingPathComponent(name).appendingPathExtension("jpg")
+    }
+
+    /// Re-encrypts a video's thumbnail with the poison-pill key and stores it in
+    /// the decoy video thumbnails directory, so it survives the poison pill (the
+    /// real-key thumbnail is destroyed then). No-op if the video has no thumbnail.
+    private func storeDecoyVideoThumbnail(forVideoNamed name: String, poisonKeyData: Data) async {
+        let thumbFile = getVideoThumbnailFile(forVideoNamed: name)
+        guard FileManager.default.fileExists(atPath: thumbFile.path) else { return }
+        do {
+            let jpeg = try await encryptionScheme.decryptFile(thumbFile)
+            let dir = getDecoyVideoThumbnailsDirectory()
+            if !FileManager.default.fileExists(atPath: dir.path) {
+                try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            }
+            try await encryptionScheme.encryptToFile(
+                plain: jpeg,
+                keyBytes: poisonKeyData,
+                targetFile: getDecoyVideoThumbnailFile(forVideoNamed: name)
+            )
+        } catch {
+            Logger.security.error("Failed to store decoy video thumbnail: \(error)")
+        }
+    }
+
+    private func removeDecoyVideoThumbnail(forVideoNamed name: String) {
+        try? FileManager.default.removeItem(at: getDecoyVideoThumbnailFile(forVideoNamed: name))
+    }
+
+    func deleteAllDecoyVideoThumbnails() {
+        try? FileManager.default.removeItem(at: getDecoyVideoThumbnailsDirectory())
+    }
+
+    /// Moves the poison-pill-key decoy video thumbnails into the (just-wiped)
+    /// video thumbnails directory. Run after `deleteAllVideoThumbnails()` during
+    /// poison-pill activation.
+    private func restoreDecoyVideoThumbnails() {
+        let decoyDir = getDecoyVideoThumbnailsDirectory()
+        guard let files = try? FileManager.default.contentsOfDirectory(at: decoyDir, includingPropertiesForKeys: nil),
+              !files.isEmpty else {
+            return
+        }
+
+        let videoThumbsDir = getVideoThumbnailsDirectory()
+        try? FileManager.default.createDirectory(at: videoThumbsDir, withIntermediateDirectories: true)
+
+        for file in files {
+            let target = videoThumbsDir.appendingPathComponent(file.lastPathComponent)
+            try? FileManager.default.removeItem(at: target)
+            try? FileManager.default.moveItem(at: file, to: target)
+        }
+
+        try? FileManager.default.removeItem(at: decoyDir)
     }
 
     private static func generateThumbnail(fromVideoAt url: URL) async -> UIImage? {
