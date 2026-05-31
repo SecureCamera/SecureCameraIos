@@ -163,8 +163,7 @@ struct CameraContainerView: View {
                 .font(.system(size: 20))
                 .foregroundStyle(cameraModel.isRecording ? .gray : .white)
                 .padding(12)
-                .background(Color.black.opacity(0.6))
-                .clipShape(Circle())
+                .glassControlBackground(in: Circle())
         }
         .disabled(cameraModel.isRecording)
         .accessibilityLabel(cameraModel.cameraPosition == .back ? "Switch to front camera" : "Switch to rear camera")
@@ -179,8 +178,7 @@ struct CameraContainerView: View {
                 .font(.system(size: 20))
                 .foregroundStyle((cameraModel.cameraPosition == .front || cameraModel.isRecording) ? .gray : .white)
                 .padding(12)
-                .background(Color.black.opacity(0.6))
-                .clipShape(Circle())
+                .glassControlBackground(in: Circle())
         }
         .disabled(cameraModel.cameraPosition == .front || cameraModel.isRecording)
         .buttonStyle(PlainButtonStyle())
@@ -199,21 +197,17 @@ struct CameraContainerView: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .background(Color.black.opacity(0.6))
-        .clipShape(.rect(cornerRadius: 8))
+        .glassControlBackground(in: .rect(cornerRadius: 8))
         .accessibilityLabel("Recording: \(formatDuration(cameraModel.recordingDurationMs))")
         .accessibilityAddTraits(.updatesFrequently)
     }
 
     private var zoomCapsule: some View {
-        ZStack {
-            Capsule()
-                .fill(Color.black.opacity(0.6))
-                .frame(width: 80, height: 30)
-            Text(String(format: "%.1fx", cameraModel.zoomFactor))
-                .font(.system(size: 14, weight: .bold))
-                .foregroundStyle(.white)
-        }
+        Text(String(format: "%.1fx", cameraModel.zoomFactor))
+            .font(.system(size: 14, weight: .bold))
+            .foregroundStyle(.white)
+            .frame(width: 80, height: 30)
+            .glassControlBackground(in: .capsule)
         .opacity(cameraModel.zoomFactor != 1.0 ? 1.0 : 0.0)
         .animation(.easeInOut, value: cameraModel.zoomFactor)
         .padding(.bottom, 10)
@@ -262,8 +256,7 @@ struct CameraContainerView: View {
                             ? .gray : .white
                     )
                     .padding()
-                    .background(Color.black.opacity(0.6))
-                    .clipShape(Circle())
+                    .glassControlBackground(in: Circle())
                 if cameraModel.isSavingPhoto {
                     ProgressView()
                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
@@ -283,8 +276,7 @@ struct CameraContainerView: View {
                 .font(.title2)
                 .foregroundStyle((cameraModel.isRecording || cameraModel.isEncryptingVideo) ? .gray : .white)
                 .padding()
-                .background(Color.black.opacity(0.6))
-                .clipShape(Circle())
+                .glassControlBackground(in: Circle())
         }
         .disabled(cameraModel.isRecording || cameraModel.isEncryptingVideo)
         .padding()
@@ -400,4 +392,25 @@ struct CameraContainerView: View {
 #Preview {
     CameraContainerView()
         .environmentObject(AppNavigationState())
+}
+
+// MARK: - Liquid Glass control background
+
+private extension View {
+    /// Applies a translucent, contrasting control background per the Apple HIG:
+    /// Liquid Glass on iOS 26+, with an `.ultraThinMaterial` fallback on earlier
+    /// versions (the deployment floor is iOS 18.5).
+    ///
+    /// The glass is intentionally NOT `.interactive()`: these backgrounds live
+    /// inside `Button`s (and tap gestures), and interactive glass installs its
+    /// own touch handling that swallows the button's tap. The enclosing control
+    /// provides the interaction; this modifier is purely the visual background.
+    @ViewBuilder
+    func glassControlBackground(in shape: some Shape) -> some View {
+        if #available(iOS 26.0, *) {
+            self.glassEffect(.regular, in: shape)
+        } else {
+            self.background(.ultraThinMaterial, in: shape)
+        }
+    }
 }
