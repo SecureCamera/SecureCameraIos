@@ -18,71 +18,72 @@ struct CameraContainerView: View {
     @State private var isShutterAnimating = false
     @State private var showZoomSlider = false
     @State private var isPinching = false
-    @State private var isLandscape = false
     @State private var shutterFeedbackTrigger = 0
     @State private var zoomResetTrigger = 0
 
     var body: some View {
-        ZStack {
-            CameraView(cameraModel: cameraModel, onPinchStarted: {
-                isPinching = true
-                withAnimation { showZoomSlider = true }
-            }, onPinchChanged: {
-                isPinching = true
-            }, onPinchEnded: {
-                isPinching = false
-            })
-            .edgesIgnoringSafeArea(.all)
+        // Orientation is derived synchronously from the layout geometry so the
+        // control bars are always placed for the CURRENT size. Deriving it via
+        // @State + onChange (the previous approach) lagged the geometry by a
+        // layout pass, which let the bottom safeAreaInset bar slide toward the
+        // center mid-rotation and sometimes stick there.
+        GeometryReader { proxy in
+            let isLandscape = proxy.size.width > proxy.size.height
 
-            if isShutterAnimating {
-                Color.black
-                    .opacity(0.8)
-                    .edgesIgnoringSafeArea(.all)
-                    .transition(.opacity)
-            }
+            ZStack {
+                CameraView(cameraModel: cameraModel, onPinchStarted: {
+                    isPinching = true
+                    withAnimation { showZoomSlider = true }
+                }, onPinchChanged: {
+                    isPinching = true
+                }, onPinchEnded: {
+                    isPinching = false
+                })
+                .edgesIgnoringSafeArea(.all)
 
-            if cameraModel.isEncryptingVideo {
-                VStack(spacing: 12) {
-                    ProgressView(value: cameraModel.encryptionProgress, total: 1.0)
-                        .progressViewStyle(LinearProgressViewStyle(tint: .white))
-                        .frame(width: 200)
-                    Text("Encrypting video... \(Int(cameraModel.encryptionProgress * 100))%")
-                        .font(.caption)
-                        .foregroundStyle(.white)
+                if isShutterAnimating {
+                    Color.black
+                        .opacity(0.8)
+                        .edgesIgnoringSafeArea(.all)
+                        .transition(.opacity)
                 }
-                .padding(20)
-                .background(Color.black.opacity(0.7))
-                .clipShape(.rect(cornerRadius: 12))
-            }
 
-            controlsOverlay
-        }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            if !isLandscape { portraitBar }
-        }
-        .safeAreaInset(edge: .trailing, spacing: 0) {
-            if isLandscape { landscapeBar }
-        }
-        .animation(.easeInOut(duration: 0.1), value: isShutterAnimating)
-        .background(
-            GeometryReader { geo in
-                Color.clear
-                    .onAppear { isLandscape = geo.size.width > geo.size.height }
-                    .onChange(of: geo.size.width > geo.size.height) { _, landscape in
-                        isLandscape = landscape
+                if cameraModel.isEncryptingVideo {
+                    VStack(spacing: 12) {
+                        ProgressView(value: cameraModel.encryptionProgress, total: 1.0)
+                            .progressViewStyle(LinearProgressViewStyle(tint: .white))
+                            .frame(width: 200)
+                        Text("Encrypting video... \(Int(cameraModel.encryptionProgress * 100))%")
+                            .font(.caption)
+                            .foregroundStyle(.white)
                     }
+                    .padding(20)
+                    .background(Color.black.opacity(0.7))
+                    .clipShape(.rect(cornerRadius: 12))
+                }
+
+                controlsOverlay(isLandscape: isLandscape)
             }
-        )
-        .onAppear {
-            Task {
-                await cameraModel.checkAndSetupCamera()
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if !isLandscape { portraitBar }
+            }
+            .safeAreaInset(edge: .trailing, spacing: 0) {
+                if isLandscape { landscapeBar }
+            }
+            // Don't animate the bar swap on rotation — only the shutter flash.
+            .animation(.easeInOut(duration: 0.1), value: isShutterAnimating)
+            .animation(nil, value: isLandscape)
+            .onAppear {
+                Task {
+                    await cameraModel.checkAndSetupCamera()
+                }
             }
         }
     }
 
     // MARK: - Controls overlay (top bar + zoom + mode picker)
 
-    private var controlsOverlay: some View {
+    private func controlsOverlay(isLandscape: Bool) -> some View {
         VStack {
             HStack {
                 cameraSwitchButton

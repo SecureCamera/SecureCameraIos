@@ -219,15 +219,10 @@ struct SecureGalleryView: View {
             guard let item = newValue else { return }
             viewModel.selectedMediaItem = nil
 
-            if let photoDef = item.photoDef {
-                if let initialIndex = viewModel.photos.firstIndex(where: { $0.photoName == photoDef.photoName }) {
-                    nav.navigate(to: .photoDetail(allPhotos: viewModel.photos, initialIndex: initialIndex))
-                }
-            } else if let videoDef = item.videoDef {
-                let keyData = item.encryptionKey.flatMap { key -> Data? in
-                    key.withUnsafeBytes { Data($0) }
-                }
-                nav.navigate(to: .videoPlayer(videoDef, keyData))
+            // Navigate into the mixed-media detail pager. Both photos and videos
+            // are passed so the user can swipe between all items in the gallery.
+            if let initialIndex = viewModel.mediaItems.firstIndex(where: { $0.id == item.id }) {
+                nav.navigate(to: .photoDetail(allMedia: viewModel.mediaItems, initialIndex: initialIndex))
             }
         }
         .alert(

@@ -65,14 +65,14 @@ struct EnhancedPhotoDetailView: View {
     @EnvironmentObject private var nav: AppNavigationState
 
     init(
-        allPhotos: [PhotoDef],
+        allMedia: [GalleryMediaItem],
         initialIndex: Int,
         onDelete: ((PhotoDef) -> Void)? = nil,
         onDismiss: (() -> Void)? = nil
     ) {
         _viewModel = StateObject(
             wrappedValue: EnhancedPhotoDetailViewModel(
-                allPhotos: allPhotos,
+                allMedia: allMedia,
                 initialIndex: initialIndex,
                 onDelete: onDelete,
                 onDismiss: onDismiss
@@ -90,7 +90,7 @@ struct EnhancedPhotoDetailView: View {
 
                 // UIKit-based paging with proper gesture coordination
                 PhotoPageViewController(
-                    photos: viewModel.photoFiles,
+                    allMedia: viewModel.allMedia,
                     currentIndex: $viewModel.currentIndex,
                     isZoomed: $viewModel.isZoomed
                 )
@@ -104,10 +104,10 @@ struct EnhancedPhotoDetailView: View {
                     verticalOffset: viewModel.dragOffset.height
                 )
 
-                // Bottom toolbar
+                // Bottom toolbar — shown only for photos; videos have AVKit controls
                 VStack {
                     Spacer()
-                    if viewModel.currentIndex < viewModel.photoFiles.count {
+                    if !viewModel.currentIsVideo, viewModel.currentIndex < viewModel.allMedia.count {
                         PhotoControlsView(
                             onInfo: {
                                 if let current = viewModel.currentPhotoDef {

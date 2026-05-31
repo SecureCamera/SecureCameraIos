@@ -27,10 +27,10 @@ class EnhancedPhotoDetailViewModel: ObservableObject {
 
     @Injected(\.pinRepository)
     private var pinRepository: PinRepository
-    
+
     // MARK: - Published Properties
-    
-    @Published var photoFiles: [PhotoDef] = []
+
+    @Published var allMedia: [GalleryMediaItem] = []
     @Published var currentIndex: Int = 0
     @Published var dragOffset: CGSize = .zero
     @Published var dismissProgress: CGFloat = 0
@@ -45,59 +45,66 @@ class EnhancedPhotoDetailViewModel: ObservableObject {
 
     // Track currently presented activity controller for dismissal
     private weak var currentActivityController: UIActivityViewController?
-    
+
     // MARK: - Configuration
-    
+
     var onDelete: ((PhotoDef) -> Void)?
     var onDismiss: (() -> Void)?
-    
+
     // MARK: - Initialization
-    
-    init(allPhotos: [PhotoDef], initialIndex: Int, onDelete: ((PhotoDef) -> Void)? = nil, onDismiss: (() -> Void)? = nil) {
-        self.photoFiles = allPhotos
+
+    init(allMedia: [GalleryMediaItem], initialIndex: Int, onDelete: ((PhotoDef) -> Void)? = nil, onDismiss: (() -> Void)? = nil) {
+        self.allMedia = allMedia
         self.currentIndex = initialIndex
         self.onDelete = onDelete
         self.onDismiss = onDismiss
     }
-    
+
     @Published internal var isZoomed: Bool = false
 
     // Policy helpers (clear/consistent call sites + unit-testable)
     @inlinable internal func mayDismissByDrag() -> Bool { !isZoomed }
     @inlinable internal func mayPageHorizontally() -> Bool { !isZoomed }
-    
+
     // MARK: - Computed Properties
-    
-    var photoCount: Int {
-        photoFiles.count
-    }
-    
+
+    var mediaCount: Int { allMedia.count }
+
+    /// Convenience: photo-only slice preserved for preloading thumbnails.
+    var photoFiles: [PhotoDef] { allMedia.compactMap { $0.photoDef } }
+
     var currentPhotoDisplayText: String {
-        "\(currentIndex + 1) of \(photoCount)"
+        "\(currentIndex + 1) of \(mediaCount)"
     }
-    
+
     var backgroundOpacity: Double {
         1.0 - dismissProgress * 0.8
     }
-    
+
     var photoScaleEffect: Double {
         1.0 - dismissProgress * 0.2
     }
-    
+
     var overlayOpacity: Double {
-        // Fade out when zoomed or when dismissing
-        if isZoomed {
-            return 0.0
-        }
+        if isZoomed { return 0.0 }
         return 1.0 - dismissProgress
     }
 
-    // Current photo computed properties
-    var currentPhotoDef: PhotoDef? {
-        guard currentIndex < photoFiles.count else { return nil }
-        return photoFiles[currentIndex]
+    /// The current item regardless of type.
+    var currentMediaItem: GalleryMediaItem? {
+        guard currentIndex < allMedia.count else { return nil }
+        return allMedia[currentIndex]
     }
 
+    /// Non-nil only when the current page is a photo.
+    var currentPhotoDef: PhotoDef? {
+        currentMediaItem?.photoDef
+    }
+
+    /// True when the current page is a video.
+    var currentIsVideo: Bool {
+        currentMediaItem?.mediaType == .video
+    }
 
     var isCurrentPhotoDecoy: Bool {
         guard let photoDef = currentPhotoDef else { return false }
@@ -111,29 +118,25 @@ class EnhancedPhotoDetailViewModel: ObservableObject {
     var decoyButtonIcon: String {
         isCurrentPhotoDecoy ? "shield.slash" : "shield"
     }
-    
+
     // MARK: - Index Management
-    
+
     func handleIndexChange(newIndex: Int) {
         Logger.ui.debug("EnhancedPhotoDetailViewModel: currentIndex changed", metadata: [
             "from": .stringConvertible(currentIndex),
             "to": .stringConvertible(newIndex)
         ])
-        
-        // Track when TabView transitions occur
+
         isTabViewTransitioning = true
         lastIndexChangeTime = Date()
-        
-        // Reset any dismiss progress during navigation
+
         withAnimation(.easeOut(duration: 0.2)) {
             dragOffset = .zero
             dismissProgress = 0
         }
-        
-        // Preload adjacent photos when index changes
+
         preloadAdjacentPhotos(currentIndex: newIndex)
-        
-        // Clear transition state after a delay
+
         Task {
             try await Task.sleep(for: .milliseconds(800))
             await MainActor.run {
@@ -141,53 +144,42 @@ class EnhancedPhotoDetailViewModel: ObservableObject {
             }
         }
     }
-    
+
     // MARK: - Preloading
-    
+
     func preloadAdjacentPhotos(currentIndex: Int) {
-        guard !photoFiles.isEmpty else { return }
-        
-        // Preload previous photo thumbnail
-        if currentIndex > 0 {
-            let previousPhotoDef = photoFiles[currentIndex - 1]
+        // Preload only photo thumbnails (video thumbnails are loaded by their cells)
+        if currentIndex > 0, let prev = allMedia[currentIndex - 1].photoDef {
             Task(priority: .userInitiated) {
-                _ = await secureImageRepository.readThumbnail(previousPhotoDef)
+                _ = await secureImageRepository.readThumbnail(prev)
             }
         }
-        
-        // Preload next photo thumbnail
-        if currentIndex < photoFiles.count - 1 {
-            let nextPhotoDef = photoFiles[currentIndex + 1]
+        if currentIndex < allMedia.count - 1, let next = allMedia[currentIndex + 1].photoDef {
             Task(priority: .userInitiated) {
-                _ = await secureImageRepository.readThumbnail(nextPhotoDef)
+                _ = await secureImageRepository.readThumbnail(next)
             }
         }
     }
-    
+
     // MARK: - Gesture Handling
-    
+
     func handleDragChanged(_ value: DragGesture.Value, geometryHeight: CGFloat) {
-        // Bail out until the drag is clearly vertical
         guard abs(value.translation.height) > abs(value.translation.width) else { return }
-        
         dragOffset = CGSize(width: 0, height: value.translation.height)
         dismissProgress = min(value.translation.height / (geometryHeight * 0.4), 1.0)
     }
-    
+
     func handleDragEnded(_ value: DragGesture.Value, geometryHeight: CGFloat, dismiss: @escaping () -> Void) {
-        // Same dominant-axis guard here *before* any threshold checks
         guard abs(value.translation.height) > abs(value.translation.width) else { return }
-        
+
         let dismissThreshold = geometryHeight * 0.25
         let isQuickDownSwipe = value.velocity.height > 2000
-        
+
         if value.translation.height > dismissThreshold || isQuickDownSwipe {
-            // Dismiss the view
             withAnimation(.easeOut(duration: 0.3)) {
                 dragOffset = CGSize(width: 0, height: geometryHeight)
                 dismissProgress = 1
             }
-            
             Task {
                 try await Task.sleep(for: .milliseconds(100))
                 await MainActor.run {
@@ -196,16 +188,15 @@ class EnhancedPhotoDetailViewModel: ObservableObject {
                 }
             }
         } else {
-            // Return to original position
             withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
                 dragOffset = .zero
                 dismissProgress = 0
             }
         }
     }
-    
+
     // MARK: - View Lifecycle
-    
+
     func onAppear() {
         preloadAdjacentPhotos(currentIndex: currentIndex)
         loadPoisonPillConfiguration()
@@ -219,27 +210,22 @@ class EnhancedPhotoDetailViewModel: ObservableObject {
             }
         }
     }
-    
+
     // MARK: - Photo Management
-    
+
     func deletePhoto(at index: Int) {
-        guard index < photoFiles.count else { return }
+        guard index < allMedia.count,
+              let photoDef = allMedia[index].photoDef else { return }
 
-        let photoDefToDelete = photoFiles[index]
-
-        // Perform file deletion in a background thread
         Task(priority: .userInitiated) {
-            // Actually delete the file
             Logger.ui.debug("Attempting to delete file", metadata: [
-                "filename": .string(photoDefToDelete.photoName)
+                "filename": .string(photoDef.photoName)
             ])
-            secureImageRepository.deleteImage(photoDefToDelete)
+            secureImageRepository.deleteImage(photoDef)
             Logger.ui.debug("File deletion successful")
-
-            // All UI updates must happen on the main thread
             await MainActor.run {
                 Logger.ui.debug("Calling onDelete callback")
-                onDelete?(photoDefToDelete)
+                onDelete?(photoDef)
             }
         }
     }
@@ -251,26 +237,20 @@ class EnhancedPhotoDetailViewModel: ObservableObject {
 
         Task {
             do {
-                // First load the image
                 let image = try await secureImageRepository.readImage(photoDef)
 
-                // Convert image to data for sharing with UUID filename
                 if let imageData = image.jpegData(compressionQuality: 0.9) {
-                    // Prepare photo for sharing with UUID filename
                     let fileURL = try prepareForSharingUseCase.preparePhotoForSharing(imageData: imageData)
 
                     Logger.ui.debug("Photo prepared for sharing successfully")
 
-                    // Create activity controller with the temporary image
                     let activityController = UIActivityViewController(
                         activityItems: [fileURL],
                         applicationActivities: nil
                     )
 
-                    // Store reference for potential dismissal
                     currentActivityController = activityController
 
-                    // Present the activity controller
                     if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
                        let rootViewController = windowScene.windows.first?.rootViewController {
 
@@ -280,7 +260,6 @@ class EnhancedPhotoDetailViewModel: ObservableObject {
                         }
 
                         await MainActor.run {
-                            // Configure popover presentation for iPad
                             if let popoverController = activityController.popoverPresentationController {
                                 popoverController.sourceView = presentingViewController.view
                                 popoverController.sourceRect = CGRect(
@@ -291,7 +270,6 @@ class EnhancedPhotoDetailViewModel: ObservableObject {
                                 )
                                 popoverController.permittedArrowDirections = []
                             }
-
                             presentingViewController.present(activityController, animated: true)
                         }
                     }
@@ -316,12 +294,10 @@ class EnhancedPhotoDetailViewModel: ObservableObject {
                 }
             } else {
                 Logger.ui.debug("Adding decoy status to photo", metadata: ["photoId": .stringConvertible(photoDef.id)])
-                // Add decoy status
                 let success = await addDecoyPhotoUseCase.addDecoyPhoto(photoDef: photoDef)
                 await MainActor.run {
                     isDecoyOperationLoading = false
                 }
-
                 if success {
                     Logger.ui.info("Successfully added decoy status")
                 } else {
