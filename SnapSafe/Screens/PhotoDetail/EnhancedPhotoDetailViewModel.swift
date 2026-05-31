@@ -36,6 +36,9 @@ class EnhancedPhotoDetailViewModel: ObservableObject {
     @Published var dismissProgress: CGFloat = 0
     @Published var isTabViewTransitioning: Bool = false
     @Published var lastIndexChangeTime: Date = Date()
+    /// Tracks whether the inline video player on the current page is showing
+    /// its glass controls. Photos always treat this as visible.
+    @Published var isVideoControlsVisible: Bool = true
 
     // Toolbar state
     @Published var showImageInfo = false
@@ -87,6 +90,7 @@ class EnhancedPhotoDetailViewModel: ObservableObject {
 
     var overlayOpacity: Double {
         if isZoomed { return 0.0 }
+        if currentIsVideo && !isVideoControlsVisible { return 0.0 }
         return 1.0 - dismissProgress
     }
 
