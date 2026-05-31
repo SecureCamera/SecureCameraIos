@@ -178,7 +178,7 @@ struct SecureGalleryView: View {
             ToolbarItemGroup(placement: .bottomBar) {
                 switch viewModel.selectionMode {
                 case .none:
-                    PhotosPicker(selection: $viewModel.pickerItems, matching: .images, photoLibrary: .shared()) {
+                    PhotosPicker(selection: $viewModel.pickerItems, matching: .any(of: [.images, .videos]), photoLibrary: .shared()) {
                         Label("Import", systemImage: "square.and.arrow.down")
                     }
                     .onChange(of: viewModel.pickerItems) { _, newItems in
