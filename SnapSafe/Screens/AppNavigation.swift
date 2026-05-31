@@ -16,7 +16,7 @@ enum AppDestination: Hashable {
     case pinSetup
     case pinVerification
     case camera
-    case photoDetail(allPhotos: [PhotoDef], initialIndex: Int)
+    case photoDetail(allMedia: [GalleryMediaItem], initialIndex: Int)
     case photoInfo(PhotoDef)
     case photoObfuscation(PhotoDef)
     case poisonPillSetupWizard

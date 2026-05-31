@@ -7,22 +7,24 @@
 
 import SwiftUI
 import UIKit
+import AVKit
+import CryptoKit
 import Logging
 
 
 struct PhotoPageViewController: UIViewControllerRepresentable {
     // MARK: - Inputs
-    let photos: [PhotoDef]
+    let allMedia: [GalleryMediaItem]
     @Binding var currentIndex: Int
     @Binding var isZoomed: Bool
 
     // MARK: - Init
     init(
-        photos: [PhotoDef],
+        allMedia: [GalleryMediaItem],
         currentIndex: Binding<Int>,
         isZoomed: Binding<Bool>
     ) {
-        self.photos = photos
+        self.allMedia = allMedia
         self._currentIndex = currentIndex
         self._isZoomed = isZoomed
     }
@@ -39,7 +41,7 @@ struct PhotoPageViewController: UIViewControllerRepresentable {
         pageVC.delegate = context.coordinator
         pageVC.view.backgroundColor = .clear
 
-        if currentIndex < photos.count {
+        if currentIndex < allMedia.count {
             let initialVC = context.coordinator.viewController(at: currentIndex)
             pageVC.setViewControllers(
                 [initialVC],
@@ -50,14 +52,13 @@ struct PhotoPageViewController: UIViewControllerRepresentable {
 
         if let scrollView = pageVC.view.subviews.compactMap({ $0 as? UIScrollView }).first {
             context.coordinator.pageScrollView = scrollView
-            context.coordinator.setupGestureCoordination(scrollView: scrollView)
         }
 
         return pageVC
     }
 
     func updateUIViewController(_ uiViewController: UIPageViewController, context: Context) {
-        context.coordinator.photos = photos
+        context.coordinator.allMedia = allMedia
         context.coordinator.currentIndexBinding = _currentIndex
         context.coordinator.isZoomedBinding = _isZoomed
         context.coordinator.updatePagingEnabled()
@@ -65,7 +66,7 @@ struct PhotoPageViewController: UIViewControllerRepresentable {
 
     func makeCoordinator() -> Coordinator {
         Coordinator(
-            photos: photos,
+            allMedia: allMedia,
             currentIndexBinding: _currentIndex,
             isZoomedBinding: _isZoomed
         )
@@ -73,46 +74,53 @@ struct PhotoPageViewController: UIViewControllerRepresentable {
 
     // MARK: - Coordinator
     final class Coordinator: NSObject, UIPageViewControllerDataSource, UIPageViewControllerDelegate {
-        var photos: [PhotoDef]
+        var allMedia: [GalleryMediaItem]
         var currentIndexBinding: Binding<Int>
         var isZoomedBinding: Binding<Bool>
         weak var pageScrollView: UIScrollView?
-        private var viewControllerCache: [Int: PhotoDetailHostingController] = [:]
+        private var viewControllerCache: [Int: UIViewController] = [:]
 
-        init(photos: [PhotoDef], currentIndexBinding: Binding<Int>, isZoomedBinding: Binding<Bool>) {
-            self.photos = photos
+        init(allMedia: [GalleryMediaItem], currentIndexBinding: Binding<Int>, isZoomedBinding: Binding<Bool>) {
+            self.allMedia = allMedia
             self.currentIndexBinding = currentIndexBinding
             self.isZoomedBinding = isZoomedBinding
         }
 
         // MARK: - View Controller Management
-        func viewController(at index: Int) -> PhotoDetailHostingController {
+        func viewController(at index: Int) -> UIViewController {
             if let cached = viewControllerCache[index] {
                 return cached
             }
 
-            let photo = photos[index]
-            let vc = PhotoDetailHostingController(
-                photo: photo,
-                isZoomed: isZoomedBinding
-            )
+            let item = allMedia[index]
+            let vc: UIViewController
+
+            if let photoDef = item.photoDef {
+                let hostingVC = PhotoDetailHostingController(
+                    photo: photoDef,
+                    isZoomed: isZoomedBinding
+                )
+                vc = hostingVC
+            } else if let videoDef = item.videoDef {
+                let hostingVC = InlineVideoHostingController(
+                    videoDef: videoDef,
+                    encryptionKey: item.encryptionKey
+                )
+                vc = hostingVC
+            } else {
+                // Fallback: empty black page
+                let fallback = UIViewController()
+                fallback.view.backgroundColor = .black
+                vc = fallback
+            }
+
             vc.view.backgroundColor = .clear
-
             viewControllerCache[index] = vc
-
             return vc
-        }
-
-        // MARK: - Gesture Coordination
-        func setupGestureCoordination(scrollView: UIScrollView) {
-            // The page scroll view's pan gesture will automatically be coordinated
-            // with the zoom scroll view's pan gesture by UIKit's gesture system
-            // We're doing this all in UIkit
         }
 
         // MARK: - Paging Control
         func updatePagingEnabled() {
-            // Disable paging when zoomed to allow free panning in all directions
             pageScrollView?.isScrollEnabled = !isZoomedBinding.wrappedValue
         }
 
@@ -121,8 +129,7 @@ struct PhotoPageViewController: UIViewControllerRepresentable {
             _ pageViewController: UIPageViewController,
             viewControllerBefore viewController: UIViewController
         ) -> UIViewController? {
-            guard let vc = viewController as? PhotoDetailHostingController,
-                  let index = viewControllerCache.first(where: { $0.value === vc })?.key,
+            guard let index = viewControllerCache.first(where: { $0.value === viewController })?.key,
                   index > 0 else {
                 return nil
             }
@@ -133,9 +140,8 @@ struct PhotoPageViewController: UIViewControllerRepresentable {
             _ pageViewController: UIPageViewController,
             viewControllerAfter viewController: UIViewController
         ) -> UIViewController? {
-            guard let vc = viewController as? PhotoDetailHostingController,
-                  let index = viewControllerCache.first(where: { $0.value === vc })?.key,
-                  index < photos.count - 1 else {
+            guard let index = viewControllerCache.first(where: { $0.value === viewController })?.key,
+                  index < allMedia.count - 1 else {
                 return nil
             }
             return self.viewController(at: index + 1)
@@ -149,12 +155,11 @@ struct PhotoPageViewController: UIViewControllerRepresentable {
             transitionCompleted completed: Bool
         ) {
             guard completed,
-                  let visibleVC = pageViewController.viewControllers?.first as? PhotoDetailHostingController,
+                  let visibleVC = pageViewController.viewControllers?.first,
                   let newIndex = viewControllerCache.first(where: { $0.value === visibleVC })?.key else {
                 return
             }
 
-            // Update binding on main thread
             DispatchQueue.main.async {
                 self.isZoomedBinding.wrappedValue = false
                 self.currentIndexBinding.wrappedValue = newIndex
@@ -165,7 +170,8 @@ struct PhotoPageViewController: UIViewControllerRepresentable {
     }
 }
 
-// MARK: - Hosting Controller for PhotoDetailView
+// MARK: - Hosting Controller for a single photo page
+
 class PhotoDetailHostingController: UIHostingController<AnyView> {
     init(photo: PhotoDef, isZoomed: Binding<Bool>) {
         let view = PhotoDetailView(
@@ -179,5 +185,62 @@ class PhotoDetailHostingController: UIHostingController<AnyView> {
 
     @MainActor required dynamic init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+}
+
+// MARK: - Hosting Controller for an inline video page
+
+class InlineVideoHostingController: UIHostingController<AnyView> {
+    init(videoDef: VideoDef, encryptionKey: SymmetricKey?) {
+        let view = InlineVideoPageView(videoDef: videoDef, encryptionKey: encryptionKey)
+        super.init(rootView: AnyView(view))
+    }
+
+    @MainActor required dynamic init?(coder aDecoder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+}
+
+/// A full-screen inline video player for the swipe-through pager.
+/// Styled to match the photo pages (black background, centred content).
+struct InlineVideoPageView: View {
+    let videoDef: VideoDef
+    let encryptionKey: SymmetricKey?
+
+    @StateObject private var viewModel: VideoPlayerViewModel
+
+    init(videoDef: VideoDef, encryptionKey: SymmetricKey?) {
+        self.videoDef = videoDef
+        self.encryptionKey = encryptionKey
+        _viewModel = StateObject(wrappedValue: VideoPlayerViewModel(videoDef: videoDef, encryptionKey: encryptionKey))
+    }
+
+    var body: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+
+            if let player = viewModel.player {
+                VideoPlayer(player: player)
+                    .ignoresSafeArea()
+            } else if viewModel.isLoading {
+                ProgressView()
+                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                    .scaleEffect(1.5)
+            } else if viewModel.error != nil {
+                VStack(spacing: 16) {
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.largeTitle)
+                        .foregroundStyle(.white.opacity(0.7))
+                    Text("Could not play video")
+                        .foregroundStyle(.white.opacity(0.7))
+                }
+            }
+        }
+        .onAppear {
+            viewModel.setupPlayback()
+        }
+        .onDisappear {
+            viewModel.cleanup()
+        }
     }
 }

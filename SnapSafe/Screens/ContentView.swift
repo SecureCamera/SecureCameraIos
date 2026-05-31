@@ -116,9 +116,9 @@ struct ContentView: View {
             PINVerificationView()
         case .camera:
             CameraContainerView()
-        case .photoDetail(let allPhotos, let initialIndex):
+        case .photoDetail(let allMedia, let initialIndex):
             EnhancedPhotoDetailView(
-                allPhotos: allPhotos,
+                allMedia: allMedia,
                 initialIndex: initialIndex,
                 onDelete: nil,
                 onDismiss: nil
