@@ -17,16 +17,25 @@ struct PhotoPageViewController: UIViewControllerRepresentable {
     let allMedia: [GalleryMediaItem]
     @Binding var currentIndex: Int
     @Binding var isZoomed: Bool
+    /// Invoked when a video page deletes its video, so the detail view can pop.
+    let onRequestDismiss: () -> Void
+    /// Invoked by inline video pages when their glass controls show/hide, so
+    /// the photo counter chip overlay can fade together with them.
+    let onVideoControlsVisibilityChange: (Bool) -> Void
 
     // MARK: - Init
     init(
         allMedia: [GalleryMediaItem],
         currentIndex: Binding<Int>,
-        isZoomed: Binding<Bool>
+        isZoomed: Binding<Bool>,
+        onRequestDismiss: @escaping () -> Void,
+        onVideoControlsVisibilityChange: @escaping (Bool) -> Void = { _ in }
     ) {
         self.allMedia = allMedia
         self._currentIndex = currentIndex
         self._isZoomed = isZoomed
+        self.onRequestDismiss = onRequestDismiss
+        self.onVideoControlsVisibilityChange = onVideoControlsVisibilityChange
     }
 
     // MARK: - UIViewControllerRepresentable
@@ -61,6 +70,8 @@ struct PhotoPageViewController: UIViewControllerRepresentable {
         context.coordinator.allMedia = allMedia
         context.coordinator.currentIndexBinding = _currentIndex
         context.coordinator.isZoomedBinding = _isZoomed
+        context.coordinator.onRequestDismiss = onRequestDismiss
+        context.coordinator.onVideoControlsVisibilityChange = onVideoControlsVisibilityChange
         context.coordinator.updatePagingEnabled()
     }
 
@@ -68,7 +79,9 @@ struct PhotoPageViewController: UIViewControllerRepresentable {
         Coordinator(
             allMedia: allMedia,
             currentIndexBinding: _currentIndex,
-            isZoomedBinding: _isZoomed
+            isZoomedBinding: _isZoomed,
+            onRequestDismiss: onRequestDismiss,
+            onVideoControlsVisibilityChange: onVideoControlsVisibilityChange
         )
     }
 
@@ -77,13 +90,23 @@ struct PhotoPageViewController: UIViewControllerRepresentable {
         var allMedia: [GalleryMediaItem]
         var currentIndexBinding: Binding<Int>
         var isZoomedBinding: Binding<Bool>
+        var onRequestDismiss: () -> Void
+        var onVideoControlsVisibilityChange: (Bool) -> Void
         weak var pageScrollView: UIScrollView?
         private var viewControllerCache: [Int: UIViewController] = [:]
 
-        init(allMedia: [GalleryMediaItem], currentIndexBinding: Binding<Int>, isZoomedBinding: Binding<Bool>) {
+        init(
+            allMedia: [GalleryMediaItem],
+            currentIndexBinding: Binding<Int>,
+            isZoomedBinding: Binding<Bool>,
+            onRequestDismiss: @escaping () -> Void,
+            onVideoControlsVisibilityChange: @escaping (Bool) -> Void
+        ) {
             self.allMedia = allMedia
             self.currentIndexBinding = currentIndexBinding
             self.isZoomedBinding = isZoomedBinding
+            self.onRequestDismiss = onRequestDismiss
+            self.onVideoControlsVisibilityChange = onVideoControlsVisibilityChange
         }
 
         // MARK: - View Controller Management
@@ -104,7 +127,11 @@ struct PhotoPageViewController: UIViewControllerRepresentable {
             } else if let videoDef = item.videoDef {
                 let hostingVC = InlineVideoHostingController(
                     videoDef: videoDef,
-                    encryptionKey: item.encryptionKey
+                    encryptionKey: item.encryptionKey,
+                    onRequestDismiss: onRequestDismiss,
+                    onControlsVisibilityChange: { [weak self] visible in
+                        self?.onVideoControlsVisibilityChange(visible)
+                    }
                 )
                 vc = hostingVC
             } else {
@@ -191,56 +218,22 @@ class PhotoDetailHostingController: UIHostingController<AnyView> {
 // MARK: - Hosting Controller for an inline video page
 
 class InlineVideoHostingController: UIHostingController<AnyView> {
-    init(videoDef: VideoDef, encryptionKey: SymmetricKey?) {
-        let view = InlineVideoPageView(videoDef: videoDef, encryptionKey: encryptionKey)
+    init(
+        videoDef: VideoDef,
+        encryptionKey: SymmetricKey?,
+        onRequestDismiss: @escaping () -> Void,
+        onControlsVisibilityChange: @escaping (Bool) -> Void
+    ) {
+        let view = InlineVideoPlayerView(
+            videoDef: videoDef,
+            encryptionKey: encryptionKey,
+            onRequestDismiss: onRequestDismiss,
+            onControlsVisibilityChange: onControlsVisibilityChange
+        )
         super.init(rootView: AnyView(view))
     }
 
     @MainActor required dynamic init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
-    }
-}
-
-/// A full-screen inline video player for the swipe-through pager.
-/// Styled to match the photo pages (black background, centred content).
-struct InlineVideoPageView: View {
-    let videoDef: VideoDef
-    let encryptionKey: SymmetricKey?
-
-    @StateObject private var viewModel: VideoPlayerViewModel
-
-    init(videoDef: VideoDef, encryptionKey: SymmetricKey?) {
-        self.videoDef = videoDef
-        self.encryptionKey = encryptionKey
-        _viewModel = StateObject(wrappedValue: VideoPlayerViewModel(videoDef: videoDef, encryptionKey: encryptionKey))
-    }
-
-    var body: some View {
-        ZStack {
-            Color.black.ignoresSafeArea()
-
-            if let player = viewModel.player {
-                VideoPlayer(player: player)
-                    .ignoresSafeArea()
-            } else if viewModel.isLoading {
-                ProgressView()
-                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                    .scaleEffect(1.5)
-            } else if viewModel.error != nil {
-                VStack(spacing: 16) {
-                    Image(systemName: "exclamationmark.triangle")
-                        .font(.largeTitle)
-                        .foregroundStyle(.white.opacity(0.7))
-                    Text("Could not play video")
-                        .foregroundStyle(.white.opacity(0.7))
-                }
-            }
-        }
-        .onAppear {
-            viewModel.setupPlayback()
-        }
-        .onDisappear {
-            viewModel.cleanup()
-        }
     }
 }

@@ -15,6 +15,14 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 
 ## iOS
 
+### ios verify_test_membership
+
+```sh
+[bundle exec] fastlane ios verify_test_membership
+```
+
+Fail if any test source file is not a member of its test target
+
 ### ios build
 
 ```sh

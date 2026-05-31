@@ -92,7 +92,13 @@ struct EnhancedPhotoDetailView: View {
                 PhotoPageViewController(
                     allMedia: viewModel.allMedia,
                     currentIndex: $viewModel.currentIndex,
-                    isZoomed: $viewModel.isZoomed
+                    isZoomed: $viewModel.isZoomed,
+                    onRequestDismiss: { dismiss() },
+                    onVideoControlsVisibilityChange: { visible in
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            viewModel.isVideoControlsVisible = visible
+                        }
+                    }
                 )
                 .onChange(of: viewModel.currentIndex) { _, newIndex in
                     viewModel.handleIndexChange(newIndex: newIndex)
@@ -104,11 +110,12 @@ struct EnhancedPhotoDetailView: View {
                     verticalOffset: viewModel.dragOffset.height
                 )
 
-                // Bottom toolbar — shown only for photos; videos have AVKit controls
+                // Floating toolbar — photos only. Video pages render their own
+                // glass controls (transport + actions) inside InlineVideoPlayerView.
                 VStack {
                     Spacer()
                     if !viewModel.currentIsVideo, viewModel.currentIndex < viewModel.allMedia.count {
-                        PhotoControlsView(
+                        PhotoDetailToolbar(
                             onInfo: {
                                 if let current = viewModel.currentPhotoDef {
                                     nav.presentSheet(.photoInfo(current))
@@ -128,7 +135,6 @@ struct EnhancedPhotoDetailView: View {
                             decoyButtonIcon: viewModel.decoyButtonIcon,
                             isDecoyOperationLoading: viewModel.isDecoyOperationLoading
                         )
-                        .padding(.bottom, 8)
                     }
                 }
 

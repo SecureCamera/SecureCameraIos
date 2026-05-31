@@ -9,6 +9,7 @@ import SwiftUI
 import AVKit
 import Combine
 import CryptoKit
+import FactoryKit
 import Logging
 
 /// Video player view for playing both encrypted and unencrypted videos.
@@ -98,6 +99,7 @@ struct VideoPlayerView: View {
                 }
             }
             .animation(.easeInOut, value: viewModel.showControls)
+            .sensoryFeedback(.impact(weight: .light), trigger: viewModel.isPlaying)
         }
         .onTapGesture {
             viewModel.toggleControls()
@@ -149,7 +151,12 @@ struct VideoPlayerView: View {
 final class VideoPlayerViewModel: ObservableObject {
     let videoDef: VideoDef
     let encryptionKey: SymmetricKey?
-    
+
+    @Injected(\.secureImageRepository) private var secureImageRepository: SecureImageRepository
+    @Injected(\.addDecoyVideoUseCase) private var addDecoyVideoUseCase: AddDecoyVideoUseCase
+    @Injected(\.videoEncryptionService) private var videoEncryptionService: VideoEncryptionService
+    @Injected(\.pinRepository) private var pinRepository: PinRepository
+
     @Published var player: AVPlayer?
     @Published var isLoading = true
     @Published var isPlaying = false
@@ -157,17 +164,26 @@ final class VideoPlayerViewModel: ObservableObject {
     @Published var currentTime: TimeInterval = 0
     @Published var duration: TimeInterval? = nil
     @Published var error: Error? = nil
+    @Published var isScrubbing = false
+
+    // Gallery action state (used by the inline detail player)
+    @Published var isPoisonPillConfigured = false
+    @Published var isDecoy = false
+    @Published var isDecoyOperationLoading = false
+
+    var decoyButtonTitle: String { isDecoy ? "Remove Decoy" : "Add Decoy" }
+    var decoyButtonIcon: String { isDecoy ? "shield.slash" : "shield" }
 
     private var playerItem: AVPlayerItem?
     private var timeObserver: Any?
     private var cancellables = Set<AnyCancellable>()
-    private let controlsHideTimer = Timer.publish(every: 3, on: .main, in: .common).autoconnect()
+    private var hideControlsTask: Task<Void, Never>?
+    private var loadTask: Task<Void, Never>?
+    private let controlsAutoHideDelay: TimeInterval = 5
 
     init(videoDef: VideoDef, encryptionKey: SymmetricKey?) {
         self.videoDef = videoDef
         self.encryptionKey = encryptionKey
-        
-        setupObservers()
     }
 
     // cleanup() is called from onDisappear in VideoPlayerView
@@ -175,18 +191,30 @@ final class VideoPlayerViewModel: ObservableObject {
     // MARK: - Public Methods
 
     func setupPlayback() {
-        Task {
-            await loadVideoAsset()
+        // A loader is already in flight or has finished — don't stack a
+        // second AVPlayer that would race the first.
+        guard player == nil, loadTask == nil else { return }
+        loadTask = Task { [weak self] in
+            await self?.loadVideoAsset()
+            await MainActor.run { self?.loadTask = nil }
         }
     }
 
     func cleanup() {
+        hideControlsTask?.cancel()
+        hideControlsTask = nil
+        // Cancel any in-flight asset load so a slow decrypt can't auto-play
+        // after the page has been swiped away.
+        loadTask?.cancel()
+        loadTask = nil
+        cancellables.removeAll()
         if let timeObserver = timeObserver {
             player?.removeTimeObserver(timeObserver)
             self.timeObserver = nil
         }
-        
+
         player?.pause()
+        isPlaying = false
         player = nil
         playerItem = nil
     }
@@ -198,6 +226,7 @@ final class VideoPlayerViewModel: ObservableObject {
             player?.play()
         }
         isPlaying = !isPlaying
+        scheduleHideControls()
     }
 
     func retryPlayback() {
@@ -209,23 +238,44 @@ final class VideoPlayerViewModel: ObservableObject {
     func toggleControls() {
         showControls.toggle()
         if showControls {
-            // Reset the auto-hide timer
-            controlsHideTimer.upstream.connect().cancel()
+            scheduleHideControls()
+        } else {
+            hideControlsTask?.cancel()
+        }
+    }
+
+    /// Shows the controls and (re)starts the auto-hide countdown. Call this
+    /// whenever the user interacts with the controls so they stay visible
+    /// long enough to be useful.
+    func showAndScheduleHideControls() {
+        if !showControls {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                showControls = true
+            }
+        }
+        scheduleHideControls()
+    }
+
+    /// Cancels any pending auto-hide. Use while the user is actively
+    /// scrubbing so controls don't vanish mid-drag.
+    func cancelHideControls() {
+        hideControlsTask?.cancel()
+    }
+
+    private func scheduleHideControls() {
+        hideControlsTask?.cancel()
+        let delay = controlsAutoHideDelay
+        hideControlsTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+            guard let self, !Task.isCancelled else { return }
+            guard self.showControls, self.isPlaying, !self.isScrubbing else { return }
+            withAnimation(.easeInOut(duration: 0.2)) {
+                self.showControls = false
+            }
         }
     }
 
     // MARK: - Private Methods
-
-    private func setupObservers() {
-        controlsHideTimer
-            .sink { [weak self] _ in
-                guard let self = self else { return }
-                if self.showControls && self.isPlaying {
-                    self.showControls = false
-                }
-            }
-            .store(in: &cancellables)
-    }
 
     private func loadVideoAsset() async {
         do {
@@ -259,15 +309,28 @@ final class VideoPlayerViewModel: ObservableObject {
             // Setup player item observers
             setupPlayerItemObservers(for: playerItem)
             
+            // Bail if the page was swiped away (or the model torn down)
+            // while we were decrypting / loading — otherwise we'd attach a
+            // fresh player and play audio off-screen.
+            if Task.isCancelled {
+                player.pause()
+                return
+            }
+
             // Update state
             await MainActor.run {
+                guard !Task.isCancelled else {
+                    player.pause()
+                    return
+                }
                 self.playerItem = playerItem
                 self.player = player
                 self.isLoading = false
-                
+
                 // Start playback automatically
                 player.play()
                 self.isPlaying = true
+                self.scheduleHideControls()
             }
             
         } catch {
@@ -304,9 +367,10 @@ final class VideoPlayerViewModel: ObservableObject {
     }
 
     private func setupTimeObserver(for player: AVPlayer) {
-        timeObserver = player.addPeriodicTimeObserver(forInterval: CMTime(seconds: 0.5, preferredTimescale: 600), queue: .main) { [weak self] time in
+        timeObserver = player.addPeriodicTimeObserver(forInterval: CMTime(seconds: 0.25, preferredTimescale: 600), queue: .main) { [weak self] time in
             Task { @MainActor [weak self] in
-                self?.currentTime = time.seconds
+                guard let self, !self.isScrubbing else { return }
+                self.currentTime = time.seconds
             }
         }
     }
@@ -348,6 +412,116 @@ final class VideoPlayerViewModel: ObservableObject {
                 logger.debug("Playback completed")
             }
             .store(in: &cancellables)
+    }
+
+    // MARK: - Scrubbing
+
+    func beginScrubbing() {
+        isScrubbing = true
+        player?.pause()
+        cancelHideControls()
+    }
+
+    /// Updates the displayed time as the user drags, without committing a seek.
+    func scrub(toFraction fraction: Double) {
+        guard let duration else { return }
+        currentTime = max(0, min(duration, duration * fraction))
+    }
+
+    /// Commits the seek and resumes playback if it was playing.
+    func endScrubbing(atFraction fraction: Double) {
+        guard let duration, let player else { isScrubbing = false; return }
+        let target = max(0, min(duration, duration * fraction))
+        currentTime = target
+        player.seek(to: CMTime(seconds: target, preferredTimescale: 600)) { [weak self] _ in
+            Task { @MainActor in
+                guard let self else { return }
+                self.isScrubbing = false
+                if self.isPlaying { self.player?.play() }
+                self.scheduleHideControls()
+            }
+        }
+    }
+
+    func pause() {
+        player?.pause()
+        isPlaying = false
+    }
+
+    // MARK: - Gallery Actions (inline detail player)
+
+    func loadActionState() {
+        isDecoy = secureImageRepository.isDecoyVideo(videoDef)
+        Task {
+            let configured = await pinRepository.hasPoisonPillPin()
+            await MainActor.run { self.isPoisonPillConfigured = configured }
+        }
+    }
+
+    func toggleDecoy() {
+        isDecoyOperationLoading = true
+        Task {
+            if isDecoy {
+                _ = secureImageRepository.removeDecoyVideo(videoDef)
+                await MainActor.run {
+                    self.isDecoy = false
+                    self.isDecoyOperationLoading = false
+                }
+            } else {
+                let success = await addDecoyVideoUseCase.addDecoyVideo(videoDef: videoDef)
+                await MainActor.run {
+                    self.isDecoy = success
+                    self.isDecoyOperationLoading = false
+                }
+                if !success { logger.error("Failed to add video decoy") }
+            }
+        }
+    }
+
+    func share() {
+        Task {
+            let tempURL = FileManager.default.temporaryDirectory
+                .appendingPathComponent("share_\(videoDef.videoName).mov")
+            FileManager.default.createFile(atPath: tempURL.path, contents: nil)
+            do {
+                if videoDef.isEncrypted, let key = encryptionKey {
+                    try await videoEncryptionService.decryptVideoForSharing(
+                        inputURL: videoDef.videoFile, outputURL: tempURL, encryptionKey: key)
+                } else {
+                    try? FileManager.default.removeItem(at: tempURL)
+                    try FileManager.default.copyItem(at: videoDef.videoFile, to: tempURL)
+                }
+                await MainActor.run { self.presentShareSheet(with: [tempURL]) }
+            } catch {
+                logger.error("Failed to prepare video for sharing", metadata: [
+                    "error": .string(error.localizedDescription)])
+            }
+        }
+    }
+
+    /// Deletes the video and its derived files. The caller dismisses the detail view.
+    func deleteVideo() {
+        cleanup()
+        try? FileManager.default.removeItem(at: videoDef.videoFile)
+        secureImageRepository.deleteVideoThumbnail(forVideoNamed: videoDef.videoName)
+        _ = secureImageRepository.removeDecoyVideo(videoDef)
+    }
+
+    private func presentShareSheet(with items: [Any]) {
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let root = windowScene.windows.first?.rootViewController else { return }
+        var presenter = root
+        while let presented = presenter.presentedViewController {
+            presenter = presented
+        }
+        let ac = UIActivityViewController(activityItems: items, applicationActivities: nil)
+        if let popover = ac.popoverPresentationController {
+            popover.sourceView = presenter.view
+            popover.sourceRect = CGRect(x: presenter.view.bounds.midX,
+                                        y: presenter.view.bounds.midY, width: 0, height: 0)
+            popover.permittedArrowDirections = []
+        }
+        presenter.present(ac, animated: true)
     }
 
     private let logger = Logger.video

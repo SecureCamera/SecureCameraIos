@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		06380B44AA837F59C33FFAF0 /* AddDecoyVideoUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = E60E8772D487C47F35C819B2 /* AddDecoyVideoUseCase.swift */; };
+		0A39B5BB99D38FD752C33D40 /* InlineVideoPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 345B31B24DBF8A6CAC9E2617 /* InlineVideoPlayerView.swift */; };
+		113AED184D13916EBB009C93 /* MediaDetailToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60C2F7E4B3B5397EF48DF183 /* MediaDetailToolbar.swift */; };
 		182F66A484EDD7D5670EBE15 /* VideoThumbnailTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9286AA1AF0A4DF1140718E06 /* VideoThumbnailTests.swift */; };
 		660130A02E676F5B00D07E9C /* FactoryKit in Frameworks */ = {isa = PBXBuildFile; productRef = 6601309F2E676F5B00D07E9C /* FactoryKit */; };
 		660130A22E676F5B00D07E9C /* FactoryTesting in Frameworks */ = {isa = PBXBuildFile; productRef = 660130A12E676F5B00D07E9C /* FactoryTesting */; };
@@ -144,6 +146,7 @@
 		A9F9DDA42EA1C980003FC66E /* CameraCaptureIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9F9DDA32EA1C980003FC66E /* CameraCaptureIntent.swift */; };
 		A9FFC0DE2F3A000100BB6F19 /* VideoDef.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9FFC0DE2F3A000000BB6F19 /* VideoDef.swift */; };
 		AF250682EF9E0A6D81B711EF /* VideoImportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBEA7D1062AABE16019D0AEF /* VideoImportTests.swift */; };
+		B9D2FCB35A0C40D83FBA3CB8 /* VideoSurfaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC401584FDB751F792E58364 /* VideoSurfaceView.swift */; };
 		D54FBF5A0C3BABB963AB33CF /* FakeEncryptionScheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2414533D313F8BEF8E1DB17D /* FakeEncryptionScheme.swift */; };
 		E81315B178D3FB88663F856F /* FakeVideoEncryptionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2AD9082F22CD2A9FC7CD33B /* FakeVideoEncryptionService.swift */; };
 		F5928EF067F8CDFB35D572D3 /* FakeThumbnailCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 177F44BD6B96C2A8659FAC80 /* FakeThumbnailCache.swift */; };
@@ -170,6 +173,8 @@
 /* Begin PBXFileReference section */
 		177F44BD6B96C2A8659FAC80 /* FakeThumbnailCache.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FakeThumbnailCache.swift; sourceTree = "<group>"; };
 		2414533D313F8BEF8E1DB17D /* FakeEncryptionScheme.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FakeEncryptionScheme.swift; sourceTree = "<group>"; };
+		345B31B24DBF8A6CAC9E2617 /* InlineVideoPlayerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = InlineVideoPlayerView.swift; sourceTree = "<group>"; };
+		60C2F7E4B3B5397EF48DF183 /* MediaDetailToolbar.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MediaDetailToolbar.swift; sourceTree = "<group>"; };
 		660130A82E67753600D07E9C /* AppDependencyInjection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDependencyInjection.swift; sourceTree = "<group>"; };
 		660130B62E67AD1D00D07E9C /* AuthorizationRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorizationRepository.swift; sourceTree = "<group>"; };
 		660130B82E67AD1D00D07E9C /* EncryptionScheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EncryptionScheme.swift; sourceTree = "<group>"; };
@@ -299,6 +304,7 @@
 		A9F9DDA32EA1C980003FC66E /* CameraCaptureIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraCaptureIntent.swift; sourceTree = "<group>"; };
 		A9FFC0DE2F3A000000BB6F19 /* VideoDef.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoDef.swift; sourceTree = "<group>"; };
 		ADA2FF82666960557F17548E /* SecureImageRepositoryTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SecureImageRepositoryTests.swift; sourceTree = "<group>"; };
+		BC401584FDB751F792E58364 /* VideoSurfaceView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VideoSurfaceView.swift; sourceTree = "<group>"; };
 		DBCDFD42CA72A9C8FA98EDCD /* SECVFileFormatTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SECVFileFormatTests.swift; sourceTree = "<group>"; };
 		DCC41CA572369E73F5CB7451 /* PoisonPillVideoDeletionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PoisonPillVideoDeletionTests.swift; sourceTree = "<group>"; };
 		E122542F8E8343FD9E2471E5 /* DecoyVideoIntegrationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DecoyVideoIntegrationTests.swift; sourceTree = "<group>"; };
@@ -647,6 +653,9 @@
 				A91DBC312DE58191001F42ED /* PhotoControlsView.swift */,
 				A91DBC322DE58191001F42ED /* ZoomableImageView.swift */,
 				A91DBC332DE58191001F42ED /* ZoomLevelIndicator.swift */,
+				60C2F7E4B3B5397EF48DF183 /* MediaDetailToolbar.swift */,
+				BC401584FDB751F792E58364 /* VideoSurfaceView.swift */,
+				345B31B24DBF8A6CAC9E2617 /* InlineVideoPlayerView.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -1025,6 +1034,9 @@
 				A91DBC782DE58191001F42ED /* SettingsView.swift in Sources */,
 				A91DBC792DE58191001F42ED /* SnapSafeApp.swift in Sources */,
 				06380B44AA837F59C33FFAF0 /* AddDecoyVideoUseCase.swift in Sources */,
+				113AED184D13916EBB009C93 /* MediaDetailToolbar.swift in Sources */,
+				B9D2FCB35A0C40D83FBA3CB8 /* VideoSurfaceView.swift in Sources */,
+				0A39B5BB99D38FD752C33D40 /* InlineVideoPlayerView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
