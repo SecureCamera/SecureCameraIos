@@ -84,6 +84,36 @@ final class DecoyVideoIntegrationTests: XCTestCase {
         try await assertRoundTrip(plaintext: Data((0..<size).map { UInt8($0 & 0xFF) }))
     }
 
+    /// Importing a video encrypts it to a recoverable SECV file in the videos dir.
+    func testImportVideoEncryptsRecoverably() async throws {
+        let plaintext = Data((0..<8192).map { UInt8($0 & 0xFF) })
+        let plainURL = tempDirectory.appendingPathComponent("import.mov")
+        try plaintext.write(to: plainURL)
+
+        let repo = VideoTestableSecureImageRepository(
+            tempDirectory: tempDirectory,
+            thumbnailCache: FakeThumbnailCache(),
+            encryptionScheme: FakeEncryptionScheme(),
+            videoEncryptionService: VideoEncryptionService()
+        )
+
+        let imported = await repo.importVideo(from: plainURL)
+        XCTAssertTrue(imported)
+
+        let secv = try FileManager.default
+            .contentsOfDirectory(at: videosDirectory, includingPropertiesForKeys: nil)
+            .first { $0.pathExtension == "secv" }
+        let secvURL = try XCTUnwrap(secv, "import should create a .secv file in the videos directory")
+        XCTAssertTrue(secvURL.lastPathComponent.hasPrefix("video_"))
+
+        // Decrypt it back with the same key and verify the original bytes.
+        let outURL = tempDirectory.appendingPathComponent("recovered.mov")
+        FileManager.default.createFile(atPath: outURL.path, contents: nil)
+        try await VideoEncryptionService().decryptVideoForSharing(
+            inputURL: secvURL, outputURL: outURL, encryptionKey: SymmetricKey(data: Data(count: 32)))
+        XCTAssertEqual(try Data(contentsOf: outURL), plaintext)
+    }
+
     private func assertRoundTrip(plaintext: Data) async throws {
         let service = VideoEncryptionService()
         let key = SymmetricKey(data: Data(count: 32))

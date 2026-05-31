@@ -679,6 +679,47 @@ public class SecureImageRepository {
         }
     }
 
+    // MARK: - Video Import
+
+    /// Imports a plaintext video (e.g. from the photo library): encrypts it to
+    /// SECV with the current key in the videos directory and stores a thumbnail.
+    /// The caller owns `plaintextURL` and should delete it afterwards.
+    func importVideo(from plaintextURL: URL) async -> Bool {
+        do {
+            let key = SymmetricKey(data: try await encryptionScheme.getDerivedKey())
+
+            // Match the camera's "video_yyyyMMdd_HHmmss" naming so dateTaken()
+            // parses; bump the second on collision to keep names unique/sortable.
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyyMMdd_HHmmss"
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+
+            var date = Date()
+            var name = "video_\(formatter.string(from: date))"
+            var dest = getVideosDirectory().appendingPathComponent(name).appendingPathExtension("secv")
+            while FileManager.default.fileExists(atPath: dest.path) {
+                date = date.addingTimeInterval(1)
+                name = "video_\(formatter.string(from: date))"
+                dest = getVideosDirectory().appendingPathComponent(name).appendingPathExtension("secv")
+            }
+
+            // The encryption service opens its output via FileHandle(forWritingTo:),
+            // so the file must exist first.
+            FileManager.default.createFile(atPath: dest.path, contents: nil)
+            try await videoEncryptionService.encryptVideoForDecoy(
+                inputURL: plaintextURL,
+                outputURL: dest,
+                encryptionKey: key
+            )
+
+            await generateAndStoreVideoThumbnail(forVideoNamed: name, fromPlaintextVideo: plaintextURL)
+            return true
+        } catch {
+            Logger.storage.error("Failed to import video: \(error)")
+            return false
+        }
+    }
+
     // MARK: - Video Thumbnails
 
     private func getVideoThumbnailFile(forVideoNamed name: String) -> URL {

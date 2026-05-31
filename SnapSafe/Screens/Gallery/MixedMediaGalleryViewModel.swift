@@ -12,6 +12,27 @@ import Combine
 import FactoryKit
 import Logging
 import CryptoKit
+import CoreTransferable
+import UniformTypeIdentifiers
+
+/// A movie loaded from the photo library, copied to a temporary location we own.
+struct ImportedMovie: Transferable {
+    let url: URL
+
+    static var transferRepresentation: some TransferRepresentation {
+        FileRepresentation(contentType: .movie) { movie in
+            SentTransferredFile(movie.url)
+        } importing: { received in
+            let ext = received.file.pathExtension.isEmpty ? "mov" : received.file.pathExtension
+            let temp = FileManager.default.temporaryDirectory
+                .appendingPathComponent(UUID().uuidString)
+                .appendingPathExtension(ext)
+            try? FileManager.default.removeItem(at: temp)
+            try FileManager.default.copyItem(at: received.file, to: temp)
+            return ImportedMovie(url: temp)
+        }
+    }
+}
 
 /// Gallery selection modes.
 enum SelectionMode {
@@ -382,7 +403,13 @@ final class MixedMediaGalleryViewModel: ObservableObject {
             for (index, item) in newItems.enumerated() {
                 importProgress = Float(index) / Float(newItems.count)
 
-                if let data = try? await item.loadTransferable(type: Data.self) {
+                if item.supportedContentTypes.contains(where: { $0.conforms(to: .movie) }) {
+                    if let movie = try? await item.loadTransferable(type: ImportedMovie.self) {
+                        let imported = await secureImageRepository.importVideo(from: movie.url)
+                        try? FileManager.default.removeItem(at: movie.url)
+                        if imported { hadSuccessfulImport = true }
+                    }
+                } else if let data = try? await item.loadTransferable(type: Data.self) {
                     await processImportedImageData(data)
                     hadSuccessfulImport = true
                 }
