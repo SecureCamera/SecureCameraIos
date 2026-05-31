@@ -15,9 +15,11 @@ import UIKit
 final class VideoThumbnailTests: XCTestCase {
 
     private var repository: SecureImageRepository!
+    private var fakeEncryption: FakeEncryptionScheme!
     private var tempDirectory: URL!
     private var videosDirectory: URL!
     private var videoThumbnailsDirectory: URL!
+    private var decoyVideoThumbnailsDirectory: URL!
 
     override func setUp() async throws {
         try await super.setUp()
@@ -27,11 +29,13 @@ final class VideoThumbnailTests: XCTestCase {
 
         videosDirectory = tempDirectory.appendingPathComponent(SecureImageRepository.videosDir)
         videoThumbnailsDirectory = tempDirectory.appendingPathComponent(SecureImageRepository.videoThumbnailsDir)
+        decoyVideoThumbnailsDirectory = tempDirectory.appendingPathComponent(SecureImageRepository.decoyVideoThumbnailsDir)
 
+        fakeEncryption = FakeEncryptionScheme()
         repository = VideoTestableSecureImageRepository(
             tempDirectory: tempDirectory,
             thumbnailCache: FakeThumbnailCache(),
-            encryptionScheme: FakeEncryptionScheme(),
+            encryptionScheme: fakeEncryption,
             videoEncryptionService: FakeVideoEncryptionService()
         )
     }
@@ -39,9 +43,11 @@ final class VideoThumbnailTests: XCTestCase {
     override func tearDown() async throws {
         try? FileManager.default.removeItem(at: tempDirectory)
         repository = nil
+        fakeEncryption = nil
         tempDirectory = nil
         videosDirectory = nil
         videoThumbnailsDirectory = nil
+        decoyVideoThumbnailsDirectory = nil
         try await super.tearDown()
     }
 
@@ -86,6 +92,45 @@ final class VideoThumbnailTests: XCTestCase {
 
         XCTAssertFalse(FileManager.default.fileExists(atPath: videoThumbnailsDirectory.path),
                        "All video thumbnails should be destroyed on poison pill activation")
+    }
+
+    /// A decoy video's thumbnail must survive the poison pill (re-encrypted with
+    /// the poison key), while a non-decoy video's thumbnail is destroyed.
+    func testDecoyVideoThumbnailSurvivesPoisonPillWhileOthersAreDestroyed() async throws {
+        try FileManager.default.createDirectory(at: videosDirectory, withIntermediateDirectories: true)
+
+        // A decoy video + its thumbnail.
+        let decoyVideoFile = videosDirectory.appendingPathComponent("video_decoy.secv")
+        try Data("decoy-original".utf8).write(to: decoyVideoFile)
+        let decoyVideoDef = VideoDef(videoName: "video_decoy", videoFormat: "secv", videoFile: decoyVideoFile)
+        await repository.storeVideoThumbnail(makeTestImage(), forVideoNamed: "video_decoy")
+
+        // A non-decoy video's thumbnail.
+        await repository.storeVideoThumbnail(makeTestImage(), forVideoNamed: "video_regular")
+
+        // The decoy thumbnail re-encryption decrypts the current thumbnail; make
+        // the fake return some jpeg bytes for that decrypt.
+        fakeEncryption.decryptResult = Data("jpeg".utf8)
+
+        // Mark the video as a decoy.
+        let added = await repository.addDecoyVideoWithKey(decoyVideoDef, keyData: Data(repeating: 0xAB, count: 32))
+        XCTAssertTrue(added)
+        XCTAssertTrue(FileManager.default.fileExists(
+            atPath: decoyVideoThumbnailsDirectory.appendingPathComponent("video_decoy.jpg").path),
+            "Marking a video as a decoy should store a poison-key thumbnail copy")
+
+        // When
+        repository.activatePoisonPill()
+
+        // Then — the decoy video's thumbnail is restored and available.
+        XCTAssertTrue(FileManager.default.fileExists(
+            atPath: videoThumbnailsDirectory.appendingPathComponent("video_decoy.jpg").path),
+            "Decoy video thumbnail must survive the poison pill so the gallery can show it")
+
+        // And the non-decoy video's thumbnail is gone.
+        XCTAssertFalse(FileManager.default.fileExists(
+            atPath: videoThumbnailsDirectory.appendingPathComponent("video_regular.jpg").path),
+            "Non-decoy video thumbnail should be destroyed by the poison pill")
     }
 
     // MARK: - Helpers
