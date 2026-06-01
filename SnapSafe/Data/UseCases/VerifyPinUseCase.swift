@@ -16,7 +16,10 @@ import Logging
 /// without burning a failed-attempt against the user.
 public enum PinVerificationResult: Sendable {
     case success
-    case invalidPin
+    /// The PIN did not match. Carries the authoritative post-increment failed
+    /// attempt count from the repository (the single writer), so the caller
+    /// never re-derives or re-writes it from stale local state (M1).
+    case invalidPin(failedAttempts: Int)
     case failure(Error)
 }
 
@@ -70,9 +73,12 @@ public final class VerifyPinUseCase: @unchecked Sendable {
         // Attempt regular PIN authorization
         let hashedPin = await authorizePinUseCase.authorizePin(pin)
         guard let hashedPin else {
-            _ = await authRepo.incrementFailedAttempts()
+            // Single writer: the repository owns the counter and the backoff
+            // timestamp/baseline. Return the authoritative new count so the
+            // caller displays it without writing it a second time (M1).
+            let failedAttempts = await authRepo.incrementFailedAttempts()
             Logger.security.warning("PIN verification failed - invalid PIN provided")
-            return .invalidPin
+            return .invalidPin(failedAttempts: failedAttempts)
         }
 
         do {

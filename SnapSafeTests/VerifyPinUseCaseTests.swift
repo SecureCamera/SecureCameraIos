@@ -69,6 +69,59 @@ final class VerifyPinUseCaseTests: XCTestCase {
         }
     }
 
+    func test_verifyPin_onInvalidPin_incrementsCounterExactlyOnce_andReturnsNewCount() async throws {
+        // M1: the failed-attempt counter must have a single writer (the
+        // repository, via incrementFailedAttempts). The use case returns the
+        // authoritative new count so the view model never writes it a second
+        // time from stale local state.
+        let pin = "1234"
+
+        let pinRepo = MockPinRepository()
+        given(pinRepo).hasPoisonPillPin().willReturn(false)
+        given(pinRepo).verifyPoisonPillPin(.value(pin)).willReturn(false)
+        given(pinRepo).getHashedPin().willReturn(nil)
+        given(pinRepo).verifySecurityPin(.value(pin)).willReturn(false)
+
+        // Real settings-backed repository so the persisted counter is the
+        // single source of truth.
+        let settings = UserDefaultsSettingsDataSource(userDefaults: .inMemoryForTesting())
+        let passthrough = PassThroughEncryptionScheme()
+        let authRepo = AuthorizationRepository(
+            settings: settings,
+            encryptionScheme: passthrough,
+            clock: SystemClock()
+        )
+        let imageRepo = SecureImageRepository(
+            thumbnailCache: ThumbnailCache(),
+            encryptionScheme: passthrough
+        )
+        let authorizePinUseCase = AuthorizePinUseCase(
+            authRepository: authRepo,
+            pinRepository: pinRepo
+        )
+
+        let sut = VerifyPinUseCase(
+            authRepository: authRepo,
+            imageRepository: imageRepo,
+            pinRepository: pinRepo,
+            encryptionScheme: passthrough,
+            authorizePinUseCase: authorizePinUseCase
+        )
+
+        let result = await sut.verifyPin(pin)
+
+        // Persisted counter incremented exactly once (0 -> 1).
+        let persisted = await settings.getFailedPinAttempts()
+        XCTAssertEqual(persisted, 1, "Invalid PIN must increment the counter exactly once")
+
+        // Result carries the authoritative new count, sourced from the single
+        // increment — the caller must not derive it from stale local state.
+        guard case .invalidPin(let count) = result else {
+            return XCTFail("Expected .invalidPin, got \(result)")
+        }
+        XCTAssertEqual(count, 1, "Result must carry the post-increment count")
+    }
+
     func test_verifyPin_doesNotInvokePoisonPillVerify_whenNoPoisonPillIsSet() async throws {
         // H5: when hasPoisonPillPin() is false, verifyPoisonPillPin must be
         // short-circuited so we don't run a second Argon2 verification per
