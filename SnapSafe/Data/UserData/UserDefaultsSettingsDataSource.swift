@@ -15,7 +15,6 @@ private enum PrefKeys: String {
     case sanitizeFileName   = "prefs.sanitizeFileName"           // Bool
     case sanitizeMetadata   = "prefs.sanitizeMetadata"           // Bool
     case sessionTimeoutMs   = "prefs.sessionTimeoutMs"           // Int64 (stored as Int)
-    case cipherKey          = "prefs.cipherKey"                  // String
     case cipheredPin        = "prefs.cipheredPin"                // String?
     case failedPinAttempts  = "prefs.failedPinAttempts"          // Int
     case lastFailedAttempt  = "prefs.lastFailedAttempt"          // Int64 (stored as Int)
@@ -29,7 +28,6 @@ public enum Defaults {
     public static let sanitizeFileName: Bool = true
     public static let sanitizeMetadata: Bool = true
     public static let sessionTimeoutMs: Int64 = 60_000
-    public static let cipherKey: String = "stub-cipher-key" // In production, move to Keychain
 }
 
 // MARK: - UserDefaults Impl
@@ -79,9 +77,6 @@ public final class UserDefaultsSettingsDataSource: SettingsDataSource, @unchecke
         if store.object(forKey: PrefKeys.sanitizeMetadata.rawValue) == nil {
             store.set(sanitizeMetadataDefault, forKey: PrefKeys.sanitizeMetadata.rawValue)
         }
-        if store.string(forKey: PrefKeys.cipherKey.rawValue) == nil {
-            store.set(Defaults.cipherKey, forKey: PrefKeys.cipherKey.rawValue)
-        }
         if store.object(forKey: PrefKeys.sessionTimeoutMs.rawValue) == nil {
             store.set(Int(Defaults.sessionTimeoutMs), forKey: PrefKeys.sessionTimeoutMs.rawValue)
         }
@@ -102,10 +97,6 @@ public final class UserDefaultsSettingsDataSource: SettingsDataSource, @unchecke
     }
 
     // MARK: - Keys & PIN
-    public func getCipherKey() async -> String {
-        defaults.string(forKey: PrefKeys.cipherKey.rawValue) ?? Defaults.cipherKey
-    }
-
     public func getCipheredPin() async -> String? {
         defaults.string(forKey: PrefKeys.cipheredPin.rawValue)
     }
