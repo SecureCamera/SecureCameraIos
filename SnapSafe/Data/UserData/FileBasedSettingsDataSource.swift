@@ -156,7 +156,11 @@ public final class FileBasedSettingsDataSource: SettingsDataSource, @unchecked S
             
             do {
                 let data = try self.jsonEncoder.encode(self._settingsData)
-                try data.write(to: self.fileURL, options: .atomic)
+                // Complete file protection: the settings file holds the
+                // reversible poison-pill PIN ciphertext and the PIN hashes, so it
+                // must be unreadable while the device is locked, not merely
+                // excluded from backup (H2, Option D).
+                try data.write(to: self.fileURL, options: [.atomic, .completeFileProtection])
                 Logger.storage.debug("Settings saved to file", metadata: [
                     "fileURL": .string(self.fileURL.path),
                     "fileSize": .stringConvertible(data.count)
