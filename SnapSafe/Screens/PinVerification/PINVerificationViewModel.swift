@@ -124,11 +124,13 @@ final class PINVerificationViewModel: ObservableObject {
 
         switch result {
         case .success:
-            // PIN verification successful (includes poison pill handling)
+            // PIN verification successful (includes poison pill handling).
+            // The repository already reset the counter to 0 on success
+            // (AuthorizePinUseCase.resetFailedAttempts); just reflect that
+            // locally rather than writing it a second time (M1).
             Logger.security.info("PIN verification successful")
 
-            // Reset failed attempts counter on successful verification
-            await setCurrentFailedAttempts(0)
+            failedAttempts = 0
 
             // Update UI state
             showError = false
@@ -148,10 +150,13 @@ final class PINVerificationViewModel: ObservableObject {
                 "error": .string(String(describing: error))
             ])
 
-        case .invalidPin:
-            // PIN verification failed
+        case .invalidPin(let failedAttempts):
+            // PIN verification failed. The repository is the single writer of
+            // the counter (and the backoff timestamp/baseline); the use case
+            // already incremented and returns the authoritative count here.
+            // We only reflect it — we never write it back (M1).
             showError = true
-            await setCurrentFailedAttempts(failedAttempts+1)
+            self.failedAttempts = failedAttempts
             pin = ""
 
             Logger.security.warning("PIN verification failed", metadata: [
@@ -174,10 +179,9 @@ final class PINVerificationViewModel: ObservableObject {
                     "attemptCount": .stringConvertible(failedAttempts)
                 ])
 
-                // Check for backoff time after failed attempt
+                // Refresh backoff state after the failed attempt.
                 Task {
                     await updateBackoffTime()
-                    await updateCurrentFailedAttempts()
                 }
             }
         }
@@ -217,15 +221,10 @@ final class PINVerificationViewModel: ObservableObject {
     
     private func updateCurrentFailedAttempts() async {
         let attempts = await authorizationRepository.getFailedAttempts()
-        
+
         await MainActor.run {
             self.failedAttempts = attempts
         }
-    }
-    
-    private func setCurrentFailedAttempts(_ attempts: Int) async {
-        await authorizationRepository.setFailedAttempts(attempts)
-        self.failedAttempts = attempts
     }
     
     private func startBackoffTimer() {
