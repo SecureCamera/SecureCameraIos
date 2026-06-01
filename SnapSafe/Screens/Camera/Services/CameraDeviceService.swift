@@ -258,9 +258,12 @@ final class CameraDeviceService: ObservableObject, @preconcurrency CameraDeviceP
 
             session.commitConfiguration()
 
-            // Update state on main thread
-            Task { @MainActor [weak self, newAudioInput] in
-                self?.audioInput = newAudioInput
+            // Update state on main thread.
+            // newAudioInput is AVCaptureDeviceInput? which isn't Sendable; we know
+            // crossing back to MainActor here is safe because nothing else races on it.
+            nonisolated(unsafe) let resolvedAudioInput = newAudioInput
+            Task { @MainActor [weak self] in
+                self?.audioInput = resolvedAudioInput
                 self?.currentCaptureMode = mode
                 self?.isConfiguring = false
                 Logger.camera.info("Configured camera for mode: \(String(describing: mode))")
