@@ -16,7 +16,6 @@ private struct SettingsData: Codable {
     var sanitizeFileName: Bool
     var sanitizeMetadata: Bool
     var sessionTimeoutMs: Int64
-    var cipherKey: String
     var cipheredPin: String?
     var failedPinAttempts: Int
     var lastFailedAttempt: Int64
@@ -73,14 +72,13 @@ public final class FileBasedSettingsDataSource: SettingsDataSource, @unchecked S
             sanitizeFileName: sanitizeFileNameDefault,
             sanitizeMetadata: sanitizeMetadataDefault,
             sessionTimeoutMs: Defaults.sessionTimeoutMs,
-            cipherKey: Defaults.cipherKey,
             cipheredPin: nil,
             failedPinAttempts: 0,
             lastFailedAttempt: 0,
             poisonPillPlain: nil,
             poisonPillHashed: nil
         )
-        
+
         // Load existing settings or use defaults
         self._settingsData = Self.loadSettingsFromFile(url: self.fileURL, defaults: defaultSettings)
         Logger.storage.debug("FileBasedSettingsDataSource initialized", metadata: [
@@ -188,10 +186,6 @@ public final class FileBasedSettingsDataSource: SettingsDataSource, @unchecked S
     }
 
     // MARK: - Keys & PIN
-    public func getCipherKey() async -> String {
-        return readProperty(\.cipherKey)
-    }
-
     public func getCipheredPin() async -> String? {
         return readProperty(\.cipheredPin)
     }
@@ -258,7 +252,6 @@ public final class FileBasedSettingsDataSource: SettingsDataSource, @unchecked S
                     sanitizeFileName: self.sanitizeFileNameDefault,
                     sanitizeMetadata: self.sanitizeMetadataDefault,
                     sessionTimeoutMs: self._settingsData.sessionTimeoutMs, // Preserve session timeout
-                    cipherKey: Defaults.cipherKey,
                     cipheredPin: nil,
                     failedPinAttempts: 0,
                     lastFailedAttempt: 0,

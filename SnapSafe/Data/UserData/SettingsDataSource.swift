@@ -31,7 +31,6 @@ public protocol SettingsDataSource: Sendable {
     var sessionTimeout: AnyPublisher<Int64, Never> { get }
     
     // MARK: - Keys & PIN
-    func getCipherKey() async -> String
     func getCipheredPin() async -> String?
 
     /// Set the introduction completion status
