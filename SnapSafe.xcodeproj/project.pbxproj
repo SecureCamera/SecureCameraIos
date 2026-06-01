@@ -12,6 +12,7 @@
 		113AED184D13916EBB009C93 /* MediaDetailToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60C2F7E4B3B5397EF48DF183 /* MediaDetailToolbar.swift */; };
 		182F66A484EDD7D5670EBE15 /* VideoThumbnailTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9286AA1AF0A4DF1140718E06 /* VideoThumbnailTests.swift */; };
 		24194F171D3CBDF42B72D556 /* HardwareEncryptionSchemeFileProtectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B07498650554419769A4053 /* HardwareEncryptionSchemeFileProtectionTests.swift */; };
+		24194F181D3CBDF42B72D557 /* HardwareEncryptionSchemeSecurityResetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B07498750554419769A4054 /* HardwareEncryptionSchemeSecurityResetTests.swift */; };
 		660130A02E676F5B00D07E9C /* FactoryKit in Frameworks */ = {isa = PBXBuildFile; productRef = 6601309F2E676F5B00D07E9C /* FactoryKit */; };
 		660130A22E676F5B00D07E9C /* FactoryTesting in Frameworks */ = {isa = PBXBuildFile; productRef = 660130A12E676F5B00D07E9C /* FactoryTesting */; };
 		660130A92E67753600D07E9C /* AppDependencyInjection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 660130A82E67753600D07E9C /* AppDependencyInjection.swift */; };
@@ -173,6 +174,7 @@
 
 /* Begin PBXFileReference section */
 		0B07498650554419769A4053 /* HardwareEncryptionSchemeFileProtectionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HardwareEncryptionSchemeFileProtectionTests.swift; sourceTree = "<group>"; };
+		0B07498750554419769A4054 /* HardwareEncryptionSchemeSecurityResetTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HardwareEncryptionSchemeSecurityResetTests.swift; sourceTree = "<group>"; };
 		177F44BD6B96C2A8659FAC80 /* FakeThumbnailCache.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FakeThumbnailCache.swift; sourceTree = "<group>"; };
 		2414533D313F8BEF8E1DB17D /* FakeEncryptionScheme.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FakeEncryptionScheme.swift; sourceTree = "<group>"; };
 		345B31B24DBF8A6CAC9E2617 /* InlineVideoPlayerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = InlineVideoPlayerView.swift; sourceTree = "<group>"; };
@@ -751,6 +753,7 @@
 				E122542F8E8343FD9E2471E5 /* DecoyVideoIntegrationTests.swift */,
 				FBEA7D1062AABE16019D0AEF /* VideoImportTests.swift */,
 				0B07498650554419769A4053 /* HardwareEncryptionSchemeFileProtectionTests.swift */,
+				0B07498750554419769A4054 /* HardwareEncryptionSchemeSecurityResetTests.swift */,
 			);
 			path = SnapSafeTests;
 			sourceTree = "<group>";
@@ -1065,6 +1068,7 @@
 				F994CE57BC4263827C4C1DB9 /* DecoyVideoIntegrationTests.swift in Sources */,
 				AF250682EF9E0A6D81B711EF /* VideoImportTests.swift in Sources */,
 				24194F171D3CBDF42B72D556 /* HardwareEncryptionSchemeFileProtectionTests.swift in Sources */,
+				24194F181D3CBDF42B72D557 /* HardwareEncryptionSchemeSecurityResetTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

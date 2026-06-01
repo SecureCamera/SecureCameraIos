@@ -49,7 +49,7 @@ final class PoisonPillVideoDeletionTests: XCTestCase {
 
     /// Core regression test: when the poison pill is activated, a decoy photo is
     /// preserved while non-decoy videos are destroyed.
-    func testActivatePoisonPillDestroysVideosNotMarkedAsDecoys() throws {
+    func testActivatePoisonPillDestroysVideosNotMarkedAsDecoys() async throws {
         try FileManager.default.createDirectory(at: galleryDirectory, withIntermediateDirectories: true)
         try FileManager.default.createDirectory(at: decoyDirectory, withIntermediateDirectories: true)
         try FileManager.default.createDirectory(at: videosDirectory, withIntermediateDirectories: true)
@@ -71,7 +71,7 @@ final class PoisonPillVideoDeletionTests: XCTestCase {
         try Data().write(to: video2)
 
         // When
-        repository.activatePoisonPill()
+        await repository.activatePoisonPill()
 
         // Then - only the decoy photo survives.
         let photos = repository.getPhotos()
@@ -137,7 +137,7 @@ final class PoisonPillVideoDeletionTests: XCTestCase {
         XCTAssertTrue(repository.isDecoyVideo(decoyVideoDef))
 
         // When
-        repository.activatePoisonPill()
+        await repository.activatePoisonPill()
 
         // Then - decoy video survives and now holds the poison-pill-key bytes.
         XCTAssertTrue(FileManager.default.fileExists(atPath: decoyVideoFile.path),

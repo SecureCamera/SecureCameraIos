@@ -151,10 +151,8 @@ final class HardwareEncryptionScheme: EncryptionScheme {
         return try await deriveWrappedKey(plainPin: plainPin, hashedPin: hashedPin)
     }
     
-    func evictKey() {
-        Task {
-            await keyCache.evictKey()
-        }
+    func evictKey() async {
+        await keyCache.evictKey()
     }
     
     func createKey(plainPin: String, hashedPin: HashedPin) async throws {
@@ -177,27 +175,41 @@ final class HardwareEncryptionScheme: EncryptionScheme {
     
     func securityFailureReset() async {
         logger.warning("Performing security failure reset")
-        
-        // Delete all DEKs
+
+        // 1. Evict any in-memory derived key. Must be awaited so the cache is
+        //    guaranteed empty before reset returns — otherwise an attacker who
+        //    triggered the reset by racing the device-lock state could observe
+        //    the key still cached momentarily after reset.
+        await evictKey()
+
+        // 2. Delete hardware-backed key material (Secure Enclave / keychain).
+        //    Without this, the EC keys (snapsafe_kek, pin_key, ...) survive
+        //    reset and can decrypt any DEK that ever leaks via backup/extraction.
+        let deletedKeyCount = deleteAllHardwareKeys()
+        logger.info("Deleted hardware keys", metadata: [
+            "count": .stringConvertible(deletedKeyCount)
+        ])
+
+        // 3. Delete all DEKs on disk
         let keyDir = getKeyDirectory()
         do {
             let contents = try FileManager.default.contentsOfDirectory(at: keyDir, includingPropertiesForKeys: nil)
             let dekFiles = contents.filter { file in
                 file.lastPathComponent.hasPrefix(Self.dekFilenamePrefix)
             }
-            
+
             logger.info("Found DEK files to delete", metadata: [
                 "file_count": .stringConvertible(dekFiles.count),
                 "directory": .string(keyDir.lastPathComponent)
             ])
-            
+
             for file in dekFiles {
                 try FileManager.default.removeItem(at: file)
                 logger.debug("Deleted DEK file", metadata: [
                     "file": .string(file.lastPathComponent)
                 ])
             }
-            
+
             logger.info("Security failure reset completed successfully", metadata: [
                 "deleted_files": .stringConvertible(dekFiles.count)
             ])
@@ -205,6 +217,29 @@ final class HardwareEncryptionScheme: EncryptionScheme {
             logger.error("Failed to reset security keys", metadata: [
                 "error": .string(String(describing: error))
             ])
+        }
+    }
+
+    /// Deletes every EC hardware key this app owns from the keychain.
+    /// Returns the number of items deleted (or 0 on errSecItemNotFound).
+    @discardableResult
+    private func deleteAllHardwareKeys() -> Int {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassKey,
+            kSecAttrKeyType as String: kSecAttrKeyTypeECSECPrimeRandom
+        ]
+
+        let status = SecItemDelete(query as CFDictionary)
+        switch status {
+        case errSecSuccess:
+            return 1  // SecItemDelete does not report a count; report at least one
+        case errSecItemNotFound:
+            return 0
+        default:
+            logger.error("SecItemDelete failed during security reset", metadata: [
+                "status": .stringConvertible(status)
+            ])
+            return 0
         }
     }
     

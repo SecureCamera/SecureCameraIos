@@ -44,8 +44,10 @@ public protocol EncryptionScheme: Sendable {
     /// Derives (but does not necessarily cache) a key from the provided PIN.
     func deriveKey(plainPin: String, hashedPin: HashedPin) async throws -> Data
 
-    /// Evicts any cached/derived key from memory.
-    func evictKey()
+    /// Evicts any cached/derived key from memory. Callers must await so the
+    /// key is guaranteed cleared before they proceed (e.g. before signaling
+    /// a completed security reset).
+    func evictKey() async
 
     // MARK: - First-time key creation & resets
     /// First-time key creation bootstrap.
