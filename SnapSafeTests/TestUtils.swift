@@ -54,10 +54,37 @@ func XCTAssertGreaterThanAsync<T: Comparable>(
 }
 
 final class TestClock: Clock {
-    var fixed: Date
-    init(_ start: Date = Date(timeIntervalSince1970: 1)) { self.fixed = start }
-    var now: Date { fixed }
-    func advance(by seconds: TimeInterval) { fixed.addTimeInterval(seconds) }
+    private var _fixed: Date
+    private var _monotonic: TimeInterval
+
+    init(_ start: Date = Date(timeIntervalSince1970: 1)) {
+        self._fixed = start
+        self._monotonic = 0
+    }
+
+    var fixed: Date {
+        get { _fixed }
+        set {
+            _monotonic += newValue.timeIntervalSince(_fixed)
+            _fixed = newValue
+        }
+    }
+
+    var now: Date { _fixed }
+    var monotonicNow: TimeInterval { _monotonic }
+
+    func advance(by seconds: TimeInterval) {
+        _fixed.addTimeInterval(seconds)
+        _monotonic += seconds
+    }
+
+    func advanceWallOnly(by seconds: TimeInterval) {
+        _fixed.addTimeInterval(seconds)
+    }
+
+    func advanceMonotonicOnly(by seconds: TimeInterval) {
+        _monotonic += seconds
+    }
 }
 
 extension Publisher where Failure == Never {

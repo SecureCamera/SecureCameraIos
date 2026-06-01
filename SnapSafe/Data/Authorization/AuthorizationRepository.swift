@@ -27,8 +27,12 @@ public final class AuthorizationRepository: @unchecked Sendable {
     }
 
     // MARK: - Timestamps
-    private var lastAuthTime: Date = .distantPast
-    private var lastKeepAlive: Date = .distantPast
+    // Monotonic baselines for elapsed-time decisions. Using wall-clock here would
+    // let an attacker bypass session timeout or PIN backoff by changing the device
+    // clock. `nil` means "not set in this process lifetime".
+    private var lastAuthMonotonic: TimeInterval?
+    private var lastKeepAliveMonotonic: TimeInterval?
+    private var lastFailedMonotonic: TimeInterval?
 
     // MARK: - Init
     public init(
@@ -65,6 +69,7 @@ public final class AuthorizationRepository: @unchecked Sendable {
 
         let nowMs = Int64(clock.now.timeIntervalSince1970 * 1000.0)
         await appSettings.setLastFailedAttemptTimestamp(nowMs)
+        lastFailedMonotonic = clock.monotonicNow
 
         return newCount
     }
@@ -84,8 +89,18 @@ public final class AuthorizationRepository: @unchecked Sendable {
 
         let backoffSeconds = Int(pow(2.0, Double(failedAttempts - 1)))
 
-        let nowMs = Int64(clock.now.timeIntervalSince1970 * 1000.0)
-        let elapsedSeconds = Int((nowMs - lastFailed) / 1000)
+        let elapsedSeconds: Int
+        if let baseline = lastFailedMonotonic {
+            elapsedSeconds = Int(clock.monotonicNow - baseline)
+        } else {
+            // Process restarted since the failed attempt was recorded; the
+            // monotonic baseline is gone. Fall back to wall clock but clamp
+            // negative deltas to 0 so a backward clock change can't shorten
+            // the remaining backoff.
+            let nowMs = Int64(clock.now.timeIntervalSince1970 * 1000.0)
+            let delta = nowMs - lastFailed
+            elapsedSeconds = max(0, Int(delta / 1000))
+        }
         let remaining = backoffSeconds - elapsedSeconds
 
         return max(0, remaining)
@@ -95,6 +110,7 @@ public final class AuthorizationRepository: @unchecked Sendable {
     public func resetFailedAttempts() async {
         await setFailedAttempts(0)
         await appSettings.setLastFailedAttemptTimestamp(0)
+        lastFailedMonotonic = nil
     }
 
     // MARK: - Initial key creation
@@ -111,7 +127,7 @@ public final class AuthorizationRepository: @unchecked Sendable {
     /// Marks the session as authorized and updates the last authentication time.
     /// Also starts session monitoring.
     public func authorizeSession() {
-        lastAuthTime = clock.now
+        lastAuthMonotonic = clock.monotonicNow
         isAuthorizedValue = true
     }
 
@@ -119,7 +135,7 @@ public final class AuthorizationRepository: @unchecked Sendable {
     /// without requiring re-authentication.
     public func keepAliveSession() {
         if isAuthorizedValue {
-            lastKeepAlive = clock.now
+            lastKeepAliveMonotonic = clock.monotonicNow
         }
     }
 
@@ -129,9 +145,12 @@ public final class AuthorizationRepository: @unchecked Sendable {
 
         let timeoutMs = await appSettings.getSessionTimeout() // Int64 (ms)
 
-        // Prefer the keep-alive time if present; else the last auth time
-        let pivot: Date = (lastKeepAlive > .distantPast) ? lastKeepAlive : lastAuthTime
-        let elapsedMs = clock.now.timeIntervalSince(pivot) * 1000.0
+        // Prefer the keep-alive time if present; else the last auth time.
+        // Both are monotonic so the wall clock can't influence expiry.
+        guard let pivot = lastKeepAliveMonotonic ?? lastAuthMonotonic else {
+            return false
+        }
+        let elapsedMs = (clock.monotonicNow - pivot) * 1000.0
         let sessionValid = elapsedMs < Double(timeoutMs)
 
         if !sessionValid {
@@ -144,7 +163,7 @@ public final class AuthorizationRepository: @unchecked Sendable {
     /// Explicitly revokes the current authorization session.
     public func revokeAuthorization() {
         isAuthorizedValue = false
-        lastAuthTime = .distantPast
-        lastKeepAlive = .distantPast
+        lastAuthMonotonic = nil
+        lastKeepAliveMonotonic = nil
     }
 }
