@@ -97,6 +97,7 @@
 		71A1063EE417231D3E6A771B /* SECVFileFormatTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBCDFD42CA72A9C8FA98EDCD /* SECVFileFormatTests.swift */; };
 		78BAE12E96629EA55F066179 /* SecureImageRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADA2FF82666960557F17548E /* SecureImageRepositoryTests.swift */; };
 		7CBC61415276C81597CDBF80 /* VerifyPinUseCaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73AE08F5261FA581EF832FE5 /* VerifyPinUseCaseTests.swift */; };
+		86FA0BDF73A263C07D744E4D /* FileBasedSettingsDataSourceProtectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13CBF89B43CD2D2FE8EBA109 /* FileBasedSettingsDataSourceProtectionTests.swift */; };
 		A91DBC542DE58191001F42ED /* AppearanceMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC252DE58191001F42ED /* AppearanceMode.swift */; };
 		A91DBC552DE58191001F42ED /* DetectedFace.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC262DE58191001F42ED /* DetectedFace.swift */; };
 		A91DBC562DE58191001F42ED /* MaskMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC272DE58191001F42ED /* MaskMode.swift */; };
@@ -178,6 +179,7 @@
 /* Begin PBXFileReference section */
 		0B07498650554419769A4053 /* HardwareEncryptionSchemeFileProtectionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HardwareEncryptionSchemeFileProtectionTests.swift; sourceTree = "<group>"; };
 		0B07498750554419769A4054 /* HardwareEncryptionSchemeSecurityResetTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HardwareEncryptionSchemeSecurityResetTests.swift; sourceTree = "<group>"; };
+		13CBF89B43CD2D2FE8EBA109 /* FileBasedSettingsDataSourceProtectionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FileBasedSettingsDataSourceProtectionTests.swift; sourceTree = "<group>"; };
 		177F44BD6B96C2A8659FAC80 /* FakeThumbnailCache.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FakeThumbnailCache.swift; sourceTree = "<group>"; };
 		2414533D313F8BEF8E1DB17D /* FakeEncryptionScheme.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FakeEncryptionScheme.swift; sourceTree = "<group>"; };
 		332C6DF332A8DDCFFDFA5FDB /* PinDEKWrapperTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PinDEKWrapperTests.swift; sourceTree = "<group>"; };
@@ -763,6 +765,7 @@
 				0B07498750554419769A4054 /* HardwareEncryptionSchemeSecurityResetTests.swift */,
 				332C6DF332A8DDCFFDFA5FDB /* PinDEKWrapperTests.swift */,
 				AE0EEE6230116B9BC41B148B /* HardwareEncryptionSchemePinBindingTests.swift */,
+				13CBF89B43CD2D2FE8EBA109 /* FileBasedSettingsDataSourceProtectionTests.swift */,
 			);
 			path = SnapSafeTests;
 			sourceTree = "<group>";
@@ -1081,6 +1084,7 @@
 				24194F181D3CBDF42B72D557 /* HardwareEncryptionSchemeSecurityResetTests.swift in Sources */,
 				F11C39ACCEDC8B8CAEA2C214 /* PinDEKWrapperTests.swift in Sources */,
 				33145A757800B951872791FC /* HardwareEncryptionSchemePinBindingTests.swift in Sources */,
+				86FA0BDF73A263C07D744E4D /* FileBasedSettingsDataSourceProtectionTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
