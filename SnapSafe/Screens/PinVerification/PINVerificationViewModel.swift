@@ -16,6 +16,7 @@ final class PINVerificationViewModel: ObservableObject {
     
     @Published var pin = ""
     @Published var showError = false
+    @Published var showRetryableError = false
     @Published var isLoading = false
     @Published var backoffSeconds = 0
     @Published var failedAttempts = 0
@@ -67,6 +68,10 @@ final class PINVerificationViewModel: ObservableObject {
     var errorMessage: String {
         "Invalid PIN. Please try again."
     }
+
+    var retryableErrorMessage: String {
+        "Something went wrong unlocking. Please try again."
+    }
     
     var shouldShowAttemptsWarning: Bool {
         failedAttempts > 2
@@ -111,40 +116,55 @@ final class PINVerificationViewModel: ObservableObject {
     func verifyPIN() async {
         isLoading = true
         showError = false
-        
-        let success = await verifyPinUseCase.verifyPin(pin)
-        
+        showRetryableError = false
+
+        let result = await verifyPinUseCase.verifyPin(pin)
+
         isLoading = false
-        
-        if success {
+
+        switch result {
+        case .success:
             // PIN verification successful (includes poison pill handling)
             Logger.security.info("PIN verification successful")
-            
+
             // Reset failed attempts counter on successful verification
             await setCurrentFailedAttempts(0)
-            
+
             // Update UI state
             showError = false
-            
+            showRetryableError = false
+
             // Clear the PIN field for next time
             pin = ""
-        } else {
+
+        case .failure(let error):
+            // Transient / retryable error during key derivation. Do NOT count
+            // this against failed-attempts — otherwise an attacker who can race
+            // the device-lock state can force a security reset (DoS).
+            showRetryableError = true
+            pin = ""
+
+            Logger.security.error("PIN verification failed transiently", metadata: [
+                "error": .string(String(describing: error))
+            ])
+
+        case .invalidPin:
             // PIN verification failed
             showError = true
             await setCurrentFailedAttempts(failedAttempts+1)
             pin = ""
-            
+
             Logger.security.warning("PIN verification failed", metadata: [
                 "attemptCount": .stringConvertible(failedAttempts),
                 "maxAttempts": .stringConvertible(AuthorizationRepository.MAX_FAILED_ATTEMPTS)
             ])
-            
+
             // Check if we've reached the maximum failed attempts
             if failedAttempts >= AuthorizationRepository.MAX_FAILED_ATTEMPTS {
                 Logger.security.critical("Maximum failed PIN attempts reached, triggering security reset", metadata: [
                     "attemptCount": .stringConvertible(failedAttempts)
                 ])
-                
+
                 // Trigger security reset
                 Task {
                     await securityResetUseCase.reset()
@@ -153,7 +173,7 @@ final class PINVerificationViewModel: ObservableObject {
                 Logger.security.info("Failed PIN verification", metadata: [
                     "attemptCount": .stringConvertible(failedAttempts)
                 ])
-                
+
                 // Check for backoff time after failed attempt
                 Task {
                     await updateBackoffTime()

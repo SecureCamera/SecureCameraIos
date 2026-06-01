@@ -7,10 +7,67 @@
 
 import XCTest
 import FactoryKit
+import Mockable
 @testable import SnapSafe
+
+private enum TestError: Error, Equatable {
+    case transient
+}
 
 @MainActor
 final class VerifyPinUseCaseTests: XCTestCase {
+
+    func test_verifyPin_returnsRetryableFailure_whenKeyDerivationThrows() async throws {
+        let pin = "1234"
+        let hashedPin = HashedPin(hash: "h", salt: "s")
+
+        let pinRepo = MockPinRepository()
+        given(pinRepo).hasPoisonPillPin().willReturn(false)
+        given(pinRepo).verifyPoisonPillPin(.value(pin)).willReturn(false)
+        given(pinRepo).getHashedPin().willReturn(hashedPin)
+        given(pinRepo).verifySecurityPin(.value(pin)).willReturn(true)
+
+        let settings = MockSettingsDataSource()
+        given(settings).setFailedPinAttempts(.value(0)).willReturn()
+        given(settings).setLastFailedAttemptTimestamp(.value(0)).willReturn()
+
+        let throwingScheme = MockEncryptionScheme()
+        given(throwingScheme)
+            .deriveAndCacheKey(plainPin: .value(pin), hashedPin: .value(hashedPin))
+            .willThrow(TestError.transient)
+
+        let passthrough = PassThroughEncryptionScheme()
+        let authRepo = AuthorizationRepository(
+            settings: settings,
+            encryptionScheme: passthrough,
+            clock: SystemClock()
+        )
+        let imageRepo = SecureImageRepository(
+            thumbnailCache: ThumbnailCache(),
+            encryptionScheme: passthrough
+        )
+        let authorizePinUseCase = AuthorizePinUseCase(
+            authRepository: authRepo,
+            pinRepository: pinRepo
+        )
+
+        let sut = VerifyPinUseCase(
+            authRepository: authRepo,
+            imageRepository: imageRepo,
+            pinRepository: pinRepo,
+            encryptionScheme: throwingScheme,
+            authorizePinUseCase: authorizePinUseCase
+        )
+
+        let result = await sut.verifyPin(pin)
+
+        switch result {
+        case .failure(let error):
+            XCTAssertEqual(error as? TestError, .transient)
+        case .success, .invalidPin:
+            XCTFail("Expected .failure(.transient), got \(result)")
+        }
+    }
 
     func testVerifyPinUseCaseCreation() throws {
         // Test that the use case can be created with all dependencies

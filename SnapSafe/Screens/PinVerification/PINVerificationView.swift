@@ -64,6 +64,13 @@ struct PINVerificationView: View {
                     .font(.callout)
                     .padding(.top, 5)
             }
+
+            if viewModel.showRetryableError {
+                Text(viewModel.retryableErrorMessage)
+                    .foregroundStyle(.orange)
+                    .font(.callout)
+                    .padding(.top, 5)
+            }
             
             Button(action: {
                 isPINFieldFocused = false
