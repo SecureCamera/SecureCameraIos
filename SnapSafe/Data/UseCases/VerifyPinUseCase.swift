@@ -49,12 +49,11 @@ public final class VerifyPinUseCase: @unchecked Sendable {
     ///   transient failure). Callers should surface `.failure` as a retryable error
     ///   without counting it as a failed attempt.
     public func verifyPin(_ pin: String) async -> PinVerificationResult {
-        // Check for poison pill PIN first
-        let hasPoison = await pinRepository.hasPoisonPillPin()
-        let isPoison  = await pinRepository.verifyPoisonPillPin(pin)
-
-        // Check for poison pill PIN first
-        if hasPoison && isPoison {
+        // Check for poison pill PIN first. Short-circuit on hasPoisonPillPin
+        // so we don't run a second Argon2 verification each attempt and don't
+        // leak a timing oracle revealing whether a poison pill is configured.
+        if await pinRepository.hasPoisonPillPin(),
+           await pinRepository.verifyPoisonPillPin(pin) {
             Logger.security.warning("Poison pill PIN detected - activating poison pill mode")
 
             // Get the old hashed PIN before activating poison pill

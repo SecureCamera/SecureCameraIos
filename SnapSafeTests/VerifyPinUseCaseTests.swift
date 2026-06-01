@@ -69,6 +69,57 @@ final class VerifyPinUseCaseTests: XCTestCase {
         }
     }
 
+    func test_verifyPin_doesNotInvokePoisonPillVerify_whenNoPoisonPillIsSet() async throws {
+        // H5: when hasPoisonPillPin() is false, verifyPoisonPillPin must be
+        // short-circuited so we don't run a second Argon2 verification per
+        // attempt and don't leak a timing oracle about poison-pill presence.
+        let pin = "1234"
+        let hashedPin = HashedPin(hash: "h", salt: "s")
+
+        let pinRepo = MockPinRepository()
+        given(pinRepo).hasPoisonPillPin().willReturn(false)
+        given(pinRepo).verifyPoisonPillPin(.value(pin)).willReturn(false)
+        given(pinRepo).getHashedPin().willReturn(hashedPin)
+        given(pinRepo).verifySecurityPin(.value(pin)).willReturn(true)
+
+        let settings = MockSettingsDataSource()
+        given(settings).setFailedPinAttempts(.value(0)).willReturn()
+        given(settings).setLastFailedAttemptTimestamp(.value(0)).willReturn()
+
+        let scheme = MockEncryptionScheme()
+        given(scheme)
+            .deriveAndCacheKey(plainPin: .value(pin), hashedPin: .value(hashedPin))
+            .willReturn()
+
+        let passthrough = PassThroughEncryptionScheme()
+        let authRepo = AuthorizationRepository(
+            settings: settings,
+            encryptionScheme: passthrough,
+            clock: SystemClock()
+        )
+        let imageRepo = SecureImageRepository(
+            thumbnailCache: ThumbnailCache(),
+            encryptionScheme: passthrough
+        )
+        let authorizePinUseCase = AuthorizePinUseCase(
+            authRepository: authRepo,
+            pinRepository: pinRepo
+        )
+
+        let sut = VerifyPinUseCase(
+            authRepository: authRepo,
+            imageRepository: imageRepo,
+            pinRepository: pinRepo,
+            encryptionScheme: scheme,
+            authorizePinUseCase: authorizePinUseCase
+        )
+
+        _ = await sut.verifyPin(pin)
+
+        verify(pinRepo).hasPoisonPillPin().called(.once)
+        verify(pinRepo).verifyPoisonPillPin(.value(pin)).called(.never)
+    }
+
     func testVerifyPinUseCaseCreation() throws {
         // Test that the use case can be created with all dependencies
         // This is a basic smoke test to ensure the class is properly structured
