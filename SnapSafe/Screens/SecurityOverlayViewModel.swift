@@ -180,7 +180,7 @@ final class SecurityOverlayViewModel: ObservableObject {
         if !hasValidSession, wasInBackground, hasCompletedIntro {
             Logger.security.info("SecurityOverlay: Requiring authentication after background")
             
-            invalidateSessionUseCase.invalidateSession()
+            await invalidateSessionUseCase.invalidateSession()
             
             // Set authentication required flag
             needsAuthenticationAfterBackground = true

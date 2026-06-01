@@ -88,7 +88,7 @@ final class VideoThumbnailTests: XCTestCase {
         await repository.storeVideoThumbnail(makeTestImage(), forVideoNamed: "video_b")
         XCTAssertTrue(FileManager.default.fileExists(atPath: videoThumbnailsDirectory.path))
 
-        repository.activatePoisonPill()
+        await repository.activatePoisonPill()
 
         XCTAssertFalse(FileManager.default.fileExists(atPath: videoThumbnailsDirectory.path),
                        "All video thumbnails should be destroyed on poison pill activation")
@@ -120,7 +120,7 @@ final class VideoThumbnailTests: XCTestCase {
             "Marking a video as a decoy should store a poison-key thumbnail copy")
 
         // When
-        repository.activatePoisonPill()
+        await repository.activatePoisonPill()
 
         // Then — the decoy video's thumbnail is restored and available.
         XCTAssertTrue(FileManager.default.fileExists(

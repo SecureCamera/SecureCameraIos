@@ -82,50 +82,50 @@ final class SecureImageRepositoryTests: XCTestCase {
     
     // MARK: - Security Tests
     
-    func testEvictKeyCallsEncryptionScheme() {
+    func testEvictKeyCallsEncryptionScheme() async {
         // When
-        repository.evictKey()
-        
+        await repository.evictKey()
+
         // Then
         XCTAssertTrue(mockEncryptionScheme.evictKeyCalled)
     }
-    
-    func testSecurityFailureResetDeletesAllImagesAndEvictsKey() {
+
+    func testSecurityFailureResetDeletesAllImagesAndEvictsKey() async {
         // Given
         try! FileManager.default.createDirectory(at: galleryDirectory, withIntermediateDirectories: true)
-        
+
         let photo1 = galleryDirectory.appendingPathComponent("photo_20230101_120000_00.jpg")
         let photo2 = galleryDirectory.appendingPathComponent("photo_20230101_120001_00.jpg")
         try! Data().write(to: photo1)
         try! Data().write(to: photo2)
-        
+
         // When
-        repository.securityFailureReset()
-        
+        await repository.securityFailureReset()
+
         // Then
         let photos = repository.getPhotos()
         XCTAssertTrue(photos.isEmpty)
         XCTAssertTrue(mockEncryptionScheme.evictKeyCalled)
     }
-    
-    func testActivatePoisonPillDeletesNonDecoyImagesAndEvictsKey() {
+
+    func testActivatePoisonPillDeletesNonDecoyImagesAndEvictsKey() async {
         // Given
         try! FileManager.default.createDirectory(at: galleryDirectory, withIntermediateDirectories: true)
         try! FileManager.default.createDirectory(at: decoyDirectory, withIntermediateDirectories: true)
-        
+
         // Create regular photos
         let photo1 = galleryDirectory.appendingPathComponent("photo_20230101_120000_00.jpg")
         let photo2 = galleryDirectory.appendingPathComponent("photo_20230101_120001_00.jpg")
         try! Data().write(to: photo1)
         try! Data().write(to: photo2)
-        
+
         // Create decoy
         let decoyContent = "decoy content".data(using: .utf8)!
         let decoyFile = decoyDirectory.appendingPathComponent("photo_20230101_120000_00.jpg")
         try! decoyContent.write(to: decoyFile)
-        
+
         // When
-        repository.activatePoisonPill()
+        await repository.activatePoisonPill()
         
         // Then
         let photos = repository.getPhotos()

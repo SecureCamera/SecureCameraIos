@@ -153,22 +153,22 @@ public class SecureImageRepository {
     
     // MARK: - Security Operations
     
-    func evictKey() {
-        encryptionScheme.evictKey()
+    func evictKey() async {
+        await encryptionScheme.evictKey()
     }
-    
+
     /// Resets all security-related data when a security failure occurs.
     /// Deletes all images and thumbnails and evicts all in-memory data.
-    func securityFailureReset() {
+    func securityFailureReset() async {
         deleteAllImages()
         deleteAllVideoThumbnails()
         deleteAllDecoyVideoThumbnails()
         clearAllThumbnails()
-        evictKey()
+        await evictKey()
     }
-    
+
     /// Deletes all images that haven't been flagged as benign
-    func activatePoisonPill() {
+    func activatePoisonPill() async {
         // Delete non-decoy videos first, while the decoy directory is still
         // intact (deleteNonDecoyImages() consumes and removes that directory).
         deleteNonDecoyVideos()
@@ -179,7 +179,7 @@ public class SecureImageRepository {
         deleteAllVideoThumbnails()
         restoreDecoyVideoThumbnails()
         clearAllThumbnails()
-        evictKey()
+        await evictKey()
     }
     
     private func clearAllThumbnails() {

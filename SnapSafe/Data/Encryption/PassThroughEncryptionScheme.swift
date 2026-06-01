@@ -49,7 +49,7 @@ final class PassThroughEncryptionScheme: EncryptionScheme, @unchecked Sendable {
         return Data(plainPin.utf8)
     }
     
-    func evictKey() {
+    func evictKey() async {
         cachedKey = nil
     }
     

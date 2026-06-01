@@ -56,7 +56,7 @@ final class FakeEncryptionScheme: EncryptionScheme {
         return Data(count: 32) // Return dummy key
     }
     
-    func evictKey() {
+    func evictKey() async {
         evictKeyCalled = true
     }
     
