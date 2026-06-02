@@ -20,70 +20,62 @@ struct CameraContainerView: View {
     @State private var isPinching = false
     @State private var shutterFeedbackTrigger = 0
     @State private var zoomResetTrigger = 0
+    @StateObject private var orientation = OrientationObserver()
 
     var body: some View {
-        // Orientation is derived synchronously from the layout geometry so the
-        // control bars are always placed for the CURRENT size. Deriving it via
-        // @State + onChange (the previous approach) lagged the geometry by a
-        // layout pass, which let the bottom safeAreaInset bar slide toward the
-        // center mid-rotation and sometimes stick there.
-        GeometryReader { proxy in
-            let isLandscape = proxy.size.width > proxy.size.height
+        // The camera UI is locked to portrait (see `.supportedOrientations`
+        // below), so it never reflows on rotation — the controls stay put and
+        // their glyphs rotate in place (iOS Camera style). Capture orientation
+        // is handled independently by the capture pipeline.
+        ZStack {
+            CameraView(cameraModel: cameraModel, onPinchStarted: {
+                isPinching = true
+                withAnimation { showZoomSlider = true }
+            }, onPinchChanged: {
+                isPinching = true
+            }, onPinchEnded: {
+                isPinching = false
+            })
+            .edgesIgnoringSafeArea(.all)
 
-            ZStack {
-                CameraView(cameraModel: cameraModel, onPinchStarted: {
-                    isPinching = true
-                    withAnimation { showZoomSlider = true }
-                }, onPinchChanged: {
-                    isPinching = true
-                }, onPinchEnded: {
-                    isPinching = false
-                })
-                .edgesIgnoringSafeArea(.all)
-
-                if isShutterAnimating {
-                    Color.black
-                        .opacity(0.8)
-                        .edgesIgnoringSafeArea(.all)
-                        .transition(.opacity)
-                }
-
-                if cameraModel.isEncryptingVideo {
-                    VStack(spacing: 12) {
-                        ProgressView(value: cameraModel.encryptionProgress, total: 1.0)
-                            .progressViewStyle(LinearProgressViewStyle(tint: .white))
-                            .frame(width: 200)
-                        Text("Encrypting video... \(Int(cameraModel.encryptionProgress * 100))%")
-                            .font(.caption)
-                            .foregroundStyle(.white)
-                    }
-                    .padding(20)
-                    .background(Color.black.opacity(0.7))
-                    .clipShape(.rect(cornerRadius: 12))
-                }
-
-                controlsOverlay(isLandscape: isLandscape)
+            if isShutterAnimating {
+                Color.black
+                    .opacity(0.8)
+                    .edgesIgnoringSafeArea(.all)
+                    .transition(.opacity)
             }
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                if !isLandscape { portraitBar }
-            }
-            .safeAreaInset(edge: .trailing, spacing: 0) {
-                if isLandscape { landscapeBar }
-            }
-            // Don't animate the bar swap on rotation — only the shutter flash.
-            .animation(.easeInOut(duration: 0.1), value: isShutterAnimating)
-            .animation(nil, value: isLandscape)
-            .onAppear {
-                Task {
-                    await cameraModel.checkAndSetupCamera()
+
+            if cameraModel.isEncryptingVideo {
+                VStack(spacing: 12) {
+                    ProgressView(value: cameraModel.encryptionProgress, total: 1.0)
+                        .progressViewStyle(LinearProgressViewStyle(tint: .white))
+                        .frame(width: 200)
+                    Text("Encrypting video... \(Int(cameraModel.encryptionProgress * 100))%")
+                        .font(.caption)
+                        .foregroundStyle(.white)
                 }
+                .padding(20)
+                .background(Color.black.opacity(0.7))
+                .clipShape(.rect(cornerRadius: 12))
+            }
+
+            controlsOverlay
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            portraitBar
+        }
+        .animation(.easeInOut(duration: 0.1), value: isShutterAnimating)
+        .supportedOrientations(.portrait)
+        .onAppear {
+            Task {
+                await cameraModel.checkAndSetupCamera()
             }
         }
     }
 
     // MARK: - Controls overlay (top bar + zoom + mode picker)
 
-    private func controlsOverlay(isLandscape: Bool) -> some View {
+    private var controlsOverlay: some View {
         VStack {
             HStack {
                 cameraSwitchButton
@@ -114,15 +106,12 @@ struct CameraContainerView: View {
                 zoomCapsule
             }
 
-            // Mode picker only in portrait — in landscape it lives in the sidebar
-            if !isLandscape {
-                modePicker
-                    .padding(.bottom, 16)
-            }
+            modePicker
+                .padding(.bottom, 16)
         }
     }
 
-    // MARK: - Capture bars
+    // MARK: - Capture bar
 
     private var portraitBar: some View {
         HStack {
@@ -132,22 +121,11 @@ struct CameraContainerView: View {
             Spacer()
             settingsButton
         }
+        // Keep the controls grouped and centered even on wide (iPad) widths
+        // instead of letting the gallery/settings buttons fly to the corners.
+        .frame(maxWidth: 420)
+        .frame(maxWidth: .infinity)
         .padding(.bottom, 8)
-        .background(Color.clear)
-    }
-
-    private var landscapeBar: some View {
-        VStack {
-            galleryButton
-            Spacer()
-            modePicker
-                .padding(.vertical, 4)
-            captureButton
-            Spacer()
-            settingsButton
-        }
-        .padding(.trailing, 8)
-        .padding(.vertical, 8)
         .background(Color.clear)
     }
 
