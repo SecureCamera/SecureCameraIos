@@ -146,6 +146,7 @@ struct CameraContainerView: View {
         }
         .disabled(cameraModel.isRecording)
         .accessibilityLabel(cameraModel.cameraPosition == .back ? "Switch to front camera" : "Switch to rear camera")
+        .rotatesWithDevice(orientation)
     }
 
     private var flashButton: some View {
@@ -163,6 +164,7 @@ struct CameraContainerView: View {
         .buttonStyle(PlainButtonStyle())
         .accessibilityLabel("Flash: \(cameraModel.flashMode == .on ? "on" : cameraModel.flashMode == .off ? "off" : "auto")")
         .accessibilityHint("Double-tap to cycle flash mode")
+        .rotatesWithDevice(orientation)
     }
 
     private var recordingIndicator: some View {
@@ -247,6 +249,7 @@ struct CameraContainerView: View {
         .padding()
         .accessibilityLabel("Gallery")
         .accessibilityHint(cameraModel.isSavingPhoto ? "Saving photo" : "")
+        .rotatesWithDevice(orientation)
     }
 
     private var settingsButton: some View {
@@ -267,6 +270,7 @@ struct CameraContainerView: View {
             }
         }
         #endif
+        .rotatesWithDevice(orientation)
     }
 
     private var captureButton: some View {
@@ -391,5 +395,14 @@ private extension View {
         } else {
             self.background(.ultraThinMaterial, in: shape)
         }
+    }
+
+    /// Rotates a control's glyph to stay upright relative to the ground while
+    /// the camera UI itself stays locked to portrait (iOS Camera style).
+    /// `rotationEffect` does not affect layout, so the control never moves.
+    func rotatesWithDevice(_ observer: OrientationObserver) -> some View {
+        self
+            .rotationEffect(Utils.getRotationAngle(for: observer.orientation))
+            .animation(.easeInOut(duration: 0.25), value: observer.orientation)
     }
 }
