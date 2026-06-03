@@ -327,9 +327,16 @@ final class VideoPlayerViewModel: ObservableObject {
                 self.player = player
                 self.isLoading = false
 
-                // Start playback automatically
-                player.play()
-                self.isPlaying = true
+                // Start playback automatically, unless the user turned off
+                // "Auto-Play Videos" in Settings (default on). When off, the
+                // video stays paused on its first frame until the user taps play.
+                let autoPlay = UserDefaults.standard.object(forKey: "autoPlayVideos") as? Bool ?? true
+                if autoPlay {
+                    player.play()
+                    self.isPlaying = true
+                } else {
+                    self.isPlaying = false
+                }
                 self.scheduleHideControls()
             }
             

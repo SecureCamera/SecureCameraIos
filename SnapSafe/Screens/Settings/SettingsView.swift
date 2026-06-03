@@ -15,6 +15,9 @@ import FactoryKit
 struct SettingsView: View {
     // Appearance setting
     @AppStorage("appearanceMode") private var appearanceMode: AppearanceMode = .system
+
+    // Whether videos begin playing automatically when swiped to in the detail view.
+    @AppStorage("autoPlayVideos") private var autoPlayVideos = true
     
     // ViewModel
     @StateObject private var viewModel = SettingsViewModel()
@@ -84,6 +87,16 @@ struct SettingsView: View {
                     .pickerStyle(.menu)
                     
                     Text("Choose how the app appears. System follows your device's appearance setting.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .padding(.top, 4)
+                }
+
+                // VIDEO SECTION
+                Section(header: Text("Video")) {
+                    Toggle("Auto-Play Videos", isOn: $autoPlayVideos)
+
+                    Text("When on, videos start playing automatically as you swipe to them. When off, they wait paused on the first frame until you tap play.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .padding(.top, 4)
