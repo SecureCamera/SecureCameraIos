@@ -288,11 +288,15 @@ struct CameraPreviewView: UIViewRepresentable {
 
         let doubleTapGesture = UITapGestureRecognizer(target: context.coordinator, action: #selector(context.coordinator.handleDoubleTapGesture(_:)))
         doubleTapGesture.numberOfTapsRequired = 2
+        // Only claim taps inside the capture area; let taps on the surrounding
+        // SwiftUI controls (flash, switch, gallery, etc.) fall through.
+        doubleTapGesture.delegate = context.coordinator
         view.addGestureRecognizer(doubleTapGesture)
 
         // Add single tap gesture for quick focus
         let singleTapGesture = UITapGestureRecognizer(target: context.coordinator, action: #selector(context.coordinator.handleSingleTapGesture(_:)))
         singleTapGesture.requiresExclusiveTouchType = true
+        singleTapGesture.delegate = context.coordinator
 
         // Ensure single tap doesn't conflict with double tap
         singleTapGesture.require(toFail: doubleTapGesture)
@@ -437,7 +441,7 @@ struct CameraPreviewView: UIViewRepresentable {
 
     // Coordinator for handling UIKit gestures
     @MainActor
-    class Coordinator: NSObject {
+    class Coordinator: NSObject, UIGestureRecognizerDelegate {
         var parent: CameraPreviewView
         private var initialScale: CGFloat = 1.0
 
@@ -447,6 +451,20 @@ struct CameraPreviewView: UIViewRepresentable {
 
         init(_ parent: CameraPreviewView) {
             self.parent = parent
+        }
+
+        // Only let the focus tap recognizers claim touches that land inside the
+        // capture area. Touches outside it are on the overlaid SwiftUI controls
+        // (or the letterbox), so declining them here lets those controls receive
+        // the tap instead of the preview's focus gesture swallowing it.
+        nonisolated func gestureRecognizer(
+            _ gestureRecognizer: UIGestureRecognizer,
+            shouldReceive touch: UITouch
+        ) -> Bool {
+            MainActor.assumeIsolated {
+                guard let container = viewHolder.previewContainer else { return true }
+                return container.bounds.contains(touch.location(in: container))
+            }
         }
 
         // Handle pinch gesture for zoom with continuous updates
