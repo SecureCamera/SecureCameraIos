@@ -23,10 +23,14 @@ struct CameraContainerView: View {
     @StateObject private var orientation = OrientationObserver()
 
     var body: some View {
-        // The camera UI is locked to portrait (see `.supportedOrientations`
-        // below), so it never reflows on rotation — the controls stay put and
-        // their glyphs rotate in place (iOS Camera style). Capture orientation
-        // is handled independently by the capture pipeline.
+        // The camera UI is locked to portrait. The preview is full-bleed and the
+        // controls live in a single column that IGNORES the safe area and pads
+        // itself by the STABLE window safe-area insets. This makes the layout
+        // immune to the phantom safe-area inset iOS injects when the device is
+        // physically rotated while the interface stays locked to portrait — which
+        // previously shoved the bottom controls up into the preview. The glyphs
+        // still rotate in place (iOS Camera style); capture orientation is
+        // handled independently by the capture pipeline.
         ZStack {
             CameraView(cameraModel: cameraModel, onPinchStarted: {
                 isPinching = true
@@ -36,12 +40,12 @@ struct CameraContainerView: View {
             }, onPinchEnded: {
                 isPinching = false
             })
-            .edgesIgnoringSafeArea(.all)
+            .ignoresSafeArea()
 
             if isShutterAnimating {
                 Color.black
                     .opacity(0.8)
-                    .edgesIgnoringSafeArea(.all)
+                    .ignoresSafeArea()
                     .transition(.opacity)
             }
 
@@ -59,11 +63,9 @@ struct CameraContainerView: View {
                 .clipShape(.rect(cornerRadius: 12))
             }
 
-            controlsOverlay
+            controlsColumn
         }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            portraitBar
-        }
+        .ignoresSafeArea()
         .animation(.easeInOut(duration: 0.1), value: isShutterAnimating)
         .supportedOrientations(.portrait)
         .onAppear {
@@ -73,60 +75,61 @@ struct CameraContainerView: View {
         }
     }
 
+    /// The window's safe-area insets, which stay stable while the interface is
+    /// locked to portrait. SwiftUI's environment safe area is unreliable here:
+    /// iOS injects a phantom bottom inset on physical rotation even though the
+    /// interface never leaves portrait, and that is exactly what we must ignore.
+    private var stableSafeInsets: EdgeInsets {
+        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        let window = scenes.first(where: { $0.activationState == .foregroundActive })?.keyWindow
+            ?? scenes.first?.keyWindow
+        let i = window?.safeAreaInsets ?? UIEdgeInsets(top: 59, left: 0, bottom: 34, right: 0)
+        return EdgeInsets(top: i.top, leading: i.left, bottom: i.bottom, trailing: i.right)
+    }
+
     // MARK: - Controls overlay (top bar + zoom + mode picker)
 
-    private var controlsOverlay: some View {
-        VStack {
+    private var controlsColumn: some View {
+        VStack(spacing: 0) {
+            // Top controls
             HStack {
                 cameraSwitchButton
-                    .padding(.top, 16)
-                    .padding(.leading, 16)
-
                 Spacer()
-
                 if cameraModel.isRecording {
                     recordingIndicator
-                        .padding(.top, 16)
                 }
-
                 Spacer()
-
                 flashButton
-                    .padding(.top, 16)
-                    .padding(.trailing, 16)
             }
 
-            Spacer()
+            Spacer(minLength: 0)
 
+            // Zoom indicator / slider
             if showZoomSlider {
                 ZoomSliderView(cameraModel: cameraModel, isVisible: $showZoomSlider, isPinching: isPinching)
-                    .padding(.horizontal, 16)
                     .padding(.bottom, 10)
             } else {
                 zoomCapsule
             }
 
+            // Photo / video toggle
             modePicker
-                .padding(.bottom, 16)
-        }
-    }
+                .padding(.bottom, 12)
 
-    // MARK: - Capture bar
-
-    private var portraitBar: some View {
-        HStack {
-            galleryButton
-            Spacer()
-            captureButton
-            Spacer()
-            settingsButton
+            // Capture bar (gallery / shutter / settings)
+            HStack {
+                galleryButton
+                Spacer()
+                captureButton
+                Spacer()
+                settingsButton
+            }
+            .frame(maxWidth: 420)
         }
-        // Keep the controls grouped and centered even on wide (iPad) widths
-        // instead of letting the gallery/settings buttons fly to the corners.
-        .frame(maxWidth: 420)
-        .frame(maxWidth: .infinity)
-        .padding(.bottom, 8)
-        .background(Color.clear)
+        .padding(.horizontal, 16)
+        .padding(.top, stableSafeInsets.top + 8)
+        .padding(.bottom, stableSafeInsets.bottom + 4)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     // MARK: - Individual controls
