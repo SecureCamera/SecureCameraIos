@@ -104,12 +104,12 @@ struct CameraContainerView: View {
 
             Spacer(minLength: 0)
 
-            // Zoom indicator / slider
             if showZoomSlider {
                 ZoomSliderView(cameraModel: cameraModel, isVisible: $showZoomSlider, isPinching: isPinching)
                     .padding(.bottom, 10)
             } else {
                 zoomCapsule
+                    .frame(height: orientation.orientation.isLandscape ? 96 : 44)
             }
 
             // Photo / video toggle
@@ -194,7 +194,6 @@ struct CameraContainerView: View {
             .glassControlBackground(in: .capsule)
         .opacity(cameraModel.zoomFactor != 1.0 ? 1.0 : 0.0)
         .animation(.easeInOut, value: cameraModel.zoomFactor)
-        .padding(.bottom, 10)
         .rotationEffect(Utils.getRotationAngle())
         .gesture(
             TapGesture(count: 2)
