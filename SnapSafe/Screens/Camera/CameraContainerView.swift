@@ -144,12 +144,12 @@ struct CameraContainerView: View {
             Image(systemName: "arrow.triangle.2.circlepath.camera")
                 .font(.system(size: 20))
                 .foregroundStyle(cameraModel.isRecording ? .gray : .white)
+                .rotatesWithDevice(orientation)
                 .padding(12)
                 .glassControlBackground(in: Circle())
         }
         .disabled(cameraModel.isRecording)
         .accessibilityLabel(cameraModel.cameraPosition == .back ? "Switch to front camera" : "Switch to rear camera")
-        .rotatesWithDevice(orientation)
     }
 
     private var flashButton: some View {
@@ -160,6 +160,7 @@ struct CameraContainerView: View {
             Image(systemName: cameraModel.flashIcon)
                 .font(.system(size: 20))
                 .foregroundStyle((cameraModel.cameraPosition == .front || cameraModel.isRecording) ? .gray : .white)
+                .rotatesWithDevice(orientation)
                 .padding(12)
                 .glassControlBackground(in: Circle())
         }
@@ -167,7 +168,6 @@ struct CameraContainerView: View {
         .buttonStyle(PlainButtonStyle())
         .accessibilityLabel("Flash: \(cameraModel.flashMode == .on ? "on" : cameraModel.flashMode == .off ? "off" : "auto")")
         .accessibilityHint("Double-tap to cycle flash mode")
-        .rotatesWithDevice(orientation)
     }
 
     private var recordingIndicator: some View {
@@ -239,6 +239,7 @@ struct CameraContainerView: View {
                         (cameraModel.isSavingPhoto || cameraModel.isRecording || cameraModel.isEncryptingVideo)
                             ? .gray : .white
                     )
+                    .rotatesWithDevice(orientation)
                     .padding()
                     .glassControlBackground(in: Circle())
                 if cameraModel.isSavingPhoto {
@@ -252,7 +253,6 @@ struct CameraContainerView: View {
         .padding()
         .accessibilityLabel("Gallery")
         .accessibilityHint(cameraModel.isSavingPhoto ? "Saving photo" : "")
-        .rotatesWithDevice(orientation)
     }
 
     private var settingsButton: some View {
@@ -260,6 +260,7 @@ struct CameraContainerView: View {
             Image(systemName: "gear")
                 .font(.title2)
                 .foregroundStyle((cameraModel.isRecording || cameraModel.isEncryptingVideo) ? .gray : .white)
+                .rotatesWithDevice(orientation)
                 .padding()
                 .glassControlBackground(in: Circle())
         }
@@ -273,7 +274,6 @@ struct CameraContainerView: View {
             }
         }
         #endif
-        .rotatesWithDevice(orientation)
     }
 
     private var captureButton: some View {
