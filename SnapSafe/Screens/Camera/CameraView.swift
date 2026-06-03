@@ -347,7 +347,14 @@ struct CameraPreviewView: UIViewRepresentable {
             if let layer = holder.previewLayer {
                 layer.frame = containerView.bounds
                 if cameraModel.preview !== layer {
-                    cameraModel.preview = layer
+                    // Defer the @Published mutation off the view-update cycle to
+                    // avoid "Publishing changes from within view updates" (matches
+                    // the pattern used in makeUIView).
+                    Task { @MainActor in
+                        if cameraModel.preview !== layer {
+                            cameraModel.preview = layer
+                        }
+                    }
                 }
             }
 
