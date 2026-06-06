@@ -229,6 +229,24 @@ public final class FileBasedSettingsDataSource: SettingsDataSource, @unchecked S
         writeProperty(\.failedPinAttempts, value: count)
     }
 
+    public func incrementFailedPinAttempts() async -> Int {
+        // Read-modify-write inside a single barrier block so the increment is atomic
+        // with respect to every other access on the queue; concurrent callers can't
+        // observe the same starting value and lose an increment.
+        await withCheckedContinuation { continuation in
+            queue.async(flags: .barrier) { [weak self] in
+                guard let self else {
+                    continuation.resume(returning: 0)
+                    return
+                }
+                let newCount = self._settingsData.failedPinAttempts + 1
+                self._settingsData.failedPinAttempts = newCount
+                self.saveSettingsToFile()
+                continuation.resume(returning: newCount)
+            }
+        }
+    }
+
     public func getLastFailedAttemptTimestamp() async -> Int64 {
         return readProperty(\.lastFailedAttempt)
     }

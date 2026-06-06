@@ -391,4 +391,26 @@ final class AuthorizationRepositoryTests: XCTestCase {
         XCTAssertFalse(isValid)
         XCTAssertFalse(auth.isAuthorized.firstValue())
     }
+
+    func test_concurrentIncrementFailedAttempts_doesNotLoseUpdates() async {
+        await settings.setFailedPinAttempts(0)
+
+        let auth = self.auth!
+        let iterations = 50
+
+        // Fire many increments concurrently. The previous implementation read the
+        // count and wrote count+1 across two separate awaits, so interleaved callers
+        // could read the same value and lose increments — undercounting the lockout.
+        // With the atomic data-source increment, the final count must equal exactly
+        // the number of attempts.
+        await withTaskGroup(of: Void.self) { group in
+            for _ in 0..<iterations {
+                group.addTask { _ = await auth.incrementFailedAttempts() }
+            }
+        }
+
+        let finalCount = await settings.getFailedPinAttempts()
+        XCTAssertEqual(finalCount, iterations,
+                       "Concurrent increments must not lose updates; the lockout counter must equal the attempt count")
+    }
 }

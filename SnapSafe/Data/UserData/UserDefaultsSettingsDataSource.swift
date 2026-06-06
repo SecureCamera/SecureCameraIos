@@ -55,6 +55,10 @@ public final class UserDefaultsSettingsDataSource: SettingsDataSource, @unchecke
     private let jsonDecoder = JSONDecoder()
     private let jsonEncoder = jsonEncoderFactory()
 
+    /// Serializes the failed-attempts read-modify-write. UserDefaults has no atomic
+    /// increment, so without this lock concurrent callers could lose an increment.
+    private let failedAttemptsLock = NSLock()
+
     // MARK: - Init
     /// - Parameter userDefaults: UserDefaults instance to use. Defaults to `.standard`.
     /// - Parameter sanitizeFileNameDefault: Default value for sanitize file name setting
@@ -131,6 +135,18 @@ public final class UserDefaultsSettingsDataSource: SettingsDataSource, @unchecke
 
     public func setFailedPinAttempts(_ count: Int) async {
         defaults.set(count, forKey: PrefKeys.failedPinAttempts.rawValue)
+    }
+
+    public func incrementFailedPinAttempts() async -> Int {
+        // Guard the read-modify-write so concurrent callers can't read the same
+        // starting value and lose an increment. `withLock` keeps the critical section
+        // synchronous (no suspension while holding the lock).
+        failedAttemptsLock.withLock {
+            let current = (defaults.object(forKey: PrefKeys.failedPinAttempts.rawValue) as? Int) ?? 0
+            let newCount = current + 1
+            defaults.set(newCount, forKey: PrefKeys.failedPinAttempts.rawValue)
+            return newCount
+        }
     }
 
     public func getLastFailedAttemptTimestamp() async -> Int64 {

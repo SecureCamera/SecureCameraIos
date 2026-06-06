@@ -52,6 +52,12 @@ public protocol SettingsDataSource: Sendable {
     /// Set the failed PIN attempts count
     func setFailedPinAttempts(_ count: Int) async
 
+    /// Atomically increment the failed PIN attempts count and return the new value.
+    /// The read-modify-write happens inside the data source's own critical section so
+    /// concurrent callers can't lose an increment — the auth lockout counter must
+    /// never be undercounted.
+    func incrementFailedPinAttempts() async -> Int
+
     /// Get the current timestamp of the last failed PIN attempt
     func getLastFailedAttemptTimestamp() async -> Int64
 
