@@ -98,13 +98,13 @@ struct VideoDetailToolbar: View {
 struct MediaToolbarButton<Indicator: View>: View {
     let icon: String?
     let label: String
-    var tint: Color = .white
+    var tint: Color = .primary
     let action: () -> Void
     var indicator: (() -> Indicator)?
 
     @State private var tapTrigger = 0
 
-    init(icon: String?, label: String, tint: Color = .white,
+    init(icon: String?, label: String, tint: Color = .primary,
          action: @escaping () -> Void,
          @ViewBuilder _ indicator: @escaping () -> Indicator) {
         self.icon = icon; self.label = label; self.tint = tint
@@ -140,7 +140,7 @@ struct MediaToolbarButton<Indicator: View>: View {
 }
 
 extension MediaToolbarButton where Indicator == EmptyView {
-    init(icon: String?, label: String, tint: Color = .white,
+    init(icon: String?, label: String, tint: Color = .primary,
          action: @escaping () -> Void) {
         self.icon = icon; self.label = label; self.tint = tint
         self.action = action; self.indicator = nil
@@ -149,16 +149,21 @@ extension MediaToolbarButton where Indicator == EmptyView {
 
 // MARK: - Glass background
 
-private extension View {
+extension View {
     /// Liquid Glass on iOS 26+; `.ultraThinMaterial` on earlier versions.
+    /// Always rendered in dark mode: the toolbar floats over an immersive
+    /// black/photo background, so controls must always be light regardless
+    /// of the system appearance setting.
     @ViewBuilder
     func glassToolbarBackground() -> some View {
         if #available(iOS 26.0, *) {
             self.glassEffect(.regular, in: .capsule)
+                .environment(\.colorScheme, .dark)
         } else {
             self.padding(.horizontal, 8)
                 .padding(.vertical, 4)
                 .background(.ultraThinMaterial, in: .capsule)
+                .environment(\.colorScheme, .dark)
         }
     }
 }

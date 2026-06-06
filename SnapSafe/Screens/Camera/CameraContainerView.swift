@@ -64,6 +64,7 @@ struct CameraContainerView: View {
             }
 
             controlsColumn
+                .environment(\.colorScheme, .dark)
         }
         .ignoresSafeArea()
         .animation(.easeInOut(duration: 0.1), value: isShutterAnimating)
@@ -143,7 +144,7 @@ struct CameraContainerView: View {
         }) {
             Image(systemName: "arrow.triangle.2.circlepath.camera")
                 .font(.system(size: 20))
-                .foregroundStyle(cameraModel.isRecording ? .gray : .white)
+                .foregroundStyle(cameraModel.isRecording ? .gray : .primary)
                 .rotatesWithDevice(orientation)
                 .padding(12)
                 .glassControlBackground(in: Circle())
@@ -159,7 +160,7 @@ struct CameraContainerView: View {
         }) {
             Image(systemName: cameraModel.flashIcon)
                 .font(.system(size: 20))
-                .foregroundStyle((cameraModel.cameraPosition == .front || cameraModel.isRecording) ? .gray : .white)
+                .foregroundStyle((cameraModel.cameraPosition == .front || cameraModel.isRecording) ? .gray : .primary)
                 .rotatesWithDevice(orientation)
                 .padding(12)
                 .glassControlBackground(in: Circle())
@@ -177,7 +178,7 @@ struct CameraContainerView: View {
                 .frame(width: 10, height: 10)
             Text(formatDuration(cameraModel.recordingDurationMs))
                 .font(.system(.body, design: .monospaced))
-                .foregroundStyle(.white)
+                .foregroundStyle(.primary)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
@@ -189,7 +190,7 @@ struct CameraContainerView: View {
     private var zoomCapsule: some View {
         Text(String(format: "%.1fx", cameraModel.zoomFactor))
             .font(.system(size: 14, weight: .bold))
-            .foregroundStyle(.white)
+            .foregroundStyle(.primary)
             .frame(width: 80, height: 30)
             .glassControlBackground(in: .capsule)
         .opacity(cameraModel.zoomFactor != 1.0 ? 1.0 : 0.0)
@@ -236,7 +237,7 @@ struct CameraContainerView: View {
                     .font(.title2)
                     .foregroundStyle(
                         (cameraModel.isSavingPhoto || cameraModel.isRecording || cameraModel.isEncryptingVideo)
-                            ? .gray : .white
+                            ? .gray : .primary
                     )
                     .rotatesWithDevice(orientation)
                     .padding()
@@ -258,7 +259,7 @@ struct CameraContainerView: View {
         Button(action: { nav.navigate(to: .settings) }) {
             Image(systemName: "gear")
                 .font(.title2)
-                .foregroundStyle((cameraModel.isRecording || cameraModel.isEncryptingVideo) ? .gray : .white)
+                .foregroundStyle((cameraModel.isRecording || cameraModel.isEncryptingVideo) ? .gray : .primary)
                 .rotatesWithDevice(orientation)
                 .padding()
                 .glassControlBackground(in: Circle())
