@@ -1,3 +1,5 @@
+// Development/testing tool — compiled in Debug builds only, never ships.
+#if DEBUG
 //
 //  DeveloperToolsView.swift
 //  SnapSafe
@@ -59,3 +61,4 @@ struct DeveloperToolsView: View {
         }
     }
 }
+#endif

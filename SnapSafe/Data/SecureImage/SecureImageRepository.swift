@@ -33,23 +33,38 @@ public class SecureImageRepository {
     private let encryptionScheme: EncryptionScheme
     private let videoEncryptionService: VideoEncryptionServiceProtocol
 
+    /// Roots that every storage directory is derived from. They default to the
+    /// real app container locations, but can be overridden (e.g. with a temp
+    /// directory in tests) so that hosted unit tests never read from or write to
+    /// the real app's data. Previously each getter recomputed these from
+    /// `FileManager.default`, which meant tests that didn't subclass-override a
+    /// specific getter would silently operate on the real container — deleting
+    /// real, unrecoverable video thumbnails on poison-pill / security-reset.
+    private let appSupportRoot: URL
+    private let cachesRoot: URL
+
     // MARK: - Initialization
 
     init(
         thumbnailCache: ThumbnailCache,
         encryptionScheme: EncryptionScheme,
-        videoEncryptionService: VideoEncryptionServiceProtocol = VideoEncryptionService()
+        videoEncryptionService: VideoEncryptionServiceProtocol = VideoEncryptionService(),
+        applicationSupportDirectory: URL? = nil,
+        cachesDirectory: URL? = nil
     ) {
         self.thumbnailCache = thumbnailCache
         self.encryptionScheme = encryptionScheme
         self.videoEncryptionService = videoEncryptionService
+        self.appSupportRoot = applicationSupportDirectory
+            ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        self.cachesRoot = cachesDirectory
+            ?? FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
     }
     
     // MARK: - Directory Management
     
     func getGalleryDirectory() -> URL {
-        let appSupportPath = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        var galleryDir = appSupportPath.appendingPathComponent(Self.photosDir)
+        var galleryDir = appSupportRoot.appendingPathComponent(Self.photosDir)
         
         // Create directory and exclude from backup
         do {
@@ -65,8 +80,7 @@ public class SecureImageRepository {
     }
     
     func getDecoyDirectory() -> URL {
-        let appSupportPath = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        var decoyDir = appSupportPath.appendingPathComponent(Self.decoysDir)
+        var decoyDir = appSupportRoot.appendingPathComponent(Self.decoysDir)
         
         // Create directory and exclude from backup
         do {
@@ -82,8 +96,7 @@ public class SecureImageRepository {
     }
     
     func getVideosDirectory() -> URL {
-        let appSupportPath = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        var videosDir = appSupportPath.appendingPathComponent(Self.videosDir)
+        var videosDir = appSupportRoot.appendingPathComponent(Self.videosDir)
 
         // Create directory and exclude from backup
         do {
@@ -104,8 +117,7 @@ public class SecureImageRepository {
     /// recreated afterwards, so they live in Application Support rather than the
     /// purgeable caches directory.
     func getVideoThumbnailsDirectory() -> URL {
-        let appSupportPath = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        var dir = appSupportPath.appendingPathComponent(Self.videoThumbnailsDir)
+        var dir = appSupportRoot.appendingPathComponent(Self.videoThumbnailsDir)
 
         do {
             try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true, attributes: nil)
@@ -125,8 +137,7 @@ public class SecureImageRepository {
     /// lose their thumbnail). Kept separate so it is not wiped by
     /// `deleteAllVideoThumbnails()` or the decoy directory cleanup.
     func getDecoyVideoThumbnailsDirectory() -> URL {
-        let appSupportPath = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        var dir = appSupportPath.appendingPathComponent(Self.decoyVideoThumbnailsDir)
+        var dir = appSupportRoot.appendingPathComponent(Self.decoyVideoThumbnailsDir)
 
         do {
             try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true, attributes: nil)
@@ -141,8 +152,7 @@ public class SecureImageRepository {
     }
 
     private func getThumbnailsDirectory() -> URL {
-        let cachesPath = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
-        let thumbnailsDir = cachesPath.appendingPathComponent(Self.thumbnailsDir)
+        let thumbnailsDir = cachesRoot.appendingPathComponent(Self.thumbnailsDir)
         
         if !FileManager.default.fileExists(atPath: thumbnailsDir.path) {
             try? FileManager.default.createDirectory(at: thumbnailsDir, withIntermediateDirectories: true)

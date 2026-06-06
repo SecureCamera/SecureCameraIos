@@ -1,3 +1,5 @@
+// Development/testing tool — compiled in Debug builds only, never ships.
+#if DEBUG
 //
 //  VideoExportTests.swift
 //  SnapSafe
@@ -174,4 +176,5 @@ private func getMemoryUsage() -> Int64 {
     }
 }
 
+#endif
 #endif

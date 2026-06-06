@@ -75,9 +75,31 @@ final class SecureImageRepositoryTests: XCTestCase {
     func testGetDecoyDirectoryReturnsCorrectDirectory() {
         // When
         let decoyDir = repository.getDecoyDirectory()
-        
+
         // Then
         XCTAssertEqual(decoyDir, decoyDirectory)
+    }
+
+    /// Regression: hosted unit tests run inside the app's container, so any
+    /// directory that is NOT redirected to the temp directory points at the
+    /// real app's data. The destructive reset/poison-pill tests delete the
+    /// video-thumbnail directories, which would wipe real (unrecoverable)
+    /// thumbnails. Every directory the repository writes to must live under
+    /// the test temp directory.
+    func testAllDirectoriesAreIsolatedToTempDirectory() {
+        let dirs: [(String, URL)] = [
+            ("gallery", repository.getGalleryDirectory()),
+            ("decoy", repository.getDecoyDirectory()),
+            ("videos", repository.getVideosDirectory()),
+            ("videoThumbnails", repository.getVideoThumbnailsDirectory()),
+            ("decoyVideoThumbnails", repository.getDecoyVideoThumbnailsDirectory())
+        ]
+        for (name, dir) in dirs {
+            XCTAssertTrue(
+                dir.path.hasPrefix(tempDirectory.path),
+                "\(name) directory must be isolated to the test temp dir, got \(dir.path)"
+            )
+        }
     }
     
     // MARK: - Security Tests
@@ -508,24 +530,18 @@ final class SecureImageRepositoryTests: XCTestCase {
 
 // MARK: - Testable Repository
 
+/// Routes every storage directory (including the caches-backed photo thumbnail
+/// dir, which is private and was previously un-redirectable) into a temp
+/// directory by injecting the base roots. Hosted tests therefore never touch the
+/// real app container.
 @MainActor
 final class TestableSecureImageRepository: SecureImageRepository {
-    private let testDirectory: URL
-    
     init(tempDirectory: URL, thumbnailCache: ThumbnailCache, encryptionScheme: EncryptionScheme) {
-        self.testDirectory = tempDirectory
-        super.init(thumbnailCache: thumbnailCache, encryptionScheme: encryptionScheme)
-    }
-    
-    override func getGalleryDirectory() -> URL {
-        return testDirectory.appendingPathComponent(SecureImageRepository.photosDir)
-    }
-    
-    override func getDecoyDirectory() -> URL {
-        return testDirectory.appendingPathComponent(SecureImageRepository.decoysDir)
-    }
-
-    override func getVideosDirectory() -> URL {
-        return testDirectory.appendingPathComponent(SecureImageRepository.videosDir)
+        super.init(
+            thumbnailCache: thumbnailCache,
+            encryptionScheme: encryptionScheme,
+            applicationSupportDirectory: tempDirectory,
+            cachesDirectory: tempDirectory
+        )
     }
 }

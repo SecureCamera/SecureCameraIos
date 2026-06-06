@@ -7,6 +7,7 @@
 
 import Foundation
 import Mockable
+import Security
 import XCTest
 
 @testable import SnapSafe
@@ -15,6 +16,8 @@ final class HardwareEncryptionSchemeFileProtectionTests: XCTestCase {
     private var tempDir: URL!
     private var deviceInfo: MockDeviceInfoDataSource!
     private var scheme: HardwareEncryptionScheme!
+    private var testKeyAlias: String!
+    private let hashedPin = HashedPin(hash: "dGVzdGhhc2g=", salt: "dGVzdHNhbHQ=")
 
     override func setUp() async throws {
         try await super.setUp()
@@ -25,12 +28,28 @@ final class HardwareEncryptionSchemeFileProtectionTests: XCTestCase {
         deviceInfo = MockDeviceInfoDataSource()
         given(deviceInfo).getDeviceIdentifier().willReturn(Data("test-device-id".utf8))
 
-        scheme = HardwareEncryptionScheme(deviceInfo: deviceInfo)
+        // Isolated KEK alias so creating a DEK here never touches the production
+        // snapsafe_kek on a device.
+        testKeyAlias = "snapsafe_kek_test_\(UUID().uuidString)"
+        scheme = HardwareEncryptionScheme(deviceInfo: deviceInfo, keyAlias: testKeyAlias)
     }
 
     override func tearDown() async throws {
+        // Scoped cleanup: only this test's isolated key + DEK file.
+        if let scheme { await scheme.evictKey() }
+        if let testKeyAlias { Self.deleteHardwareKey(alias: testKeyAlias) }
+        if let scheme { try? FileManager.default.removeItem(at: scheme.getDekFile(hashedPin: hashedPin)) }
+        if let tempDir { try? FileManager.default.removeItem(at: tempDir) }
         try await super.tearDown()
-        try? FileManager.default.removeItem(at: tempDir)
+    }
+
+    private static func deleteHardwareKey(alias: String) {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassKey,
+            kSecAttrApplicationTag as String: alias.data(using: .utf8)!,
+            kSecAttrKeyType as String: kSecAttrKeyTypeECSECPrimeRandom
+        ]
+        SecItemDelete(query as CFDictionary)
     }
 
     func test_keyDirectory_hasCompleteFileProtection() async throws {

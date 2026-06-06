@@ -14,6 +14,7 @@
 import CryptoKit
 import Foundation
 import Mockable
+import Security
 import XCTest
 
 @testable import SnapSafe
@@ -22,18 +23,38 @@ final class HardwareEncryptionSchemePinBindingTests: XCTestCase {
 
     private var deviceInfo: MockDeviceInfoDataSource!
     private var scheme: HardwareEncryptionScheme!
+    private var testKeyAlias: String!
     private let hashedPin = HashedPin(hash: "dGVzdGhhc2g=", salt: "dGVzdHNhbHQ=")
 
     override func setUp() async throws {
         try await super.setUp()
         deviceInfo = MockDeviceInfoDataSource()
         given(deviceInfo).getDeviceIdentifier().willReturn(Data("test-device-id".utf8))
-        scheme = HardwareEncryptionScheme(deviceInfo: deviceInfo)
+        // Isolated KEK alias: these Secure-Enclave tests run on a real device, where
+        // the keychain is shared with the app, so they must NEVER touch the production
+        // `snapsafe_kek`.
+        testKeyAlias = "snapsafe_kek_test_\(UUID().uuidString)"
+        scheme = HardwareEncryptionScheme(deviceInfo: deviceInfo, keyAlias: testKeyAlias)
     }
 
     override func tearDown() async throws {
-        await scheme.securityFailureReset()
+        // Scoped cleanup of ONLY this test's isolated key + DEK file. Never the broad
+        // securityFailureReset() (which deletes ALL EC keys) — that would wipe the
+        // app's real pin_key/snapsafe_kek when run on a device.
+        if let scheme { await scheme.evictKey() }
+        if let testKeyAlias { Self.deleteHardwareKey(alias: testKeyAlias) }
+        if let scheme { try? FileManager.default.removeItem(at: scheme.getDekFile(hashedPin: hashedPin)) }
         try await super.tearDown()
+    }
+
+    /// Deletes a single hardware key by its application tag (NOT a bulk delete).
+    private static func deleteHardwareKey(alias: String) {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassKey,
+            kSecAttrApplicationTag as String: alias.data(using: .utf8)!,
+            kSecAttrKeyType as String: kSecAttrKeyTypeECSECPrimeRandom
+        ]
+        SecItemDelete(query as CFDictionary)
     }
 
     func test_createThenDerive_withCorrectPin_recoversSameDEK() async throws {

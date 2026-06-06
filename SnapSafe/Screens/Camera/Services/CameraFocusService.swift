@@ -21,7 +21,6 @@ protocol FocusControlling: ObservableObject {
     func showFocusIndicator(on viewPoint: CGPoint)
     func startPeriodicFocusCheck(device: AVCaptureDevice?)
     func stopPeriodicFocusCheck()
-    func normalizeGains(_ gains: AVCaptureDevice.WhiteBalanceGains, for device: AVCaptureDevice) -> AVCaptureDevice.WhiteBalanceGains
 }
 
 @MainActor
@@ -81,14 +80,14 @@ final class CameraFocusService: ObservableObject, FocusControlling {
             }
             
             // Handle white balance based on lock preference
-            if device.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance) {
-                if lockWhiteBalance {
-                    device.whiteBalanceMode = .continuousAutoWhiteBalance
-                    let currentWhiteBalanceGains = device.deviceWhiteBalanceGains
-                    device.setWhiteBalanceModeLocked(with: currentWhiteBalanceGains, completionHandler: nil)
-                } else {
-                    device.whiteBalanceMode = .continuousAutoWhiteBalance
-                }
+            if lockWhiteBalance && device.isWhiteBalanceModeSupported(.locked) {
+                // Lock at the current white balance. Do NOT use
+                // setWhiteBalanceModeLocked(with:) here: custom-gains locking is
+                // unsupported on virtual devices (dual-wide/triple camera) and
+                // throws NSInvalidArgumentException.
+                device.whiteBalanceMode = .locked
+            } else if device.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance) {
+                device.whiteBalanceMode = .continuousAutoWhiteBalance
             }
             
             device.unlockForConfiguration()
@@ -133,14 +132,6 @@ final class CameraFocusService: ObservableObject, FocusControlling {
     func stopPeriodicFocusCheck() {
         focusCheckTimer?.invalidate()
         focusCheckTimer = nil
-    }
-    
-    func normalizeGains(_ gains: AVCaptureDevice.WhiteBalanceGains, for device: AVCaptureDevice) -> AVCaptureDevice.WhiteBalanceGains {
-        var normalizedGains = gains
-        normalizedGains.redGain = max(1.0, min(gains.redGain, device.maxWhiteBalanceGain))
-        normalizedGains.greenGain = max(1.0, min(gains.greenGain, device.maxWhiteBalanceGain))
-        normalizedGains.blueGain = max(1.0, min(gains.blueGain, device.maxWhiteBalanceGain))
-        return normalizedGains
     }
     
     // MARK: - Private Methods

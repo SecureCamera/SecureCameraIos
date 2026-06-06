@@ -42,22 +42,27 @@ private actor KeyCache {
 final class HardwareEncryptionScheme: EncryptionScheme {
     
     // MARK: - Constants
-    private static let keyAlias = "snapsafe_kek"
+    private static let defaultKeyAlias = "snapsafe_kek"
     private static let aesGCMMode = "AES/GCM/NoPadding"
     private static let ivLengthBytes = 12  // 96-bit IV recommended for GCM
     private static let tagLengthBits = 128 // 128-bit tag appended automatically
     private static let dekFilenamePrefix = "dek"
     private static let dekDirectory = "keys"
     private static let defaultKeySize = 32 // 256-bit keys
-    
+
     // MARK: - Dependencies
     private let deviceInfo: DeviceInfoDataSource
     private let keyCache = KeyCache()
     private let logger = Logger.encryption
-    
+
+    /// The hardware KEK alias. Injectable so tests can use an isolated alias and
+    /// never touch the production `snapsafe_kek` in a shared (on-device) keychain.
+    private let keyAlias: String
+
     // MARK: - Initialization
-    init(deviceInfo: DeviceInfoDataSource) {
+    init(deviceInfo: DeviceInfoDataSource, keyAlias: String = HardwareEncryptionScheme.defaultKeyAlias) {
         self.deviceInfo = deviceInfo
+        self.keyAlias = keyAlias
     }
     
     // MARK: - EncryptionScheme Protocol Implementation
@@ -91,7 +96,12 @@ final class HardwareEncryptionScheme: EncryptionScheme {
     }
     
     func decryptWithKeyAlias(encrypted: Data, keyAlias: String) async throws -> Data {
-        try createHardwareKeyIfNeeded(keyAlias: keyAlias)
+        // Do NOT create a key on the decrypt path. If the key is missing or
+        // inaccessible (e.g. a device migration drops the Secure-Enclave key, or the
+        // keychain access group changed), surface the failure so callers can treat it
+        // as a recoverable "secure key unavailable" state. Silently minting a new key
+        // here permanently shadows the original and makes all existing ciphertext
+        // undecryptable — the exact cause of the PIN-upgrade lockout.
         return try decryptWithHardwareKey(encrypted: encrypted, keyAlias: keyAlias)
     }
     
@@ -156,14 +166,14 @@ final class HardwareEncryptionScheme: EncryptionScheme {
     func createKey(plainPin: String, hashedPin: HashedPin) async throws {
         try await logger.logAsyncOperation("create_key") {
             // Create hardware-backed KEK if it doesn't exist (outside of lock)
-            if !hardwareKeyExists(keyAlias: Self.keyAlias) {
+            if !hardwareKeyExists(keyAlias: self.keyAlias) {
                 logger.info("Hardware key doesn't exist, creating new one", metadata: [
-                    "key_alias": .string(Self.keyAlias)
+                    "key_alias": .string(self.keyAlias)
                 ])
-                try createHardwareKey(keyAlias: Self.keyAlias)
+                try createHardwareKey(keyAlias: self.keyAlias)
             } else {
                 logger.debug("Hardware key already exists", metadata: [
-                    "key_alias": .string(Self.keyAlias)
+                    "key_alias": .string(self.keyAlias)
                 ])
             }
             
@@ -270,7 +280,7 @@ private extension HardwareEncryptionScheme {
         // 1. Remove the Secure Enclave wrap to recover the on-disk payload.
         let encryptedDek = try Data(contentsOf: dekFile)
         logger.logDataOperation("decrypt_dek", dataSize: encryptedDek.count)
-        let payload = try decryptWithHardwareKey(encrypted: encryptedDek, keyAlias: Self.keyAlias)
+        let payload = try decryptWithHardwareKey(encrypted: encryptedDek, keyAlias: self.keyAlias)
 
         // 2. Derive the PIN-wrap key. This is the cryptographic dependency that
         //    makes the PIN actually required to recover the DEK (C1).
@@ -327,7 +337,7 @@ private extension HardwareEncryptionScheme {
     /// payload and writes it to disk with complete file protection.
     func storeWrappedDEK(dek: Data, pinKey: SymmetricKey, hashedPin: HashedPin) throws {
         let pinWrapped = try PinDEKWrapper.wrap(dek: dek, pinKey: pinKey)
-        let encryptedDek = try encryptWithHardwareKey(plain: pinWrapped, keyAlias: Self.keyAlias)
+        let encryptedDek = try encryptWithHardwareKey(plain: pinWrapped, keyAlias: self.keyAlias)
         let dekFile = getDekFile(hashedPin: hashedPin)
         try encryptedDek.write(to: dekFile, options: [.completeFileProtection, .atomic])
 
@@ -576,7 +586,7 @@ extension HardwareEncryptionScheme {
     /// can assert it is stored PIN-wrapped (not as a raw DEK). Uses the scheme's
     /// own KEK alias.
     func decryptWithHardwareKeyForTesting(encrypted: Data) throws -> Data {
-        try decryptWithHardwareKey(encrypted: encrypted, keyAlias: Self.keyAlias)
+        try decryptWithHardwareKey(encrypted: encrypted, keyAlias: self.keyAlias)
     }
 }
 

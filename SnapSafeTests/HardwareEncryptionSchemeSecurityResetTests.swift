@@ -21,6 +21,13 @@ final class HardwareEncryptionSchemeSecurityResetTests: XCTestCase {
 
     override func setUp() async throws {
         try await super.setUp()
+        // This suite exercises the BROAD securityFailureReset() / delete-all-EC-keys
+        // path, which cannot be isolated to test-only aliases on a shared keychain.
+        // Run it only on the simulator, whose keychain holds no real app keys; on a
+        // real device it would wipe the app's pin_key/snapsafe_kek.
+        #if !targetEnvironment(simulator)
+        throw XCTSkip("Destructive keychain-reset test runs on the simulator only (it would wipe a real device's app keychain).")
+        #endif
         deviceInfo = MockDeviceInfoDataSource()
         given(deviceInfo).getDeviceIdentifier().willReturn(Data("test-device-id".utf8))
         scheme = HardwareEncryptionScheme(deviceInfo: deviceInfo)
@@ -29,16 +36,21 @@ final class HardwareEncryptionSchemeSecurityResetTests: XCTestCase {
     }
 
     override func tearDown() async throws {
-        try await super.tearDown()
         Self.deleteAllAppECHardwareKeys()
+        try await super.tearDown()
     }
 
     private static func deleteAllAppECHardwareKeys() {
+        // Belt-and-suspenders: NEVER bulk-delete EC keys on a real device — it would
+        // destroy the app's real keychain keys. Only the simulator keychain is
+        // disposable, and the suite is gated to the simulator anyway.
+        #if targetEnvironment(simulator)
         let query: [String: Any] = [
             kSecClass as String: kSecClassKey,
             kSecAttrKeyType as String: kSecAttrKeyTypeECSECPrimeRandom
         ]
         SecItemDelete(query as CFDictionary)
+        #endif
     }
 
     private static func hardwareKeyExists(alias: String) -> Bool {
