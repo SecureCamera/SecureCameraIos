@@ -29,7 +29,7 @@ public final class AuthorizePinUseCase: @unchecked Sendable {
 			return nil
 		}
         
-        self.authRepository.authorizeSession()
+        await self.authRepository.authorizeSession()
 		await authRepository.resetFailedAttempts()
 		return hashedPin
 	}

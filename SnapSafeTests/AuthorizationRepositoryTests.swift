@@ -358,4 +358,37 @@ final class AuthorizationRepositoryTests: XCTestCase {
         XCTAssertTrue(result)
         XCTAssertTrue(auth.isAuthorized.firstValue())
     }
+
+    // MARK: Concurrency isolation
+
+    func test_concurrentSessionMutations_remainConsistentWithoutCrashing() async {
+        let pin = "1234"
+        await settings.setAppPin(cipheredPin: pin)
+
+        // Capture the (now-Sendable) collaborators so the task closures don't
+        // have to retain the test case itself.
+        let auth = self.auth!
+        let authorizePin = self.authorizePin!
+
+        // Hammer the repository from many concurrent tasks. Before the @MainActor
+        // isolation fix, the auth flag and the monotonic timestamp baselines were
+        // mutated without synchronization (the type was @unchecked Sendable); this
+        // was a data race. Now every access is serialized on the main actor, so the
+        // workload must complete cleanly and settle into a deterministic state.
+        await withTaskGroup(of: Void.self) { group in
+            for _ in 0..<200 {
+                group.addTask { _ = await authorizePin.authorizePin(pin) }
+                group.addTask { await auth.keepAliveSession() }
+                group.addTask { _ = await auth.checkSessionValidity() }
+                group.addTask { await auth.revokeAuthorization() }
+            }
+        }
+
+        // Revoke last so the final state is deterministic regardless of interleaving.
+        await auth.revokeAuthorization()
+
+        let isValid = await auth.checkSessionValidity()
+        XCTAssertFalse(isValid)
+        XCTAssertFalse(auth.isAuthorized.firstValue())
+    }
 }
