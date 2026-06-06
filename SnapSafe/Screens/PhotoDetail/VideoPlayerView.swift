@@ -165,6 +165,10 @@ final class VideoPlayerViewModel: ObservableObject {
     @Published var duration: TimeInterval? = nil
     @Published var error: Error? = nil
     @Published var isScrubbing = false
+    /// True once the video has played to the end, so the transport can show a
+    /// replay affordance instead of play/pause.
+    @Published var didPlayToEnd = false
+    @Published var isMuted = false
 
     // Gallery action state (used by the inline detail player)
     @Published var isPoisonPillConfigured = false
@@ -226,6 +230,24 @@ final class VideoPlayerViewModel: ObservableObject {
             player?.play()
         }
         isPlaying = !isPlaying
+        didPlayToEnd = false
+        scheduleHideControls()
+    }
+
+    /// Restarts playback from the beginning. Used by the replay affordance the
+    /// transport shows once the video has played to the end.
+    func replay() {
+        guard let player else { return }
+        didPlayToEnd = false
+        player.seek(to: .zero)
+        player.play()
+        isPlaying = true
+        scheduleHideControls()
+    }
+
+    func toggleMute() {
+        isMuted.toggle()
+        player?.isMuted = isMuted
         scheduleHideControls()
     }
 
@@ -326,6 +348,8 @@ final class VideoPlayerViewModel: ObservableObject {
                 self.playerItem = playerItem
                 self.player = player
                 self.isLoading = false
+                // Carry the current mute state onto the freshly created player.
+                player.isMuted = self.isMuted
 
                 // Start playback automatically, unless the user turned off
                 // "Auto-Play Videos" in Settings (default on). When off, the
@@ -415,6 +439,7 @@ final class VideoPlayerViewModel: ObservableObject {
             .sink { [weak self] _ in
                 guard let self = self else { return }
                 self.isPlaying = false
+                self.didPlayToEnd = true
                 self.showControls = true
                 logger.debug("Playback completed")
             }
@@ -440,6 +465,7 @@ final class VideoPlayerViewModel: ObservableObject {
         guard let duration, let player else { isScrubbing = false; return }
         let target = max(0, min(duration, duration * fraction))
         currentTime = target
+        if target < duration { didPlayToEnd = false }
         player.seek(to: CMTime(seconds: target, preferredTimescale: 600)) { [weak self] _ in
             Task { @MainActor in
                 guard let self else { return }

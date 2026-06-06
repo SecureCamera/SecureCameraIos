@@ -327,17 +327,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		A9C449142E9CC85800CFE854 /* SnapSafeUITests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
-			explicitFileTypes = {
-			};
-			explicitFolders = (
-			);
-			path = SnapSafeUITests;
-			sourceTree = "<group>";
-		};
+		A9C449142E9CC85800CFE854 /* SnapSafeUITests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = SnapSafeUITests; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -378,7 +368,6 @@
 				177F44BD6B96C2A8659FAC80 /* FakeThumbnailCache.swift */,
 				A2AD9082F22CD2A9FC7CD33B /* FakeVideoEncryptionService.swift */,
 			);
-			name = Util;
 			path = Util;
 			sourceTree = "<group>";
 		};
