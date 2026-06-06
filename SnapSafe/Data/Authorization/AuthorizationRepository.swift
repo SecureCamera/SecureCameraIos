@@ -70,9 +70,11 @@ public final class AuthorizationRepository {
 
     /// Increments failed attempts, stores the current timestamp, and returns the new count
     public func incrementFailedAttempts() async -> Int {
-        let current = await getFailedAttempts()
-        let newCount = current + 1
-        await setFailedAttempts(newCount)
+        // Delegate the increment to the data source, which performs the
+        // read-modify-write atomically. Doing it here as `read; await; write` spanned
+        // two suspension points, so concurrent verification attempts could read the
+        // same count and lose an increment — undercounting the lockout (TOCTOU).
+        let newCount = await appSettings.incrementFailedPinAttempts()
 
         let nowMs = Int64(clock.now.timeIntervalSince1970 * 1000.0)
         await appSettings.setLastFailedAttemptTimestamp(nowMs)
