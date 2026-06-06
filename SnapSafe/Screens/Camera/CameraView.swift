@@ -255,20 +255,6 @@ struct CameraPreviewView: UIViewRepresentable {
         bottomRightCornerV.backgroundColor = cornerColor
         containerView.layer.addSublayer(bottomRightCornerV)
         
-        // Add a label to indicate that this is the capture area
-        let captureLabel = UILabel()
-        captureLabel.text = "CAPTURE AREA"
-        captureLabel.textColor = UIColor.white.withAlphaComponent(0.7)
-        captureLabel.font = UIFont.systemFont(ofSize: 10, weight: .bold)
-        captureLabel.sizeToFit()
-        captureLabel.frame = CGRect(
-            x: (containerSize.width - captureLabel.frame.width) / 2,
-            y: 10,
-            width: captureLabel.frame.width,
-            height: captureLabel.frame.height
-        )
-        containerView.addSubview(captureLabel)
-        
         // Create and configure the preview layer
         let previewLayer = AVCaptureVideoPreviewLayer()
         previewLayer.session = cameraModel.session

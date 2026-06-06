@@ -61,6 +61,9 @@
 		6660FC682E8529F900C0B617 /* PhotoCaptureService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6660FC652E8529F900C0B617 /* PhotoCaptureService.swift */; };
 		6660FC692E8529F900C0B617 /* CameraDeviceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6660FC612E8529F900C0B617 /* CameraDeviceService.swift */; };
 		6660FC6A2E8529F900C0B617 /* CameraZoomService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6660FC642E8529F900C0B617 /* CameraZoomService.swift */; };
+		C0FFEE0000000000000000A2 /* CameraZoomMapping.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0FFEE0000000000000000A1 /* CameraZoomMapping.swift */; };
+		C0FFEE0000000000000000C2 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C0FFEE0000000000000000C1 /* PrivacyInfo.xcprivacy */; };
+		C0FFEE0000000000000000B2 /* CameraZoomMappingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0FFEE0000000000000000B1 /* CameraZoomMappingTests.swift */; };
 		6660FC6B2E8529F900C0B617 /* CameraFocusService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6660FC622E8529F900C0B617 /* CameraFocusService.swift */; };
 		6660FC6D2E8BB2F800C0B617 /* ShardedKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6660FC6C2E8BB2F800C0B617 /* ShardedKey.swift */; };
 		6660FC6F2E8BB41600C0B617 /* ShardedKeyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6660FC6E2E8BB41600C0B617 /* ShardedKeyTests.swift */; };
@@ -153,6 +156,7 @@
 		A9FFC0DE2F3A000100BB6F19 /* VideoDef.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9FFC0DE2F3A000000BB6F19 /* VideoDef.swift */; };
 		AF250682EF9E0A6D81B711EF /* VideoImportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBEA7D1062AABE16019D0AEF /* VideoImportTests.swift */; };
 		B11100000000000000000002 /* EncryptedVideoDataSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B11100000000000000000001 /* EncryptedVideoDataSourceTests.swift */; };
+		B11100000000000000000004 /* AVPlayerItemStatusObservationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B11100000000000000000003 /* AVPlayerItemStatusObservationTests.swift */; };
 		B9D2FCB35A0C40D83FBA3CB8 /* VideoSurfaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC401584FDB751F792E58364 /* VideoSurfaceView.swift */; };
 		D54FBF5A0C3BABB963AB33CF /* FakeEncryptionScheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2414533D313F8BEF8E1DB17D /* FakeEncryptionScheme.swift */; };
 		E81315B178D3FB88663F856F /* FakeVideoEncryptionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2AD9082F22CD2A9FC7CD33B /* FakeVideoEncryptionService.swift */; };
@@ -230,6 +234,9 @@
 		6660FC622E8529F900C0B617 /* CameraFocusService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraFocusService.swift; sourceTree = "<group>"; };
 		6660FC632E8529F900C0B617 /* CameraPermissionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPermissionService.swift; sourceTree = "<group>"; };
 		6660FC642E8529F900C0B617 /* CameraZoomService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraZoomService.swift; sourceTree = "<group>"; };
+		C0FFEE0000000000000000A1 /* CameraZoomMapping.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraZoomMapping.swift; sourceTree = "<group>"; };
+		C0FFEE0000000000000000C1 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		C0FFEE0000000000000000B1 /* CameraZoomMappingTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CameraZoomMappingTests.swift; sourceTree = "<group>"; };
 		6660FC652E8529F900C0B617 /* PhotoCaptureService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoCaptureService.swift; sourceTree = "<group>"; };
 		6660FC6C2E8BB2F800C0B617 /* ShardedKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShardedKey.swift; sourceTree = "<group>"; };
 		6660FC6E2E8BB41600C0B617 /* ShardedKeyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShardedKeyTests.swift; sourceTree = "<group>"; };
@@ -326,6 +333,7 @@
 		F10BAC24976F36840D24E6B6 /* OrientationRotationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OrientationRotationTests.swift; sourceTree = "<group>"; };
 		FBEA7D1062AABE16019D0AEF /* VideoImportTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VideoImportTests.swift; sourceTree = "<group>"; };
 		B11100000000000000000001 /* EncryptedVideoDataSourceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EncryptedVideoDataSourceTests.swift; sourceTree = "<group>"; };
+		B11100000000000000000003 /* AVPlayerItemStatusObservationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AVPlayerItemStatusObservationTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -472,6 +480,7 @@
 				6660FC612E8529F900C0B617 /* CameraDeviceService.swift */,
 				6660FC622E8529F900C0B617 /* CameraFocusService.swift */,
 				6660FC632E8529F900C0B617 /* CameraPermissionService.swift */,
+				C0FFEE0000000000000000A1 /* CameraZoomMapping.swift */,
 				6660FC642E8529F900C0B617 /* CameraZoomService.swift */,
 				6660FC652E8529F900C0B617 /* PhotoCaptureService.swift */,
 				66FFC0DE2F3A000000C0B617 /* VideoCaptureService.swift */,
@@ -701,6 +710,7 @@
 				A91DBC4F2DE58191001F42ED /* ScreenCaptureManager.swift */,
 				A91DBC522DE58191001F42ED /* SnapSafeApp.swift */,
 				A91DBC3F2DE58191001F42ED /* Assets.xcassets */,
+				C0FFEE0000000000000000C1 /* PrivacyInfo.xcprivacy */,
 				667FF8252E6C9EAD00FB3E02 /* Data */,
 				A91DBC2D2DE58191001F42ED /* Preview Content */,
 				667FF81D2E6C9DC200FB3E02 /* Screens */,
@@ -743,6 +753,7 @@
 				667FF8112E6BA7F200FB3E02 /* AuthorizePinUseCaseTests.swift */,
 				667FF80D2E6A9D2A00FB3E02 /* AuthorizationRepositoryTests.swift */,
 				6697512F2E69789A0059C5F3 /* TestUtils.swift */,
+				C0FFEE0000000000000000B1 /* CameraZoomMappingTests.swift */,
 				66A404D02E67F39F0054FFE7 /* PinCryptoTests.swift */,
 				66A404D62E694A450054FFE7 /* PinRepositoryTest.swift */,
 				ADA2FF82666960557F17548E /* SecureImageRepositoryTests.swift */,
@@ -755,6 +766,7 @@
 				E122542F8E8343FD9E2471E5 /* DecoyVideoIntegrationTests.swift */,
 				FBEA7D1062AABE16019D0AEF /* VideoImportTests.swift */,
 				B11100000000000000000001 /* EncryptedVideoDataSourceTests.swift */,
+				B11100000000000000000003 /* AVPlayerItemStatusObservationTests.swift */,
 				0B07498650554419769A4053 /* HardwareEncryptionSchemeFileProtectionTests.swift */,
 				0B07498750554419769A4054 /* HardwareEncryptionSchemeSecurityResetTests.swift */,
 				332C6DF332A8DDCFFDFA5FDB /* PinDEKWrapperTests.swift */,
@@ -907,6 +919,7 @@
 			files = (
 				A91DBC7A2DE58191001F42ED /* Preview Assets.xcassets in Resources */,
 				A91DBC7B2DE58191001F42ED /* Assets.xcassets in Resources */,
+				C0FFEE0000000000000000C2 /* PrivacyInfo.xcprivacy in Resources */,
 				A9E6B6B72E7247D300BB6F19 /* Localizable.xcstrings in Resources */,
 				A9D60B232FC506E700683A92 /* VIDEO_EXPORT_TESTING.md in Resources */,
 			);
@@ -943,6 +956,7 @@
 				66FFC0DE2F3A000100C0B617 /* VideoCaptureService.swift in Sources */,
 				6660FC692E8529F900C0B617 /* CameraDeviceService.swift in Sources */,
 				A9D60B1F2FC506B600683A92 /* DeveloperToolsView.swift in Sources */,
+				C0FFEE0000000000000000A2 /* CameraZoomMapping.swift in Sources */,
 				6660FC6A2E8529F900C0B617 /* CameraZoomService.swift in Sources */,
 				6660FC6B2E8529F900C0B617 /* CameraFocusService.swift in Sources */,
 				663C7E552E73FA3100967B9E /* PoisonPillPinCreationView.swift in Sources */,
@@ -1067,6 +1081,7 @@
 				66A404D72E694A450054FFE7 /* PinRepositoryTest.swift in Sources */,
 				D54FBF5A0C3BABB963AB33CF /* FakeEncryptionScheme.swift in Sources */,
 				F5928EF067F8CDFB35D572D3 /* FakeThumbnailCache.swift in Sources */,
+				C0FFEE0000000000000000B2 /* CameraZoomMappingTests.swift in Sources */,
 				68109942731A0033DBA31CA8 /* PoisonPillVideoDeletionTests.swift in Sources */,
 				71A1063EE417231D3E6A771B /* SECVFileFormatTests.swift in Sources */,
 				78BAE12E96629EA55F066179 /* SecureImageRepositoryTests.swift in Sources */,
@@ -1076,6 +1091,7 @@
 				F994CE57BC4263827C4C1DB9 /* DecoyVideoIntegrationTests.swift in Sources */,
 				AF250682EF9E0A6D81B711EF /* VideoImportTests.swift in Sources */,
 				B11100000000000000000002 /* EncryptedVideoDataSourceTests.swift in Sources */,
+				B11100000000000000000004 /* AVPlayerItemStatusObservationTests.swift in Sources */,
 				24194F171D3CBDF42B72D556 /* HardwareEncryptionSchemeFileProtectionTests.swift in Sources */,
 				24194F181D3CBDF42B72D557 /* HardwareEncryptionSchemeSecurityResetTests.swift in Sources */,
 				F11C39ACCEDC8B8CAEA2C214 /* PinDEKWrapperTests.swift in Sources */,

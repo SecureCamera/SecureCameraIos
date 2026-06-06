@@ -178,7 +178,10 @@ struct SecureGalleryView: View {
             ToolbarItemGroup(placement: .bottomBar) {
                 switch viewModel.selectionMode {
                 case .none:
-                    PhotosPicker(selection: $viewModel.pickerItems, matching: .any(of: [.images, .videos]), photoLibrary: .shared()) {
+                    // Parameterless form: same out-of-process picker, but the
+                    // binary carries no PHPhotoLibrary reference for App Store
+                    // upload scanning to flag.
+                    PhotosPicker(selection: $viewModel.pickerItems, matching: .any(of: [.images, .videos])) {
                         Label("Import", systemImage: "square.and.arrow.down")
                     }
                     .onChange(of: viewModel.pickerItems) { _, newItems in

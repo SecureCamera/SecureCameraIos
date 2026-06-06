@@ -1,3 +1,5 @@
+// Development/testing tool — compiled in Debug builds only, never ships.
+#if DEBUG
 //
 //  UITestDataLoader.swift
 //  SnapSafe
@@ -160,3 +162,4 @@ class UITestDataLoader {
         context.restoreGState()
     }
 }
+#endif

@@ -1,3 +1,5 @@
+// Development/testing tool — compiled in Debug builds only, never ships.
+#if DEBUG
 //
 //  VideoExportTestHelper.swift
 //  SnapSafe
@@ -437,3 +439,4 @@ struct TestResultsView: View {
         }
     }
 }
+#endif

@@ -153,41 +153,22 @@ final class PoisonPillVideoDeletionTests: XCTestCase {
 
 // MARK: - Testable Repository
 
+/// Routes every storage directory into a temp directory by injecting the base
+/// roots, so hosted tests never read from or write to the real app container.
 @MainActor
 final class VideoTestableSecureImageRepository: SecureImageRepository {
-    private let testDirectory: URL
-
     init(
         tempDirectory: URL,
         thumbnailCache: ThumbnailCache,
         encryptionScheme: EncryptionScheme,
         videoEncryptionService: VideoEncryptionServiceProtocol
     ) {
-        self.testDirectory = tempDirectory
         super.init(
             thumbnailCache: thumbnailCache,
             encryptionScheme: encryptionScheme,
-            videoEncryptionService: videoEncryptionService
+            videoEncryptionService: videoEncryptionService,
+            applicationSupportDirectory: tempDirectory,
+            cachesDirectory: tempDirectory
         )
-    }
-
-    override func getGalleryDirectory() -> URL {
-        testDirectory.appendingPathComponent(SecureImageRepository.photosDir)
-    }
-
-    override func getDecoyDirectory() -> URL {
-        testDirectory.appendingPathComponent(SecureImageRepository.decoysDir)
-    }
-
-    override func getVideosDirectory() -> URL {
-        testDirectory.appendingPathComponent(SecureImageRepository.videosDir)
-    }
-
-    override func getVideoThumbnailsDirectory() -> URL {
-        testDirectory.appendingPathComponent(SecureImageRepository.videoThumbnailsDir)
-    }
-
-    override func getDecoyVideoThumbnailsDirectory() -> URL {
-        testDirectory.appendingPathComponent(SecureImageRepository.decoyVideoThumbnailsDir)
     }
 }

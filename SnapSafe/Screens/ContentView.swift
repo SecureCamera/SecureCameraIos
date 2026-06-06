@@ -135,6 +135,8 @@ struct ContentView: View {
                 encryptionKey: keyData.map { SymmetricKey(data: $0) }
             )
         case .videoExportTest:
+            // Dev-only screen; the view type is compiled in Debug builds only.
+            #if DEBUG
             if #available(iOS 18.0, *) {
                 VideoExportTestView()
             } else {
@@ -142,6 +144,9 @@ struct ContentView: View {
                     .font(.title2)
                     .foregroundStyle(.secondary)
             }
+            #else
+            EmptyView()
+            #endif
         }
     }
 }

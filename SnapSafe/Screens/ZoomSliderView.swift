@@ -37,8 +37,10 @@ struct ZoomSliderView: View {
                         .fill(Color.green.opacity(0.6))
                         .frame(height: 4)
 
-                    // Tick marks and labels (tappable)
-                    ForEach(zoomLevels, id: \.self) { level in
+                    // Tick marks and labels (tappable), limited to what the
+                    // current device can actually reach (front cameras have no
+                    // 0.5x ultra-wide lens)
+                    ForEach(zoomLevels.filter { $0 >= cameraModel.minZoom && $0 <= cameraModel.maxZoom }, id: \.self) { level in
                         VStack(spacing: 4) {
                             // Tick mark
                             Rectangle()

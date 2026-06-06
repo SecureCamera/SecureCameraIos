@@ -11,11 +11,6 @@ import Logging
 import Combine
 import CryptoKit
 
-enum CameraLensType {
-    case ultraWide   // 0.5x zoom
-    case wideAngle   // 1x zoom (standard)
-}
-
 // Camera model that handles the AVFoundation functionality
 @MainActor
 class CameraViewModel: NSObject, ObservableObject {
@@ -44,7 +39,6 @@ class CameraViewModel: NSObject, ObservableObject {
     var zoomFactor: CGFloat { zoomService.zoomFactor }
     var minZoom: CGFloat { zoomService.minZoom }
     var maxZoom: CGFloat { zoomService.maxZoom }
-    var currentLensType: CameraLensType { zoomService.currentLensType }
     var focusIndicatorPoint: CGPoint? { focusService.focusIndicatorPoint }
     var showingFocusIndicator: Bool { focusService.showingFocusIndicator }
     var recentImage: UIImage? { photoService.recentImage }
@@ -214,7 +208,8 @@ class CameraViewModel: NSObject, ObservableObject {
         if isGranted {
             Task {
                 try await Task.sleep(for: .milliseconds(200))
-                await deviceService.setupCamera(for: cameraPosition, lensType: currentLensType)
+                await deviceService.setupCamera(for: cameraPosition)
+                zoomService.updateZoomLimits(for: currentDevice)
             }
         } else {
             await MainActor.run {
@@ -232,8 +227,8 @@ class CameraViewModel: NSObject, ObservableObject {
         }
         #endif
         
-        await deviceService.setupCamera(for: cameraPosition, lensType: currentLensType)
-        
+        await deviceService.setupCamera(for: cameraPosition)
+
         // Update zoom limits based on device
         zoomService.updateZoomLimits(for: currentDevice)
         
@@ -306,6 +301,9 @@ class CameraViewModel: NSObject, ObservableObject {
         captureMode = mode
         deviceService.configureForMode(mode)
 
+        // Mode switches always start back at the default zoom
+        resetZoomLevel()
+
         Logger.camera.info("Switched capture mode to: \(String(describing: mode))")
     }
 
@@ -350,49 +348,28 @@ class CameraViewModel: NSObject, ObservableObject {
         await zoomService.zoom(factor: factor, device: currentDevice)
     }
     
-    // Handle pinch gestures with automatic lens switching and smooth zoom
+    // Handle pinch gestures; the virtual device zooms seamlessly across lenses
     func handlePinchGesture(scale: CGFloat, initialScale: CGFloat? = nil) {
         zoomService.handlePinchGesture(
             scale: scale,
             initialScale: initialScale,
-            device: currentDevice,
-            onLensSwitch: { [weak self] lensType in
-                self?.switchLensType(to: lensType)
-            }
+            device: currentDevice
         )
     }
-    
+
     // Tap-to-focus with optional white balance locking
     func adjustCameraSettings(at point: CGPoint, lockWhiteBalance: Bool = false) {
         focusService.adjustCameraSettings(at: point, lockWhiteBalance: lockWhiteBalance, device: currentDevice)
     }
-    
-    
-    // Switch between ultra-wide and wide-angle cameras
-    func switchLensType(to lensType: CameraLensType) {
-        guard lensType != currentLensType else { return }
-        guard cameraPosition == .back || lensType == .wideAngle else { return }
-        
-        zoomService.updateLensType(lensType)
-        deviceService.switchLensType(to: lensType)
-        
-        // Set up focus monitoring for the new device
-        if let device = currentDevice {
-            focusService.setupSubjectAreaChangeMonitoring(for: device)
-        }
-    }
-    
+
     // Switch between front and back cameras with clean white balance reset
     func switchCamera(to position: AVCaptureDevice.Position) async {
-        if position == .front && currentLensType == .ultraWide {
-            zoomService.updateLensType(.wideAngle)
-        }
-        
         await deviceService.switchCamera(to: position)
-        
-        // Update zoom after camera switch
-        zoomService.resetZoomLevel(device: currentDevice)
-        
+
+        // Rebuild the zoom mapping for the new device (front cameras have no
+        // ultra-wide lens); setupCamera already positioned it at display 1.0x.
+        zoomService.updateZoomLimits(for: currentDevice)
+
         // Set up focus monitoring for the new device
         if let device = currentDevice {
             focusService.setupSubjectAreaChangeMonitoring(for: device)

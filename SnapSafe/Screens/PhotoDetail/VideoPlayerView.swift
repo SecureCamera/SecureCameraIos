@@ -351,10 +351,7 @@ final class VideoPlayerViewModel: ObservableObject {
                 // Carry the current mute state onto the freshly created player.
                 player.isMuted = self.isMuted
 
-                // Start playback automatically, unless the user turned off
-                // "Auto-Play Videos" in Settings (default on). When off, the
-                // video stays paused on its first frame until the user taps play.
-                let autoPlay = UserDefaults.standard.object(forKey: "autoPlayVideos") as? Bool ?? true
+                let autoPlay = UserDefaults.standard.object(forKey: "autoPlayVideos") as? Bool ?? false
                 if autoPlay {
                     player.play()
                     self.isPlaying = true
@@ -577,69 +574,9 @@ extension TimeInterval {
     }
 }
 
-// MARK: - AVPlayerItem Extension
-
-extension AVPlayerItem {
-    func publisher<T>(for keyPath: KeyPath<AVPlayerItem, T>) -> AnyPublisher<T, Never> {
-        Publishers.AVPlayerItemPublisher(playerItem: self, keyPath: keyPath)
-            .eraseToAnyPublisher()
-    }
-}
-
-// MARK: - AVPlayerItem Publisher
-
-private struct Publishers {
-    struct AVPlayerItemPublisher<T>: Publisher {
-        typealias Output = T
-        typealias Failure = Never
-
-        let playerItem: AVPlayerItem
-        let keyPath: KeyPath<AVPlayerItem, T>
-
-        init(playerItem: AVPlayerItem, keyPath: KeyPath<AVPlayerItem, T>) {
-            self.playerItem = playerItem
-            self.keyPath = keyPath
-        }
-
-        func receive<S>(subscriber: S) where S : Subscriber, Failure == S.Failure, Output == S.Input {
-            let subscription = AVPlayerItemSubscription(playerItem: playerItem, keyPath: keyPath, subscriber: subscriber)
-            subscriber.receive(subscription: subscription)
-        }
-    }
-}
-
-// MARK: - AVPlayerItem Subscription
-
-private final class AVPlayerItemSubscription<T>: Subscription, @unchecked Sendable {
-    private let playerItem: AVPlayerItem
-    private let keyPath: KeyPath<AVPlayerItem, T>
-    private var onReceive: ((T) -> Void)?
-    private var observer: NSKeyValueObservation?
-
-    init<S: Subscriber>(playerItem: AVPlayerItem, keyPath: KeyPath<AVPlayerItem, T>, subscriber: S) where S.Input == T, S.Failure == Never {
-        self.playerItem = playerItem
-        self.keyPath = keyPath
-        let capturedSubscriber: S? = subscriber
-        self.onReceive = { value in _ = capturedSubscriber?.receive(value) }
-        setupObservation()
-    }
-
-    deinit {
-        observer?.invalidate()
-    }
-
-    func request(_ demand: Subscribers.Demand) {}
-
-    func cancel() {
-        observer?.invalidate()
-        observer = nil
-        onReceive = nil
-    }
-
-    private func setupObservation() {
-        observer = playerItem.observe(keyPath, options: [.initial, .new]) { [weak self] _, change in
-            guard let self = self, let newValue = change.newValue else { return }
-            self.onReceive?(newValue)
-        }
-    }
-}
+// NOTE: AVPlayerItem status observation uses Foundation's built-in, thread-safe
+// `NSObject.publisher(for:options:)` (default options `[.initial, .new]`). A custom
+// Combine `Publisher`/`Subscription` used to live here, but it was `@unchecked
+// Sendable` and mutated its subscription state in `cancel()` without synchronization
+// while the KVO callback could fire concurrently — a data race. The built-in KVO
+// publisher provides the same semantics safely.

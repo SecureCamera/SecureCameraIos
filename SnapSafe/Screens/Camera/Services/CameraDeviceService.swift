@@ -18,12 +18,9 @@ protocol CameraDeviceProviding: ObservableObject {
     var currentDevice: AVCaptureDevice? { get }
     var cameraPosition: AVCaptureDevice.Position { get }
 
-    func setupCamera(for position: AVCaptureDevice.Position, lensType: CameraLensType) async
+    func setupCamera(for position: AVCaptureDevice.Position) async
     func switchCamera(to position: AVCaptureDevice.Position) async
-    func switchLensType(to lensType: CameraLensType)
     func configureForMode(_ mode: CaptureMode)
-    func getUltraWideDevice() -> AVCaptureDevice?
-    func getWideAngleDevice(position: AVCaptureDevice.Position) -> AVCaptureDevice?
 }
 
 
@@ -41,8 +38,6 @@ final class CameraDeviceService: ObservableObject, @preconcurrency CameraDeviceP
 
     // MARK: - Private Properties
 
-    private var wideAngleDevice: AVCaptureDevice?
-    private var ultraWideDevice: AVCaptureDevice?
     private var audioInput: AVCaptureDeviceInput?
     private var isConfiguring = false
 
@@ -58,36 +53,17 @@ final class CameraDeviceService: ObservableObject, @preconcurrency CameraDeviceP
     
     // MARK: - Public Methods
     
-    func setupCamera(for position: AVCaptureDevice.Position, lensType: CameraLensType) async {
+    func setupCamera(for position: AVCaptureDevice.Position) async {
         session.beginConfiguration()
-        
+
         // Clear existing inputs
         if let inputs = session.inputs as? [AVCaptureDeviceInput] {
             for input in inputs {
                 session.removeInput(input)
             }
         }
-        
-        // Update device references
-        wideAngleDevice = getWideAngleDevice(position: position)
-        
-        if position == .back {
-            ultraWideDevice = getUltraWideDevice()
-        } else {
-            ultraWideDevice = nil
-        }
-        
-        // Select appropriate device based on lens type
-        var device: AVCaptureDevice?
-        let shouldUseUltraWide = lensType == .ultraWide && ultraWideDevice != nil && position == .back
-        
-        if shouldUseUltraWide {
-            device = ultraWideDevice
-        } else {
-            device = wideAngleDevice
-        }
-        
-        guard let device = device else {
+
+        guard let device = camera(for: position) else {
             Logger.camera.error("Failed to get camera device", metadata: [
                 "position": .string(String(describing: position))
             ])
@@ -101,9 +77,11 @@ final class CameraDeviceService: ObservableObject, @preconcurrency CameraDeviceP
         do {
             // Configure device with optimal settings
             try device.lockForConfiguration()
-            
-            device.videoZoomFactor = 1.0
-            
+
+            // Start at display 1.0x. On a virtual device with an ultra-wide
+            // constituent, that is the wide-lens switch-over factor, not 1.0.
+            device.videoZoomFactor = CameraZoomMapping(device: device).deviceZoom(forDisplayZoom: 1.0)
+
             // Enable continuous auto modes
             if device.isFocusModeSupported(.continuousAutoFocus) {
                 device.focusMode = .continuousAutoFocus
@@ -168,50 +146,29 @@ final class CameraDeviceService: ObservableObject, @preconcurrency CameraDeviceP
         
         isConfiguring = true
         defer { isConfiguring = false }
-        
-        await setupCamera(for: position, lensType: .wideAngle)
-        
+
+        await setupCamera(for: position)
+
         if !session.isRunning {
             Task(priority: .userInitiated) {
                 session.startRunning()
             }
         }
     }
-    
-    func switchLensType(to lensType: CameraLensType) {
-        guard !isConfiguring else { return }
-        guard cameraPosition == .back || lensType == .wideAngle else { return }
-        
-        isConfiguring = true
-        
-        Task(priority: .userInitiated) { [weak self] in
-            defer { 
-                Task { @MainActor in
-                    self?.isConfiguring = false
-                }
-            }
-            
-            await self?.setupCamera(for: self?.cameraPosition ?? .back, lensType: lensType)
-            
-            if let session = self?.session, !session.isRunning {
-                Task(priority: .userInitiated) {
-                    session.startRunning()
-                }
-            }
+
+    /// Picks the best camera for a position. For the back position this is the
+    /// most capable virtual device: its `videoZoomFactor` spans all constituent
+    /// lenses, and AVFoundation switches between them seamlessly — there is no
+    /// session reconfiguration when zoom crosses a lens boundary.
+    private func camera(for position: AVCaptureDevice.Position) -> AVCaptureDevice? {
+        if position == .back {
+            return AVCaptureDevice.default(.builtInTripleCamera, for: .video, position: .back)
+                ?? AVCaptureDevice.default(.builtInDualWideCamera, for: .video, position: .back)
+                ?? AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
         }
-    }
-    
-    func getUltraWideDevice() -> AVCaptureDevice? {
-        if let ultraWide = AVCaptureDevice.default(.builtInUltraWideCamera, for: .video, position: .back) {
-            return ultraWide
-        }
-        return AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
-    }
-    
-    func getWideAngleDevice(position: AVCaptureDevice.Position = .back) -> AVCaptureDevice? {
         return AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: position)
     }
-    
+
     // MARK: - Capture Mode Configuration
 
     func configureForMode(_ mode: CaptureMode) {

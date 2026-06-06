@@ -1,3 +1,5 @@
+// Development/testing tool — compiled in Debug builds only, never ships.
+#if DEBUG
 //
 //  RunVideoExportTests.swift
 //  SnapSafe
@@ -45,4 +47,5 @@ func runVideoExportTests() async {
 func quickVideoTest() async {
     await runVideoExportTests()
 }
+#endif
 #endif
