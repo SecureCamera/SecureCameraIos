@@ -81,6 +81,11 @@ struct PhotoDetailView: View {
                                 .rotationEffect(Angle(radians: viewModel.imageRotation))
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        // Reserve room for the floating action toolbar so the
+                        // image fits ABOVE it. Constant height → the image never
+                        // shifts when paging to/from a video. Collapses while
+                        // zoomed so the photo can use the full screen.
+                        .padding(.bottom, isZoomed ? 0 : PhotoDetailLayout.bottomReserve)
                     }
                 }
             }

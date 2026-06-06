@@ -10,6 +10,17 @@ import SwiftUI
 import Logging
 
 
+/// Shared layout constants for the photo detail pager.
+internal enum PhotoDetailLayout {
+    /// Fixed height reserved at the bottom of every photo page so the floating
+    /// action toolbar sits BELOW the image instead of over it. It's a constant
+    /// (not the measured toolbar height) on purpose: a constant keeps each
+    /// photo's available area identical regardless of whether the neighbouring
+    /// page is a video, so the image never shifts vertically while paging.
+    /// Sized to clear the toolbar (≈80pt) on every supported OS version.
+    static let bottomReserve: CGFloat = 88
+}
+
 internal struct DismissTransformModifier: ViewModifier {
     internal let isZoomed: Bool
     internal let scale: CGFloat
@@ -109,9 +120,18 @@ struct EnhancedPhotoDetailView: View {
                     scale: viewModel.photoScaleEffect,
                     verticalOffset: viewModel.dragOffset.height
                 )
+                // A tap on the media brings the counter chip back (and restarts
+                // its auto-hide). Simultaneous so it never blocks the scroll
+                // view's double-tap zoom, horizontal paging, or dismiss drag.
+                .simultaneousGesture(
+                    TapGesture().onEnded { viewModel.showCounterThenAutoHide() }
+                )
 
                 // Floating toolbar — photos only. Video pages render their own
                 // glass controls (transport + actions) inside InlineVideoPlayerView.
+                // Each photo page reserves PhotoDetailLayout.bottomReserve at its
+                // bottom (constant, so the image never shifts when paging to/from
+                // a video), and this toolbar sits in that reserved band.
                 VStack {
                     Spacer()
                     if !viewModel.currentIsVideo, viewModel.currentIndex < viewModel.allMedia.count {
