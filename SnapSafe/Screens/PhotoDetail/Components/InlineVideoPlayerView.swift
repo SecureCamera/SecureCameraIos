@@ -42,58 +42,69 @@ struct InlineVideoPlayerView: View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            // Video surface (or loading / error)
-            Group {
-                if let player = viewModel.player {
-                    VideoSurfaceView(player: player)
-                        .ignoresSafeArea()
-                } else if viewModel.isLoading {
-                    ProgressView()
-                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                        .scaleEffect(1.5)
-                } else if viewModel.error != nil {
-                    VStack(spacing: 16) {
-                        Image(systemName: "exclamationmark.triangle")
-                            .font(.largeTitle)
-                            .foregroundStyle(.white.opacity(0.7))
-                        Text("Could not play video")
-                            .foregroundStyle(.white.opacity(0.7))
+            VStack(spacing: 12) {
+                // Video area — fills the space above the action bar. The
+                // transport bar overlays its bottom edge (may overlap the
+                // last sliver of the frame, which is acceptable).
+                ZStack {
+                    Group {
+                        if let player = viewModel.player {
+                            VideoSurfaceView(player: player)
+                        } else if viewModel.isLoading {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                .scaleEffect(1.5)
+                        } else if viewModel.error != nil {
+                            VStack(spacing: 16) {
+                                Image(systemName: "exclamationmark.triangle")
+                                    .font(.largeTitle)
+                                    .foregroundStyle(.white.opacity(0.7))
+                                Text("Could not play video")
+                                    .foregroundStyle(.white.opacity(0.7))
+                            }
+                        }
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                    if viewModel.showControls {
+                        VStack {
+                            Spacer()
+                            VideoTransportBar(
+                                isPlaying: viewModel.isPlaying,
+                                didPlayToEnd: viewModel.didPlayToEnd,
+                                isMuted: viewModel.isMuted,
+                                currentTime: viewModel.currentTime,
+                                duration: viewModel.duration,
+                                fraction: $scrubFraction,
+                                onPlayPause: { viewModel.togglePlayback() },
+                                onReplay: { viewModel.replay() },
+                                onToggleMute: { viewModel.toggleMute() },
+                                onScrubBegan: { viewModel.beginScrubbing() },
+                                onScrubEnded: { viewModel.endScrubbing(atFraction: scrubFraction) }
+                            )
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                        }
                     }
                 }
-            }
-            .contentShape(Rectangle())
-            .onTapGesture {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    viewModel.toggleControls()
+                .ignoresSafeArea(edges: .top)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        viewModel.toggleControls()
+                    }
                 }
-            }
 
-            // Bottom control stack — transport above actions, one container so
-            // the two glass bars can never overlap.
-            VStack {
-                Spacer()
+                // Action bar — sits BELOW the video area, never overlapping it.
                 if viewModel.showControls {
-                    VStack(spacing: 12) {
-                        VideoTransportBar(
-                            isPlaying: viewModel.isPlaying,
-                            currentTime: viewModel.currentTime,
-                            duration: viewModel.duration,
-                            fraction: $scrubFraction,
-                            onPlayPause: { viewModel.togglePlayback() },
-                            onScrubBegan: { viewModel.beginScrubbing() },
-                            onScrubEnded: { viewModel.endScrubbing(atFraction: scrubFraction) }
-                        )
-
-                        VideoDetailToolbar(
-                            onShare: { viewModel.share() },
-                            onDelete: { showDeleteConfirmation = true },
-                            onToggleDecoy: { viewModel.toggleDecoy() },
-                            showDecoyButton: viewModel.isPoisonPillConfigured,
-                            decoyButtonTitle: viewModel.decoyButtonTitle,
-                            decoyButtonIcon: viewModel.decoyButtonIcon,
-                            isDecoyOperationLoading: viewModel.isDecoyOperationLoading
-                        )
-                    }
+                    VideoDetailToolbar(
+                        onShare: { viewModel.share() },
+                        onDelete: { showDeleteConfirmation = true },
+                        onToggleDecoy: { viewModel.toggleDecoy() },
+                        showDecoyButton: viewModel.isPoisonPillConfigured,
+                        decoyButtonTitle: viewModel.decoyButtonTitle,
+                        decoyButtonIcon: viewModel.decoyButtonIcon,
+                        isDecoyOperationLoading: viewModel.isDecoyOperationLoading
+                    )
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
@@ -132,39 +143,58 @@ struct InlineVideoPlayerView: View {
 
 private struct VideoTransportBar: View {
     let isPlaying: Bool
+    let didPlayToEnd: Bool
+    let isMuted: Bool
     let currentTime: TimeInterval
     let duration: TimeInterval?
     @Binding var fraction: Double
     let onPlayPause: () -> Void
+    let onReplay: () -> Void
+    let onToggleMute: () -> Void
     let onScrubBegan: () -> Void
     let onScrubEnded: () -> Void
 
+    private var leadingIcon: String {
+        if didPlayToEnd { return "arrow.counterclockwise" }
+        return isPlaying ? "pause.fill" : "play.fill"
+    }
+
     var body: some View {
         HStack(spacing: 12) {
-            Button(action: onPlayPause) {
-                Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+            Button(action: didPlayToEnd ? onReplay : onPlayPause) {
+                Image(systemName: leadingIcon)
                     .font(.title3)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(.primary)
                     .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .accessibilityLabel(isPlaying ? "Pause" : "Play")
+            .accessibilityLabel(didPlayToEnd ? "Replay" : (isPlaying ? "Pause" : "Play"))
 
             Text(currentTime.formattedTime)
                 .font(.caption)
                 .monospacedDigit()
-                .foregroundStyle(.white)
+                .foregroundStyle(.primary)
 
             Slider(value: $fraction, in: 0...1) { editing in
                 if editing { onScrubBegan() } else { onScrubEnded() }
             }
-            .tint(.white)
+            .tint(.primary)
 
             Text((duration ?? 0).formattedTime)
                 .font(.caption)
                 .monospacedDigit()
-                .foregroundStyle(.white.opacity(0.7))
+                .foregroundStyle(.primary.opacity(0.7))
+
+            Button(action: onToggleMute) {
+                Image(systemName: isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
+                    .font(.title3)
+                    .foregroundStyle(.primary)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(isMuted ? "Unmute" : "Mute")
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 6)
@@ -179,8 +209,10 @@ private extension View {
     func glassTransportBackground() -> some View {
         if #available(iOS 26.0, *) {
             self.glassEffect(.regular, in: .capsule)
+                .environment(\.colorScheme, .dark)
         } else {
             self.background(.ultraThinMaterial, in: .capsule)
+                .environment(\.colorScheme, .dark)
         }
     }
 }
