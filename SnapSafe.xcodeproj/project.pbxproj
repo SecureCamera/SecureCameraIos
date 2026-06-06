@@ -152,6 +152,7 @@
 		A9F9DDA42EA1C980003FC66E /* CameraCaptureIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9F9DDA32EA1C980003FC66E /* CameraCaptureIntent.swift */; };
 		A9FFC0DE2F3A000100BB6F19 /* VideoDef.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9FFC0DE2F3A000000BB6F19 /* VideoDef.swift */; };
 		AF250682EF9E0A6D81B711EF /* VideoImportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBEA7D1062AABE16019D0AEF /* VideoImportTests.swift */; };
+		B11100000000000000000002 /* EncryptedVideoDataSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B11100000000000000000001 /* EncryptedVideoDataSourceTests.swift */; };
 		B9D2FCB35A0C40D83FBA3CB8 /* VideoSurfaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC401584FDB751F792E58364 /* VideoSurfaceView.swift */; };
 		D54FBF5A0C3BABB963AB33CF /* FakeEncryptionScheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2414533D313F8BEF8E1DB17D /* FakeEncryptionScheme.swift */; };
 		E81315B178D3FB88663F856F /* FakeVideoEncryptionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2AD9082F22CD2A9FC7CD33B /* FakeVideoEncryptionService.swift */; };
@@ -324,6 +325,7 @@
 		E60E8772D487C47F35C819B2 /* AddDecoyVideoUseCase.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AddDecoyVideoUseCase.swift; sourceTree = "<group>"; };
 		F10BAC24976F36840D24E6B6 /* OrientationRotationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OrientationRotationTests.swift; sourceTree = "<group>"; };
 		FBEA7D1062AABE16019D0AEF /* VideoImportTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VideoImportTests.swift; sourceTree = "<group>"; };
+		B11100000000000000000001 /* EncryptedVideoDataSourceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EncryptedVideoDataSourceTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -752,6 +754,7 @@
 				9286AA1AF0A4DF1140718E06 /* VideoThumbnailTests.swift */,
 				E122542F8E8343FD9E2471E5 /* DecoyVideoIntegrationTests.swift */,
 				FBEA7D1062AABE16019D0AEF /* VideoImportTests.swift */,
+				B11100000000000000000001 /* EncryptedVideoDataSourceTests.swift */,
 				0B07498650554419769A4053 /* HardwareEncryptionSchemeFileProtectionTests.swift */,
 				0B07498750554419769A4054 /* HardwareEncryptionSchemeSecurityResetTests.swift */,
 				332C6DF332A8DDCFFDFA5FDB /* PinDEKWrapperTests.swift */,
@@ -1072,6 +1075,7 @@
 				182F66A484EDD7D5670EBE15 /* VideoThumbnailTests.swift in Sources */,
 				F994CE57BC4263827C4C1DB9 /* DecoyVideoIntegrationTests.swift in Sources */,
 				AF250682EF9E0A6D81B711EF /* VideoImportTests.swift in Sources */,
+				B11100000000000000000002 /* EncryptedVideoDataSourceTests.swift in Sources */,
 				24194F171D3CBDF42B72D556 /* HardwareEncryptionSchemeFileProtectionTests.swift in Sources */,
 				24194F181D3CBDF42B72D557 /* HardwareEncryptionSchemeSecurityResetTests.swift in Sources */,
 				F11C39ACCEDC8B8CAEA2C214 /* PinDEKWrapperTests.swift in Sources */,

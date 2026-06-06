@@ -9,6 +9,7 @@ import Foundation
 import AVFoundation
 import CryptoKit
 import Logging
+import ObjectiveC
 import UniformTypeIdentifiers
 
 /// Custom AVAssetResourceLoaderDelegate for decrypting SECV videos on-the-fly.
@@ -292,10 +293,13 @@ final class EncryptedVideoDataSource: NSObject, AVAssetResourceLoaderDelegate, @
 
 // MARK: - AVAsset Extension for Encrypted Videos
 
-extension AVAsset {
-    /// Retained resource loader delegates (AVAssetResourceLoader only holds a weak ref).
-    nonisolated(unsafe) private static var retainedDelegates = [String: EncryptedVideoDataSource]()
+/// Associated-object key used to tie an `EncryptedVideoDataSource`'s lifetime to the
+/// asset it decrypts. The variable is never read or written — only its address is
+/// used as an opaque token by the Objective-C runtime — so `nonisolated(unsafe)`
+/// is safe here.
+private nonisolated(unsafe) var encryptedVideoDelegateKey: UInt8 = 0
 
+extension AVAsset {
     /// Create an AVAsset that can play encrypted SECV videos.
     /// Uses a custom URL scheme so AVFoundation routes requests through our delegate
     /// instead of trying to read the file directly.
@@ -313,12 +317,24 @@ extension AVAsset {
         let asset = AVURLAsset(url: customURL)
         let delegate = EncryptedVideoDataSource(videoURL: encryptedVideoURL, encryptionKey: encryptionKey)
 
-        // Retain the delegate (AVAssetResourceLoader only keeps a weak reference)
-        let key = encryptedVideoURL.lastPathComponent + UUID().uuidString
-        Self.retainedDelegates[key] = delegate
-
         asset.resourceLoader.setDelegate(delegate, queue: DispatchQueue(label: "com.snapsafe.videoResourceLoader"))
 
+        // AVAssetResourceLoader only keeps a *weak* reference to its delegate, so the
+        // delegate must be retained elsewhere for as long as the asset can issue
+        // loading requests. Tying it to the asset via an associated object (rather
+        // than the previous shared static dictionary) makes retention both
+        // thread-safe and self-cleaning: the Objective-C runtime serializes the
+        // association, and the delegate is released automatically when the asset is
+        // deallocated — no data race and no unbounded leak.
+        objc_setAssociatedObject(asset, &encryptedVideoDelegateKey, delegate, .OBJC_ASSOCIATION_RETAIN)
+
         return asset
+    }
+
+    /// The decrypting delegate retained by `asset`, if it was produced by
+    /// `makeEncryptedVideoAsset(with:encryptionKey:)`. Exposed for tests that need to
+    /// assert the delegate's lifetime is bound to the asset.
+    static func encryptedVideoDataSource(for asset: AVURLAsset) -> EncryptedVideoDataSource? {
+        objc_getAssociatedObject(asset, &encryptedVideoDelegateKey) as? EncryptedVideoDataSource
     }
 }
