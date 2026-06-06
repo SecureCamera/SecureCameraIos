@@ -40,6 +40,15 @@ class EnhancedPhotoDetailViewModel: ObservableObject {
     /// its glass controls. Photos always treat this as visible.
     @Published var isVideoControlsVisible: Bool = true
 
+    /// Whether the "X of Y" counter chip is currently shown. It auto-hides a
+    /// few seconds after appearing / after each page change so it stops
+    /// covering the image.
+    @Published var isCounterVisible: Bool = true
+    private var counterHideTask: Task<Void, Never>?
+
+    /// How long the counter stays visible before fading out.
+    private let counterVisibleDuration: Duration = .seconds(5)
+
     // Toolbar state
     @Published var showImageInfo = false
     @Published var showDeleteConfirmation = false
@@ -90,6 +99,7 @@ class EnhancedPhotoDetailViewModel: ObservableObject {
 
     var overlayOpacity: Double {
         if isZoomed { return 0.0 }
+        if !isCounterVisible { return 0.0 }
         if currentIsVideo && !isVideoControlsVisible { return 0.0 }
         return 1.0 - dismissProgress
     }
@@ -138,6 +148,9 @@ class EnhancedPhotoDetailViewModel: ObservableObject {
             dragOffset = .zero
             dismissProgress = 0
         }
+
+        // Re-show the counter for the newly visible item, then fade it again.
+        showCounterThenAutoHide()
 
         preloadAdjacentPhotos(currentIndex: newIndex)
 
@@ -204,6 +217,30 @@ class EnhancedPhotoDetailViewModel: ObservableObject {
     func onAppear() {
         preloadAdjacentPhotos(currentIndex: currentIndex)
         loadPoisonPillConfiguration()
+        showCounterThenAutoHide()
+    }
+
+    /// Shows the counter chip and (for photos) schedules it to fade out after
+    /// `counterVisibleDuration`. Cancels any previously scheduled hide so the
+    /// timer restarts cleanly on each page change or tap.
+    ///
+    /// On video pages we don't run the timer: the counter there follows the
+    /// inline player's own control visibility (`isVideoControlsVisible`), which
+    /// already auto-hides.
+    func showCounterThenAutoHide() {
+        counterHideTask?.cancel()
+        if !isCounterVisible {
+            withAnimation(.easeInOut(duration: 0.25)) { isCounterVisible = true }
+        }
+
+        guard !currentIsVideo else { return }
+
+        counterHideTask = Task { [weak self] in
+            guard let self else { return }
+            try? await Task.sleep(for: self.counterVisibleDuration)
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeInOut(duration: 0.5)) { self.isCounterVisible = false }
+        }
     }
 
     func loadPoisonPillConfiguration() {
