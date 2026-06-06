@@ -11,7 +11,14 @@ import FactoryKit
 
 
 /// Manages user authorization state, including PIN verification and session expiration.
-public final class AuthorizationRepository: @unchecked Sendable {
+///
+/// `@MainActor`-isolated so the mutable session/auth state (the authorization flag
+/// and the monotonic timestamp baselines) is only ever touched on one actor. This
+/// replaces a previous `@unchecked Sendable`, which silenced the data-race
+/// diagnostic without actually serializing access. A `nonisolated init` keeps the
+/// type constructible from the non-isolated DI factory closures.
+@MainActor
+public final class AuthorizationRepository {
     // MARK: - Constants
     public static let MAX_FAILED_ATTEMPTS = 10
 
@@ -35,7 +42,7 @@ public final class AuthorizationRepository: @unchecked Sendable {
     private var lastFailedMonotonic: TimeInterval?
 
     // MARK: - Init
-    public init(
+    public nonisolated init(
         settings: SettingsDataSource,
         encryptionScheme: EncryptionScheme,
         clock: Clock
