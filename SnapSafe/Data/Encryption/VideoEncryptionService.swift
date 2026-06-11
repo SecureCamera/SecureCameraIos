@@ -19,6 +19,7 @@ protocol VideoEncryptionServiceProtocol {
     ///   - outputURL: URL where the encrypted file should be written
     ///   - encryptionKey: Key to use for encryption
     /// - Returns: Progress publisher and completion promise
+    // periphery:ignore
     func encryptVideo(inputURL: URL, outputURL: URL, encryptionKey: SymmetricKey) -> (progress: AnyPublisher<Double, Never>, completion: (Result<URL, Error>) -> Void)
 
     /// Decrypt a video file from SECV format.
@@ -27,6 +28,7 @@ protocol VideoEncryptionServiceProtocol {
     ///   - outputURL: URL where the decrypted file should be written
     ///   - encryptionKey: Key to use for decryption
     /// - Returns: Progress publisher and completion promise
+    // periphery:ignore
     func decryptVideo(inputURL: URL, outputURL: URL, encryptionKey: SymmetricKey) -> (progress: AnyPublisher<Double, Never>, completion: (Result<URL, Error>) -> Void)
 
     /// Decrypt a video file from SECV format, awaiting completion before returning.
@@ -41,6 +43,7 @@ protocol VideoEncryptionServiceProtocol {
     /// Validate that a file has proper SECV format.
     /// - Parameter fileURL: URL of the file to validate
     /// - Returns: True if the file has valid SECV format
+    // periphery:ignore
     func validateSECVFile(fileURL: URL) -> Bool
 }
 
@@ -48,7 +51,6 @@ protocol VideoEncryptionServiceProtocol {
 final class VideoEncryptionService: VideoEncryptionServiceProtocol {
 
     private let logger = Logger.video
-    private var cancellables = Set<AnyCancellable>()
 
     /// Encrypt a video file using SECV format.
     func encryptVideo(inputURL: URL, outputURL: URL, encryptionKey: SymmetricKey) -> (progress: AnyPublisher<Double, Never>, completion: (Result<URL, Error>) -> Void) {

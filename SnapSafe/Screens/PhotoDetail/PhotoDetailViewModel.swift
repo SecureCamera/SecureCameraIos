@@ -31,18 +31,11 @@ class PhotoDetailViewModel: ObservableObject {
     
     // Zoom and pan states
     @Published var currentScale: CGFloat = 1.0
-    @Published var dragOffset: CGSize = .zero
-    @Published var lastScale: CGFloat = 1.0
-    @Published var isZoomed: Bool = false
-    @Published var lastDragPosition: CGSize = .zero
-    
+
     @Published var showImageInfo = false
-    @Published var isDecoyOperationLoading = false
     @Published var isPoisonPillConfigured = false
     
     // Track currently presented activity controller for dismissal
-    private weak var currentActivityController: UIActivityViewController?
-    
     // MARK: - Dependencies
     
     @Injected(\.pinRepository)
@@ -53,18 +46,6 @@ class PhotoDetailViewModel: ObservableObject {
     
     @Injected(\.authorizationRepository)
     private var authorizationRepository: AuthorizationRepository
-    
-    @Injected(\.clock)
-    private var clock: Clock
-    
-    @Injected(\.prepareForSharingUseCase)
-    private var prepareForSharingUseCase: PrepareForSharingUseCase
-    
-    @Injected(\.addDecoyPhotoUseCase)
-    private var addDecoyPhotoUseCase: AddDecoyPhotoUseCase
-    
-    @Injected(\.removeDecoyPhotoUseCase)
-    private var removeDecoyPhotoUseCase: RemoveDecoyPhotoUseCase
     
     private var cancellables = Set<AnyCancellable>()
     
@@ -77,19 +58,6 @@ class PhotoDetailViewModel: ObservableObject {
         setupSecurityObservers()
         
         // Load the image immediately
-        Task {
-            await loadCurrentImage()
-        }
-    }
-    
-    init(allPhotos: [PhotoDef], initialIndex: Int, onDelete: ((PhotoDef) -> Void)? = nil, onDismiss: (() -> Void)? = nil) {
-        self.photoFiles = allPhotos
-        self.currentIndex = initialIndex
-        self.onDelete = onDelete
-        self.onDismiss = onDismiss
-        setupSecurityObservers()
-        
-        // Load the current image immediately
         Task {
             await loadCurrentImage()
         }
@@ -108,25 +76,10 @@ class PhotoDetailViewModel: ObservableObject {
         return currentImage ?? UIImage(systemName: "photo")!
     }
     
-    // MARK: - Decoy Management Computed Properties
-    
     func isPoisonPillSetup() async -> Bool {
         return await pinRepository.hasPoisonPillPin()
     }
-    
-    var isCurrentPhotoDecoy: Bool {
-        guard let photoDef = currentPhotoDef else { return false }
-        return secureImageRepository.isDecoyPhoto(photoDef)
-    }
-    
-    var decoyButtonTitle: String {
-        isCurrentPhotoDecoy ? "Remove Decoy" : "Add Decoy"
-    }
-    
-    var decoyButtonIcon: String {
-        isCurrentPhotoDecoy ? "shield.slash" : "shield"
-    }
-    
+
     // MARK: - Image Loading
     
     private func loadCurrentImage() async {
@@ -150,15 +103,6 @@ class PhotoDetailViewModel: ObservableObject {
             }
         }
     }
-    
-    var canGoToPrevious: Bool {
-        !photoFiles.isEmpty && currentIndex > 0
-    }
-    
-    var canGoToNext: Bool {
-        !photoFiles.isEmpty && currentIndex < photoFiles.count - 1
-    }
-    
     
     // MARK: - Navigation Methods
     
@@ -188,40 +132,8 @@ class PhotoDetailViewModel: ObservableObject {
         }
     }
 
-    // MARK: - Image Manipulation
-    
-    func resetZoomAndPan() {
-        withAnimation(.spring()) {
-            currentScale = 1.0
-            dragOffset = .zero
-            lastScale = 1.0
-            isZoomed = false
-        }
-        // Reset the last drag position outside of animation to avoid jumps
-        lastDragPosition = .zero
-    }
-    
-    func rotateImage(direction: Double) {
-        // Reset any zoom or panning when rotating
-        resetZoomAndPan()
-        
-        // Apply rotation
-        imageRotation += direction
-        
-        // Normalize to 0-360 range
-        if imageRotation >= 360 {
-            imageRotation -= 360
-        } else if imageRotation < 0 {
-            imageRotation += 360
-        }
-    }
-    
     // MARK: - Photo Management
-    
-    func deletePhoto() {
-        deleteCurrentPhoto()
-    }
-    
+
     func deleteCurrentPhoto() {
         Logger.ui.debug("deleteCurrentPhoto called - starting deletion process")
         
@@ -276,143 +188,6 @@ class PhotoDetailViewModel: ObservableObject {
         }
     }
     
-    // MARK: - Sharing
-    
-    func sharePhoto() {
-        // Get the current photo image
-        let image = displayedImage
-        
-        // Find the root view controller
-        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-              let window = windowScene.windows.first,
-              let rootViewController = window.rootViewController
-        else {
-            Logger.ui.error("Could not find root view controller")
-            return
-        }
-        
-        // Find the presented view controller to present from
-        var currentController = rootViewController
-        while let presented = currentController.presentedViewController {
-            currentController = presented
-        }
-        
-        // Convert image to data for sharing with UUID filename
-        if let imageData = image.jpegData(compressionQuality: 0.9) {
-            do {
-                // Prepare photo for sharing with UUID filename
-                let fileURL = try prepareForSharingUseCase.preparePhotoForSharing(imageData: imageData)
-                
-                Logger.ui.debug("Sharing photo with UUID filename", metadata: [
-                    "filename": .string(fileURL.lastPathComponent)
-                ])
-                
-                // Create a UIActivityViewController to show the sharing options with the file
-                let activityViewController = UIActivityViewController(
-                    activityItems: [fileURL],
-                    applicationActivities: nil
-                )
-                
-                // For iPad support
-                if let popover = activityViewController.popoverPresentationController {
-                    popover.sourceView = window
-                    popover.sourceRect = CGRect(x: window.bounds.midX, y: window.bounds.midY, width: 0, height: 0)
-                    popover.permittedArrowDirections = []
-                }
-                
-                // Store reference and present the share sheet
-                currentActivityController = activityViewController
-                Task { @MainActor in
-                    currentController.present(activityViewController, animated: true) {
-                        Logger.ui.debug("Share sheet presented successfully")
-                    }
-                }
-            } catch {
-                Logger.ui.error("Error preparing photo for sharing", metadata: [
-                    "error": .string(error.localizedDescription)
-                ])
-                
-                // Fallback to sharing just the image if file preparation fails
-                let activityViewController = UIActivityViewController(
-                    activityItems: [image],
-                    applicationActivities: nil
-                )
-                
-                // For iPad support
-                if let popover = activityViewController.popoverPresentationController {
-                    popover.sourceView = window
-                    popover.sourceRect = CGRect(x: window.bounds.midX, y: window.bounds.midY, width: 0, height: 0)
-                    popover.permittedArrowDirections = []
-                }
-                
-                // Store reference and present the share sheet
-                currentActivityController = activityViewController
-                Task { @MainActor in
-                    currentController.present(activityViewController, animated: true) {
-                        Logger.ui.debug("Share sheet presented successfully (image fallback)")
-                    }
-                }
-            }
-        } else {
-            // Fallback to sharing just the image if data conversion fails
-            let activityViewController = UIActivityViewController(
-                activityItems: [image],
-                applicationActivities: nil
-            )
-            
-            // For iPad support
-            if let popover = activityViewController.popoverPresentationController {
-                popover.sourceView = window
-                popover.sourceRect = CGRect(x: window.bounds.midX, y: window.bounds.midY, width: 0, height: 0)
-                popover.permittedArrowDirections = []
-            }
-            
-            // Store reference and present the share sheet
-            currentActivityController = activityViewController
-            Task { @MainActor in
-                currentController.present(activityViewController, animated: true) {
-                    Logger.ui.debug("Share sheet presented successfully (image fallback)")
-                }
-            }
-        }
-    }
-    
-    // MARK: - Decoy Management
-    
-    func toggleDecoyStatus() {
-        guard let photoDef = currentPhotoDef else { return }
-        
-        isDecoyOperationLoading = true
-        
-        Task(priority: .userInitiated) {
-            if isCurrentPhotoDecoy {
-                // Remove decoy status
-                await MainActor.run {
-                    _ = removeDecoyPhotoUseCase.removeDecoyPhoto(photoDef)
-                    isDecoyOperationLoading = false
-                    Logger.ui.info("Removed photo from decoys", metadata: [
-                        "photoName": .string(photoDef.photoName)
-                    ])
-                }
-            } else {
-                // Add decoy status
-                let success = await addDecoyPhotoUseCase.addDecoyPhoto(photoDef: photoDef)
-                await MainActor.run {
-                    isDecoyOperationLoading = false
-                    if success {
-                        Logger.ui.info("Added photo as decoy", metadata: [
-                            "photoName": .string(photoDef.photoName)
-                        ])
-                    } else {
-                        Logger.ui.error("Failed to add photo as decoy", metadata: [
-                            "photoName": .string(photoDef.photoName)
-                        ])
-                    }
-                }
-            }
-        }
-    }
-    
     // MARK: - View Lifecycle
     
     func onAppear() {
@@ -459,8 +234,5 @@ class PhotoDetailViewModel: ObservableObject {
         showDeleteConfirmation = false
         showImageInfo = false
         
-        // Dismiss any currently presented activity controller (iOS export dialog)
-        currentActivityController?.dismiss(animated: false, completion: nil)
-        currentActivityController = nil
     }
 }

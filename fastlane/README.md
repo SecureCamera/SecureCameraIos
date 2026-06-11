@@ -71,6 +71,14 @@ Upload to TestFlight
 
 Build and upload to App Store Connect
 
+### ios periphery
+
+```sh
+[bundle exec] fastlane ios periphery
+```
+
+Run Periphery static analysis to detect unused Swift code
+
 ----
 
 This README.md is auto-generated and will be re-generated every time [_fastlane_](https://fastlane.tools) is run.

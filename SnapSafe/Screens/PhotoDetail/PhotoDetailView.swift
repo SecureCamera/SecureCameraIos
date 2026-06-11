@@ -17,7 +17,6 @@ struct PhotoDetailView: View {
 
     // Environment
     @Environment(\.dismiss) private var dismiss
-    @EnvironmentObject private var nav: AppNavigationState
 
     // Zoom state binding (shared with parent)
     @Binding var isZoomed: Bool
@@ -32,17 +31,6 @@ struct PhotoDetailView: View {
         _isZoomed = isZoomed
     }
 
-    // Initialize with multiple photos
-    init(allPhotos: [PhotoDef], initialIndex: Int, onDelete: ((PhotoDef) -> Void)? = nil, onDismiss: (() -> Void)? = nil, isZoomed: Binding<Bool> = .constant(false)) {
-        _viewModel = StateObject(wrappedValue: PhotoDetailViewModel(
-            allPhotos: allPhotos,
-            initialIndex: initialIndex,
-            onDelete: onDelete,
-            onDismiss: onDismiss
-        ))
-        _isZoomed = isZoomed
-    }
-    
     var body: some View {
         GeometryReader { geometry in
             ZStack {

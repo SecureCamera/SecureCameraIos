@@ -18,9 +18,9 @@ import FactoryKit
 /// diagnostic without actually serializing access. A `nonisolated init` keeps the
 /// type constructible from the non-isolated DI factory closures.
 @MainActor
-public final class AuthorizationRepository {
+final class AuthorizationRepository {
     // MARK: - Constants
-    public static let MAX_FAILED_ATTEMPTS = 10
+    static let MAX_FAILED_ATTEMPTS = 10
 
     // MARK: - Dependencies
     private let appSettings: SettingsDataSource
@@ -29,7 +29,7 @@ public final class AuthorizationRepository {
 
     // MARK: - Auth state (StateFlow<Boolean> -> Combine)
     @Published private var isAuthorizedValue: Bool = false
-    public var isAuthorized: AnyPublisher<Bool, Never> {
+    var isAuthorized: AnyPublisher<Bool, Never> {
         $isAuthorizedValue.eraseToAnyPublisher()
     }
 
@@ -42,7 +42,7 @@ public final class AuthorizationRepository {
     private var lastFailedMonotonic: TimeInterval?
 
     // MARK: - Init
-    public nonisolated init(
+    nonisolated init(
         settings: SettingsDataSource,
         encryptionScheme: EncryptionScheme,
         clock: Clock
@@ -53,23 +53,23 @@ public final class AuthorizationRepository {
     }
 
     // MARK: - Security reset
-    public func securityFailureReset() async {
+    func securityFailureReset() async {
         await appSettings.securityFailureReset()
     }
 
     // MARK: - Failed attempts
     /// Gets the current number of failed PIN attempts
-    public func getFailedAttempts() async -> Int {
+    func getFailedAttempts() async -> Int {
         await appSettings.getFailedPinAttempts()
     }
 
     /// Sets the number of failed PIN attempts
-    public func setFailedAttempts(_ count: Int) async {
+    func setFailedAttempts(_ count: Int) async {
         await appSettings.setFailedPinAttempts(count)
     }
 
     /// Increments failed attempts, stores the current timestamp, and returns the new count
-    public func incrementFailedAttempts() async -> Int {
+    func incrementFailedAttempts() async -> Int {
         // Delegate the increment to the data source, which performs the
         // read-modify-write atomically. Doing it here as `read; await; write` spanned
         // two suspension points, so concurrent verification attempts could read the
@@ -84,12 +84,12 @@ public final class AuthorizationRepository {
     }
 
     /// Gets the timestamp (ms since epoch) of the last failed attempt
-    public func getLastFailedAttemptTimestamp() async -> Int64 {
+    func getLastFailedAttemptTimestamp() async -> Int64 {
         await appSettings.getLastFailedAttemptTimestamp()
     }
 
     /// Calculates remaining backoff in seconds based on failed attempts and last failed timestamp
-    public func calculateRemainingBackoffSeconds() async -> Int {
+    func calculateRemainingBackoffSeconds() async -> Int {
         let failedAttempts = await getFailedAttempts()
         guard failedAttempts > 1 else { return 0 }
 
@@ -116,14 +116,14 @@ public final class AuthorizationRepository {
     }
 
     /// Resets failed attempts and clears last failed timestamp
-    public func resetFailedAttempts() async {
+    func resetFailedAttempts() async {
         await setFailedAttempts(0)
         await appSettings.setLastFailedAttemptTimestamp(0)
         lastFailedMonotonic = nil
     }
 
     // MARK: - Initial key creation
-    public func createKey(pin: String, hashedPin: HashedPin) async -> Bool {
+    func createKey(pin: String, hashedPin: HashedPin) async -> Bool {
         do {
             try await encryptionScheme.createKey(plainPin: pin, hashedPin: hashedPin)
             return true
@@ -135,21 +135,21 @@ public final class AuthorizationRepository {
     // MARK: - Session lifecycle
     /// Marks the session as authorized and updates the last authentication time.
     /// Also starts session monitoring.
-    public func authorizeSession() {
+    func authorizeSession() {
         lastAuthMonotonic = clock.monotonicNow
         isAuthorizedValue = true
     }
 
     /// Updates the keep-alive timestamp to extend the session validity
     /// without requiring re-authentication.
-    public func keepAliveSession() {
+    func keepAliveSession() {
         if isAuthorizedValue {
             lastKeepAliveMonotonic = clock.monotonicNow
         }
     }
 
     /// Checks if the current session is still valid or has expired.
-    public func checkSessionValidity() async -> Bool {
+    func checkSessionValidity() async -> Bool {
         guard isAuthorizedValue else { return false }
 
         let timeoutMs = await appSettings.getSessionTimeout() // Int64 (ms)
@@ -170,7 +170,7 @@ public final class AuthorizationRepository {
     }
 
     /// Explicitly revokes the current authorization session.
-    public func revokeAuthorization() {
+    func revokeAuthorization() {
         isAuthorizedValue = false
         lastAuthMonotonic = nil
         lastKeepAliveMonotonic = nil

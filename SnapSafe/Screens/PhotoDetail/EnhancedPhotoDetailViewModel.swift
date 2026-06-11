@@ -50,13 +50,9 @@ class EnhancedPhotoDetailViewModel: ObservableObject {
     private let counterVisibleDuration: Duration = .seconds(5)
 
     // Toolbar state
-    @Published var showImageInfo = false
     @Published var showDeleteConfirmation = false
     @Published var isDecoyOperationLoading = false
     @Published var isPoisonPillConfigured = false
-
-    // Track currently presented activity controller for dismissal
-    private weak var currentActivityController: UIActivityViewController?
 
     // MARK: - Configuration
 
@@ -76,14 +72,10 @@ class EnhancedPhotoDetailViewModel: ObservableObject {
 
     // Policy helpers (clear/consistent call sites + unit-testable)
     @inlinable internal func mayDismissByDrag() -> Bool { !isZoomed }
-    @inlinable internal func mayPageHorizontally() -> Bool { !isZoomed }
 
     // MARK: - Computed Properties
 
     var mediaCount: Int { allMedia.count }
-
-    /// Convenience: photo-only slice preserved for preloading thumbnails.
-    var photoFiles: [PhotoDef] { allMedia.compactMap { $0.photoDef } }
 
     var currentPhotoDisplayText: String {
         "\(currentIndex + 1) of \(mediaCount)"
@@ -289,8 +281,6 @@ class EnhancedPhotoDetailViewModel: ObservableObject {
                         activityItems: [fileURL],
                         applicationActivities: nil
                     )
-
-                    currentActivityController = activityController
 
                     if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
                        let rootViewController = windowScene.windows.first?.rootViewController {

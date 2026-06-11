@@ -60,10 +60,6 @@ final class AppNavigationState: ObservableObject {
         presentedSheet = destination
     }
     
-    func presentFullScreenCover(_ destination: AppDestination) {
-        presentedFullScreenCover = destination
-    }
-    
     func dismissSheet() {
         presentedSheet = nil
     }

@@ -13,8 +13,6 @@ import AVKit
 import CryptoKit
 
 struct InlineVideoPlayerView: View {
-    let videoDef: VideoDef
-    let encryptionKey: SymmetricKey?
     /// Called when the video is deleted, so the parent can pop the detail view.
     let onRequestDismiss: () -> Void
     /// Reports glass-control visibility so the page-level photo counter chip
@@ -31,8 +29,6 @@ struct InlineVideoPlayerView: View {
         onRequestDismiss: @escaping () -> Void,
         onControlsVisibilityChange: ((Bool) -> Void)? = nil
     ) {
-        self.videoDef = videoDef
-        self.encryptionKey = encryptionKey
         self.onRequestDismiss = onRequestDismiss
         self.onControlsVisibilityChange = onControlsVisibilityChange
         _viewModel = StateObject(wrappedValue: VideoPlayerViewModel(videoDef: videoDef, encryptionKey: encryptionKey))

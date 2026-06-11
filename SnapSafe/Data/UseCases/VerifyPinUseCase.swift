@@ -14,7 +14,7 @@ import Logging
 /// the wrapped DEK, or `errSecInteractionNotAllowed` if the device locks mid-flow).
 /// It is intentionally distinct from `invalidPin` so the UI can offer a retry
 /// without burning a failed-attempt against the user.
-public enum PinVerificationResult: Sendable {
+enum PinVerificationResult: Sendable {
     case success
     /// The PIN did not match. Carries the authoritative post-increment failed
     /// attempt count from the repository (the single writer), so the caller
@@ -23,14 +23,14 @@ public enum PinVerificationResult: Sendable {
     case failure(Error)
 }
 
-public final class VerifyPinUseCase: @unchecked Sendable {
+final class VerifyPinUseCase: @unchecked Sendable {
     private let authRepo: AuthorizationRepository
     private let imageRepo: SecureImageRepository
     private let pinRepository: PinRepository
     private let encryptionScheme: EncryptionScheme
     private let authorizePinUseCase: AuthorizePinUseCase
     
-    public init(
+    init(
         authRepository: AuthorizationRepository,
         imageRepository: SecureImageRepository,
         pinRepository: PinRepository,
@@ -51,7 +51,7 @@ public final class VerifyPinUseCase: @unchecked Sendable {
     ///   transient/retryable error occurs (e.g. key derivation I/O or hardware
     ///   transient failure). Callers should surface `.failure` as a retryable error
     ///   without counting it as a failed attempt.
-    public func verifyPin(_ pin: String) async -> PinVerificationResult {
+    func verifyPin(_ pin: String) async -> PinVerificationResult {
         // Check for poison pill PIN first. Short-circuit on hasPoisonPillPin
         // so we don't run a second Argon2 verification each attempt and don't
         // leak a timing oracle revealing whether a poison pill is configured.

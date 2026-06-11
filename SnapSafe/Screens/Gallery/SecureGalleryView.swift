@@ -14,8 +14,6 @@ import FactoryKit
 
 // Empty state view when no media exist
 struct EmptyGalleryView: View {
-    let onDismiss: () -> Void
-
     var body: some View {
         VStack {
             Text("No photos yet")
@@ -29,7 +27,6 @@ struct EmptyGalleryView: View {
 
 // Gallery view to display stored photos and videos
 struct SecureGalleryView: View {
-    @AppStorage("showFaceDetection") private var showFaceDetection = true
     @StateObject private var viewModel: MixedMediaGalleryViewModel
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var nav: AppNavigationState
@@ -51,14 +48,25 @@ struct SecureGalleryView: View {
 
     var body: some View {
         ZStack {
-            Group {
-                if viewModel.mediaItems.isEmpty {
-                    EmptyGalleryView(onDismiss: {
-                        if let onDismiss { onDismiss() } else { dismiss() }
-                    })
-                } else {
-                    mediaGridView
+            VStack(spacing: 0) {
+                // In decoy mode the title gets its own full-width row so it
+                // isn't truncated between the Back and Save buttons in the bar.
+                if viewModel.isSelectingDecoys {
+                    Text(viewModel.navigationTitle)
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .background(Color(.systemBackground))
                 }
+
+                Group {
+                    if viewModel.mediaItems.isEmpty {
+                        EmptyGalleryView()
+                    } else {
+                        mediaGridView
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
 
             // Import progress overlay
@@ -109,8 +117,11 @@ struct SecureGalleryView: View {
                 .accessibilityLabel("Saving decoy media")
             }
         }
-        .navigationTitle(viewModel.navigationTitle)
+        .navigationTitle(viewModel.isSelectingDecoys ? "" : viewModel.navigationTitle)
         .navigationBarTitleDisplayMode(.inline)
+        // In decoy mode we supply our own leading Back button (which runs
+        // exitDecoyMode cleanup), so hide the system one to avoid two back buttons.
+        .navigationBarBackButtonHidden(viewModel.isSelectingDecoys)
         .toolbar {
             // Back button in the leading position (only for decoy selection mode)
             if viewModel.isSelectingDecoys {
@@ -132,10 +143,6 @@ struct SecureGalleryView: View {
             ToolbarItem(placement: .navigationBarTrailing) {
                 HStack(spacing: 16) {
                     if viewModel.isSelectingDecoys {
-                        Text(viewModel.decoyCountText)
-                            .font(.caption)
-                            .foregroundStyle(viewModel.decoyCountTextColor)
-
                         Button("Save") {
                             viewModel.showDecoyConfirmationAlert()
                         }
@@ -213,7 +220,15 @@ struct SecureGalleryView: View {
                     }
 
                 case .decoy:
-                    EmptyView()
+                    // Decoy count lives here (centered in the bottom bar) rather
+                    // than crammed beside the Save button in the nav bar.
+                    Spacer()
+                    Text(viewModel.decoyCountText)
+                        .font(.callout.weight(.semibold))
+                        .foregroundStyle(viewModel.decoyCountTextColor)
+                        .lineLimit(1)
+                        .fixedSize()
+                    Spacer()
                 }
             }
         }
@@ -282,9 +297,6 @@ struct SecureGalleryView: View {
                             isSelecting: viewModel.isSelecting,
                             onTap: {
                                 viewModel.handleMediaTap(item)
-                            },
-                            onDelete: {
-                                viewModel.prepareToDeleteSingleMedia(item)
                             }
                         )
                     } else if item.mediaType == .video {

@@ -30,29 +30,6 @@ func XCTAssertTrueAsync(
     XCTAssertTrue(value, message(), file: file, line: line)
 }
 
-func XCTAssertEqualAsync<T: Equatable>(
-    _ lhs: @autoclosure () async throws -> T,
-    _ rhs: @autoclosure () async throws -> T,
-    _ message: @autoclosure () -> String = "",
-    file: StaticString = #filePath,
-    line: UInt = #line
-) async rethrows {
-    let lv = try await lhs()
-    let rv = try await rhs()
-    XCTAssertEqual(lv, rv, message(), file: file, line: line)
-}
-
-func XCTAssertGreaterThanAsync<T: Comparable>(
-    _ expression: @autoclosure () async throws -> T,
-    _ expected: @autoclosure () -> T,
-    _ message: @autoclosure () -> String = "",
-    file: StaticString = #filePath,
-    line: UInt = #line
-) async rethrows {
-    let value = try await expression()
-    XCTAssertGreaterThan(value, expected(), message(), file: file, line: line)
-}
-
 final class TestClock: Clock {
     private var _fixed: Date
     private var _monotonic: TimeInterval

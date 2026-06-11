@@ -12,16 +12,8 @@ import UIKit
 
 struct FaceBoxView: View {
     let face: DetectedFace
-    let originalSize: CGSize
-    let displaySize: CGSize
     var onTap: () -> Void
 
-    // Get the scaled rectangle based on the display size
-    private var scaledRect: CGRect {
-        let rect = face.scaledRect(originalSize: originalSize, displaySize: displaySize)
-        return rect
-    }
-    
     var body: some View {
         ZStack {
             // Invisible rectangle to make the entire area tappable
@@ -36,30 +28,6 @@ struct FaceBoxView: View {
         }
         .onTapGesture {
             onTap()
-        }
-    }
-}
-
-// Preview with a sample face
-struct FaceBoxView_Previews: PreviewProvider {
-    static var previews: some View {
-        let face = DetectedFace(
-            rect: CGRect(x: 50, y: 50, width: 100, height: 100),
-            isSelected: true
-        )
-        
-        return ZStack {
-            Color.gray
-            Image(systemName: "person.fill")
-                .resizable()
-                .frame(width: 200, height: 200)
-            
-            FaceBoxView(
-                face: face,
-                originalSize: CGSize(width: 400, height: 400),
-                displaySize: CGSize(width: 300, height: 300),
-                onTap: {}
-            )
         }
     }
 }

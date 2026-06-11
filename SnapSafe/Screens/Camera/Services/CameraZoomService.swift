@@ -11,17 +11,26 @@ import SwiftUI
 import Combine
 import Logging
 
+// periphery:ignore all
 @MainActor
 protocol ZoomControlling: ObservableObject {
+    // periphery:ignore
     var zoomFactor: CGFloat { get }
+    // periphery:ignore
     var minZoom: CGFloat { get }
+    // periphery:ignore
     var maxZoom: CGFloat { get }
+    // periphery:ignore
     var zoomDetents: [CGFloat] { get }
-
+    // periphery:ignore
     func updateZoomLimits(for device: AVCaptureDevice?)
+    // periphery:ignore
     func zoom(factor: CGFloat, device: AVCaptureDevice?) async
+    // periphery:ignore
     func handlePinchGesture(scale: CGFloat, initialScale: CGFloat?, device: AVCaptureDevice?)
+    // periphery:ignore
     func resetZoomLevel(device: AVCaptureDevice?)
+    // periphery:ignore
     func snapToNearestDetent(threshold: CGFloat) async
 }
 
@@ -32,6 +41,7 @@ protocol ZoomControlling: ObservableObject {
 /// seamless, system-managed lens switch — no session rebuild and no manual
 /// lens bookkeeping. `CameraZoomMapping` converts between the user-facing
 /// display zoom (0.5x, 1x, 2x…) and the device's zoom-factor space.
+// periphery:ignore all
 @MainActor
 final class CameraZoomService: ObservableObject, ZoomControlling {
 
@@ -44,6 +54,7 @@ final class CameraZoomService: ObservableObject, ZoomControlling {
 
     // MARK: - Public Properties
 
+    // periphery:ignore
     let zoomDetents: [CGFloat] = [0.5, 1.0, 2.0, 3.0, 5.0, 10.0]
 
     // MARK: - Private Properties
@@ -61,7 +72,22 @@ final class CameraZoomService: ObservableObject, ZoomControlling {
         mapping = CameraZoomMapping(device: device)
         minZoom = mapping.minDisplayZoom
         maxZoom = mapping.maxDisplayZoom
-        zoomFactor = mapping.displayZoom(forDeviceZoom: device.videoZoomFactor)
+
+        // Always start at display 1.0x (the wide lens). A virtual device's
+        // default `videoZoomFactor` of 1.0 is the ultra-wide lens, which maps
+        // to display 0.5x — so reflecting the device default would come up
+        // zoomed out. Actively position the device at display 1.0x instead.
+        let initialDisplayZoom = mapping.clampedDisplayZoom(1.0)
+        do {
+            try device.lockForConfiguration()
+            device.videoZoomFactor = mapping.deviceZoom(forDisplayZoom: initialDisplayZoom)
+            device.unlockForConfiguration()
+        } catch {
+            Logger.camera.error("Error setting initial zoom", metadata: [
+                "error": .string(error.localizedDescription)
+            ])
+        }
+        zoomFactor = initialDisplayZoom
     }
 
     func zoom(factor: CGFloat, device: AVCaptureDevice?) async {
@@ -108,12 +134,14 @@ final class CameraZoomService: ObservableObject, ZoomControlling {
         }
     }
 
+    // periphery:ignore
     func updateZoomForSimulator() {
         minZoom = 0.5
         maxZoom = 10.0
         zoomFactor = 1.0
     }
 
+    // periphery:ignore
     func snapToNearestDetent(threshold: CGFloat) async {
         let currentZoom = zoomFactor
         var closestLevel = currentZoom

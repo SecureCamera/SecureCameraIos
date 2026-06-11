@@ -17,12 +17,10 @@ import Logging
 // SwiftUI wrapper for the camera preview
 struct CameraView: View {
     @ObservedObject var cameraModel: CameraViewModel
+    var focusExclusionRects: [CGRect] = []
     var onPinchStarted: (() -> Void)?
     var onPinchChanged: (() -> Void)?
     var onPinchEnded: (() -> Void)?
-
-    // Add a slightly darker background to emphasize the capture area
-    let backgroundOpacity: Double = 0.2
 
     @State private var showBlackOverlay = false
 
@@ -35,7 +33,7 @@ struct CameraView: View {
 
                 if cameraModel.isPermissionGranted {
                     // Camera preview represented by UIViewRepresentable
-                    CameraPreviewView(cameraModel: cameraModel, viewSize: geometry.size, onPinchStarted: onPinchStarted, onPinchChanged: onPinchChanged, onPinchEnded: onPinchEnded)
+                    CameraPreviewView(cameraModel: cameraModel, viewSize: geometry.size, focusExclusionRects: focusExclusionRects, onPinchStarted: onPinchStarted, onPinchChanged: onPinchChanged, onPinchEnded: onPinchEnded)
                         .edgesIgnoringSafeArea(.all)
 
                     // Black overlay when returning from background
@@ -153,7 +151,6 @@ struct FocusIndicatorView: View {
 
 // Persistent camera preview state; lives on the Coordinator so it survives struct re-renders
 class CameraPreviewHolder {
-    weak var view: UIView?
     var previewLayer: AVCaptureVideoPreviewLayer?
     var previewContainer: UIView?
 }
@@ -162,6 +159,10 @@ class CameraPreviewHolder {
 struct CameraPreviewView: UIViewRepresentable {
     @ObservedObject var cameraModel: CameraViewModel
     var viewSize: CGSize // Store the parent view's size for coordinate conversion
+    // Regions (in the full-screen root view's coordinate space) where the
+    // overlaid SwiftUI controls live; the focus tap gestures decline touches
+    // here so those controls handle the tap instead.
+    var focusExclusionRects: [CGRect] = []
     var onPinchStarted: (() -> Void)?
     var onPinchChanged: (() -> Void)?
     var onPinchEnded: (() -> Void)?
@@ -179,9 +180,6 @@ struct CameraPreviewView: UIViewRepresentable {
             "width": .stringConvertible(viewSize.width),
             "height": .stringConvertible(viewSize.height)
         ])
-
-        // Store the view reference
-        holder.view = view
 
         // Calculate the container size to match photo aspect ratio
         let containerSize = calculatePreviewContainerSize(for: viewSize)
@@ -322,6 +320,10 @@ struct CameraPreviewView: UIViewRepresentable {
     }
     
     func updateUIView(_ uiView: UIView, context: Context) {
+        // Keep the persistent coordinator pointed at the latest struct so its
+        // gesture delegate reads the current focus-exclusion rects.
+        context.coordinator.parent = self
+
         let holder = context.coordinator.viewHolder
         uiView.frame = CGRect(origin: .zero, size: viewSize)
 
@@ -449,6 +451,16 @@ struct CameraPreviewView: UIViewRepresentable {
         ) -> Bool {
             MainActor.assumeIsolated {
                 guard let container = viewHolder.previewContainer else { return true }
+
+                // Decline taps that land on the overlaid SwiftUI controls (mode
+                // toggle, zoom capsule) so those controls handle the tap rather
+                // than tap-to-focus firing underneath. Exclusion rects are in
+                // the root view's coordinate space.
+                let pointInRoot = touch.location(in: gestureRecognizer.view)
+                if parent.focusExclusionRects.contains(where: { $0.contains(pointInRoot) }) {
+                    return false
+                }
+
                 return container.bounds.contains(touch.location(in: container))
             }
         }
@@ -560,7 +572,5 @@ extension AVCaptureVideoPreviewLayer {
         return self.captureDevicePointConverted(fromLayerPoint: viewPoint)
     }
 
-    func viewPoint(from devicePoint: CGPoint) -> CGPoint {
-        return self.layerPointConverted(fromCaptureDevicePoint: devicePoint)
-    }
+
 }

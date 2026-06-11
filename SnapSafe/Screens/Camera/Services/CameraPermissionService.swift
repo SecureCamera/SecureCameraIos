@@ -11,14 +11,18 @@ import SwiftUI
 import Combine
 import Logging
 
+// periphery:ignore all
 @MainActor
 protocol CameraPermissionProviding: ObservableObject {
+    // periphery:ignore
     var isPermissionGranted: Bool { get }
-    
+    // periphery:ignore
     func checkAndUpdatePermissions() async -> Bool
+    // periphery:ignore
     func updatePermissionState()
 }
 
+// periphery:ignore all
 @MainActor
 final class CameraPermissionService: ObservableObject, CameraPermissionProviding {
 
@@ -32,6 +36,7 @@ final class CameraPermissionService: ObservableObject, CameraPermissionProviding
 
     // MARK: - Debug/Simulator Detection
 
+    // periphery:ignore
     private var isRunningInSimulator: Bool {
         #if DEBUG && targetEnvironment(simulator)
         return true

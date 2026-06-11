@@ -11,6 +11,7 @@ import SwiftUI
 
 /// A development view for accessing testing tools during development
 /// This should be removed or gated in production builds
+// periphery:ignore
 @available(iOS 18.0, *)
 struct DeveloperToolsView: View {
     @EnvironmentObject private var nav: AppNavigationState

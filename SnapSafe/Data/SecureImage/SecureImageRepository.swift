@@ -15,7 +15,7 @@ import CryptoKit
 import AVFoundation
 
 @MainActor
-public class SecureImageRepository {
+class SecureImageRepository {
     
     // MARK: - Constants
     
@@ -984,7 +984,7 @@ public class SecureImageRepository {
     private func processImageWithEXIFMetadata(
         imageData: Data,
         preservedEXIFMetadata: [String: Any],
-        filename: String
+        filename _: String
     ) throws -> Data {
         guard let image = UIImage(data: imageData) else {
             throw ImageRepositoryError.invalidImageData
@@ -1027,7 +1027,6 @@ public class SecureImageRepository {
     // MARK: - Helper Methods
 
     struct PhotoMetaData {
-        let name: String
         let resolution: Size
         let dateTaken: Date
         let location: GpsCoordinates?
@@ -1038,7 +1037,6 @@ public class SecureImageRepository {
 
     @MainActor
     func getPhotoMetaData(_ photoDef: PhotoDef) async throws -> PhotoMetaData {
-        let name = photoDef.photoName
         let dateTaken: Date = photoDef.dateTaken() ?? Date(timeIntervalSince1970: 0)
         
         var orientation: TiffOrientation? = nil
@@ -1055,7 +1053,6 @@ public class SecureImageRepository {
         }
         
         return PhotoMetaData(
-            name: name,
             resolution: size,
             dateTaken: dateTaken,
             location: coords,
@@ -1116,8 +1113,6 @@ public class SecureImageRepository {
 enum ImageRepositoryError: Error {
     case compressionFailed
     case invalidImageData
-    case encryptionFailed
-    case decryptionFailed
 }
 
 // MARK: - Metadata

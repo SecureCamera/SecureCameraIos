@@ -27,11 +27,3 @@ struct ZoomLevelIndicator: View {
     }
 }
 
-struct ZoomLevelIndicator_Previews: PreviewProvider {
-    static var previews: some View {
-        ZStack {
-            Color.gray
-            ZoomLevelIndicator(scale: 10.0, isVisible: true)
-        }
-    }
-}

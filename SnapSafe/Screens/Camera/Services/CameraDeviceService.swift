@@ -11,19 +11,28 @@ import SwiftUI
 import Combine
 import Logging
 
+// periphery:ignore all
 protocol CameraDeviceProviding: ObservableObject {
+    // periphery:ignore
     var session: AVCaptureSession { get }
+    // periphery:ignore
     var output: AVCapturePhotoOutput { get }
+    // periphery:ignore
     var movieOutput: AVCaptureMovieFileOutput { get }
+    // periphery:ignore
     var currentDevice: AVCaptureDevice? { get }
+    // periphery:ignore
     var cameraPosition: AVCaptureDevice.Position { get }
-
+    // periphery:ignore
     func setupCamera(for position: AVCaptureDevice.Position) async
+    // periphery:ignore
     func switchCamera(to position: AVCaptureDevice.Position) async
+    // periphery:ignore
     func configureForMode(_ mode: CaptureMode)
 }
 
 
+// periphery:ignore all
 @MainActor
 final class CameraDeviceService: ObservableObject, @preconcurrency CameraDeviceProviding {
     
@@ -40,6 +49,7 @@ final class CameraDeviceService: ObservableObject, @preconcurrency CameraDeviceP
 
     private var audioInput: AVCaptureDeviceInput?
     private var isConfiguring = false
+    private var isConfigured = false
 
     // MARK: - Initialization
 
@@ -54,6 +64,13 @@ final class CameraDeviceService: ObservableObject, @preconcurrency CameraDeviceP
     // MARK: - Public Methods
     
     func setupCamera(for position: AVCaptureDevice.Position) async {
+        // Idempotent: the session's inputs/outputs only need to be built once.
+        // Re-running this removes the video input from a live session, so the
+        // preview momentarily has no feed and the black backdrop flashes through
+        // (e.g. on every return to the camera screen). Front/back changes go via
+        // switchCamera; app-background restarts via restartCameraSessionIfNeeded.
+        guard !isConfigured else { return }
+
         session.beginConfiguration()
 
         // Clear existing inputs
@@ -128,7 +145,8 @@ final class CameraDeviceService: ObservableObject, @preconcurrency CameraDeviceP
             }
 
             session.commitConfiguration()
-            
+            isConfigured = true
+
         } catch {
             Logger.camera.error("Error setting up camera device", metadata: [
                 "error": .string(error.localizedDescription)
@@ -147,6 +165,10 @@ final class CameraDeviceService: ObservableObject, @preconcurrency CameraDeviceP
         isConfiguring = true
         defer { isConfiguring = false }
 
+        // A camera switch must rebuild the session inputs for the new device, so
+        // clear the idempotency guard that setupCamera honors (it's there to skip
+        // a redundant rebuild on re-appear, not to block an actual switch).
+        isConfigured = false
         await setupCamera(for: position)
 
         if !session.isRunning {
@@ -172,65 +194,25 @@ final class CameraDeviceService: ObservableObject, @preconcurrency CameraDeviceP
     // MARK: - Capture Mode Configuration
 
     func configureForMode(_ mode: CaptureMode) {
-        guard !isConfiguring else { return }
         guard mode != currentCaptureMode else { return }
 
-        isConfiguring = true
-
-        // Capture references for use in background queue
-        let session = self.session
-        let currentAudioInput = self.audioInput
-
-        // Run session configuration on background queue to avoid blocking UI
-        DispatchQueue.global(qos: .userInitiated).async {
-            var newAudioInput: AVCaptureDeviceInput?
-
-            session.beginConfiguration()
-
-            switch mode {
-            case .photo:
-                // Remove audio input if present (not needed for photos)
-                if let audioInput = currentAudioInput, session.inputs.contains(audioInput) {
-                    session.removeInput(audioInput)
-                }
-
-            case .video:
-                // Add audio input for video recording (if not already present)
-                if currentAudioInput == nil {
-                    if let audioDevice = AVCaptureDevice.default(for: .audio) {
-                        do {
-                            let audioInput = try AVCaptureDeviceInput(device: audioDevice)
-                            if session.canAddInput(audioInput) {
-                                session.addInput(audioInput)
-                                newAudioInput = audioInput
-                            }
-                        } catch {
-                            Logger.camera.error("Failed to add audio input: \(error.localizedDescription)")
-                        }
-                    }
-                } else {
-                    newAudioInput = currentAudioInput
-                }
-            }
-
-            session.commitConfiguration()
-
-            // Update state on main thread.
-            // newAudioInput is AVCaptureDeviceInput? which isn't Sendable; we know
-            // crossing back to MainActor here is safe because nothing else races on it.
-            nonisolated(unsafe) let resolvedAudioInput = newAudioInput
-            Task { @MainActor [weak self] in
-                self?.audioInput = resolvedAudioInput
-                self?.currentCaptureMode = mode
-                self?.isConfiguring = false
-                Logger.camera.info("Configured camera for mode: \(String(describing: mode))")
-            }
-        }
+        // Switching modes no longer reconfigures the session. The movie output
+        // stays attached (added once in setupCamera) and the microphone is
+        // attached only while actually recording (see attachAudioInput). This
+        // keeps photo/video toggling free of session reconfiguration — which
+        // otherwise briefly stalls the live preview and makes it flicker — and
+        // keeps the system mic indicator off until recording begins.
+        currentCaptureMode = mode
+        Logger.camera.info("Configured camera for mode: \(String(describing: mode))")
     }
 
     // MARK: - Audio Input Management
 
-    private func addAudioInput() {
+    /// Attaches the microphone input. Adding it activates the system mic
+    /// indicator, so this is called only while recording — not on entering
+    /// video mode. Wrapped in begin/commitConfiguration so the change applies
+    /// atomically just before recording starts.
+    func attachAudioInput() {
         guard audioInput == nil else { return }
 
         guard let audioDevice = AVCaptureDevice.default(for: .audio) else {
@@ -240,22 +222,28 @@ final class CameraDeviceService: ObservableObject, @preconcurrency CameraDeviceP
 
         do {
             let input = try AVCaptureDeviceInput(device: audioDevice)
+            session.beginConfiguration()
             if session.canAddInput(input) {
                 session.addInput(input)
                 audioInput = input
                 Logger.camera.debug("Added audio input")
             }
+            session.commitConfiguration()
         } catch {
             Logger.camera.error("Failed to add audio input: \(error.localizedDescription)")
         }
     }
 
-    private func removeAudioInput() {
+    /// Detaches the microphone input once recording stops, releasing the mic
+    /// and clearing the system indicator.
+    func detachAudioInput() {
         guard let audioInput = audioInput else { return }
 
+        session.beginConfiguration()
         if session.inputs.contains(audioInput) {
             session.removeInput(audioInput)
         }
+        session.commitConfiguration()
         self.audioInput = nil
         Logger.camera.debug("Removed audio input")
     }

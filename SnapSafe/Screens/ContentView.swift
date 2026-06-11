@@ -21,8 +21,6 @@ extension Notification.Name {
 
 struct ContentView: View { 
     @StateObject private var viewModel = ContentViewModel()
-    @InjectedObject(\.locationRepository) private var locationManager: LocationRepository
-
     @EnvironmentObject private var nav: AppNavigationState
 
     var body: some View {

@@ -127,6 +127,11 @@ struct MediaToolbarButton<Indicator: View>: View {
                 }
                 Text(label)
                     .font(.caption)
+                    // Keep every item one line tall so a longer label (e.g.
+                    // "Remove Decoy" vs "Add Decoy") can't wrap and change the
+                    // toolbar's height when toggled.
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
             }
             .foregroundStyle(tint)
             .frame(maxWidth: .infinity)

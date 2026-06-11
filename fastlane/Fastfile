@@ -130,4 +130,17 @@ platform :ios do
       precheck_include_in_app_purchases: false
     )
   end
+
+  desc "Run Periphery static analysis to detect unused Swift code"
+  lane :periphery do
+    sh(
+      "periphery", "scan",
+      "--project", "SnapSafe.xcworkspace",
+      "--schemes", "SnapSafe",
+      "--clean-build",
+      "--",
+      "-skipMacroValidation",
+      chdir: File.expand_path("..", __dir__)
+    )
+  end
 end

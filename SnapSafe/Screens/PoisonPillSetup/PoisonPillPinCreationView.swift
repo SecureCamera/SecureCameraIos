@@ -14,24 +14,62 @@ struct PoisonPillPinCreationView: View {
     @Binding var errorMessage: String
     @Binding var isLoading: Bool
     @Environment(\.scenePhase) private var scenePhase
+    @FocusState private var focusedField: Field?
+
+    private enum Field { case pin, confirm }
+
+    // True while the user is actively entering a PIN (a field is focused).
+    private var isEntering: Bool { focusedField != nil }
 
     let canProceed: Bool
     let onPinChange: (String) -> Void
     let onConfirmPinChange: (String) -> Void
     let onSetup: () -> Void
     let isPinLengthValid: (Int) -> Bool
-    let onCancel: () -> Void
-    
+
+    // Reveal the action once the user has started entering a PIN (or while
+    // setup is in flight) — avoids an idle, disabled button at rest. The
+    // destructive action stays an explicit tap; it is never auto-submitted.
+    private var showSetupButton: Bool {
+        !pin.isEmpty || !confirmPin.isEmpty || isLoading
+    }
+
+    private var setupButton: some View {
+        Button(action: {
+            hideKeyboard()
+            onSetup()
+        }) {
+            HStack {
+                if isLoading {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                        .foregroundStyle(.white)
+                }
+                Text(isLoading ? "Setting up..." : "Setup Poison Pill")
+                    .foregroundStyle(.white)
+            }
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(canProceed ? Color.orange : Color.gray)
+            .clipShape(.rect(cornerRadius: 10))
+        }
+        .disabled(!canProceed)
+    }
+
     var body: some View {
         GeometryReader { geometry in
             ScrollView {
                 VStack(spacing: 30) {
-                // Header Icon
-                Image(systemName: "lock.trianglebadge.exclamationmark")
-                    .font(.system(size: 70))
-                    .foregroundStyle(.orange)
-                    .padding(.top, max(30, geometry.safeAreaInsets.top + 20))
-            
+                // Header Icon — slides up out of view once the user focuses a
+                // field, freeing vertical room for the fields, button, and keypad.
+                if !isEntering {
+                    Image(systemName: "lock.trianglebadge.exclamationmark")
+                        .font(.system(size: 70))
+                        .foregroundStyle(.orange)
+                        .padding(.top, max(30, geometry.safeAreaInsets.top + 20))
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                }
+
             // Title
             Text("Set Poison Pill PIN")
                 .font(.largeTitle)
@@ -49,6 +87,7 @@ struct PoisonPillPinCreationView: View {
                     .keyboardType(.numberPad)
                     .textContentType(.oneTimeCode)
                     .multilineTextAlignment(.center)
+                    .focused($focusedField, equals: .pin)
                     .padding()
                     .background(
                         RoundedRectangle(cornerRadius: 8)
@@ -65,6 +104,7 @@ struct PoisonPillPinCreationView: View {
                     .keyboardType(.numberPad)
                     .textContentType(.oneTimeCode)
                     .multilineTextAlignment(.center)
+                    .focused($focusedField, equals: .confirm)
                     .padding()
                     .background(
                         RoundedRectangle(cornerRadius: 8)
@@ -97,34 +137,21 @@ struct PoisonPillPinCreationView: View {
                     .foregroundStyle(.red)
             }
             .padding(.horizontal, 30)
-            
-            // Action Buttons
-            VStack(spacing: 15) {
-                Button(action: {
-                    hideKeyboard()
-                    onSetup()
-                }) {
-                    HStack {
-                        if isLoading {
-                            ProgressView()
-                                .scaleEffect(0.8)
-                                .foregroundStyle(.white)
-                        }
-                        Text(isLoading ? "Setting up..." : "Setup Poison Pill")
-                            .foregroundStyle(.white)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(canProceed ? Color.orange : Color.gray)
-                    .clipShape(.rect(cornerRadius: 10))
-                }
-                .disabled(!canProceed)
-            }
-            .padding(.horizontal, 40)
-            .padding(.bottom, max(30, geometry.safeAreaInsets.bottom + 20))
                 }
                 .frame(maxWidth: .infinity)
             }
+            .safeAreaInset(edge: .bottom) {
+                if showSetupButton {
+                    setupButton
+                        .padding(.horizontal, 40)
+                        .padding(.vertical, 12)
+                        .frame(maxWidth: .infinity)
+                        .background(.bar)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+            }
+            .animation(.snappy, value: showSetupButton)
+            .animation(.snappy, value: isEntering)
         }
         .navigationBarHidden(true)
         .ignoresSafeArea(.container, edges: [])
@@ -138,14 +165,6 @@ struct PoisonPillPinCreationView: View {
                 pin = ""
                 confirmPin = ""
                 showError = false
-            }
-        }
-        .toolbar {
-            ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
-                Button("Done") {
-                    hideKeyboard()
-                }
             }
         }
     }
@@ -173,8 +192,7 @@ struct PoisonPillPinCreationView: View {
             onPinChange: { _ in },
             onConfirmPinChange: { _ in },
             onSetup: {},
-            isPinLengthValid: { length in length >= 4 && length <= 10 },
-            onCancel: {}
+            isPinLengthValid: { length in length >= 4 && length <= 10 }
         )
     }
 }

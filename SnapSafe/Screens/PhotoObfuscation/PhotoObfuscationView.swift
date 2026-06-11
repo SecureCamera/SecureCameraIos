@@ -30,16 +30,31 @@ struct PhotoObfuscationView: View {
             Color.black
                 .ignoresSafeArea()
 
-            if viewModel.isImageLoading {
-                ProgressView("Loading image...")
-                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+            VStack(spacing: 0) {
+                // The title gets its own full-width row so it isn't truncated
+                // between the Cancel and Save buttons in the nav bar.
+                Text("Photo Obfuscation")
+                    .font(.headline)
                     .foregroundStyle(.white)
-            } else {
-                imageContent
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                    .background(Color.black)
+
+                if viewModel.isImageLoading {
+                    ProgressView("Loading image...")
+                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    imageContent
+                }
             }
         }
-        .navigationTitle("Photo Obfuscation")
+        .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
+        // We supply our own leading Cancel button, so hide the system back
+        // button to avoid showing two back buttons.
+        .navigationBarBackButtonHidden(true)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button("Cancel") {
@@ -113,12 +128,8 @@ struct PhotoObfuscationView: View {
                             faces: viewModel.detectedFaces,
                             originalSize: viewModel.currentImage?.size ?? .zero,
                             displaySize: viewModel.imageFrameSize,
-                            isAddingBox: viewModel.isAddingBox,
                             onTap: { id in viewModel.toggleFaceSelection(id: id) },
-                            onCreateBox: { pt in viewModel.createBox(at: pt) },
-                            onMove: { id, delta in viewModel.moveFace(id: id, by: delta) },
                             onSetPosition: { id, bounds in viewModel.setFacePosition(id: id, to: bounds) },
-                            onResize: { id, scale in viewModel.resizeFace(id: id, scale: scale) },
                             onSetSize: { id, bounds in viewModel.setFaceSize(id: id, to: bounds) }
                         )
                         .frame(width: viewModel.imageFrameSize.width, height: viewModel.imageFrameSize.height)

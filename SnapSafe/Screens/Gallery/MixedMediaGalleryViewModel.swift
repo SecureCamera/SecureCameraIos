@@ -53,13 +53,9 @@ final class MixedMediaGalleryViewModel: ObservableObject {
     @Published var selectionMode: SelectionMode = .none
     @Published var selectedMediaIds = Set<UUID>()
     @Published var showDeleteConfirmation = false
-    @Published var isShowingImagePicker = false
-    @Published var importedImage: UIImage?
     @Published var pickerItems: [PhotosPickerItem] = []
     @Published var isImporting: Bool = false
     @Published var importProgress: Float = 0
-    @Published var showVideoPlayer = false
-    @Published var currentVideoItem: GalleryMediaItem?
 
     // Decoy support
     var isSelecting: Bool { selectionMode != .none }
@@ -153,17 +149,6 @@ final class MixedMediaGalleryViewModel: ObservableObject {
         !selectedMediaIds.isEmpty
     }
 
-    /// All photos from the media items (convenience for photo-specific operations).
-    var photos: [PhotoDef] {
-        mediaItems.compactMap { $0.photoDef }
-    }
-
-    var currentDecoyCount: Int {
-        let photoDecoys = mediaItems.compactMap { $0.photoDef }.filter { secureImageRepository.isDecoyPhoto($0) }.count
-        let videoDecoys = mediaItems.compactMap { $0.videoDef }.filter { secureImageRepository.isDecoyVideo($0) }.count
-        return photoDecoys + videoDecoys
-    }
-
     /// Whether the given media item is currently marked as a decoy.
     private func isItemDecoy(_ item: GalleryMediaItem) -> Bool {
         if let photoDef = item.photoDef {
@@ -183,7 +168,7 @@ final class MixedMediaGalleryViewModel: ObservableObject {
     }
 
     var decoyCountText: String {
-        "\(selectedMediaIds.count)/\(maxDecoys)"
+        "\(selectedMediaIds.count) of \(maxDecoys) selected"
     }
 
     var decoyCountTextColor: Color {
@@ -339,11 +324,6 @@ final class MixedMediaGalleryViewModel: ObservableObject {
             // Navigate to photo detail via selectedMediaItem
             selectedMediaItem = item
         }
-    }
-
-    func prepareToDeleteSingleMedia(_ item: GalleryMediaItem) {
-        selectedMediaIds = [item.id]
-        showDeleteConfirmation = true
     }
 
     // MARK: - Alert Triggers

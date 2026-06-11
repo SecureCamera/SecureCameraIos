@@ -11,19 +11,24 @@ import Mockable
 
 
 @Mockable
-public protocol SettingsDataSource: Sendable {
+protocol SettingsDataSource: Sendable {
     // MARK: - Intro state
     /// Check if the user has completed the introduction
     var hasCompletedIntro: AnyPublisher<Bool, Never> { get }
+    /// Synchronous read of the current intro-completion state (no scheduler hop).
+    /// Use this to seed view-model state before the Combine pipeline has a chance to deliver.
+    var hasCompletedIntroValue: Bool { get }
 
     // MARK: - Sanitize file name
     /// Get the sanitized file name preference
     var sanitizeFileName: AnyPublisher<Bool, Never> { get }
+    // periphery:ignore
     var sanitizeFileNameDefault: Bool { get }
 
     // MARK: - Sanitize metadata
     /// Get the sanitized metadata preference
     var sanitizeMetadata: AnyPublisher<Bool, Never> { get }
+    // periphery:ignore
     var sanitizeMetadataDefault: Bool { get }
 
     // MARK: - Session timeout
@@ -91,5 +96,6 @@ public protocol SettingsDataSource: Sendable {
     /// Remove the Poison Pill PIN
     func removePoisonPillPin() async
 
+    // periphery:ignore
     func isPinCiphered() async -> Bool
 }

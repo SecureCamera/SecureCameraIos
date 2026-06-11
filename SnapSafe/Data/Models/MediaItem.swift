@@ -10,14 +10,19 @@ import SwiftUI
 import AVFoundation
 import CryptoKit
 
+// periphery:ignore all
 /// Protocol for media items (photos and videos) in the gallery.
 protocol MediaItem: Identifiable, Hashable {
+    // periphery:ignore
     var id: UUID { get }
     var mediaName: String { get }
+    // periphery:ignore
     var mediaFile: URL { get }
     var mediaType: MediaType { get }
     func dateTaken() -> Date?
+    // periphery:ignore
     var thumbnail: UIImage? { get }
+    // periphery:ignore
     var isEncrypted: Bool { get }
 }
 
@@ -27,14 +32,18 @@ enum MediaType: String, CaseIterable {
     case video
 }
 
+// periphery:ignore all
 /// Extension to make PhotoDef conform to MediaItem.
 extension PhotoDef: MediaItem {
     var mediaName: String { return photoName }
+    // periphery:ignore
     var mediaFile: URL { return photoFile }
     var mediaType: MediaType { return .photo }
+    // periphery:ignore
     var isEncrypted: Bool { return true } // Photos are always encrypted in SnapSafe
-    
+
     // Thumbnail generation for photos
+    // periphery:ignore
     var thumbnail: UIImage? {
         // Use existing thumbnail logic from PhotoDef
         // This would typically load from thumbnail cache
@@ -42,19 +51,22 @@ extension PhotoDef: MediaItem {
     }
 }
 
+// periphery:ignore all
 /// Extension to make VideoDef conform to MediaItem.
 extension VideoDef: MediaItem {
     var mediaName: String { return videoName }
+    // periphery:ignore
     var mediaFile: URL { return videoFile }
     var mediaType: MediaType { return .video }
     // isEncrypted is already defined in VideoDef.swift
 
     // Thumbnail generation for videos
+    // periphery:ignore
     var thumbnail: UIImage? {
         return generateVideoThumbnail()
     }
-    
-    /// Generate thumbnail for video.
+
+    // periphery:ignore
     private func generateVideoThumbnail() -> UIImage? {
         guard FileManager.default.fileExists(atPath: videoFile.path) else {
             return nil
@@ -90,13 +102,16 @@ struct GalleryMediaItem: Identifiable, Hashable {
     let id = UUID()
     let mediaItem: any MediaItem
     let encryptionKey: SymmetricKey? // Only needed for encrypted videos
-    
+
     // Convenience properties to access underlying media item
     var mediaName: String { mediaItem.mediaName }
+    // periphery:ignore
     var mediaFile: URL { mediaItem.mediaFile }
     var mediaType: MediaType { mediaItem.mediaType }
     func dateTaken() -> Date? { mediaItem.dateTaken() }
+    // periphery:ignore
     var thumbnail: UIImage? { mediaItem.thumbnail }
+    // periphery:ignore
     var isEncrypted: Bool { mediaItem.isEncrypted }
     
     // For type-safe access to specific media types

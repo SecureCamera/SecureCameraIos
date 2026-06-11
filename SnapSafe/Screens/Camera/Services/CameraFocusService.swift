@@ -11,19 +11,27 @@ import SwiftUI
 import Combine
 import Logging
 
+// periphery:ignore all
 @MainActor
 protocol FocusControlling: ObservableObject {
+    // periphery:ignore
     var focusIndicatorPoint: CGPoint? { get }
+    // periphery:ignore
     var showingFocusIndicator: Bool { get }
-    
+    // periphery:ignore
     func setupSubjectAreaChangeMonitoring(for device: AVCaptureDevice)
+    // periphery:ignore
     func adjustCameraSettings(at point: CGPoint, lockWhiteBalance: Bool, device: AVCaptureDevice?)
+    // periphery:ignore
     func showFocusIndicator(on viewPoint: CGPoint)
+    // periphery:ignore
     func startPeriodicFocusCheck(device: AVCaptureDevice?)
+    // periphery:ignore
     func stopPeriodicFocusCheck()
 }
 
 @MainActor
+// periphery:ignore all
 final class CameraFocusService: ObservableObject, FocusControlling {
     
     // MARK: - Published Properties
@@ -136,7 +144,7 @@ final class CameraFocusService: ObservableObject, FocusControlling {
     
     // MARK: - Private Methods
     
-    @objc private func subjectAreaDidChange(notification: Notification) {
+    @objc private func subjectAreaDidChange(_: Notification) {
         refocusCamera()
     }
     
