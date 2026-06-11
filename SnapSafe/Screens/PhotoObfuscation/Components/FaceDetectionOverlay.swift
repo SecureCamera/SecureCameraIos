@@ -9,48 +9,36 @@ import SwiftUI
 import Foundation
 import UIKit
 
-public struct FaceDetectionOverlay: View {
-    public let faces: [DetectedFace]
-    public let originalSize: CGSize
-    public let displaySize: CGSize
-    public let isAddingBox: Bool
+struct FaceDetectionOverlay: View {
+    let faces: [DetectedFace]
+    let originalSize: CGSize
+    let displaySize: CGSize
 
-    public var onTap: (UUID) -> Void
-    public var onCreateBox: (CGPoint) -> Void
-    public var onMove: (UUID, CGSize) -> Void          // image-space delta
-    public var onSetPosition: (UUID, CGRect) -> Void   // absolute position in image space
-    public var onResize: (UUID, CGFloat) -> Void       // scale factor
-    public var onSetSize: (UUID, CGRect) -> Void       // absolute size for smooth resizing
+    var onTap: (UUID) -> Void
+    var onSetPosition: (UUID, CGRect) -> Void   // absolute position in image space
+    var onSetSize: (UUID, CGRect) -> Void       // absolute size for smooth resizing
 
     @State private var resizingId: UUID?
     @State private var dragStartPositions: [UUID: CGRect] = [:]
     @State private var resizeStartBounds: [UUID: CGRect] = [:]
 
-    public init(
+    init(
         faces: [DetectedFace],
         originalSize: CGSize,
         displaySize: CGSize,
-        isAddingBox: Bool,
         onTap: @escaping (UUID) -> Void,
-        onCreateBox: @escaping (CGPoint) -> Void,
-        onMove: @escaping (UUID, CGSize) -> Void,
         onSetPosition: @escaping (UUID, CGRect) -> Void,
-        onResize: @escaping (UUID, CGFloat) -> Void,
         onSetSize: @escaping (UUID, CGRect) -> Void
     ) {
         self.faces = faces
         self.originalSize = originalSize
         self.displaySize = displaySize
-        self.isAddingBox = isAddingBox
         self.onTap = onTap
-        self.onCreateBox = onCreateBox
-        self.onMove = onMove
         self.onSetPosition = onSetPosition
-        self.onResize = onResize
         self.onSetSize = onSetSize
     }
 
-    public var body: some View {
+    var body: some View {
         ZStack {
 
             ForEach(faces) { face in
@@ -58,8 +46,6 @@ public struct FaceDetectionOverlay: View {
 
                 FaceBoxView(
                     face: face,
-                    originalSize: originalSize,
-                    displaySize: displaySize,
                     onTap: { onTap(face.id) }
                 )
                 .frame(width: rect.width, height: rect.height)

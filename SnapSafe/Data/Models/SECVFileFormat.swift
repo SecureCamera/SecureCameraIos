@@ -28,16 +28,16 @@ import Foundation
 /// The trailer format (chunks first, metadata at end) eliminates the need
 /// to rewrite the entire file when encryption completes, preventing memory
 /// spikes from loading large videos into RAM.
-public enum SECVFileFormat {
-    public static let MAGIC = "SECV"
-    public static let VERSION: UInt16 = 1
-    public static let TRAILER_SIZE = 64
-    public static let CHUNK_INDEX_ENTRY_SIZE = 12
-    public static let IV_SIZE = 12
-    public static let AUTH_TAG_SIZE = 16
-    public static let DEFAULT_CHUNK_SIZE = 1_048_576 // 1MB
+enum SECVFileFormat {
+    static let MAGIC = "SECV"
+    static let VERSION: UInt16 = 1
+    static let TRAILER_SIZE = 64
+    static let CHUNK_INDEX_ENTRY_SIZE = 12
+    static let IV_SIZE = 12
+    static let AUTH_TAG_SIZE = 16
+    static let DEFAULT_CHUNK_SIZE = 1_048_576 // 1MB
 
-    public static let FILE_EXTENSION = "secv"
+    static let FILE_EXTENSION = "secv"
 
     // Trailer field offsets
     private static let OFFSET_MAGIC = 0
@@ -47,13 +47,13 @@ public enum SECVFileFormat {
     private static let OFFSET_ORIGINAL_SIZE = 18
 
     /// Represents the trailer of a SECV file (metadata at end of file).
-    public struct SecvTrailer: Equatable {
-        public let version: UInt16
-        public let chunkSize: UInt32
-        public let totalChunks: UInt64
-        public let originalSize: UInt64
+    struct SecvTrailer: Equatable {
+        let version: UInt16
+        let chunkSize: UInt32
+        let totalChunks: UInt64
+        let originalSize: UInt64
 
-        public init(version: UInt16, chunkSize: UInt32, totalChunks: UInt64, originalSize: UInt64) {
+        init(version: UInt16, chunkSize: UInt32, totalChunks: UInt64, originalSize: UInt64) {
             self.version = version
             self.chunkSize = chunkSize
             self.totalChunks = totalChunks
@@ -61,7 +61,7 @@ public enum SECVFileFormat {
         }
 
         /// Convert trailer to byte array for writing to file.
-        public func toData() -> Data {
+        func toData() -> Data {
             var data = Data(count: SECVFileFormat.TRAILER_SIZE)
 
             // Magic
@@ -83,7 +83,7 @@ public enum SECVFileFormat {
         }
 
         /// Parse trailer from byte array.
-        public static func from(data: Data) throws -> SecvTrailer {
+        static func from(data: Data) throws -> SecvTrailer {
             guard data.count >= TRAILER_SIZE else {
                 throw SECVError.invalidTrailerSize
             }
@@ -116,17 +116,17 @@ public enum SECVFileFormat {
     }
 
     /// Represents an entry in the chunk index table.
-    public struct ChunkIndexEntry: Equatable {
-        public let offset: UInt64
-        public let encryptedSize: UInt32
+    struct ChunkIndexEntry: Equatable {
+        let offset: UInt64
+        let encryptedSize: UInt32
 
-        public init(offset: UInt64, encryptedSize: UInt32) {
+        init(offset: UInt64, encryptedSize: UInt32) {
             self.offset = offset
             self.encryptedSize = encryptedSize
         }
 
         /// Convert chunk index entry to byte array.
-        public func toData() -> Data {
+        func toData() -> Data {
             var data = Data(count: CHUNK_INDEX_ENTRY_SIZE)
             
             // Offset (little-endian)
@@ -139,7 +139,7 @@ public enum SECVFileFormat {
         }
 
         /// Parse chunk index entry from byte array.
-        public static func from(data: Data, offset: Int = 0) throws -> ChunkIndexEntry {
+        static func from(data: Data, offset: Int = 0) throws -> ChunkIndexEntry {
             guard data.count >= offset + CHUNK_INDEX_ENTRY_SIZE else {
                 throw SECVError.invalidChunkIndexEntry
             }
@@ -158,29 +158,29 @@ public enum SECVFileFormat {
 
     /// Calculate the size of encrypted data for a given plaintext size.
     /// Encrypted size = IV (12 bytes) + ciphertext (same as plaintext) + auth tag (16 bytes)
-    public static func calculateEncryptedChunkSize(plaintextSize: Int) -> Int {
+    static func calculateEncryptedChunkSize(plaintextSize: Int) -> Int {
         return IV_SIZE + plaintextSize + AUTH_TAG_SIZE
     }
 
     /// Calculate the position of the trailer in the file (last 64 bytes).
     /// For trailer format, trailer is at: fileLength - TRAILER_SIZE
-    public static func calculateTrailerPosition(fileLength: UInt64) -> UInt64 {
+    static func calculateTrailerPosition(fileLength: UInt64) -> UInt64 {
         return fileLength - UInt64(TRAILER_SIZE)
     }
 
     /// Calculate the position of the index table in the file.
     /// For trailer format, index is at: fileLength - TRAILER_SIZE - (totalChunks * CHUNK_INDEX_ENTRY_SIZE)
-    public static func calculateIndexTablePosition(fileLength: UInt64, totalChunks: UInt64) -> UInt64 {
+    static func calculateIndexTablePosition(fileLength: UInt64, totalChunks: UInt64) -> UInt64 {
         return fileLength - UInt64(TRAILER_SIZE) - (totalChunks * UInt64(CHUNK_INDEX_ENTRY_SIZE))
     }
 
     /// Calculate the plaintext offset for a given chunk index.
-    public static func calculatePlaintextOffset(chunkIndex: UInt64, chunkSize: UInt32) -> UInt64 {
+    static func calculatePlaintextOffset(chunkIndex: UInt64, chunkSize: UInt32) -> UInt64 {
         return chunkIndex * UInt64(chunkSize)
     }
 
     /// Calculate the total file size for a given original size and chunk count.
-    public static func calculateTotalFileSize(originalSize: UInt64, totalChunks: UInt64) -> UInt64 {
+    static func calculateTotalFileSize(originalSize _: UInt64, totalChunks: UInt64) -> UInt64 {
         let encryptedDataSize = totalChunks * UInt64(DEFAULT_CHUNK_SIZE + IV_SIZE + AUTH_TAG_SIZE)
         let indexTableSize = totalChunks * UInt64(CHUNK_INDEX_ENTRY_SIZE)
         return encryptedDataSize + indexTableSize + UInt64(TRAILER_SIZE)
@@ -188,7 +188,7 @@ public enum SECVFileFormat {
 }
 
 /// SECV-specific errors.
-public enum SECVError: Error, LocalizedError {
+enum SECVError: Error, LocalizedError {
     case invalidTrailerSize
     case invalidMagic
     case invalidChunkIndexEntry
@@ -198,7 +198,7 @@ public enum SECVError: Error, LocalizedError {
     case fileIOError
     case checksumMismatch
 
-    public var errorDescription: String? {
+    var errorDescription: String? {
         switch self {
         case .invalidTrailerSize: return "Invalid SECV trailer size"
         case .invalidMagic: return "Invalid SECV magic number"

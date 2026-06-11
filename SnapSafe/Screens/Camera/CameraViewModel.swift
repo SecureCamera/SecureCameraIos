@@ -16,6 +16,7 @@ import CryptoKit
 class CameraViewModel: NSObject, ObservableObject {
     
     // MARK: - Debug/Simulator Detection
+    // periphery:ignore
     private var isRunningInSimulator: Bool {
         #if DEBUG && targetEnvironment(simulator)
         return true
@@ -41,7 +42,6 @@ class CameraViewModel: NSObject, ObservableObject {
     var maxZoom: CGFloat { zoomService.maxZoom }
     var focusIndicatorPoint: CGPoint? { focusService.focusIndicatorPoint }
     var showingFocusIndicator: Bool { focusService.showingFocusIndicator }
-    var recentImage: UIImage? { photoService.recentImage }
     var isSavingPhoto: Bool { photoService.isSavingPhoto }
 
     // Video capture properties
@@ -59,12 +59,6 @@ class CameraViewModel: NSObject, ObservableObject {
     @Injected(\.secureImageRepository)
     private var secureImageRepository: SecureImageRepository
 
-    @Injected(\.clock)
-    private var clock: Clock
-
-    @Injected(\.locationRepository)
-    private var locationRepository: LocationRepository
-
     @Injected(\.videoEncryptionService)
     private var videoEncryptionService: VideoEncryptionService
 
@@ -77,7 +71,6 @@ class CameraViewModel: NSObject, ObservableObject {
     var viewSize: CGSize = .zero
     @Published var flashMode: AVCaptureDevice.FlashMode = .auto
     var cameraPosition: AVCaptureDevice.Position { deviceService.cameraPosition }
-    @Published var isTogglingFlash = false
 
     // Combine subscriptions
     private var cancellables = Set<AnyCancellable>()
@@ -91,6 +84,11 @@ class CameraViewModel: NSObject, ObservableObject {
         // Wire video recording callback to trigger encryption
         videoService.onRecordingFinished = { [weak self] outputURL in
             self?.encryptRecordedVideo(at: outputURL)
+        }
+
+        // Release the mic once recording fully finalizes (success or failure).
+        videoService.onRecordingStopped = { [weak self] in
+            self?.deviceService.detachAudioInput()
         }
 
         // Observe permission changes from the service
@@ -219,6 +217,7 @@ class CameraViewModel: NSObject, ObservableObject {
     }
     
     
+    // periphery:ignore
     func setupCamera() async {
         #if DEBUG && targetEnvironment(simulator)
         if isRunningInSimulator {
@@ -251,22 +250,12 @@ class CameraViewModel: NSObject, ObservableObject {
     #endif
     
     
+    // periphery:ignore
     private func prepareZeroShutterLagCapture() {
         // TODO/debug
         return
     }
     
-    
-    // Map device orientations to rotation angles for horizon-level capture
-    private func rotationAngle(for orientation: UIDeviceOrientation) -> Double {
-        switch orientation {
-        case .portrait:              return 90
-        case .portraitUpsideDown:    return 270
-        case .landscapeLeft:         return 0
-        case .landscapeRight:        return 180
-        default:                     return 0
-        }
-    }
     
     func capturePhoto() {
         #if DEBUG && targetEnvironment(simulator)
@@ -322,15 +311,30 @@ class CameraViewModel: NSObject, ObservableObject {
             return nil
         }
 
-        return videoService.startRecording(
+        // Attach the mic only now, immediately before recording — so toggling
+        // into video mode never reconfigures the session (no preview flicker)
+        // and the mic indicator appears only while actually recording.
+        deviceService.attachAudioInput()
+
+        let outputURL = videoService.startRecording(
             session: session,
             movieOutput: deviceService.movieOutput,
             preview: preview
         )
+
+        // If recording never actually started, no finish delegate will fire to
+        // release the mic, so release it here.
+        if outputURL == nil {
+            deviceService.detachAudioInput()
+        }
+
+        return outputURL
     }
 
     /// Stop video recording
     func stopRecording() {
+        // The mic is released once finalization completes (onRecordingStopped),
+        // not here — removing the input mid-finalization could truncate audio.
         videoService.stopRecording()
     }
 
@@ -397,17 +401,9 @@ class CameraViewModel: NSObject, ObservableObject {
     
     
     func toggleFlashMode() {
-        // Prevent rapid consecutive toggles
-        guard !isTogglingFlash else { 
-            Logger.camera.debug("Flash toggle ignored - already in progress")
-            return 
-        }
-        
-        isTogglingFlash = true
-        
         let currentMode = flashMode
         let newMode: AVCaptureDevice.FlashMode
-        
+
         switch currentMode {
         case .auto:
             newMode = .on
@@ -418,26 +414,15 @@ class CameraViewModel: NSObject, ObservableObject {
         @unknown default:
             newMode = .auto
         }
-        
+
+        // Cycling the flash mode is a synchronous, idempotent state change — it
+        // only takes effect at capture time — so there's nothing to debounce.
+        flashMode = newMode
+
         Logger.camera.debug("Flash mode cycling", metadata: [
             "from": .string(String(describing: currentMode)),
             "to": .string(String(describing: newMode))
         ])
-        
-        // Update the flash mode
-        flashMode = newMode
-        
-        Logger.camera.debug("Flash mode updated", metadata: [
-            "mode": .string(String(describing: flashMode))
-        ])
-        
-        // Re-enable toggling after a brief delay
-        Task {
-            try await Task.sleep(for: .milliseconds(100))
-            await MainActor.run {
-                self.isTogglingFlash = false
-            }
-        }
     }
     
     var flashIcon: String {

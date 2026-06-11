@@ -12,15 +12,20 @@ import Combine
 import Logging
 import FactoryKit
 
+// periphery:ignore all
 @MainActor
 protocol PhotoCapturing: ObservableObject {
+    // periphery:ignore
     var recentImage: UIImage? { get }
-    
+    // periphery:ignore
     func capturePhoto(flashMode: AVCaptureDevice.FlashMode, cameraPosition: AVCaptureDevice.Position, output: AVCapturePhotoOutput, preview: AVCaptureVideoPreviewLayer?, session: AVCaptureSession)
+    // periphery:ignore
     func captureMockPhoto(cameraPosition: AVCaptureDevice.Position) async
+    // periphery:ignore
     func saveMockPhoto(_ imageData: Data) async
 }
 
+// periphery:ignore all
 @MainActor
 final class PhotoCaptureService: NSObject, ObservableObject, PhotoCapturing {
     
@@ -167,6 +172,7 @@ final class PhotoCaptureService: NSObject, ObservableObject, PhotoCapturing {
         return settings
     }
     
+    // periphery:ignore
     private func fixImageOrientation(_ image: UIImage) -> UIImage {
         if image.imageOrientation == .up {
             return image

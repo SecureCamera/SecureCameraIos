@@ -22,7 +22,6 @@ final class SecureImageRepositoryTests: XCTestCase {
     private var tempDirectory: URL!
     private var galleryDirectory: URL!
     private var decoyDirectory: URL!
-    private var thumbnailsDirectory: URL!
     
     // MARK: - Setup & Teardown
     
@@ -36,7 +35,6 @@ final class SecureImageRepositoryTests: XCTestCase {
         // Set up subdirectories
         galleryDirectory = tempDirectory.appendingPathComponent(SecureImageRepository.photosDir)
         decoyDirectory = tempDirectory.appendingPathComponent(SecureImageRepository.decoysDir)
-        thumbnailsDirectory = tempDirectory.appendingPathComponent(SecureImageRepository.thumbnailsDir)
         
         // Create mock dependencies
         mockThumbnailCache = FakeThumbnailCache()

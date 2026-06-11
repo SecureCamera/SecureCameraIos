@@ -12,7 +12,7 @@ import Logging
 
 // MARK: - Security Overlay State
 
-public enum SecurityOverlayState {
+enum SecurityOverlayState {
     case normal
     case screenRecording
     case requiresAuthentication

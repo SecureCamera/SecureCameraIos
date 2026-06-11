@@ -43,10 +43,7 @@ final class PoisonPillSetupWizardViewModel: ObservableObject {
     @Published var isLoading: Bool = false
     
     // MARK: - Dependencies
-    
-    @Injected(\.createPinUseCase)
-    private var createPinUseCase: CreatePinUseCase
-    
+
     @Injected(\.createPoisonPillUseCase)
     private var createPoisonPillUseCase: CreatePoisonPillUseCase
     
@@ -63,7 +60,7 @@ final class PoisonPillSetupWizardViewModel: ObservableObject {
     }
     
     // MARK: - PIN Validation Methods
-    func validateAndFilterPIN(_ newValue: String, isConfirm: Bool = false) -> String {
+    func validateAndFilterPIN(_ newValue: String) -> String {
         var filtered = newValue
         
         // Only allow numbers
@@ -130,15 +127,6 @@ final class PoisonPillSetupWizardViewModel: ObservableObject {
         let filtered = validateAndFilterPIN(newValue)
         if confirmPin != filtered {
             confirmPin = filtered
-        }
-    }
-    
-    private func validatePINs() {
-        showError = false
-        
-        if isPinLengthValid(pin.count) && isPinLengthValid(confirmPin.count) && pin != confirmPin {
-            showError = true
-            errorMessage = "PINs do not match"
         }
     }
     

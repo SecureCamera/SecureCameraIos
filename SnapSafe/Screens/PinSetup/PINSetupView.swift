@@ -21,7 +21,39 @@ struct PINSetupView: View {
     private var buttonBackgroundColor: Color {
         viewModel.canSubmit ? Color.blue : Color.gray
     }
-    
+
+    // Reveal the action once the user has started entering a PIN (or while the
+    // PIN is being set) — avoids an idle, disabled button at rest.
+    private var showSetPinButton: Bool {
+        !viewModel.pin.isEmpty || !viewModel.confirmPin.isEmpty || viewModel.isLoading
+    }
+
+    private var setPinButton: some View {
+        Button(action: {
+            Task {
+                let success = await viewModel.createPin()
+                if success {
+                    Logger.ui.info("PIN setup complete, marking intro as completed")
+                }
+            }
+        }) {
+            HStack {
+                if viewModel.isLoading {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                        .foregroundStyle(.white)
+                }
+                Text(viewModel.isLoading ? "Setting PIN..." : "Set PIN")
+                    .foregroundStyle(.white)
+            }
+            .padding()
+            .frame(minWidth: 200, maxWidth: 300)
+            .background(buttonBackgroundColor)
+            .clipShape(.rect(cornerRadius: 10))
+        }
+        .disabled(buttonDisabled)
+    }
+
     var body: some View {
         ScrollView {
                 VStack(spacing: 30) {
@@ -75,33 +107,18 @@ struct PINSetupView: View {
                     .padding(.horizontal, 30)
                     .padding(.bottom, 20)
                     
-                    Button(action: {
-                        Task {
-                            let success = await viewModel.createPin()
-                            if success {
-                                Logger.ui.info("PIN setup complete, marking intro as completed")
-                            }
-                        }
-                    }) {
-                        HStack {
-                            if viewModel.isLoading {
-                                ProgressView()
-                                    .scaleEffect(0.8)
-                                    .foregroundStyle(.white)
-                            }
-                            Text(viewModel.isLoading ? "Setting PIN..." : "Set PIN")
-                                .foregroundStyle(.white)
-                        }
-                        .padding()
-                        .frame(minWidth: 200, maxWidth: 300)
-                        .background(buttonBackgroundColor)
-                        .clipShape(.rect(cornerRadius: 10))
-                    }
-                    .disabled(buttonDisabled)
-                    .padding(.top, 20)
-                    .padding(.bottom, 50)
                 }
             }
+            .safeAreaInset(edge: .bottom) {
+                if showSetPinButton {
+                    setPinButton
+                        .padding(.vertical, 12)
+                        .frame(maxWidth: .infinity)
+                        .background(.bar)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+            }
+            .animation(.snappy, value: showSetPinButton)
             .navigationBarTitle("", displayMode: .inline)
             .navigationBarHidden(true)
             .obscuredWhenInactive()

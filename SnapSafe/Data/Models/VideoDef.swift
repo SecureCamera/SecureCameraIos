@@ -9,7 +9,7 @@ import Foundation
 import AVFoundation
 
 struct VideoDef: Hashable, Identifiable {
-    public let id = UUID()
+    let id = UUID()
     let videoName: String
     let videoFormat: String
     let videoFile: URL
@@ -38,6 +38,7 @@ struct VideoDef: Hashable, Identifiable {
     }
 
     /// Get the encryption status of the video file.
+    // periphery:ignore
     func getEncryptionStatus() -> VideoEncryptionStatus {
         if isEncrypted {
             // Check if file has valid SECV format
@@ -93,6 +94,7 @@ struct VideoDef: Hashable, Identifiable {
     }
 
     /// Get video duration if available (for unencrypted videos).
+    // periphery:ignore
     func getDuration() async -> TimeInterval? {
         guard !isEncrypted else { return nil }
         
@@ -110,6 +112,7 @@ struct VideoDef: Hashable, Identifiable {
 }
 
 /// Video encryption status.
+// periphery:ignore
 enum VideoEncryptionStatus {
     case unencrypted   // Video is in plaintext format (.mov, .mp4)
     case encrypted     // Video is properly encrypted (.secv)

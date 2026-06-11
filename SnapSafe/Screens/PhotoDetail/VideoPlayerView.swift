@@ -178,7 +178,6 @@ final class VideoPlayerViewModel: ObservableObject {
     var decoyButtonTitle: String { isDecoy ? "Remove Decoy" : "Add Decoy" }
     var decoyButtonIcon: String { isDecoy ? "shield.slash" : "shield" }
 
-    private var playerItem: AVPlayerItem?
     private var timeObserver: Any?
     private var cancellables = Set<AnyCancellable>()
     private var hideControlsTask: Task<Void, Never>?
@@ -220,7 +219,6 @@ final class VideoPlayerViewModel: ObservableObject {
         player?.pause()
         isPlaying = false
         player = nil
-        playerItem = nil
     }
 
     func togglePlayback() {
@@ -345,7 +343,6 @@ final class VideoPlayerViewModel: ObservableObject {
                     player.pause()
                     return
                 }
-                self.playerItem = playerItem
                 self.player = player
                 self.isLoading = false
                 // Carry the current mute state onto the freshly created player.
@@ -471,11 +468,6 @@ final class VideoPlayerViewModel: ObservableObject {
                 self.scheduleHideControls()
             }
         }
-    }
-
-    func pause() {
-        player?.pause()
-        isPlaying = false
     }
 
     // MARK: - Gallery Actions (inline detail player)

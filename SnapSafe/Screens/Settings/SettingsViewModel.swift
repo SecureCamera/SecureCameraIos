@@ -23,22 +23,15 @@ final class SettingsViewModel: ObservableObject {
     
     // Security settings
     @Published var sessionTimeout = 5 // minutes
-    @Published var appPIN = ""
-    @Published var confirmAppPIN = ""
-    @Published var poisonPIN = ""
     @Published var showResetConfirmation = false
     @Published var hasPoisonPill = false
     @Published var showRemovePoisonPillConfirmation = false
-    @Published var showPINError = false
-    @Published var pinErrorMessage = ""
-    @Published var showPINSuccess = false
     
     // Decoy photos
     @Published var isSelectingDecoys = false
     
     // Location permissions
     @Published var locationPermissionStatus = "Not Determined"
-    @Published var includeLocationData = false
     @Published var shouldOpenSettings = false
     
     // MARK: - Dependencies
@@ -46,17 +39,11 @@ final class SettingsViewModel: ObservableObject {
     @Injected(\.pinRepository)
     private var pinRepository: PinRepository
     
-    @Injected(\.authorizationRepository)
-    private var authorizationRepository: AuthorizationRepository
-    
     @Injected(\.locationRepository)
     private var locationManager: LocationRepository
     
     @Injected(\.securityResetUseCase)
     private var securityResetUseCase: SecurityResetUseCase
-    
-    @Injected(\.createPoisonPillUseCase)
-    private var createPoisonPillUseCase: CreatePoisonPillUseCase
     
     @Injected(\.removePoisonPillUseCase)
     private var removePoisonPillUseCase: RemovePoisonPillUseCase
@@ -128,18 +115,6 @@ final class SettingsViewModel: ObservableObject {
         isSelectingDecoys = false
     }
     
-    /// Save poisin pill PIN
-    func savePoisonPillPIN() {
-        if !poisonPIN.isEmpty {
-            Task {
-                Logger.storage.info("Setting poison pill PIN")
-                _ = await createPoisonPillUseCase.createPin(pppin: poisonPIN)
-                poisonPIN = ""
-                checkPoisonPillStatus()
-            }
-        }
-    }
-    
     /// Check if poison pill is currently configured
     func checkPoisonPillStatus() {
         Task {
@@ -197,14 +172,6 @@ final class SettingsViewModel: ObservableObject {
         return permissionNotDetermined 
             ? "Request Location Permission"
             : "Manage Permission in Settings"
-    }
-    
-    var isUpdatePINButtonDisabled: Bool {
-        appPIN.isEmpty || confirmAppPIN.isEmpty
-    }
-    
-    var isSaveEmergencyPINDisabled: Bool {
-        poisonPIN.isEmpty
     }
     
     // MARK: - Private Methods

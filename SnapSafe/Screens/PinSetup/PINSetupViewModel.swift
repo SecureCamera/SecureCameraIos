@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import Combine
 import FactoryKit
 
 @MainActor
@@ -54,9 +53,6 @@ final class PINSetupViewModel: ObservableObject {
     @Injected(\.createPinUseCase) private var createPinUseCase: CreatePinUseCase
     @Injected(\.pinStrengthCheckUseCase) private var pinStrengthCheckUseCase: PinStrengthCheckUseCase
     
-    // MARK: - Private Properties
-    private var cancellables = Set<AnyCancellable>()
-    
     // MARK: - Initialization
     init() {
         setupBindings()
@@ -72,7 +68,7 @@ final class PINSetupViewModel: ObservableObject {
     }
     
     // MARK: - PIN Validation Methods
-    func validateAndFilterPIN(_ newValue: String, isConfirm: Bool = false) -> String {
+    func validateAndFilterPIN(_ newValue: String) -> String {
         var filtered = newValue
         
         // Only allow numbers
@@ -136,14 +132,6 @@ final class PINSetupViewModel: ObservableObject {
         showError = true
     }
     
-    // MARK: - Reset Methods
-    func reset() {
-        pin = ""
-        confirmPin = ""
-        clearError()
-        isLoading = false
-    }
-
     func clearPinContent() {
         pin = ""
         confirmPin = ""

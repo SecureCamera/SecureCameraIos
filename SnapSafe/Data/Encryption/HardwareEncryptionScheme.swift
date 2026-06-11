@@ -43,7 +43,6 @@ final class HardwareEncryptionScheme: EncryptionScheme {
     
     // MARK: - Constants
     private static let defaultKeyAlias = "snapsafe_kek"
-    private static let aesGCMMode = "AES/GCM/NoPadding"
     private static let ivLengthBytes = 12  // 96-bit IV recommended for GCM
     private static let tagLengthBits = 128 // 128-bit tag appended automatically
     private static let dekFilenamePrefix = "dek"

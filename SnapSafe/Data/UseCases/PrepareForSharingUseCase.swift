@@ -5,7 +5,7 @@
 //  Created by Adam Brown on 9/9/25.
 //
 
-public final class PrepareForSharingUseCase {
+final class PrepareForSharingUseCase {
     // Creates a temporary file for sharing with a UUID filename
     func preparePhotoForSharing(imageData: Data) throws -> URL {
         // Get temporary directory

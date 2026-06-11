@@ -11,6 +11,7 @@ import Foundation
 
 /// Simple script to run video export tests from Xcode console
 /// Run this in Xcode console: po runVideoExportTests()
+// periphery:ignore
 @available(iOS 18.0, *)
 func runVideoExportTests() async {
     print("🎬 Starting Video Export Tests for Simulator...")
@@ -43,6 +44,7 @@ func runVideoExportTests() async {
 
 /// Quick access function that can be called from anywhere in debug builds
 #if DEBUG
+// periphery:ignore
 @available(iOS 18.0, *)
 func quickVideoTest() async {
     await runVideoExportTests()

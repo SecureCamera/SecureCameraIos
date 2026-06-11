@@ -10,15 +10,20 @@ import AVFoundation
 import Combine
 import Logging
 
+// periphery:ignore all
 @MainActor
 protocol VideoCapturing: ObservableObject {
+    // periphery:ignore
     var isRecording: Bool { get }
+    // periphery:ignore
     var recordingDurationMs: Int64 { get }
-
+    // periphery:ignore
     func startRecording(session: AVCaptureSession, movieOutput: AVCaptureMovieFileOutput, preview: AVCaptureVideoPreviewLayer?) -> URL?
+    // periphery:ignore
     func stopRecording()
 }
 
+// periphery:ignore all
 @MainActor
 final class VideoCaptureService: NSObject, ObservableObject, VideoCapturing {
 
@@ -30,10 +35,14 @@ final class VideoCaptureService: NSObject, ObservableObject, VideoCapturing {
     /// Called when a recording finishes successfully, with the output file URL.
     var onRecordingFinished: ((URL) -> Void)?
 
+    /// Called once a recording has fully finalized (success or failure), after
+    /// the file output is done writing. Use this to release resources tied to
+    /// the recording, e.g. detaching the microphone input.
+    var onRecordingStopped: (() -> Void)?
+
     // MARK: - Properties
 
     private var activeMovieOutput: AVCaptureMovieFileOutput?
-    private var currentOutputURL: URL?
     private var durationTimer: Timer?
     private var recordingStartTime: Date?
 
@@ -81,8 +90,6 @@ final class VideoCaptureService: NSObject, ObservableObject, VideoCapturing {
 
         // Remove existing file if present
         try? FileManager.default.removeItem(at: outputURL)
-
-        currentOutputURL = outputURL
 
         // Configure video orientation
         if let connection = movieOutput.connection(with: .video) {
@@ -168,7 +175,8 @@ extension VideoCaptureService: AVCaptureFileOutputRecordingDelegate {
                 self.onRecordingFinished?(outputFileURL)
             }
 
-            self.currentOutputURL = nil
+            // File output has finished writing; safe to release the mic now.
+            self.onRecordingStopped?()
         }
     }
 }

@@ -27,6 +27,7 @@ final class FakeEncryptionScheme: EncryptionScheme {
         try plain.write(to: targetFile)
     }
     
+    // periphery:ignore
     func encrypt(plain: Data, keyBytes: Data) async throws -> Data {
         return plain // Return plain data for testing
     }

@@ -152,10 +152,7 @@ struct PoisonPillSetupWizardView: View {
                         }
                     }
                 },
-                isPinLengthValid: viewModel.isPinLengthValid,
-                onCancel: {
-                    handleCancel()
-                }
+                isPinLengthValid: viewModel.isPinLengthValid
             )
             .transition(.asymmetric(
                 insertion: .move(edge: .trailing),

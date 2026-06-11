@@ -161,14 +161,6 @@ final class PhotoObfuscationViewModel: ObservableObject {
         }
     }
     
-    func toggleFaceSelection(_ index: Int) {
-        guard index >= 0 && index < detectedFaces.count else {
-            Logger.storage.error("ERROR: Invalid face index: \(index), valid range: 0..<\(detectedFaces.count)")
-            return
-        }
-        detectedFaces[index].isSelected.toggle()
-    }
-    
     func applyFaceObscuring() {
         guard let imageToProcess = currentImage else { return }
 
@@ -416,27 +408,6 @@ extension PhotoObfuscationViewModel {
         detectedFaces[idx].isSelected.toggle()
     }
 
-    // Create a new box (larger size for easy finger resizing) centered at the tapped image point
-    func createBox(at displayPoint: CGPoint) {
-        guard let img = currentImage else { return }
-        let imagePoint = DetectedFace.imagePoint(fromDisplay: displayPoint,
-                                                 originalSize: img.size,
-                                                 displaySize: imageFrameSize)
-        let size: CGFloat = 900
-        let rect = CGRect(x: imagePoint.x - size/2, y: imagePoint.y - size/2, width: size, height: size)
-        let clamped = clamp(rect, in: img.size)
-        detectedFaces.append(DetectedFace(bounds: clamped, isSelected: true, isUserCreated: true))
-    }
-
-    // Drag move in image-space delta
-    func moveFace(id: UUID, by deltaImage: CGSize) {
-        guard let img = currentImage, let idx = detectedFaces.firstIndex(where: { $0.id == id }) else { return }
-        var r = detectedFaces[idx].bounds
-        r.origin.x += deltaImage.width
-        r.origin.y += deltaImage.height
-        detectedFaces[idx].bounds = clamp(r, in: img.size)
-    }
-
     // Set absolute position for smooth dragging
     func setFacePosition(id: UUID, to newBounds: CGRect) {
         guard let img = currentImage, let idx = detectedFaces.firstIndex(where: { $0.id == id }) else { return }
@@ -447,26 +418,6 @@ extension PhotoObfuscationViewModel {
     func setFaceSize(id: UUID, to newBounds: CGRect) {
         guard let img = currentImage, let idx = detectedFaces.firstIndex(where: { $0.id == id }) else { return }
         detectedFaces[idx].bounds = clamp(newBounds, in: img.size)
-    }
-
-
-    // Pinch resize around the face center; `scale` is the gesture's instantaneous factor
-    func resizeFace(id: UUID, scale: CGFloat) {
-        guard let img = currentImage, let idx = detectedFaces.firstIndex(where: { $0.id == id }) else { return }
-        let r = detectedFaces[idx].bounds
-        let center = CGPoint(x: r.midX, y: r.midY)
-
-        var newW = max(12, r.width * scale)
-        var newH = max(12, r.height * scale)
-
-        // Convert back to a rect centered at original center
-        var newRect = CGRect(x: center.x - newW/2, y: center.y - newH/2, width: newW, height: newH)
-        newRect = clamp(newRect, in: img.size)
-
-        // If clamped shrank asymmetrically, keep min size
-        newW = max(12, newRect.width)
-        newH = max(12, newRect.height)
-        detectedFaces[idx].bounds = CGRect(x: newRect.origin.x, y: newRect.origin.y, width: newW, height: newH)
     }
 
     // MARK: - Helpers

@@ -20,10 +20,12 @@ final class FakeVideoEncryptionService: VideoEncryptionServiceProtocol {
     private(set) var decryptForSharingCalled = false
     private(set) var encryptForDecoyCalled = false
 
+    // periphery:ignore
     func encryptVideo(inputURL: URL, outputURL: URL, encryptionKey: SymmetricKey) -> (progress: AnyPublisher<Double, Never>, completion: (Result<URL, Error>) -> Void) {
         (Empty<Double, Never>().eraseToAnyPublisher(), { _ in })
     }
 
+    // periphery:ignore
     func decryptVideo(inputURL: URL, outputURL: URL, encryptionKey: SymmetricKey) -> (progress: AnyPublisher<Double, Never>, completion: (Result<URL, Error>) -> Void) {
         (Empty<Double, Never>().eraseToAnyPublisher(), { _ in })
     }
@@ -55,5 +57,6 @@ final class FakeVideoEncryptionService: VideoEncryptionServiceProtocol {
         }
     }
 
+    // periphery:ignore
     func validateSECVFile(fileURL: URL) -> Bool { true }
 }

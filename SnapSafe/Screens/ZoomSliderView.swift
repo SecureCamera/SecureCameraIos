@@ -241,10 +241,6 @@ struct ZoomSliderView: View {
         }
     }
 
-    func keepVisible() {
-        cancelHideTimer()
-    }
-
     private func cancelHideTimer() {
         hideTimer?.invalidate()
         hideTimer = nil

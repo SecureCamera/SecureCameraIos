@@ -11,13 +11,11 @@ import SwiftUI
 @available(iOS 18.0, *)
 struct CameraCaptureIntent: AppIntent {
     static let title: LocalizedStringResource = "Open Camera"
+    // periphery:ignore
     static let description = IntentDescription("Opens SnapSafe camera to capture photos securely")
 
     // Make this intent available for Action Button and Control Center
     static let openAppWhenRun: Bool = true
-
-    // Add icon for the intent
-    static let systemImageName: String = "camera"
 
     func perform() async throws -> some IntentResult {
         // Post a notification to open the camera

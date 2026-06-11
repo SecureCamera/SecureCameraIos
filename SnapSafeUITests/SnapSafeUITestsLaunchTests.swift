@@ -13,6 +13,18 @@ final class SnapSafeUITestsLaunchTests: XCTestCase {
         true
     }
 
+    private static var savedAppearance: XCUIDevice.Appearance = .light
+
+    override class func setUp() {
+        super.setUp()
+        savedAppearance = XCUIDevice.shared.appearance
+    }
+
+    override class func tearDown() {
+        XCUIDevice.shared.appearance = savedAppearance
+        super.tearDown()
+    }
+
     override func setUpWithError() throws {
         continueAfterFailure = false
     }

@@ -158,7 +158,7 @@ class VideoExportValidator {
     }
 }
 
-// Helper function to get current memory usage
+// periphery:ignore
 private func getMemoryUsage() -> Int64 {
     var taskInfo = task_vm_info_data_t()
     var count = mach_msg_type_number_t(MemoryLayout<task_vm_info>.size) / 4

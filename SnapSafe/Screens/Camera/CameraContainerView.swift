@@ -20,7 +20,12 @@ struct CameraContainerView: View {
     @State private var isPinching = false
     @State private var shutterFeedbackTrigger = 0
     @State private var zoomResetTrigger = 0
+    @State private var focusExclusionRects: [CGRect] = []
     @StateObject private var orientation = OrientationObserver()
+
+    /// Shared coordinate space spanning the full-screen preview, used to report
+    /// overlaid-control frames to the focus gesture as exclusion zones.
+    private static let cameraSpaceName = "cameraFocusSpace"
 
     var body: some View {
         // The camera UI is locked to portrait. The preview is full-bleed and the
@@ -32,7 +37,7 @@ struct CameraContainerView: View {
         // still rotate in place (iOS Camera style); capture orientation is
         // handled independently by the capture pipeline.
         ZStack {
-            CameraView(cameraModel: cameraModel, onPinchStarted: {
+            CameraView(cameraModel: cameraModel, focusExclusionRects: focusExclusionRects, onPinchStarted: {
                 isPinching = true
                 withAnimation { showZoomSlider = true }
             }, onPinchChanged: {
@@ -67,6 +72,10 @@ struct CameraContainerView: View {
                 .environment(\.colorScheme, .dark)
         }
         .ignoresSafeArea()
+        .coordinateSpace(.named(Self.cameraSpaceName))
+        .onPreferenceChange(FocusExclusionPreferenceKey.self) { rects in
+            focusExclusionRects = rects
+        }
         .animation(.easeInOut(duration: 0.1), value: isShutterAnimating)
         .supportedOrientations(.portrait)
         .onAppear {
@@ -88,6 +97,22 @@ struct CameraContainerView: View {
         return EdgeInsets(top: i.top, leading: i.left, bottom: i.bottom, trailing: i.right)
     }
 
+    /// A transparent reporter to drop in a control's `.background`. It measures
+    /// the control's frame in the shared camera coordinate space (optionally
+    /// expanded by `expand` for a more liberal margin) and publishes it as a
+    /// focus-exclusion zone, so tap-to-focus won't fire on that control.
+    private func focusExclusionReporter(expand: CGFloat = 0, active: Bool = true) -> some View {
+        GeometryReader { proxy in
+            Color.clear
+                .preference(
+                    key: FocusExclusionPreferenceKey.self,
+                    value: active
+                        ? [proxy.frame(in: .named(Self.cameraSpaceName)).insetBy(dx: -expand, dy: -expand)]
+                        : []
+                )
+        }
+    }
+
     // MARK: - Controls overlay (top bar + zoom + mode picker)
 
     private var controlsColumn: some View {
@@ -102,6 +127,11 @@ struct CameraContainerView: View {
                 Spacer()
                 flashButton
             }
+            // Carve this control bar out of the tap-to-focus area so the focus
+            // gesture on the preview beneath doesn't swallow the buttons' taps
+            // (the capture-area container can span the full width on large
+            // screens, putting these controls inside it).
+            .background(focusExclusionReporter(expand: 8))
 
             Spacer(minLength: 0)
 
@@ -115,6 +145,7 @@ struct CameraContainerView: View {
 
             // Photo / video toggle
             modePicker
+                .background(focusExclusionReporter(expand: 20))
                 .padding(.bottom, 12)
 
             // Capture bar (gallery / shutter / settings)
@@ -126,6 +157,9 @@ struct CameraContainerView: View {
                 settingsButton
             }
             .frame(maxWidth: 420)
+            // Same focus-exclusion treatment as the top bar so these taps reach
+            // the buttons instead of the focus gesture underneath.
+            .background(focusExclusionReporter(expand: 8))
         }
         .padding(.horizontal, 16)
         .padding(.top, stableSafeInsets.top + 8)
@@ -196,6 +230,11 @@ struct CameraContainerView: View {
         .opacity(cameraModel.zoomFactor != 1.0 ? 1.0 : 0.0)
         .animation(.easeInOut, value: cameraModel.zoomFactor)
         .rotationEffect(Utils.getRotationAngle())
+        // Enlarge the tap target well beyond the visible capsule so a tap
+        // "mostly on" it still counts, and make that whole area tappable.
+        .padding(.horizontal, 24)
+        .padding(.vertical, 7)
+        .contentShape(Rectangle())
         .gesture(
             TapGesture(count: 2)
                 .onEnded { _ in
@@ -210,6 +249,10 @@ struct CameraContainerView: View {
                         }
                 )
         )
+        // The capsule is invisible at 1.0x — don't let it silently swallow taps,
+        // and don't carve a focus-exclusion hole there.
+        .allowsHitTesting(cameraModel.zoomFactor != 1.0)
+        .background(focusExclusionReporter(active: cameraModel.zoomFactor != 1.0))
         .accessibilityLabel(String(format: "Zoom: %.1f×", cameraModel.zoomFactor))
         .accessibilityHint("Double-tap to reset zoom. Single-tap to open slider.")
         .accessibilityAddTraits(.isButton)
@@ -378,6 +421,17 @@ struct CameraContainerView: View {
 #Preview {
     CameraContainerView()
         .environmentObject(AppNavigationState())
+}
+
+// MARK: - Focus exclusion
+
+/// Collects the frames of overlaid controls (mode toggle, zoom capsule) that
+/// should suppress tap-to-focus on the preview beneath them.
+private struct FocusExclusionPreferenceKey: PreferenceKey {
+    static let defaultValue: [CGRect] = []
+    static func reduce(value: inout [CGRect], nextValue: () -> [CGRect]) {
+        value.append(contentsOf: nextValue())
+    }
 }
 
 // MARK: - Liquid Glass control background
