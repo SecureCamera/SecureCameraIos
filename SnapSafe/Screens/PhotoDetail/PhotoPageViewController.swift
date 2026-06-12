@@ -17,6 +17,12 @@ struct PhotoPageViewController: UIViewControllerRepresentable {
     let allMedia: [GalleryMediaItem]
     @Binding var currentIndex: Int
     @Binding var isZoomed: Bool
+    /// Shared chrome state injected into hosted pages so they can fade their
+    /// controls during a dismiss drag.
+    let chromeState: PagerChromeState
+    /// True while a dismiss drag is engaged; horizontal paging is disabled so
+    /// the pager can't start a page transition mid-dismiss.
+    let isDismissDragging: Bool
     /// Invoked when a video page deletes its video, so the detail view can pop.
     let onRequestDismiss: () -> Void
     /// Invoked by inline video pages when their glass controls show/hide, so
@@ -28,12 +34,16 @@ struct PhotoPageViewController: UIViewControllerRepresentable {
         allMedia: [GalleryMediaItem],
         currentIndex: Binding<Int>,
         isZoomed: Binding<Bool>,
+        chromeState: PagerChromeState,
+        isDismissDragging: Bool,
         onRequestDismiss: @escaping () -> Void,
         onVideoControlsVisibilityChange: @escaping (Bool) -> Void = { _ in }
     ) {
         self.allMedia = allMedia
         self._currentIndex = currentIndex
         self._isZoomed = isZoomed
+        self.chromeState = chromeState
+        self.isDismissDragging = isDismissDragging
         self.onRequestDismiss = onRequestDismiss
         self.onVideoControlsVisibilityChange = onVideoControlsVisibilityChange
     }
@@ -70,6 +80,7 @@ struct PhotoPageViewController: UIViewControllerRepresentable {
         context.coordinator.allMedia = allMedia
         context.coordinator.currentIndexBinding = _currentIndex
         context.coordinator.isZoomedBinding = _isZoomed
+        context.coordinator.isDismissDragging = isDismissDragging
         context.coordinator.onRequestDismiss = onRequestDismiss
         context.coordinator.onVideoControlsVisibilityChange = onVideoControlsVisibilityChange
         context.coordinator.updatePagingEnabled()
@@ -80,6 +91,7 @@ struct PhotoPageViewController: UIViewControllerRepresentable {
             allMedia: allMedia,
             currentIndexBinding: _currentIndex,
             isZoomedBinding: _isZoomed,
+            chromeState: chromeState,
             onRequestDismiss: onRequestDismiss,
             onVideoControlsVisibilityChange: onVideoControlsVisibilityChange
         )
@@ -90,6 +102,8 @@ struct PhotoPageViewController: UIViewControllerRepresentable {
         var allMedia: [GalleryMediaItem]
         var currentIndexBinding: Binding<Int>
         var isZoomedBinding: Binding<Bool>
+        var isDismissDragging = false
+        let chromeState: PagerChromeState
         var onRequestDismiss: () -> Void
         var onVideoControlsVisibilityChange: (Bool) -> Void
         weak var pageScrollView: UIScrollView?
@@ -99,12 +113,14 @@ struct PhotoPageViewController: UIViewControllerRepresentable {
             allMedia: [GalleryMediaItem],
             currentIndexBinding: Binding<Int>,
             isZoomedBinding: Binding<Bool>,
+            chromeState: PagerChromeState,
             onRequestDismiss: @escaping () -> Void,
             onVideoControlsVisibilityChange: @escaping (Bool) -> Void
         ) {
             self.allMedia = allMedia
             self.currentIndexBinding = currentIndexBinding
             self.isZoomedBinding = isZoomedBinding
+            self.chromeState = chromeState
             self.onRequestDismiss = onRequestDismiss
             self.onVideoControlsVisibilityChange = onVideoControlsVisibilityChange
         }
@@ -128,6 +144,7 @@ struct PhotoPageViewController: UIViewControllerRepresentable {
                 let hostingVC = InlineVideoHostingController(
                     videoDef: videoDef,
                     encryptionKey: item.encryptionKey,
+                    chromeState: chromeState,
                     onRequestDismiss: onRequestDismiss,
                     onControlsVisibilityChange: { [weak self] visible in
                         self?.onVideoControlsVisibilityChange(visible)
@@ -148,7 +165,7 @@ struct PhotoPageViewController: UIViewControllerRepresentable {
 
         // MARK: - Paging Control
         func updatePagingEnabled() {
-            pageScrollView?.isScrollEnabled = !isZoomedBinding.wrappedValue
+            pageScrollView?.isScrollEnabled = !isZoomedBinding.wrappedValue && !isDismissDragging
         }
 
         // MARK: - UIPageViewControllerDataSource
@@ -221,6 +238,7 @@ class InlineVideoHostingController: UIHostingController<AnyView> {
     init(
         videoDef: VideoDef,
         encryptionKey: SymmetricKey?,
+        chromeState: PagerChromeState,
         onRequestDismiss: @escaping () -> Void,
         onControlsVisibilityChange: @escaping (Bool) -> Void
     ) {
@@ -230,7 +248,7 @@ class InlineVideoHostingController: UIHostingController<AnyView> {
             onRequestDismiss: onRequestDismiss,
             onControlsVisibilityChange: onControlsVisibilityChange
         )
-        super.init(rootView: AnyView(view))
+        super.init(rootView: AnyView(view.environment(chromeState)))
     }
 
     @MainActor required dynamic init?(coder aDecoder: NSCoder) {

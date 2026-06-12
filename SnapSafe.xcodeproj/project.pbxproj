@@ -150,6 +150,7 @@
 		A9F4250E2E94D1840028EB13 /* ZoomableScrollView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9F4250D2E94D17B0028EB13 /* ZoomableScrollView.swift */; };
 		A9F425112E95CAB90028EB13 /* DismissPanGestureHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9F4250F2E95CAB90028EB13 /* DismissPanGestureHandler.swift */; };
 		A9F425122E95CAB90028EB13 /* PhotoPageViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9F425102E95CAB90028EB13 /* PhotoPageViewController.swift */; };
+		A9F425132E95CAB90028EB13 /* PagerChromeState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9F425132E95CAB80028EB13 /* PagerChromeState.swift */; };
 		A9F9DD4A2EA07209003FC66E /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9F9DD492EA07209003FC66E /* AppDelegate.swift */; };
 		A9F9DD4E2EA0735A003FC66E /* OrientationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9F9DD4D2EA0735A003FC66E /* OrientationManager.swift */; };
 		A9F9DDA42EA1C980003FC66E /* CameraCaptureIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9F9DDA32EA1C980003FC66E /* CameraCaptureIntent.swift */; };
@@ -319,6 +320,7 @@
 		A9F4250D2E94D17B0028EB13 /* ZoomableScrollView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoomableScrollView.swift; sourceTree = "<group>"; };
 		A9F4250F2E95CAB90028EB13 /* DismissPanGestureHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DismissPanGestureHandler.swift; sourceTree = "<group>"; };
 		A9F425102E95CAB90028EB13 /* PhotoPageViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoPageViewController.swift; sourceTree = "<group>"; };
+		A9F425132E95CAB80028EB13 /* PagerChromeState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PagerChromeState.swift; sourceTree = "<group>"; };
 		A9F9DD492EA07209003FC66E /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		A9F9DD4D2EA0735A003FC66E /* OrientationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrientationManager.swift; sourceTree = "<group>"; };
 		A9F9DDA32EA1C980003FC66E /* CameraCaptureIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraCaptureIntent.swift; sourceTree = "<group>"; };
@@ -692,6 +694,7 @@
 				A91DBC372DE58191001F42ED /* EnhancedPhotoDetailView.swift */,
 				A9F4250F2E95CAB90028EB13 /* DismissPanGestureHandler.swift */,
 				A9F425102E95CAB90028EB13 /* PhotoPageViewController.swift */,
+				A9F425132E95CAB80028EB13 /* PagerChromeState.swift */,
 				A9F4250D2E94D17B0028EB13 /* ZoomableScrollView.swift */,
 				663C7E2C2E70F2E900967B9E /* EnhancedPhotoDetailViewModel.swift */,
 				A91DBC382DE58191001F42ED /* ImageInfoView.swift */,
@@ -968,6 +971,7 @@
 				663C7E242E6FED9A00967B9E /* RemovePoisonPillIUseCase.swift in Sources */,
 				A9F425112E95CAB90028EB13 /* DismissPanGestureHandler.swift in Sources */,
 				A9F425122E95CAB90028EB13 /* PhotoPageViewController.swift in Sources */,
+				A9F425132E95CAB90028EB13 /* PagerChromeState.swift in Sources */,
 				663C7E252E6FED9A00967B9E /* InvalidateSessionUseCase.swift in Sources */,
 				663C7E262E6FED9A00967B9E /* AddDecoyPhotoUseCase.swift in Sources */,
 				663C7E272E6FED9A00967B9E /* PinStrengthCheckUseCase.swift in Sources */,
