@@ -13,15 +13,19 @@ final class SnapSafeUITestsLaunchTests: XCTestCase {
         true
     }
 
-    private static var savedAppearance: XCUIDevice.Appearance = .light
+    nonisolated(unsafe) private static var savedAppearance: XCUIDevice.Appearance = .light
 
     override class func setUp() {
         super.setUp()
-        savedAppearance = XCUIDevice.shared.appearance
+        MainActor.assumeIsolated {
+            savedAppearance = XCUIDevice.shared.appearance
+        }
     }
 
     override class func tearDown() {
-        XCUIDevice.shared.appearance = savedAppearance
+        MainActor.assumeIsolated {
+            XCUIDevice.shared.appearance = savedAppearance
+        }
         super.tearDown()
     }
 

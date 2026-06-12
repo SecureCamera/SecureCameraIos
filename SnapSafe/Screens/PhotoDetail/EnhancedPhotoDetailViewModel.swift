@@ -70,6 +70,27 @@ class EnhancedPhotoDetailViewModel: ObservableObject {
 
     @Published internal var isZoomed: Bool = false
 
+    /// Per-gesture intent for the dismiss drag. Latched on the FIRST movement
+    /// of each gesture and never re-evaluated mid-gesture: a per-update
+    /// direction check made the image freeze ("catch") whenever the finger's
+    /// cumulative translation turned more horizontal than vertical.
+    enum DismissDragMode {
+        /// No gesture in flight (or gesture ended).
+        case undecided
+        /// First movement was vertical → this gesture dismisses; the offset
+        /// follows the finger on both axes until it ends.
+        case dismissing
+        /// First movement was horizontal → this gesture belongs to the pager;
+        /// ignore it entirely until it ends.
+        case rejected
+    }
+
+    @Published private(set) var dragMode: DismissDragMode = .undecided
+
+    /// True while a dismiss drag is engaged; drives chrome fade-out and
+    /// disables the pager's horizontal scroll.
+    var isDismissDragging: Bool { dragMode == .dismissing }
+
     // Policy helpers (clear/consistent call sites + unit-testable)
     @inlinable internal func mayDismissByDrag() -> Bool { !isZoomed }
 
@@ -91,6 +112,7 @@ class EnhancedPhotoDetailViewModel: ObservableObject {
 
     var overlayOpacity: Double {
         if isZoomed { return 0.0 }
+        if isDismissDragging { return 0.0 }
         if !isCounterVisible { return 0.0 }
         if currentIsVideo && !isVideoControlsVisible { return 0.0 }
         return 1.0 - dismissProgress
@@ -140,6 +162,7 @@ class EnhancedPhotoDetailViewModel: ObservableObject {
             dragOffset = .zero
             dismissProgress = 0
         }
+        dragMode = .undecided
 
         // Re-show the counter for the newly visible item, then fade it again.
         showCounterThenAutoHide()
@@ -172,19 +195,32 @@ class EnhancedPhotoDetailViewModel: ObservableObject {
 
     // MARK: - Gesture Handling
 
-    func handleDragChanged(_ value: DragGesture.Value, geometryHeight: CGFloat) {
-        guard abs(value.translation.height) > abs(value.translation.width) else { return }
-        dragOffset = CGSize(width: 0, height: value.translation.height)
-        dismissProgress = min(value.translation.height / (geometryHeight * 0.4), 1.0)
+    func handleDragChanged(translation: CGSize, geometryHeight: CGFloat) {
+        if dragMode == .undecided {
+            dragMode = abs(translation.height) > abs(translation.width)
+                ? .dismissing
+                : .rejected
+        }
+        guard dragMode == .dismissing else { return }
+
+        dragOffset = translation
+        dismissProgress = min(max(translation.height / (geometryHeight * 0.4), 0), 1)
     }
 
-    func handleDragEnded(_ value: DragGesture.Value, geometryHeight: CGFloat, dismiss: @escaping () -> Void) {
-        guard abs(value.translation.height) > abs(value.translation.width) else { return }
+    func handleDragEnded(
+        translation: CGSize,
+        verticalVelocity: CGFloat,
+        geometryHeight: CGFloat,
+        dismiss: @escaping () -> Void
+    ) {
+        let wasDismissing = dragMode == .dismissing
+        dragMode = .undecided
+        guard wasDismissing else { return }
 
         let dismissThreshold = geometryHeight * 0.25
-        let isQuickDownSwipe = value.velocity.height > 2000
+        let isQuickDownSwipe = verticalVelocity > 2000
 
-        if value.translation.height > dismissThreshold || isQuickDownSwipe {
+        if translation.height > dismissThreshold || isQuickDownSwipe {
             withAnimation(.easeOut(duration: 0.3)) {
                 dragOffset = CGSize(width: 0, height: geometryHeight)
                 dismissProgress = 1
