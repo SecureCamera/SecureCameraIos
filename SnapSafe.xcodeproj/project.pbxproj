@@ -66,6 +66,7 @@
 		C0FFEE0000000000000000B2 /* CameraZoomMappingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0FFEE0000000000000000B1 /* CameraZoomMappingTests.swift */; };
 		C0FFEE0000000000000000D2 /* CameraPreviewLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0FFEE0000000000000000D1 /* CameraPreviewLayout.swift */; };
 		C0FFEE0000000000000000E2 /* CameraPreviewLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0FFEE0000000000000000E1 /* CameraPreviewLayoutTests.swift */; };
+		C0FFEE0000000000000000F2 /* EnhancedPhotoDetailViewModelDragTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0FFEE0000000000000000F1 /* EnhancedPhotoDetailViewModelDragTests.swift */; };
 		6660FC6B2E8529F900C0B617 /* CameraFocusService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6660FC622E8529F900C0B617 /* CameraFocusService.swift */; };
 		6660FC6D2E8BB2F800C0B617 /* ShardedKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6660FC6C2E8BB2F800C0B617 /* ShardedKey.swift */; };
 		6660FC6F2E8BB41600C0B617 /* ShardedKeyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6660FC6E2E8BB41600C0B617 /* ShardedKeyTests.swift */; };
@@ -242,6 +243,7 @@
 		C0FFEE0000000000000000B1 /* CameraZoomMappingTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CameraZoomMappingTests.swift; sourceTree = "<group>"; };
 		C0FFEE0000000000000000D1 /* CameraPreviewLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPreviewLayout.swift; sourceTree = "<group>"; };
 		C0FFEE0000000000000000E1 /* CameraPreviewLayoutTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CameraPreviewLayoutTests.swift; sourceTree = "<group>"; };
+		C0FFEE0000000000000000F1 /* EnhancedPhotoDetailViewModelDragTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EnhancedPhotoDetailViewModelDragTests.swift; sourceTree = "<group>"; };
 		6660FC652E8529F900C0B617 /* PhotoCaptureService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoCaptureService.swift; sourceTree = "<group>"; };
 		6660FC6C2E8BB2F800C0B617 /* ShardedKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShardedKey.swift; sourceTree = "<group>"; };
 		6660FC6E2E8BB41600C0B617 /* ShardedKeyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShardedKeyTests.swift; sourceTree = "<group>"; };
@@ -763,6 +765,7 @@
 				6697512F2E69789A0059C5F3 /* TestUtils.swift */,
 				C0FFEE0000000000000000B1 /* CameraZoomMappingTests.swift */,
 				C0FFEE0000000000000000E1 /* CameraPreviewLayoutTests.swift */,
+				C0FFEE0000000000000000F1 /* EnhancedPhotoDetailViewModelDragTests.swift */,
 				66A404D02E67F39F0054FFE7 /* PinCryptoTests.swift */,
 				66A404D62E694A450054FFE7 /* PinRepositoryTest.swift */,
 				ADA2FF82666960557F17548E /* SecureImageRepositoryTests.swift */,
@@ -1094,6 +1097,7 @@
 				F5928EF067F8CDFB35D572D3 /* FakeThumbnailCache.swift in Sources */,
 				C0FFEE0000000000000000B2 /* CameraZoomMappingTests.swift in Sources */,
 				C0FFEE0000000000000000E2 /* CameraPreviewLayoutTests.swift in Sources */,
+				C0FFEE0000000000000000F2 /* EnhancedPhotoDetailViewModelDragTests.swift in Sources */,
 				68109942731A0033DBA31CA8 /* PoisonPillVideoDeletionTests.swift in Sources */,
 				71A1063EE417231D3E6A771B /* SECVFileFormatTests.swift in Sources */,
 				78BAE12E96629EA55F066179 /* SecureImageRepositoryTests.swift in Sources */,
