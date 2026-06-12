@@ -144,6 +144,7 @@ struct PhotoPageViewController: UIViewControllerRepresentable {
                 let hostingVC = InlineVideoHostingController(
                     videoDef: videoDef,
                     encryptionKey: item.encryptionKey,
+                    isZoomed: isZoomedBinding,
                     chromeState: chromeState,
                     onRequestDismiss: onRequestDismiss,
                     onControlsVisibilityChange: { [weak self] visible in
@@ -238,6 +239,7 @@ class InlineVideoHostingController: UIHostingController<AnyView> {
     init(
         videoDef: VideoDef,
         encryptionKey: SymmetricKey?,
+        isZoomed: Binding<Bool>,
         chromeState: PagerChromeState,
         onRequestDismiss: @escaping () -> Void,
         onControlsVisibilityChange: @escaping (Bool) -> Void
@@ -245,6 +247,7 @@ class InlineVideoHostingController: UIHostingController<AnyView> {
         let view = InlineVideoPlayerView(
             videoDef: videoDef,
             encryptionKey: encryptionKey,
+            isZoomed: isZoomed,
             onRequestDismiss: onRequestDismiss,
             onControlsVisibilityChange: onControlsVisibilityChange
         )

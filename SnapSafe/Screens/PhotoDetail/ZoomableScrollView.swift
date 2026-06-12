@@ -14,6 +14,10 @@ struct ZoomableScrollView<Content: View>: UIViewRepresentable {
     private let minZoom: CGFloat
     private let maxZoom: CGFloat
     private let showsIndicators: Bool
+    /// Optional single-tap callback. When set, a tap recognizer is installed
+    /// that waits for the double-tap (zoom) recognizer to fail, so a double
+    /// tap never also fires the single-tap action.
+    private let onSingleTap: (() -> Void)?
     private let content: Content
 
     // MARK: – Zoom surfaced to SwiftUI
@@ -25,12 +29,14 @@ struct ZoomableScrollView<Content: View>: UIViewRepresentable {
         maxZoom: CGFloat = 4.0,
         showsIndicators: Bool = false,
         isZoomed: Binding<Bool>,
+        onSingleTap: (() -> Void)? = nil,
         @ViewBuilder content: () -> Content
     ) {
         self.minZoom = minZoom
         self.maxZoom = maxZoom
         self.showsIndicators = showsIndicators
         self._isZoomed = isZoomed
+        self.onSingleTap = onSingleTap
         self.content = content()
     }
 
@@ -85,10 +91,22 @@ struct ZoomableScrollView<Content: View>: UIViewRepresentable {
         doubleTap.numberOfTapsRequired = 2
         scrollView.addGestureRecognizer(doubleTap)
 
+        context.coordinator.onSingleTap = onSingleTap
+        if onSingleTap != nil {
+            let singleTap = UITapGestureRecognizer(
+                target: context.coordinator,
+                action: #selector(Coordinator.handleSingleTap(_:))
+            )
+            singleTap.numberOfTapsRequired = 1
+            singleTap.require(toFail: doubleTap)
+            scrollView.addGestureRecognizer(singleTap)
+        }
+
         return scrollView
     }
 
     func updateUIView(_ uiView: UIScrollView, context: Context) {
+        context.coordinator.onSingleTap = onSingleTap
         context.coordinator.hostingController.rootView = content
 
         let atMin = abs(uiView.zoomScale - uiView.minimumZoomScale) < 0.01
@@ -116,6 +134,7 @@ struct ZoomableScrollView<Content: View>: UIViewRepresentable {
         private var isZoomedBinding: Binding<Bool>
         private var isZooming: Bool = false
         var lastBoundsSize: CGSize = .zero
+        var onSingleTap: (() -> Void)?
 
         internal init(isZoomed: Binding<Bool>, content: Content) {
             self.hostingController = UIHostingController(rootView: content)
@@ -160,6 +179,11 @@ struct ZoomableScrollView<Content: View>: UIViewRepresentable {
             if !isZooming {
                 centerContentIfNeeded(scrollView)
             }
+        }
+
+        // MARK: – Single Tap
+        @objc internal func handleSingleTap(_ gesture: UITapGestureRecognizer) {
+            onSingleTap?()
         }
 
         // MARK: – Double Tap Zoom

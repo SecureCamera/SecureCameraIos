@@ -18,6 +18,9 @@ struct InlineVideoPlayerView: View {
     /// Reports glass-control visibility so the page-level photo counter chip
     /// can fade in/out alongside the video transport.
     var onControlsVisibilityChange: ((Bool) -> Void)? = nil
+    /// Shared with the pager: true while the video is pinch-zoomed, which
+    /// disables paging and the dismiss drag (same contract as photo pages).
+    @Binding internal var isZoomed: Bool
 
     /// Pager-level chrome state; nil outside the pager (e.g. previews).
     @Environment(PagerChromeState.self) private var chrome: PagerChromeState?
@@ -31,9 +34,11 @@ struct InlineVideoPlayerView: View {
     init(
         videoDef: VideoDef,
         encryptionKey: SymmetricKey?,
+        isZoomed: Binding<Bool> = .constant(false),
         onRequestDismiss: @escaping () -> Void,
         onControlsVisibilityChange: ((Bool) -> Void)? = nil
     ) {
+        self._isZoomed = isZoomed
         self.onRequestDismiss = onRequestDismiss
         self.onControlsVisibilityChange = onControlsVisibilityChange
         _viewModel = StateObject(wrappedValue: VideoPlayerViewModel(videoDef: videoDef, encryptionKey: encryptionKey))
@@ -50,7 +55,18 @@ struct InlineVideoPlayerView: View {
                 ZStack {
                     Group {
                         if let player = viewModel.player {
-                            VideoSurfaceView(player: player)
+                            ZoomableScrollView(
+                                minZoom: 1.0,
+                                maxZoom: 6.0,
+                                isZoomed: $isZoomed,
+                                onSingleTap: {
+                                    withAnimation(.easeInOut(duration: 0.2)) {
+                                        viewModel.toggleControls()
+                                    }
+                                }
+                            ) {
+                                VideoSurfaceView(player: player)
+                            }
                         } else if viewModel.isLoading {
                             ProgressView()
                                 .progressViewStyle(CircularProgressViewStyle(tint: .white))
@@ -88,12 +104,6 @@ struct InlineVideoPlayerView: View {
                     }
                 }
                 .ignoresSafeArea(edges: .top)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        viewModel.toggleControls()
-                    }
-                }
 
                 // Action bar — sits BELOW the video area, never overlapping it.
                 if viewModel.showControls && !isChromeSuppressed {
