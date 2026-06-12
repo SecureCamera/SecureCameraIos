@@ -71,6 +71,14 @@ Upload to TestFlight
 
 Build and upload to App Store Connect
 
+### ios screenshots
+
+```sh
+[bundle exec] fastlane ios screenshots
+```
+
+Generate App Store screenshots using Fastlane Snapshot
+
 ### ios periphery
 
 ```sh

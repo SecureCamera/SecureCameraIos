@@ -131,6 +131,14 @@ platform :ios do
     )
   end
 
+  desc "Generate App Store screenshots using Fastlane Snapshot"
+  lane :screenshots do
+    capture_ios_screenshots(
+      workspace: "SnapSafe.xcworkspace",
+      scheme: "SnapSafe"
+    )
+  end
+
   desc "Run Periphery static analysis to detect unused Swift code"
   lane :periphery do
     sh(
