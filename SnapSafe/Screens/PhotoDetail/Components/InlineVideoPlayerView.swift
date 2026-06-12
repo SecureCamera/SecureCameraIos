@@ -106,7 +106,10 @@ struct InlineVideoPlayerView: View {
                 .ignoresSafeArea(edges: .top)
 
                 // Action bar — sits BELOW the video area, never overlapping it.
-                if viewModel.showControls && !isChromeSuppressed {
+                // Use opacity (not conditional rendering) for the dismiss-drag
+                // fade so the VStack doesn't reflow mid-drag; reflow would race
+                // the offset update and make the video frame shake.
+                if viewModel.showControls {
                     VideoDetailToolbar(
                         onShare: { viewModel.share() },
                         onDelete: { showDeleteConfirmation = true },
@@ -116,6 +119,8 @@ struct InlineVideoPlayerView: View {
                         decoyButtonIcon: viewModel.decoyButtonIcon,
                         isDecoyOperationLoading: viewModel.isDecoyOperationLoading
                     )
+                    .opacity(isChromeSuppressed ? 0 : 1)
+                    .allowsHitTesting(!isChromeSuppressed)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
