@@ -19,6 +19,11 @@ struct InlineVideoPlayerView: View {
     /// can fade in/out alongside the video transport.
     var onControlsVisibilityChange: ((Bool) -> Void)? = nil
 
+    /// Pager-level chrome state; nil outside the pager (e.g. previews).
+    @Environment(PagerChromeState.self) private var chrome: PagerChromeState?
+
+    private var isChromeSuppressed: Bool { chrome?.isDismissDragging ?? false }
+
     @StateObject private var viewModel: VideoPlayerViewModel
     @State private var scrubFraction: Double = 0
     @State private var showDeleteConfirmation = false
@@ -62,7 +67,7 @@ struct InlineVideoPlayerView: View {
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-                    if viewModel.showControls {
+                    if viewModel.showControls && !isChromeSuppressed {
                         VStack {
                             Spacer()
                             VideoTransportBar(
@@ -91,7 +96,7 @@ struct InlineVideoPlayerView: View {
                 }
 
                 // Action bar — sits BELOW the video area, never overlapping it.
-                if viewModel.showControls {
+                if viewModel.showControls && !isChromeSuppressed {
                     VideoDetailToolbar(
                         onShare: { viewModel.share() },
                         onDelete: { showDeleteConfirmation = true },
@@ -105,6 +110,7 @@ struct InlineVideoPlayerView: View {
                 }
             }
         }
+        .animation(.easeInOut(duration: 0.2), value: isChromeSuppressed)
         .onChange(of: scrubFraction) { _, fraction in
             if viewModel.isScrubbing { viewModel.scrub(toFraction: fraction) }
         }

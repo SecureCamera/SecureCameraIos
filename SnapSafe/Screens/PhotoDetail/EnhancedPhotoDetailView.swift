@@ -75,6 +75,7 @@ internal struct PhotoCounterChip: View {
 
 struct EnhancedPhotoDetailView: View {
     @StateObject private var viewModel: EnhancedPhotoDetailViewModel
+    @State private var chromeState = PagerChromeState()
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var nav: AppNavigationState
 
@@ -107,6 +108,8 @@ struct EnhancedPhotoDetailView: View {
                     allMedia: viewModel.allMedia,
                     currentIndex: $viewModel.currentIndex,
                     isZoomed: $viewModel.isZoomed,
+                    chromeState: chromeState,
+                    isDismissDragging: viewModel.isDismissDragging,
                     onRequestDismiss: { dismiss() },
                     onVideoControlsVisibilityChange: { visible in
                         withAnimation(.easeInOut(duration: 0.2)) {
@@ -160,6 +163,9 @@ struct EnhancedPhotoDetailView: View {
                         )
                     }
                 }
+                .opacity(viewModel.isDismissDragging ? 0 : 1)
+                .allowsHitTesting(!viewModel.isDismissDragging)
+                .animation(.easeInOut(duration: 0.2), value: viewModel.isDismissDragging)
 
                 // Counter overlay
                 VStack {
@@ -189,6 +195,9 @@ struct EnhancedPhotoDetailView: View {
                         ) { dismiss() }
                     }
             )
+            .onChange(of: viewModel.isDismissDragging) { _, dragging in
+                chromeState.isDismissDragging = dragging
+            }
         }
         .navigationBarHidden(true)
         .supportedOrientations(.allButUpsideDown)
