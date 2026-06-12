@@ -24,12 +24,15 @@ internal enum PhotoDetailLayout {
 internal struct DismissTransformModifier: ViewModifier {
     internal let isZoomed: Bool
     internal let scale: CGFloat
-    internal let verticalOffset: CGFloat
+    internal let offset: CGSize
 
     internal func body(content: Content) -> some View {
         content
             .scaleEffect(isZoomed ? 1.0 : scale)
-            .offset(y: isZoomed ? 0 : verticalOffset)
+            .offset(
+                x: isZoomed ? 0 : offset.width,
+                y: isZoomed ? 0 : offset.height
+            )
     }
 }
 
@@ -37,13 +40,13 @@ internal extension View {
     func dismissTransform(
         isZoomed: Bool,
         scale: CGFloat,
-        verticalOffset: CGFloat
+        offset: CGSize
     ) -> some View {
         modifier(
             DismissTransformModifier(
                 isZoomed: isZoomed,
                 scale: scale,
-                verticalOffset: verticalOffset
+                offset: offset
             )
         )
     }
@@ -118,7 +121,7 @@ struct EnhancedPhotoDetailView: View {
                 .dismissTransform(
                     isZoomed: viewModel.isZoomed,
                     scale: viewModel.photoScaleEffect,
-                    verticalOffset: viewModel.dragOffset.height
+                    offset: viewModel.dragOffset
                 )
                 // A tap on the media brings the counter chip back (and restarts
                 // its auto-hide). Simultaneous so it never blocks the scroll
@@ -173,14 +176,15 @@ struct EnhancedPhotoDetailView: View {
                     .onChanged { value in
                         guard viewModel.mayDismissByDrag() else { return }
                         viewModel.handleDragChanged(
-                            value,
+                            translation: value.translation,
                             geometryHeight: geometry.size.height
                         )
                     }
                     .onEnded { value in
                         guard viewModel.mayDismissByDrag() else { return }
                         viewModel.handleDragEnded(
-                            value,
+                            translation: value.translation,
+                            verticalVelocity: value.velocity.height,
                             geometryHeight: geometry.size.height
                         ) { dismiss() }
                     }
