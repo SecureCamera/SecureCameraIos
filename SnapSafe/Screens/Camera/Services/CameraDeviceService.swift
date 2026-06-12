@@ -133,11 +133,12 @@ final class CameraDeviceService: ObservableObject, @preconcurrency CameraDeviceP
                 session.addInput(input)
             }
 
-            // Add photo output
+            // Add photo output (first setup only; switchCamera re-runs setup
+            // with the output already attached)
             if session.canAddOutput(output) {
                 session.addOutput(output)
-                configurePhotoOutputForMaxQuality()
             }
+            configurePhotoOutputForMaxQuality(for: device)
 
             // Add movie output (keep both attached for smooth mode switching)
             if session.canAddOutput(movieOutput) {
@@ -250,7 +251,13 @@ final class CameraDeviceService: ObservableObject, @preconcurrency CameraDeviceP
 
     // MARK: - Private Methods
 
-    private func configurePhotoOutputForMaxQuality() {
+    private func configurePhotoOutputForMaxQuality(for device: AVCaptureDevice) {
         output.maxPhotoQualityPrioritization = .quality
+        let supported = device.activeFormat.supportedMaxPhotoDimensions
+        if let maxDimensions = supported.max(by: {
+            Int64($0.width) * Int64($0.height) < Int64($1.width) * Int64($1.height)
+        }) {
+            output.maxPhotoDimensions = maxDimensions
+        }
     }
 }

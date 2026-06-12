@@ -5,6 +5,7 @@
 //  Created by Bill Booth on 5/24/25.
 //
 @preconcurrency import AVFoundation
+import CoreMedia
 import SwiftUI
 import FactoryKit
 import Logging
@@ -37,6 +38,19 @@ class CameraViewModel: NSObject, ObservableObject {
     var session: AVCaptureSession { deviceService.session }
     var output: AVCapturePhotoOutput { deviceService.output }
     var currentDevice: AVCaptureDevice? { deviceService.currentDevice }
+
+    /// Portrait aspect (width/height) of the active capture format. The
+    /// preview container uses this so what's on screen is exactly what gets
+    /// captured. Falls back to 9:16 (.high preset) before setup completes.
+    var captureAspectRatio: CGFloat {
+        guard let format = currentDevice?.activeFormat else { return 9.0 / 16.0 }
+        let dims = CMVideoFormatDescriptionGetDimensions(format.formatDescription)
+        return CameraPreviewLayout.portraitAspectRatio(
+            formatWidth: dims.width,
+            formatHeight: dims.height
+        )
+    }
+
     var zoomFactor: CGFloat { zoomService.zoomFactor }
     var minZoom: CGFloat { zoomService.minZoom }
     var maxZoom: CGFloat { zoomService.maxZoom }
