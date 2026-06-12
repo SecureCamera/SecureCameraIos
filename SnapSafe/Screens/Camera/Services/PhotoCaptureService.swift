@@ -49,7 +49,7 @@ final class PhotoCaptureService: NSObject, ObservableObject, PhotoCapturing {
     
     func capturePhoto(flashMode: AVCaptureDevice.FlashMode, cameraPosition: AVCaptureDevice.Position, output: AVCapturePhotoOutput, preview: AVCaptureVideoPreviewLayer?, session: AVCaptureSession) {
         isSavingPhoto = true
-        let photoSettings = createAdvancedPhotoSettings()
+        let photoSettings = createAdvancedPhotoSettings(for: output)
         
         // Configure flash based on camera position
         if cameraPosition == .back {
@@ -166,9 +166,10 @@ final class PhotoCaptureService: NSObject, ObservableObject, PhotoCapturing {
     
     // MARK: - Private Methods
     
-    private func createAdvancedPhotoSettings() -> AVCapturePhotoSettings {
+    private func createAdvancedPhotoSettings(for output: AVCapturePhotoOutput) -> AVCapturePhotoSettings {
         let settings = AVCapturePhotoSettings()
         settings.photoQualityPrioritization = .quality
+        settings.maxPhotoDimensions = output.maxPhotoDimensions
         return settings
     }
     

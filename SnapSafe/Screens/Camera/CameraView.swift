@@ -167,10 +167,6 @@ struct CameraPreviewView: UIViewRepresentable {
     var onPinchChanged: (() -> Void)?
     var onPinchEnded: (() -> Void)?
 
-    // Standard photo aspect ratio is 4:3
-    // This is the ratio of most iPhone photos in portrait mode (3:4 actually, as width:height)
-    private let photoAspectRatio: CGFloat = 3.0 / 4.0 // width/height in portrait mode
-
     func makeUIView(context: Context) -> UIView {
         let holder = context.coordinator.viewHolder
 
@@ -300,23 +296,8 @@ struct CameraPreviewView: UIViewRepresentable {
         return view
     }
 
-    // Calculate the container size based on the photo aspect ratio
     private func calculatePreviewContainerSize(for size: CGSize) -> CGSize {
-        // Calculate the container size to match photo aspect ratio
-        // In portrait mode, we're comparing width:height
-        // We prioritize fitting the width to match the device's screen width
-        let width = size.width
-        let height = width / photoAspectRatio
-        
-        // If height exceeds the available space, adjust both dimensions
-        if height > size.height {
-            // Use the available height
-            let adjustedHeight = size.height
-            let adjustedWidth = adjustedHeight * photoAspectRatio
-            return CGSize(width: adjustedWidth, height: adjustedHeight)
-        } else {
-            return CGSize(width: width, height: height)
-        }
+        CameraPreviewLayout.containerSize(for: size, aspectRatio: cameraModel.captureAspectRatio)
     }
     
     func updateUIView(_ uiView: UIView, context: Context) {
