@@ -105,6 +105,13 @@ class CameraViewModel: NSObject, ObservableObject {
             self?.deviceService.detachAudioInput()
         }
 
+        // Observe device service changes (drives captureAspectRatio)
+        deviceService.objectWillChange
+            .sink { [weak self] _ in
+                self?.objectWillChange.send()
+            }
+            .store(in: &cancellables)
+
         // Observe permission changes from the service
         permissionService.objectWillChange
             .sink { [weak self] _ in

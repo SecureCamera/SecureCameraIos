@@ -253,11 +253,18 @@ final class CameraDeviceService: ObservableObject, @preconcurrency CameraDeviceP
 
     private func configurePhotoOutputForMaxQuality(for device: AVCaptureDevice) {
         output.maxPhotoQualityPrioritization = .quality
-        let supported = device.activeFormat.supportedMaxPhotoDimensions
-        if let maxDimensions = supported.max(by: {
-            Int64($0.width) * Int64($0.height) < Int64($1.width) * Int64($1.height)
-        }) {
-            output.maxPhotoDimensions = maxDimensions
+        // Allow the largest stills the active format supports instead of the
+        // session preset's video resolution — but only at the SAME aspect as
+        // the format, so captures keep matching the preview edge-for-edge.
+        let format = device.activeFormat
+        let feedDimensions = CMVideoFormatDescriptionGetDimensions(format.formatDescription)
+        let candidates = format.supportedMaxPhotoDimensions.map { (width: $0.width, height: $0.height) }
+        if let best = CameraPreviewLayout.largestDimensions(
+            matchingAspectOfWidth: feedDimensions.width,
+            height: feedDimensions.height,
+            in: candidates
+        ) {
+            output.maxPhotoDimensions = CMVideoDimensions(width: best.width, height: best.height)
         }
     }
 }

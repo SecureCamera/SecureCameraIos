@@ -51,4 +51,36 @@ final class CameraPreviewLayoutTests: XCTestCase {
         XCTAssertEqual(size.height, 500, accuracy: 1e-9)
         XCTAssertEqual(size.width, 500 * 0.5625, accuracy: 1e-9)
     }
+
+    // MARK: - largestDimensions(matchingAspectOf:)
+
+    func test_largestDimensions_prefersAspectMatch_overLargerArea() {
+        // 1920×1080 (16:9) reference: the 4:3 full-sensor entry is bigger by
+        // area but must lose to the largest 16:9 entry.
+        let best = CameraPreviewLayout.largestDimensions(
+            matchingAspectOfWidth: 1920,
+            height: 1080,
+            in: [(1920, 1080), (4032, 3024), (4032, 2268)]
+        )
+        XCTAssertEqual(best?.width, 4032)
+        XCTAssertEqual(best?.height, 2268)
+    }
+
+    func test_largestDimensions_fallsBackToLargestOverall_whenNoAspectMatch() {
+        let best = CameraPreviewLayout.largestDimensions(
+            matchingAspectOfWidth: 1920,
+            height: 1080,
+            in: [(3024, 3024), (4032, 3024)]
+        )
+        XCTAssertEqual(best?.width, 4032)
+        XCTAssertEqual(best?.height, 3024)
+    }
+
+    func test_largestDimensions_emptyCandidates_returnsNil() {
+        XCTAssertNil(CameraPreviewLayout.largestDimensions(
+            matchingAspectOfWidth: 1920,
+            height: 1080,
+            in: []
+        ))
+    }
 }
