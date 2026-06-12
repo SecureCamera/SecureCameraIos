@@ -61,10 +61,10 @@ Latch logic lives in the view model and gets unit tests (same style as
 
 ### 2. Chrome fades during the drag
 
-- New shared `ObservableObject` (`PagerChromeState`, single published flag
+- New shared `@MainActor @Observable` class (`PagerChromeState`, single flag
   `isDismissDragging`), owned by `EnhancedPhotoDetailView`, passed into
   `PhotoPageViewController` and injected into each hosted page's root view via
-  `.environmentObject`.
+  `.environment`.
 - Photo toolbar + counter chip (already outside the pager layer): opacity tied
   to the drag — fade out when the dismiss drag latches, fade back on cancel.
   Toolbar gets `allowsHitTesting(false)` while hidden.
