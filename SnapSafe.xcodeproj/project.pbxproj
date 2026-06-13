@@ -132,6 +132,7 @@
 		A95B2E312F42F1A700EE7291 /* EncryptedVideoDataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A95B2E302F42F1A700EE7291 /* EncryptedVideoDataSource.swift */; };
 		A98EBC112FDE079C00FA9CCB /* ImageProcessing.swift in Sources */ = {isa = PBXBuildFile; fileRef = A98EBC102FDE079B00FA9CCB /* ImageProcessing.swift */; };
 		A98EBC132FDE07AB00FA9CCB /* ImageProcessingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A98EBC122FDE07AB00FA9CCB /* ImageProcessingTests.swift */; };
+		A98EBC1F2FDE170C00FA9CCB /* ImageMetadataTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A98EBC1E2FDE170C00FA9CCB /* ImageMetadataTypes.swift */; };
 		A9D60B1B2FC5065C00683A92 /* VideoExportTestHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9D60B1A2FC5065C00683A92 /* VideoExportTestHelper.swift */; };
 		A9D60B1D2FC5067900683A92 /* VideoExportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9D60B1C2FC5067900683A92 /* VideoExportTests.swift */; };
 		A9D60B1F2FC506B600683A92 /* DeveloperToolsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9D60B1E2FC506B600683A92 /* DeveloperToolsView.swift */; };
@@ -307,6 +308,7 @@
 		A95B2E302F42F1A700EE7291 /* EncryptedVideoDataSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EncryptedVideoDataSource.swift; sourceTree = "<group>"; };
 		A98EBC102FDE079B00FA9CCB /* ImageProcessing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageProcessing.swift; sourceTree = "<group>"; };
 		A98EBC122FDE07AB00FA9CCB /* ImageProcessingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageProcessingTests.swift; sourceTree = "<group>"; };
+		A98EBC1E2FDE170C00FA9CCB /* ImageMetadataTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageMetadataTypes.swift; sourceTree = "<group>"; };
 		A9C449132E9CC85800CFE854 /* SnapSafeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SnapSafeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A9D60B1A2FC5065C00683A92 /* VideoExportTestHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoExportTestHelper.swift; sourceTree = "<group>"; };
 		A9D60B1C2FC5067900683A92 /* VideoExportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoExportTests.swift; sourceTree = "<group>"; };
@@ -806,6 +808,7 @@
 				A9E6B6932E6E47B500BB6F19 /* SecureImageRepository.swift */,
 				A9E6B6942E6E47B500BB6F19 /* ThumbnailCache.swift */,
 				A98EBC102FDE079B00FA9CCB /* ImageProcessing.swift */,
+				A98EBC1E2FDE170C00FA9CCB /* ImageMetadataTypes.swift */,
 			);
 			path = SecureImage;
 			sourceTree = "<group>";
@@ -1092,6 +1095,7 @@
 				113AED184D13916EBB009C93 /* MediaDetailToolbar.swift in Sources */,
 				B9D2FCB35A0C40D83FBA3CB8 /* VideoSurfaceView.swift in Sources */,
 				0A39B5BB99D38FD752C33D40 /* InlineVideoPlayerView.swift in Sources */,
+				A98EBC1F2FDE170C00FA9CCB /* ImageMetadataTypes.swift in Sources */,
 				38579EABF27707E732CDC069 /* PinDEKWrapper.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
