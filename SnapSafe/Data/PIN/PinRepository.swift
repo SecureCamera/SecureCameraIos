@@ -14,7 +14,7 @@ protocol PinRepository: Sendable {
     func setAppPin(_ pin: String) async
     func getHashedPin() async -> HashedPin?
 
-    func hashPin(_ pin: String) async -> HashedPin
+    func hashPin(_ pin: String) async throws -> HashedPin
     func verifyPin(inputPin: String, storedHash: HashedPin) async -> Bool
     func verifyPoisonPillPin(_ pin: String) async -> Bool
     

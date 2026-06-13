@@ -30,6 +30,13 @@ struct VideoSurfaceView: UIViewRepresentable {
 
     final class PlayerLayerView: UIView {
         override static var layerClass: AnyClass { AVPlayerLayer.self }
-        var playerLayer: AVPlayerLayer { layer as! AVPlayerLayer }
+        var playerLayer: AVPlayerLayer {
+            // `layerClass` guarantees the backing layer is an AVPlayerLayer; this
+            // cast can only fail if that override is removed.
+            guard let playerLayer = layer as? AVPlayerLayer else {
+                fatalError("Backing layer must be an AVPlayerLayer; check layerClass")
+            }
+            return playerLayer
+        }
     }
 }

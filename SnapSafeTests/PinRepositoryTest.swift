@@ -89,7 +89,7 @@ final class PinRepositoryTests: XCTestCase {
         let hashed = HashedPin(hash: "hh", salt: "ss")
         given(pinCrypto).hashPin(pin: .value(pin), deviceId: .value(deviceId)).willReturn(hashed)
 
-        let result = await repo.hashPin(pin)
+        let result = try await repo.hashPin(pin)
         XCTAssertEqual(hashed, result)
     }
 
@@ -132,7 +132,7 @@ final class PinRepositoryTests: XCTestCase {
         let hashed = HashedPin(hash: "ph", salt: "ps")
         given(pinCrypto).hashPin(pin: .value(ppp), deviceId: .value(deviceId)).willReturn(hashed)
         
-        let hashedData = try! jsonEncoder().encode(hashed)
+        let hashedData = try jsonEncoder().encode(hashed)
         let plainData = ppp.data(using: .utf8)!
         let encryptedHashedData = Data("encrypted-hashed".utf8)
         let encryptedPlainData = Data("encrypted-plain".utf8)
