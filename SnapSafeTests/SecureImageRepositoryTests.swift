@@ -110,14 +110,14 @@ final class SecureImageRepositoryTests: XCTestCase {
         XCTAssertTrue(mockEncryptionScheme.evictKeyCalled)
     }
 
-    func testSecurityFailureResetDeletesAllImagesAndEvictsKey() async {
+    func testSecurityFailureResetDeletesAllImagesAndEvictsKey() async throws {
         // Given
-        try! FileManager.default.createDirectory(at: galleryDirectory, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: galleryDirectory, withIntermediateDirectories: true)
 
         let photo1 = galleryDirectory.appendingPathComponent("photo_20230101_120000_00.jpg")
         let photo2 = galleryDirectory.appendingPathComponent("photo_20230101_120001_00.jpg")
-        try! Data().write(to: photo1)
-        try! Data().write(to: photo2)
+        try Data().write(to: photo1)
+        try Data().write(to: photo2)
 
         // When
         await repository.securityFailureReset()
@@ -128,21 +128,21 @@ final class SecureImageRepositoryTests: XCTestCase {
         XCTAssertTrue(mockEncryptionScheme.evictKeyCalled)
     }
 
-    func testActivatePoisonPillDeletesNonDecoyImagesAndEvictsKey() async {
+    func testActivatePoisonPillDeletesNonDecoyImagesAndEvictsKey() async throws {
         // Given
-        try! FileManager.default.createDirectory(at: galleryDirectory, withIntermediateDirectories: true)
-        try! FileManager.default.createDirectory(at: decoyDirectory, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: galleryDirectory, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: decoyDirectory, withIntermediateDirectories: true)
 
         // Create regular photos
         let photo1 = galleryDirectory.appendingPathComponent("photo_20230101_120000_00.jpg")
         let photo2 = galleryDirectory.appendingPathComponent("photo_20230101_120001_00.jpg")
-        try! Data().write(to: photo1)
-        try! Data().write(to: photo2)
+        try Data().write(to: photo1)
+        try Data().write(to: photo2)
 
         // Create decoy
         let decoyContent = "decoy content".data(using: .utf8)!
         let decoyFile = decoyDirectory.appendingPathComponent("photo_20230101_120000_00.jpg")
-        try! decoyContent.write(to: decoyFile)
+        try decoyContent.write(to: decoyFile)
 
         // When
         await repository.activatePoisonPill()
@@ -155,7 +155,7 @@ final class SecureImageRepositoryTests: XCTestCase {
         let targetFile = galleryDirectory.appendingPathComponent("photo_20230101_120000_00.jpg")
         XCTAssertTrue(FileManager.default.fileExists(atPath: targetFile.path))
         
-        let restoredContent = try! Data(contentsOf: targetFile)
+        let restoredContent = try Data(contentsOf: targetFile)
         XCTAssertEqual(restoredContent, decoyContent)
         
         XCTAssertTrue(mockEncryptionScheme.evictKeyCalled)
@@ -173,14 +173,14 @@ final class SecureImageRepositoryTests: XCTestCase {
         XCTAssertTrue(photos.isEmpty)
     }
     
-    func testGetPhotosReturnsListOfPhotosWhenDirectoryExistsWithFiles() {
+    func testGetPhotosReturnsListOfPhotosWhenDirectoryExistsWithFiles() throws {
         // Given
-        try! FileManager.default.createDirectory(at: galleryDirectory, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: galleryDirectory, withIntermediateDirectories: true)
         
         let photo1 = galleryDirectory.appendingPathComponent("photo_20230101_120000_00.jpg")
         let photo2 = galleryDirectory.appendingPathComponent("photo_20230101_120001_00.jpg")
-        try! Data().write(to: photo1)
-        try! Data().write(to: photo2)
+        try Data().write(to: photo1)
+        try Data().write(to: photo2)
         
         // When
         let photos = repository.getPhotos()
@@ -191,12 +191,12 @@ final class SecureImageRepositoryTests: XCTestCase {
         XCTAssertTrue(photos.contains { $0.photoName == "photo_20230101_120001_00.jpg" })
     }
     
-    func testDeleteImageRemovesPhotoFileAndThumbnail() {
+    func testDeleteImageRemovesPhotoFileAndThumbnail() throws {
         // Given
-        try! FileManager.default.createDirectory(at: galleryDirectory, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: galleryDirectory, withIntermediateDirectories: true)
         
         let photoFile = galleryDirectory.appendingPathComponent("photo_20230101_120000_00.jpg")
-        try! Data().write(to: photoFile)
+        try Data().write(to: photoFile)
         
         let photoDef = PhotoDef(
             photoName: "photo_20230101_120000_00.jpg",
@@ -213,9 +213,9 @@ final class SecureImageRepositoryTests: XCTestCase {
         XCTAssertTrue(mockThumbnailCache.evictThumbnailCalled)
     }
     
-    func testDeleteImageReturnsFalseWhenPhotoDoesNotExist() {
+    func testDeleteImageReturnsFalseWhenPhotoDoesNotExist() throws {
         // Given
-        try! FileManager.default.createDirectory(at: galleryDirectory, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: galleryDirectory, withIntermediateDirectories: true)
         
         let photoFile = galleryDirectory.appendingPathComponent("photo_20230101_120000_00.jpg")
         // Don't create the file
@@ -233,14 +233,14 @@ final class SecureImageRepositoryTests: XCTestCase {
         XCTAssertFalse(result)
     }
     
-    func testDeleteAllImagesDeletesAllPhotos() {
+    func testDeleteAllImagesDeletesAllPhotos() throws {
         // Given
-        try! FileManager.default.createDirectory(at: galleryDirectory, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: galleryDirectory, withIntermediateDirectories: true)
         
         let photo1 = galleryDirectory.appendingPathComponent("photo_20230101_120000_00.jpg")
         let photo2 = galleryDirectory.appendingPathComponent("photo_20230101_120001_00.jpg")
-        try! Data().write(to: photo1)
-        try! Data().write(to: photo2)
+        try Data().write(to: photo1)
+        try Data().write(to: photo2)
         
         // When
         repository.deleteAllImages()
@@ -252,15 +252,15 @@ final class SecureImageRepositoryTests: XCTestCase {
     
     // MARK: - Decoy Tests
     
-    func testIsDecoyPhotoReturnsTrueWhenDecoyExists() {
+    func testIsDecoyPhotoReturnsTrueWhenDecoyExists() throws {
         // Given
-        try! FileManager.default.createDirectory(at: galleryDirectory, withIntermediateDirectories: true)
-        try! FileManager.default.createDirectory(at: decoyDirectory, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: galleryDirectory, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: decoyDirectory, withIntermediateDirectories: true)
         
         let photoFile = galleryDirectory.appendingPathComponent("photo_20230101_120000_00.jpg")
         let decoyFile = decoyDirectory.appendingPathComponent("photo_20230101_120000_00.jpg")
-        try! Data().write(to: photoFile)
-        try! Data().write(to: decoyFile)
+        try Data().write(to: photoFile)
+        try Data().write(to: decoyFile)
         
         let photoDef = PhotoDef(
             photoName: "photo_20230101_120000_00.jpg",
@@ -275,12 +275,12 @@ final class SecureImageRepositoryTests: XCTestCase {
         XCTAssertTrue(result)
     }
     
-    func testIsDecoyPhotoReturnsFalseWhenDecoyDoesNotExist() {
+    func testIsDecoyPhotoReturnsFalseWhenDecoyDoesNotExist() throws {
         // Given
-        try! FileManager.default.createDirectory(at: galleryDirectory, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: galleryDirectory, withIntermediateDirectories: true)
         
         let photoFile = galleryDirectory.appendingPathComponent("photo_20230101_120000_00.jpg")
-        try! Data().write(to: photoFile)
+        try Data().write(to: photoFile)
         
         let photoDef = PhotoDef(
             photoName: "photo_20230101_120000_00.jpg",
@@ -295,14 +295,14 @@ final class SecureImageRepositoryTests: XCTestCase {
         XCTAssertFalse(result)
     }
     
-    func testNumDecoysReturnsCorrectCount() {
+    func testNumDecoysReturnsCorrectCount() throws {
         // Given
-        try! FileManager.default.createDirectory(at: decoyDirectory, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: decoyDirectory, withIntermediateDirectories: true)
         
         let decoy1 = decoyDirectory.appendingPathComponent("photo_20230101_120000_00.jpg")
         let decoy2 = decoyDirectory.appendingPathComponent("photo_20230101_120001_00.jpg")
-        try! Data().write(to: decoy1)
-        try! Data().write(to: decoy2)
+        try Data().write(to: decoy1)
+        try Data().write(to: decoy2)
         
         // When
         let count = repository.numDecoys()
@@ -313,12 +313,12 @@ final class SecureImageRepositoryTests: XCTestCase {
     
     func testAddDecoyPhotoWithKeyAddsPhotoToDecoysWhenUnderLimit() async throws {
         // Given
-        try! FileManager.default.createDirectory(at: galleryDirectory, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: galleryDirectory, withIntermediateDirectories: true)
         
         let testImageData = createTestImageData()
         let photoFile = galleryDirectory.appendingPathComponent("photo_20230101_120000_00.jpg")
-        try! testImageData.write(to: photoFile)
-        
+        try testImageData.write(to: photoFile)
+
         let photoDef = PhotoDef(
             photoName: "photo_20230101_120000_00.jpg",
             photoFormat: "jpg",
@@ -337,12 +337,12 @@ final class SecureImageRepositoryTests: XCTestCase {
     
     func testAddDecoyPhotoReturnsFalseWhenAtLimit() async throws {
         // Given
-        try! FileManager.default.createDirectory(at: decoyDirectory, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: decoyDirectory, withIntermediateDirectories: true)
         
         // Create max number of decoys
         for i in 0..<SecureImageRepository.maxDecoyPhotos {
             let decoyFile = decoyDirectory.appendingPathComponent("photo_20230101_120000_0\(i).jpg")
-            try! Data().write(to: decoyFile)
+            try Data().write(to: decoyFile)
         }
         
         let photoFile = galleryDirectory.appendingPathComponent("photo_20230101_120000_00.jpg")
@@ -361,13 +361,13 @@ final class SecureImageRepositoryTests: XCTestCase {
     
     func testRemoveDecoyPhotoRemovesPhotoFromDecoys() async throws {
         // Given
-        try! FileManager.default.createDirectory(at: galleryDirectory, withIntermediateDirectories: true)
-        try! FileManager.default.createDirectory(at: decoyDirectory, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: galleryDirectory, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: decoyDirectory, withIntermediateDirectories: true)
         
         let photoFile = galleryDirectory.appendingPathComponent("photo_20230101_120000_00.jpg")
         let decoyFile = decoyDirectory.appendingPathComponent("photo_20230101_120000_00.jpg")
-        try! Data().write(to: photoFile)
-        try! Data().write(to: decoyFile)
+        try Data().write(to: photoFile)
+        try Data().write(to: decoyFile)
         
         let photoDef = PhotoDef(
             photoName: "photo_20230101_120000_00.jpg",
@@ -410,7 +410,7 @@ final class SecureImageRepositoryTests: XCTestCase {
     
     func testReadImageDecryptsAndReturnsImage() async throws {
         // Given
-        try! FileManager.default.createDirectory(at: galleryDirectory, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: galleryDirectory, withIntermediateDirectories: true)
         
         let testImageData = createTestImageData()
         let photoFile = galleryDirectory.appendingPathComponent("photo_20230101_120000_00.jpg")
@@ -433,7 +433,7 @@ final class SecureImageRepositoryTests: XCTestCase {
     
     func testDecryptJpgDecryptsAndReturnsImageBytes() async throws {
         // Given
-        try! FileManager.default.createDirectory(at: galleryDirectory, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: galleryDirectory, withIntermediateDirectories: true)
         
         let testImageData = createTestImageData()
         let photoFile = galleryDirectory.appendingPathComponent("photo_20230101_120000_00.jpg")
@@ -480,15 +480,15 @@ final class SecureImageRepositoryTests: XCTestCase {
         XCTAssertFalse(mockThumbnailCache.putThumbnailCalled)
     }
     
-    func testReadThumbnailCreatesThumbnailIfNotInCacheOrFile() async {
+    func testReadThumbnailCreatesThumbnailIfNotInCacheOrFile() async throws {
         // Given
-        try! FileManager.default.createDirectory(at: galleryDirectory, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: galleryDirectory, withIntermediateDirectories: true)
         
         let testImageData = createTestImageData()
         let photoFile = galleryDirectory.appendingPathComponent("photo_20230101_120000_00.jpg")
         
         // Create the actual photo file that the repository will try to decrypt
-        try! testImageData.write(to: photoFile)
+        try testImageData.write(to: photoFile)
         
         let photoDef = PhotoDef(
             photoName: "photo_20230101_120000_00.jpg",

@@ -20,7 +20,12 @@ private actor KeyCache {
     }
     
     func getKey() -> Data? {
-        return try! shardedKey?.reconstructKey()
+        do {
+            return try shardedKey?.reconstructKey()
+        } catch {
+            Logger.security.error("Failed to reconstruct sharded key: \(error)")
+            return nil
+        }
     }
     
     func setKey(_ key: Data) {
@@ -472,11 +477,16 @@ private extension HardwareEncryptionScheme {
         var item: CFTypeRef?
         let status = SecItemCopyMatching(query as CFDictionary, &item)
         
-        guard status == errSecSuccess, let key = item else {
+        // `as?` to a CoreFoundation type from CFTypeRef never performs a real
+        // runtime check, so verify the type explicitly via its CFTypeID. After
+        // that check the downcast is guaranteed, so it needs no force cast.
+        guard status == errSecSuccess,
+              let item,
+              CFGetTypeID(item) == SecKeyGetTypeID() else {
             throw CryptoError.keyNotFound
         }
-        
-        return key as! SecKey
+
+        return unsafeDowncast(item, to: SecKey.self)
     }
     
     // MARK: - Hardware Encryption/Decryption

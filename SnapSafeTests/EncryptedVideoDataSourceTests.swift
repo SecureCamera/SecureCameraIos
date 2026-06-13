@@ -27,15 +27,15 @@ final class EncryptedVideoDataSourceTests: XCTestCase {
     /// The delegate must live exactly as long as the asset. A permanent static cache
     /// (the previous implementation) would keep it alive forever, leaking the
     /// delegate and its decrypted-chunk cache for every video ever played.
-    func test_delegate_isReleasedWhenAssetDeallocates() {
+    func test_delegate_isReleasedWhenAssetDeallocates() throws {
         weak var weakDelegate: EncryptedVideoDataSource?
 
-        autoreleasepool {
+        try autoreleasepool {
             let key = SymmetricKey(size: .bits256)
             var asset: AVURLAsset? = AVAsset.makeEncryptedVideoAsset(
                 with: makeTempSecvURL(), encryptionKey: key)
 
-            weakDelegate = AVAsset.encryptedVideoDataSource(for: try! XCTUnwrap(asset))
+            weakDelegate = AVAsset.encryptedVideoDataSource(for: try XCTUnwrap(asset))
             XCTAssertNotNil(weakDelegate, "Delegate must be retained while the asset is alive")
 
             asset = nil

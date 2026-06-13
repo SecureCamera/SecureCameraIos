@@ -24,9 +24,8 @@ class PinRepositoryImpl: PinRepository, @unchecked Sendable {
     }
 
     func setAppPin(_ pin: String) async {
-        let hashedPin = await hashPin(pin)
-
         do {
+            let hashedPin = try await hashPin(pin)
             let hashedPinData = try jsonEncoder().encode(hashedPin)
             let cipheredHash = try await encryptionScheme.encryptWithKeyAlias(
                 plain: hashedPinData, keyAlias: Self.PIN_KEY_ALIAS)
@@ -68,8 +67,8 @@ class PinRepositoryImpl: PinRepository, @unchecked Sendable {
         return await verifyPin(inputPin: pin, storedHash: storedHashedPin)
     }
 
-    func hashPin(_ pin: String) async -> HashedPin {
-        return pinCrypto.hashPin(pin: pin, deviceId: await deviceInfo.getDeviceIdentifier())
+    func hashPin(_ pin: String) async throws -> HashedPin {
+        return try pinCrypto.hashPin(pin: pin, deviceId: await deviceInfo.getDeviceIdentifier())
     }
 
     func verifyPin(inputPin: String, storedHash: HashedPin) async -> Bool {
@@ -93,9 +92,8 @@ class PinRepositoryImpl: PinRepository, @unchecked Sendable {
     }
 
     func setPoisonPillPin(_ pin: String) async {
-        let hashedPin = await hashPin(pin)
-
         do {
+            let hashedPin = try await hashPin(pin)
             let hashedPinData = try jsonEncoder().encode(hashedPin)
 
             Logger.security.debug("Setting poison pill PIN", metadata: [
