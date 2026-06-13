@@ -66,8 +66,12 @@ class CameraViewModel: NSObject, ObservableObject {
     @Published var preview: AVCaptureVideoPreviewLayer!
     @Published var captureMode: CaptureMode = .photo
 
-    // Video encryption state
-    @Published var isEncryptingVideo: Bool = false
+    // Video saving state. The gate keeps the "Saving…" HUD visible for a
+    // minimum duration so short clips don't flash it on and off faster than
+    // the user can read it; it shows from the moment recording stops (not
+    // just while encrypting) so the finalize/thumbnail gap is covered too.
+    private let videoSavingGate = MinimumVisibilityGate(minimumDuration: 1.0)
+    var isSavingVideo: Bool { videoSavingGate.isVisible }
     @Published var encryptionProgress: Double = 0
 
     @Injected(\.secureImageRepository)
@@ -103,6 +107,12 @@ class CameraViewModel: NSObject, ObservableObject {
         // Release the mic once recording fully finalizes (success or failure).
         videoService.onRecordingStopped = { [weak self] in
             self?.deviceService.detachAudioInput()
+        }
+
+        // A failed recording produces no file to encrypt, so nothing else
+        // will release the saving HUD — release it here.
+        videoService.onRecordingFailed = { [weak self] in
+            self?.videoSavingGate.hide()
         }
 
         // Observe device service changes (drives captureAspectRatio)
@@ -142,6 +152,13 @@ class CameraViewModel: NSObject, ObservableObject {
 
         // Observe video service changes
         videoService.objectWillChange
+            .sink { [weak self] _ in
+                self?.objectWillChange.send()
+            }
+            .store(in: &cancellables)
+
+        // Observe saving-HUD gate changes (drives isSavingVideo)
+        videoSavingGate.objectWillChange
             .sink { [weak self] _ in
                 self?.objectWillChange.send()
             }
@@ -354,6 +371,14 @@ class CameraViewModel: NSObject, ObservableObject {
 
     /// Stop video recording
     func stopRecording() {
+        guard isRecording else { return }
+
+        // Show the saving HUD now, before finalization/encryption begins, so
+        // the whole stop→encrypt→save pipeline reads as one operation. Reset
+        // the progress first so the bar doesn't show the previous clip's 100%.
+        encryptionProgress = 0
+        videoSavingGate.show()
+
         // The mic is released once finalization completes (onRecordingStopped),
         // not here — removing the input mid-finalization could truncate audio.
         videoService.stopRecording()
@@ -481,7 +506,6 @@ class CameraViewModel: NSObject, ObservableObject {
                 // Create empty output file (FileHandle(forWritingTo:) requires it to exist)
                 FileManager.default.createFile(atPath: secvURL.path, contents: nil)
 
-                isEncryptingVideo = true
                 encryptionProgress = 0
 
                 let (progress, _) = videoEncryptionService.encryptVideo(
@@ -490,24 +514,33 @@ class CameraViewModel: NSObject, ObservableObject {
                     encryptionKey: symmetricKey
                 )
 
-                // Observe progress
+                // The stream always finishes; success is "reached 1.0 first".
+                // Doing cleanup on completion (not on the 1.0 value) means the
+                // .secv trailer is fully written before the .mov is deleted,
+                // and a failed encryption still releases the saving HUD.
                 progress
                     .receive(on: DispatchQueue.main)
-                    .sink { [weak self] value in
-                        self?.encryptionProgress = value
-                        if value >= 1.0 {
-                            self?.isEncryptingVideo = false
+                    .sink(receiveCompletion: { [weak self] _ in
+                        guard let self else { return }
+                        if self.encryptionProgress >= 1.0 {
                             // Delete the temp .mov file
                             try? FileManager.default.removeItem(at: movURL)
                             Logger.camera.info("Video encrypted and temp file deleted", metadata: [
                                 "output": .string(secvURL.lastPathComponent)
                             ])
+                        } else {
+                            Logger.camera.error("Video encryption did not complete", metadata: [
+                                "output": .string(secvURL.lastPathComponent)
+                            ])
                         }
-                    }
+                        self.videoSavingGate.hide()
+                    }, receiveValue: { [weak self] value in
+                        self?.encryptionProgress = value
+                    })
                     .store(in: &cancellables)
 
             } catch {
-                isEncryptingVideo = false
+                videoSavingGate.hide()
                 Logger.camera.error("Failed to encrypt video", metadata: [
                     "error": .string(error.localizedDescription)
                 ])

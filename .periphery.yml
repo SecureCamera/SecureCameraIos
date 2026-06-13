@@ -1,0 +1,6 @@
+project: SnapSafe.xcworkspace
+schemes:
+  - SnapSafe
+clean_build: true
+build_arguments:
+  - -skipMacroValidation

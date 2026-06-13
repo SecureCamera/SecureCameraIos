@@ -35,6 +35,9 @@ final class VideoCaptureService: NSObject, ObservableObject, VideoCapturing {
     /// Called when a recording finishes successfully, with the output file URL.
     var onRecordingFinished: ((URL) -> Void)?
 
+    /// Called when a recording finalizes with an error (no file to encrypt).
+    var onRecordingFailed: (() -> Void)?
+
     /// Called once a recording has fully finalized (success or failure), after
     /// the file output is done writing. Use this to release resources tied to
     /// the recording, e.g. detaching the microphone input.
@@ -167,6 +170,7 @@ extension VideoCaptureService: AVCaptureFileOutputRecordingDelegate {
                 Logger.camera.error("Video recording error: \(error.localizedDescription)")
                 // Clean up failed recording
                 try? FileManager.default.removeItem(at: outputFileURL)
+                self.onRecordingFailed?()
             } else {
                 Logger.camera.info("Video recording completed successfully", metadata: [
                     "file": .string(outputFileURL.lastPathComponent),

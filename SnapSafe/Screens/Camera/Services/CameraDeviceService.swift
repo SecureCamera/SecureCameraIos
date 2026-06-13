@@ -51,14 +51,27 @@ final class CameraDeviceService: ObservableObject, @preconcurrency CameraDeviceP
     private var isConfiguring = false
     private var isConfigured = false
 
+    /// Audio-session configuration in effect before a recording, restored on
+    /// detach so playback behavior elsewhere in the app is unaffected.
+    private var previousAudioConfiguration: (
+        category: AVAudioSession.Category,
+        mode: AVAudioSession.Mode,
+        options: AVAudioSession.CategoryOptions
+    )?
+
     // MARK: - Initialization
 
     init() {
         // Initialize session configuration
         // Use .high preset to support both photo and video capture
         session.sessionPreset = .high
-        // Allow automatic audio session configuration for video recording
-        session.automaticallyConfiguresApplicationAudioSession = true
+        // We configure the app's shared AVAudioSession ourselves (see
+        // attachAudioInput). Left automatic, the capture session reconfigures
+        // the audio session (category, mic selection, polar pattern) inside
+        // the commitConfiguration that adds/removes the mic input — and doing
+        // that against the RUNNING session stalls the video pipeline, so the
+        // preview flashes black at recording start and stop.
+        session.automaticallyConfiguresApplicationAudioSession = false
     }
     
     // MARK: - Public Methods
@@ -221,6 +234,22 @@ final class CameraDeviceService: ObservableObject, @preconcurrency CameraDeviceP
             return
         }
 
+        // The capture session no longer auto-configures the audio session
+        // (see init), so put a recording-capable category in place BEFORE
+        // wiring the mic into the running capture graph — this keeps the
+        // commit below from touching audio routing, which is what made the
+        // preview flash black. The previous configuration is restored on
+        // detach.
+        let audioSession = AVAudioSession.sharedInstance()
+        previousAudioConfiguration = (
+            audioSession.category, audioSession.mode, audioSession.categoryOptions
+        )
+        do {
+            try audioSession.setCategory(.playAndRecord, mode: .videoRecording, options: [.defaultToSpeaker])
+        } catch {
+            Logger.camera.warning("Failed to configure audio session for recording: \(error.localizedDescription)")
+        }
+
         do {
             let input = try AVCaptureDeviceInput(device: audioDevice)
             session.beginConfiguration()
@@ -246,6 +275,21 @@ final class CameraDeviceService: ObservableObject, @preconcurrency CameraDeviceP
         }
         session.commitConfiguration()
         self.audioInput = nil
+
+        // Hand the audio session back to its pre-recording configuration so
+        // the record-capable category doesn't re-engage the mic route when
+        // something else (e.g. the gallery player) activates audio later.
+        if let previous = previousAudioConfiguration {
+            previousAudioConfiguration = nil
+            do {
+                try AVAudioSession.sharedInstance().setCategory(
+                    previous.category, mode: previous.mode, options: previous.options
+                )
+            } catch {
+                Logger.camera.warning("Failed to restore audio session after recording: \(error.localizedDescription)")
+            }
+        }
+
         Logger.camera.debug("Removed audio input")
     }
 

@@ -197,6 +197,22 @@ final class VideoPlayerViewModel: ObservableObject {
         // A loader is already in flight or has finished — don't stack a
         // second AVPlayer that would race the first.
         guard player == nil, loadTask == nil else { return }
+
+        // Use `.playback`/`.moviePlayback` so the video plays audibly even
+        // when the phone's ringer switch is in silent — matching the Photos
+        // app. Without this we inherit the iOS default `.soloAmbient`, which
+        // respects the silent switch and produces a silent playback that
+        // reads as "no audio was recorded."
+        do {
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(.playback, mode: .moviePlayback)
+            try session.setActive(true)
+        } catch {
+            logger.warning("Failed to configure audio session for playback", metadata: [
+                "error": .string(error.localizedDescription)
+            ])
+        }
+
         loadTask = Task { [weak self] in
             await self?.loadVideoAsset()
             await MainActor.run { self?.loadTask = nil }
@@ -219,6 +235,18 @@ final class VideoPlayerViewModel: ObservableObject {
         player?.pause()
         isPlaying = false
         player = nil
+
+        // Hand the audio session back so other audio (Music, podcasts) can
+        // resume. Best-effort: log and move on if iOS refuses.
+        do {
+            try AVAudioSession.sharedInstance().setActive(
+                false, options: [.notifyOthersOnDeactivation]
+            )
+        } catch {
+            logger.debug("Audio session deactivate failed", metadata: [
+                "error": .string(error.localizedDescription)
+            ])
+        }
     }
 
     func togglePlayback() {
