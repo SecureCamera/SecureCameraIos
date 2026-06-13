@@ -133,6 +133,8 @@
 		A98EBC112FDE079C00FA9CCB /* ImageProcessing.swift in Sources */ = {isa = PBXBuildFile; fileRef = A98EBC102FDE079B00FA9CCB /* ImageProcessing.swift */; };
 		A98EBC132FDE07AB00FA9CCB /* ImageProcessingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A98EBC122FDE07AB00FA9CCB /* ImageProcessingTests.swift */; };
 		A98EBC1F2FDE170C00FA9CCB /* ImageMetadataTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A98EBC1E2FDE170C00FA9CCB /* ImageMetadataTypes.swift */; };
+		A98EBC212FDE1ACD00FA9CCB /* PhotoStorageDataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A98EBC202FDE1ACD00FA9CCB /* PhotoStorageDataSource.swift */; };
+		A98EBC232FDE1B1300FA9CCB /* PhotoStorageDataSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A98EBC222FDE1B1300FA9CCB /* PhotoStorageDataSourceTests.swift */; };
 		A9D60B1B2FC5065C00683A92 /* VideoExportTestHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9D60B1A2FC5065C00683A92 /* VideoExportTestHelper.swift */; };
 		A9D60B1D2FC5067900683A92 /* VideoExportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9D60B1C2FC5067900683A92 /* VideoExportTests.swift */; };
 		A9D60B1F2FC506B600683A92 /* DeveloperToolsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9D60B1E2FC506B600683A92 /* DeveloperToolsView.swift */; };
@@ -309,6 +311,8 @@
 		A98EBC102FDE079B00FA9CCB /* ImageProcessing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageProcessing.swift; sourceTree = "<group>"; };
 		A98EBC122FDE07AB00FA9CCB /* ImageProcessingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageProcessingTests.swift; sourceTree = "<group>"; };
 		A98EBC1E2FDE170C00FA9CCB /* ImageMetadataTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageMetadataTypes.swift; sourceTree = "<group>"; };
+		A98EBC202FDE1ACD00FA9CCB /* PhotoStorageDataSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoStorageDataSource.swift; sourceTree = "<group>"; };
+		A98EBC222FDE1B1300FA9CCB /* PhotoStorageDataSourceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoStorageDataSourceTests.swift; sourceTree = "<group>"; };
 		A9C449132E9CC85800CFE854 /* SnapSafeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SnapSafeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A9D60B1A2FC5065C00683A92 /* VideoExportTestHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoExportTestHelper.swift; sourceTree = "<group>"; };
 		A9D60B1C2FC5067900683A92 /* VideoExportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoExportTests.swift; sourceTree = "<group>"; };
@@ -798,6 +802,7 @@
 				13CBF89B43CD2D2FE8EBA109 /* FileBasedSettingsDataSourceProtectionTests.swift */,
 				F10BAC24976F36840D24E6B6 /* OrientationRotationTests.swift */,
 				A98EBC122FDE07AB00FA9CCB /* ImageProcessingTests.swift */,
+				A98EBC222FDE1B1300FA9CCB /* PhotoStorageDataSourceTests.swift */,
 			);
 			path = SnapSafeTests;
 			sourceTree = "<group>";
@@ -809,6 +814,7 @@
 				A9E6B6942E6E47B500BB6F19 /* ThumbnailCache.swift */,
 				A98EBC102FDE079B00FA9CCB /* ImageProcessing.swift */,
 				A98EBC1E2FDE170C00FA9CCB /* ImageMetadataTypes.swift */,
+				A98EBC202FDE1ACD00FA9CCB /* PhotoStorageDataSource.swift */,
 			);
 			path = SecureImage;
 			sourceTree = "<group>";
@@ -994,6 +1000,7 @@
 				663C7E232E6FED9A00967B9E /* SecurityResetUseCase.swift in Sources */,
 				663C7E2D2E70F2E900967B9E /* EnhancedPhotoDetailViewModel.swift in Sources */,
 				663C7E242E6FED9A00967B9E /* RemovePoisonPillIUseCase.swift in Sources */,
+				A98EBC212FDE1ACD00FA9CCB /* PhotoStorageDataSource.swift in Sources */,
 				A9F425112E95CAB90028EB13 /* DismissPanGestureHandler.swift in Sources */,
 				A9F425122E95CAB90028EB13 /* PhotoPageViewController.swift in Sources */,
 				A9F425132E95CAB90028EB13 /* PagerChromeState.swift in Sources */,
@@ -1116,6 +1123,7 @@
 				C0FFEE0000000000000000B2 /* CameraZoomMappingTests.swift in Sources */,
 				A98EBC132FDE07AB00FA9CCB /* ImageProcessingTests.swift in Sources */,
 				C0FFEE0000000000000000E2 /* CameraPreviewLayoutTests.swift in Sources */,
+				A98EBC232FDE1B1300FA9CCB /* PhotoStorageDataSourceTests.swift in Sources */,
 				C0FFEE0000000000000000F2 /* EnhancedPhotoDetailViewModelDragTests.swift in Sources */,
 				C0FFEE000000000000000122 /* MinimumVisibilityGateTests.swift in Sources */,
 				68109942731A0033DBA31CA8 /* PoisonPillVideoDeletionTests.swift in Sources */,
