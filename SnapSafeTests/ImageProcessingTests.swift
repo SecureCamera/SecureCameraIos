@@ -4,6 +4,7 @@
 //
 
 import XCTest
+import CoreLocation
 import ImageIO
 import UIKit
 @testable import SnapSafe
@@ -62,5 +63,29 @@ final class ImageProcessingTests: XCTestCase {
         XCTAssertThrowsError(
             try ImageProcessing.processImageWithEXIFMetadata(
                 imageData: Data([0x00, 0x01]), preservedEXIFMetadata: [:], filename: "x"))
+    }
+
+    func test_applyImageMetadata_embedsGpsWhenLocationProvided() throws {
+        let jpeg = try XCTUnwrap(
+            ImageProcessing.compressImageToJpeg(solidImage(width: 16, height: 16), quality: 0.9))
+        let location = CLLocation(latitude: 37.3349, longitude: -122.0090)
+        let withMeta = ImageProcessing.applyImageMetadata(
+            jpeg, location: location, applyRotation: true, rotationDegrees: 0)
+        let meta = ImageProcessing.extractEXIFMetadata(from: withMeta)
+        let gps = try XCTUnwrap(meta[kCGImagePropertyGPSDictionary as String] as? [String: Any])
+        let latitude = try XCTUnwrap(gps[kCGImagePropertyGPSLatitude as String] as? Double)
+        XCTAssertEqual(latitude, 37.3349, accuracy: 0.0001)
+        let latitudeRef = try XCTUnwrap(gps[kCGImagePropertyGPSLatitudeRef as String] as? String)
+        XCTAssertEqual(latitudeRef, "N")
+    }
+
+    func test_processImageWithEXIFMetadata_emptyMetadata_returnsValidJpeg() throws {
+        let jpeg = try XCTUnwrap(
+            ImageProcessing.compressImageToJpeg(solidImage(width: 16, height: 16), quality: 0.9))
+        let result = try ImageProcessing.processImageWithEXIFMetadata(
+            imageData: jpeg, preservedEXIFMetadata: [:], filename: "x")
+        XCTAssertEqual(Array(result.prefix(2)), [0xFF, 0xD8],
+                       "empty-metadata fast path should still return valid JPEG data")
+        XCTAssertNotNil(UIImage(data: result))
     }
 }
