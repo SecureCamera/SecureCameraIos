@@ -61,14 +61,6 @@
 		6660FC682E8529F900C0B617 /* PhotoCaptureService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6660FC652E8529F900C0B617 /* PhotoCaptureService.swift */; };
 		6660FC692E8529F900C0B617 /* CameraDeviceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6660FC612E8529F900C0B617 /* CameraDeviceService.swift */; };
 		6660FC6A2E8529F900C0B617 /* CameraZoomService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6660FC642E8529F900C0B617 /* CameraZoomService.swift */; };
-		C0FFEE0000000000000000A2 /* CameraZoomMapping.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0FFEE0000000000000000A1 /* CameraZoomMapping.swift */; };
-		C0FFEE0000000000000000C2 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C0FFEE0000000000000000C1 /* PrivacyInfo.xcprivacy */; };
-		C0FFEE0000000000000000B2 /* CameraZoomMappingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0FFEE0000000000000000B1 /* CameraZoomMappingTests.swift */; };
-		C0FFEE0000000000000000D2 /* CameraPreviewLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0FFEE0000000000000000D1 /* CameraPreviewLayout.swift */; };
-		C0FFEE0000000000000000E2 /* CameraPreviewLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0FFEE0000000000000000E1 /* CameraPreviewLayoutTests.swift */; };
-		C0FFEE0000000000000000F2 /* EnhancedPhotoDetailViewModelDragTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0FFEE0000000000000000F1 /* EnhancedPhotoDetailViewModelDragTests.swift */; };
-		C0FFEE000000000000000112 /* MinimumVisibilityGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0FFEE000000000000000111 /* MinimumVisibilityGate.swift */; };
-		C0FFEE000000000000000122 /* MinimumVisibilityGateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0FFEE000000000000000121 /* MinimumVisibilityGateTests.swift */; };
 		6660FC6B2E8529F900C0B617 /* CameraFocusService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6660FC622E8529F900C0B617 /* CameraFocusService.swift */; };
 		6660FC6D2E8BB2F800C0B617 /* ShardedKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6660FC6C2E8BB2F800C0B617 /* ShardedKey.swift */; };
 		6660FC6F2E8BB41600C0B617 /* ShardedKeyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6660FC6E2E8BB41600C0B617 /* ShardedKeyTests.swift */; };
@@ -138,6 +130,8 @@
 		A95B2E2D2F42F16C00EE7291 /* MixedMediaGalleryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A95B2E2C2F42F16C00EE7291 /* MixedMediaGalleryViewModel.swift */; };
 		A95B2E2F2F42F18F00EE7291 /* VideoPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A95B2E2E2F42F18F00EE7291 /* VideoPlayerView.swift */; };
 		A95B2E312F42F1A700EE7291 /* EncryptedVideoDataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A95B2E302F42F1A700EE7291 /* EncryptedVideoDataSource.swift */; };
+		A98EBC112FDE079C00FA9CCB /* ImageProcessing.swift in Sources */ = {isa = PBXBuildFile; fileRef = A98EBC102FDE079B00FA9CCB /* ImageProcessing.swift */; };
+		A98EBC132FDE07AB00FA9CCB /* ImageProcessingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A98EBC122FDE07AB00FA9CCB /* ImageProcessingTests.swift */; };
 		A9D60B1B2FC5065C00683A92 /* VideoExportTestHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9D60B1A2FC5065C00683A92 /* VideoExportTestHelper.swift */; };
 		A9D60B1D2FC5067900683A92 /* VideoExportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9D60B1C2FC5067900683A92 /* VideoExportTests.swift */; };
 		A9D60B1F2FC506B600683A92 /* DeveloperToolsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9D60B1E2FC506B600683A92 /* DeveloperToolsView.swift */; };
@@ -164,6 +158,14 @@
 		B11100000000000000000002 /* EncryptedVideoDataSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B11100000000000000000001 /* EncryptedVideoDataSourceTests.swift */; };
 		B11100000000000000000004 /* AVPlayerItemStatusObservationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B11100000000000000000003 /* AVPlayerItemStatusObservationTests.swift */; };
 		B9D2FCB35A0C40D83FBA3CB8 /* VideoSurfaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC401584FDB751F792E58364 /* VideoSurfaceView.swift */; };
+		C0FFEE0000000000000000A2 /* CameraZoomMapping.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0FFEE0000000000000000A1 /* CameraZoomMapping.swift */; };
+		C0FFEE0000000000000000B2 /* CameraZoomMappingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0FFEE0000000000000000B1 /* CameraZoomMappingTests.swift */; };
+		C0FFEE0000000000000000C2 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C0FFEE0000000000000000C1 /* PrivacyInfo.xcprivacy */; };
+		C0FFEE0000000000000000D2 /* CameraPreviewLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0FFEE0000000000000000D1 /* CameraPreviewLayout.swift */; };
+		C0FFEE0000000000000000E2 /* CameraPreviewLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0FFEE0000000000000000E1 /* CameraPreviewLayoutTests.swift */; };
+		C0FFEE0000000000000000F2 /* EnhancedPhotoDetailViewModelDragTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0FFEE0000000000000000F1 /* EnhancedPhotoDetailViewModelDragTests.swift */; };
+		C0FFEE000000000000000112 /* MinimumVisibilityGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0FFEE000000000000000111 /* MinimumVisibilityGate.swift */; };
+		C0FFEE000000000000000122 /* MinimumVisibilityGateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0FFEE000000000000000121 /* MinimumVisibilityGateTests.swift */; };
 		D54FBF5A0C3BABB963AB33CF /* FakeEncryptionScheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2414533D313F8BEF8E1DB17D /* FakeEncryptionScheme.swift */; };
 		E81315B178D3FB88663F856F /* FakeVideoEncryptionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2AD9082F22CD2A9FC7CD33B /* FakeVideoEncryptionService.swift */; };
 		F11C39ACCEDC8B8CAEA2C214 /* PinDEKWrapperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 332C6DF332A8DDCFFDFA5FDB /* PinDEKWrapperTests.swift */; };
@@ -240,14 +242,6 @@
 		6660FC622E8529F900C0B617 /* CameraFocusService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraFocusService.swift; sourceTree = "<group>"; };
 		6660FC632E8529F900C0B617 /* CameraPermissionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPermissionService.swift; sourceTree = "<group>"; };
 		6660FC642E8529F900C0B617 /* CameraZoomService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraZoomService.swift; sourceTree = "<group>"; };
-		C0FFEE0000000000000000A1 /* CameraZoomMapping.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraZoomMapping.swift; sourceTree = "<group>"; };
-		C0FFEE0000000000000000C1 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
-		C0FFEE0000000000000000B1 /* CameraZoomMappingTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CameraZoomMappingTests.swift; sourceTree = "<group>"; };
-		C0FFEE0000000000000000D1 /* CameraPreviewLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPreviewLayout.swift; sourceTree = "<group>"; };
-		C0FFEE0000000000000000E1 /* CameraPreviewLayoutTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CameraPreviewLayoutTests.swift; sourceTree = "<group>"; };
-		C0FFEE0000000000000000F1 /* EnhancedPhotoDetailViewModelDragTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EnhancedPhotoDetailViewModelDragTests.swift; sourceTree = "<group>"; };
-		C0FFEE000000000000000111 /* MinimumVisibilityGate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MinimumVisibilityGate.swift; sourceTree = "<group>"; };
-		C0FFEE000000000000000121 /* MinimumVisibilityGateTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MinimumVisibilityGateTests.swift; sourceTree = "<group>"; };
 		6660FC652E8529F900C0B617 /* PhotoCaptureService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoCaptureService.swift; sourceTree = "<group>"; };
 		6660FC6C2E8BB2F800C0B617 /* ShardedKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShardedKey.swift; sourceTree = "<group>"; };
 		6660FC6E2E8BB41600C0B617 /* ShardedKeyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShardedKeyTests.swift; sourceTree = "<group>"; };
@@ -311,6 +305,8 @@
 		A95B2E2C2F42F16C00EE7291 /* MixedMediaGalleryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MixedMediaGalleryViewModel.swift; path = Gallery/MixedMediaGalleryViewModel.swift; sourceTree = "<group>"; };
 		A95B2E2E2F42F18F00EE7291 /* VideoPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoPlayerView.swift; sourceTree = "<group>"; };
 		A95B2E302F42F1A700EE7291 /* EncryptedVideoDataSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EncryptedVideoDataSource.swift; sourceTree = "<group>"; };
+		A98EBC102FDE079B00FA9CCB /* ImageProcessing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageProcessing.swift; sourceTree = "<group>"; };
+		A98EBC122FDE07AB00FA9CCB /* ImageProcessingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageProcessingTests.swift; sourceTree = "<group>"; };
 		A9C449132E9CC85800CFE854 /* SnapSafeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SnapSafeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A9D60B1A2FC5065C00683A92 /* VideoExportTestHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoExportTestHelper.swift; sourceTree = "<group>"; };
 		A9D60B1C2FC5067900683A92 /* VideoExportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoExportTests.swift; sourceTree = "<group>"; };
@@ -337,15 +333,23 @@
 		A9FFC0DE2F3A000000BB6F19 /* VideoDef.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoDef.swift; sourceTree = "<group>"; };
 		ADA2FF82666960557F17548E /* SecureImageRepositoryTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SecureImageRepositoryTests.swift; sourceTree = "<group>"; };
 		AE0EEE6230116B9BC41B148B /* HardwareEncryptionSchemePinBindingTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HardwareEncryptionSchemePinBindingTests.swift; sourceTree = "<group>"; };
+		B11100000000000000000001 /* EncryptedVideoDataSourceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EncryptedVideoDataSourceTests.swift; sourceTree = "<group>"; };
+		B11100000000000000000003 /* AVPlayerItemStatusObservationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AVPlayerItemStatusObservationTests.swift; sourceTree = "<group>"; };
 		BC401584FDB751F792E58364 /* VideoSurfaceView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VideoSurfaceView.swift; sourceTree = "<group>"; };
+		C0FFEE0000000000000000A1 /* CameraZoomMapping.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraZoomMapping.swift; sourceTree = "<group>"; };
+		C0FFEE0000000000000000B1 /* CameraZoomMappingTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CameraZoomMappingTests.swift; sourceTree = "<group>"; };
+		C0FFEE0000000000000000C1 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		C0FFEE0000000000000000D1 /* CameraPreviewLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPreviewLayout.swift; sourceTree = "<group>"; };
+		C0FFEE0000000000000000E1 /* CameraPreviewLayoutTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CameraPreviewLayoutTests.swift; sourceTree = "<group>"; };
+		C0FFEE0000000000000000F1 /* EnhancedPhotoDetailViewModelDragTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EnhancedPhotoDetailViewModelDragTests.swift; sourceTree = "<group>"; };
+		C0FFEE000000000000000111 /* MinimumVisibilityGate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MinimumVisibilityGate.swift; sourceTree = "<group>"; };
+		C0FFEE000000000000000121 /* MinimumVisibilityGateTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MinimumVisibilityGateTests.swift; sourceTree = "<group>"; };
 		DBCDFD42CA72A9C8FA98EDCD /* SECVFileFormatTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SECVFileFormatTests.swift; sourceTree = "<group>"; };
 		DCC41CA572369E73F5CB7451 /* PoisonPillVideoDeletionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PoisonPillVideoDeletionTests.swift; sourceTree = "<group>"; };
 		E122542F8E8343FD9E2471E5 /* DecoyVideoIntegrationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DecoyVideoIntegrationTests.swift; sourceTree = "<group>"; };
 		E60E8772D487C47F35C819B2 /* AddDecoyVideoUseCase.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AddDecoyVideoUseCase.swift; sourceTree = "<group>"; };
 		F10BAC24976F36840D24E6B6 /* OrientationRotationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OrientationRotationTests.swift; sourceTree = "<group>"; };
 		FBEA7D1062AABE16019D0AEF /* VideoImportTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VideoImportTests.swift; sourceTree = "<group>"; };
-		B11100000000000000000001 /* EncryptedVideoDataSourceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EncryptedVideoDataSourceTests.swift; sourceTree = "<group>"; };
-		B11100000000000000000003 /* AVPlayerItemStatusObservationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AVPlayerItemStatusObservationTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -791,6 +795,7 @@
 				AE0EEE6230116B9BC41B148B /* HardwareEncryptionSchemePinBindingTests.swift */,
 				13CBF89B43CD2D2FE8EBA109 /* FileBasedSettingsDataSourceProtectionTests.swift */,
 				F10BAC24976F36840D24E6B6 /* OrientationRotationTests.swift */,
+				A98EBC122FDE07AB00FA9CCB /* ImageProcessingTests.swift */,
 			);
 			path = SnapSafeTests;
 			sourceTree = "<group>";
@@ -800,6 +805,7 @@
 			children = (
 				A9E6B6932E6E47B500BB6F19 /* SecureImageRepository.swift */,
 				A9E6B6942E6E47B500BB6F19 /* ThumbnailCache.swift */,
+				A98EBC102FDE079B00FA9CCB /* ImageProcessing.swift */,
 			);
 			path = SecureImage;
 			sourceTree = "<group>";
@@ -1061,6 +1067,7 @@
 				663C7E292E6FEE2500967B9E /* CameraViewModel.swift in Sources */,
 				A95B2E2F2F42F18F00EE7291 /* VideoPlayerView.swift in Sources */,
 				66A404CB2E67EB7F0054FFE7 /* PinCrypto.swift in Sources */,
+				A98EBC112FDE079C00FA9CCB /* ImageProcessing.swift in Sources */,
 				A91DBC702DE58191001F42ED /* LocationRepository.swift in Sources */,
 				A9E6B6AF2E6EAD3D00BB6F19 /* SecurityOverlayViewModel.swift in Sources */,
 				A91DBC732DE58191001F42ED /* PINSetupView.swift in Sources */,
@@ -1103,6 +1110,7 @@
 				D54FBF5A0C3BABB963AB33CF /* FakeEncryptionScheme.swift in Sources */,
 				F5928EF067F8CDFB35D572D3 /* FakeThumbnailCache.swift in Sources */,
 				C0FFEE0000000000000000B2 /* CameraZoomMappingTests.swift in Sources */,
+				A98EBC132FDE07AB00FA9CCB /* ImageProcessingTests.swift in Sources */,
 				C0FFEE0000000000000000E2 /* CameraPreviewLayoutTests.swift in Sources */,
 				C0FFEE0000000000000000F2 /* EnhancedPhotoDetailViewModelDragTests.swift in Sources */,
 				C0FFEE000000000000000122 /* MinimumVisibilityGateTests.swift in Sources */,
