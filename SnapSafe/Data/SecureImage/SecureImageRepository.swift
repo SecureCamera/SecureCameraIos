@@ -17,12 +17,14 @@ class SecureImageRepository {
     
     // MARK: - Constants
     
-    static let photosDir = "photos"
-    static let decoysDir = "decoys"
-    static let videosDir = "videos"
-    static let videoThumbnailsDir = "videoThumbnails"
-    static let decoyVideoThumbnailsDir = "decoyVideoThumbnails"
-    static let thumbnailsDir = ".thumbnails"
+    // Directory names live on PhotoStorageDataSource; these aliases preserve the
+    // existing `SecureImageRepository.<dir>` references (used by tests).
+    static let photosDir = PhotoStorageDataSource.photosDir
+    static let decoysDir = PhotoStorageDataSource.decoysDir
+    static let videosDir = PhotoStorageDataSource.videosDir
+    static let videoThumbnailsDir = PhotoStorageDataSource.videoThumbnailsDir
+    static let decoyVideoThumbnailsDir = PhotoStorageDataSource.decoyVideoThumbnailsDir
+    static let thumbnailsDir = PhotoStorageDataSource.thumbnailsDir
     static let maxDecoyPhotos = 10
     
     // MARK: - Dependencies
@@ -30,16 +32,7 @@ class SecureImageRepository {
     let thumbnailCache: ThumbnailCache
     private let encryptionScheme: EncryptionScheme
     private let videoEncryptionService: VideoEncryptionServiceProtocol
-
-    /// Roots that every storage directory is derived from. They default to the
-    /// real app container locations, but can be overridden (e.g. with a temp
-    /// directory in tests) so that hosted unit tests never read from or write to
-    /// the real app's data. Previously each getter recomputed these from
-    /// `FileManager.default`, which meant tests that didn't subclass-override a
-    /// specific getter would silently operate on the real container — deleting
-    /// real, unrecoverable video thumbnails on poison-pill / security-reset.
-    private let appSupportRoot: URL
-    private let cachesRoot: URL
+    private let storage: PhotoStorageDataSource
 
     // MARK: - Initialization
 
@@ -53,111 +46,22 @@ class SecureImageRepository {
         self.thumbnailCache = thumbnailCache
         self.encryptionScheme = encryptionScheme
         self.videoEncryptionService = videoEncryptionService
-        self.appSupportRoot = applicationSupportDirectory
+        let appSupportRoot = applicationSupportDirectory
             ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        self.cachesRoot = cachesDirectory
+        let cachesRoot = cachesDirectory
             ?? FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
+        self.storage = PhotoStorageDataSource(
+            encryptionScheme: encryptionScheme, appSupportRoot: appSupportRoot, cachesRoot: cachesRoot)
     }
     
     // MARK: - Directory Management
-    
-    func getGalleryDirectory() -> URL {
-        var galleryDir = appSupportRoot.appendingPathComponent(Self.photosDir)
-        
-        // Create directory and exclude from backup
-        do {
-            try FileManager.default.createDirectory(at: galleryDir, withIntermediateDirectories: true, attributes: nil)
-            var resourceValues = URLResourceValues()
-            resourceValues.isExcludedFromBackup = true
-            try galleryDir.setResourceValues(resourceValues)
-        } catch {
-            Logger.storage.error("Failed to setup gallery directory: \(error)")
-        }
-        
-        return galleryDir
-    }
-    
-    func getDecoyDirectory() -> URL {
-        var decoyDir = appSupportRoot.appendingPathComponent(Self.decoysDir)
-        
-        // Create directory and exclude from backup
-        do {
-            try FileManager.default.createDirectory(at: decoyDir, withIntermediateDirectories: true, attributes: nil)
-            var resourceValues = URLResourceValues()
-            resourceValues.isExcludedFromBackup = true
-            try decoyDir.setResourceValues(resourceValues)
-        } catch {
-            Logger.storage.error("Failed to setup decoy directory: \(error)")
-        }
-        
-        return decoyDir
-    }
-    
-    func getVideosDirectory() -> URL {
-        var videosDir = appSupportRoot.appendingPathComponent(Self.videosDir)
 
-        // Create directory and exclude from backup
-        do {
-            try FileManager.default.createDirectory(at: videosDir, withIntermediateDirectories: true, attributes: nil)
-            var resourceValues = URLResourceValues()
-            resourceValues.isExcludedFromBackup = true
-            try videosDir.setResourceValues(resourceValues)
-        } catch {
-            Logger.storage.error("Failed to setup videos directory: \(error)")
-        }
-
-        return videosDir
-    }
-
-    /// Durable, encrypted storage for video thumbnails. Unlike photo thumbnails
-    /// (regenerated from the encrypted photo on demand), video thumbnails are
-    /// generated once at record time from the plaintext `.mov` and cannot be
-    /// recreated afterwards, so they live in Application Support rather than the
-    /// purgeable caches directory.
-    func getVideoThumbnailsDirectory() -> URL {
-        var dir = appSupportRoot.appendingPathComponent(Self.videoThumbnailsDir)
-
-        do {
-            try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true, attributes: nil)
-            var resourceValues = URLResourceValues()
-            resourceValues.isExcludedFromBackup = true
-            try dir.setResourceValues(resourceValues)
-        } catch {
-            Logger.storage.error("Failed to setup video thumbnails directory: \(error)")
-        }
-
-        return dir
-    }
-
-    /// Decoy video thumbnails: re-encrypted with the poison-pill key at mark time
-    /// and restored into `videoThumbnails/` when the poison pill activates (the
-    /// real-key thumbnails are destroyed then, so decoy videos would otherwise
-    /// lose their thumbnail). Kept separate so it is not wiped by
-    /// `deleteAllVideoThumbnails()` or the decoy directory cleanup.
-    func getDecoyVideoThumbnailsDirectory() -> URL {
-        var dir = appSupportRoot.appendingPathComponent(Self.decoyVideoThumbnailsDir)
-
-        do {
-            try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true, attributes: nil)
-            var resourceValues = URLResourceValues()
-            resourceValues.isExcludedFromBackup = true
-            try dir.setResourceValues(resourceValues)
-        } catch {
-            Logger.storage.error("Failed to setup decoy video thumbnails directory: \(error)")
-        }
-
-        return dir
-    }
-
-    private func getThumbnailsDirectory() -> URL {
-        let thumbnailsDir = cachesRoot.appendingPathComponent(Self.thumbnailsDir)
-        
-        if !FileManager.default.fileExists(atPath: thumbnailsDir.path) {
-            try? FileManager.default.createDirectory(at: thumbnailsDir, withIntermediateDirectories: true)
-        }
-        
-        return thumbnailsDir
-    }
+    func getGalleryDirectory() -> URL { storage.getGalleryDirectory() }
+    func getDecoyDirectory() -> URL { storage.getDecoyDirectory() }
+    func getVideosDirectory() -> URL { storage.getVideosDirectory() }
+    func getVideoThumbnailsDirectory() -> URL { storage.getVideoThumbnailsDirectory() }
+    func getDecoyVideoThumbnailsDirectory() -> URL { storage.getDecoyVideoThumbnailsDirectory() }
+    private func getThumbnailsDirectory() -> URL { storage.getThumbnailsDirectory() }
     
     // MARK: - Security Operations
     
@@ -202,28 +106,16 @@ class SecureImageRepository {
     
     // MARK: - Image Operations
     
-    /// Encrypts and saves image data to a file
     private func encryptToFile(_ data: Data, targetFile: URL) async throws {
-        try await encryptionScheme.encryptToFile(plain: data, targetFile: targetFile)
-        Logger.storage.info("Saved image to file: \(targetFile.path)")
+        try await storage.encryptToFile(data, targetFile: targetFile)
     }
-    
-    /// Decrypts a file and returns the data
+
     private func decryptFile(_ encryptedFile: URL) async throws -> Data {
-        return try await encryptionScheme.decryptFile(encryptedFile)
+        try await storage.decryptFile(encryptedFile)
     }
-    
-    /// Encrypts and saves image data to a file, then renames it to the target file
+
     private func encryptAndSaveImage(_ imageData: Data, tempFile: URL, targetFile: URL) async throws {
-        // Remove files if they exist
-        try? FileManager.default.removeItem(at: tempFile)
-        try? FileManager.default.removeItem(at: targetFile)
-        
-        // Encrypt to temp file
-        try await encryptToFile(imageData, targetFile: tempFile)
-        
-        // Move temp file to target
-        try FileManager.default.moveItem(at: tempFile, to: targetFile)
+        try await storage.encryptAndSaveImage(imageData, tempFile: tempFile, targetFile: targetFile)
     }
     
     /// Saves a captured image to the gallery
