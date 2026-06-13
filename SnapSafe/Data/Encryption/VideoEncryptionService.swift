@@ -75,12 +75,19 @@ final class VideoEncryptionService: VideoEncryptionServiceProtocol {
                 try await encryptVideoFile(inputURL: inputURL, outputURL: outputURL, encryptionKey: encryptionKey, progressHandler: { progress in
                     progressSubject.send(progress)
                 })
+                // Guarantee subscribers see 1.0 on success; chunk-based
+                // progress is not a reliable completion signal on its own.
+                progressSubject.send(1.0)
                 completionHandler(.success(outputURL))
             } catch {
                 completionHandler(.failure(error))
             }
+            // Always finish the stream. Subscribers distinguish failure as
+            // "finished without reaching 1.0" — without this, a failed
+            // encryption left observers (e.g. the saving HUD) waiting forever.
+            progressSubject.send(completion: .finished)
         }
-        
+
         return (progressSubject.eraseToAnyPublisher(), completionHandler)
     }
 
