@@ -63,16 +63,51 @@ deletes, save / update, metadata. Coordinates `PhotoStorageDataSource` (I/O) + `
 ### 4. ViewModel boundary
 ViewModels decode `Data → UIImage` on `@MainActor` for display and expose it via `@Published`.
 
-## Required collaborator change
+## Required collaborator changes
 
-`ThumbnailCache` is a `@MainActor class`; for the repo to be a clean `actor` it must cross the
-actor boundary, so convert `ThumbnailCache` to an `actor`. Verify and, if needed, annotate
-`VideoEncryptionServiceProtocol` as `Sendable`. `EncryptionScheme` is already `Sendable`.
+- **`EncryptionScheme`** — already `Sendable` ✓ (crosses the actor boundary freely).
+- **`VideoEncryptionServiceProtocol`** — verify and, if needed, annotate `Sendable`.
+- **`ThumbnailCache`** — do **not** make it an `actor`. It is a thin wrapper over a thread-safe
+  `NSCache`, and an actor whose API merely forwards to thread-safe storage only adds `await`
+  ceremony and reentrancy surface for no benefit. It becomes the UI-layer decoded-`UIImage`
+  cache (see review notes): a `final class` made `Sendable` (legitimate `@unchecked Sendable`,
+  justified and documented by `NSCache`'s internal locking).
 
-Rationale: the existing
+Rationale for the repo → `actor` move: the existing
 [swift-concurrency-review](../../../../notes/bill-dev-notes/Projects/SnapSafe/design/swift-concurrency-review.md)
 establishes the team rule that `@MainActor` is for types that drive `@Published` UI state. A
 heavy I/O + crypto repository is not such a type, so an off-main `actor` is the consistent choice.
+
+## Concurrency & SwiftUI review notes (2026-06-13)
+
+Reviewed with the swift-concurrency-pro and swiftui-pro skills. The app target builds with
+**`SWIFT_APPROACHABLE_CONCURRENCY = YES`** (Swift 6 mode), which enables
+`NonisolatedNonsendingByDefault` — a `nonisolated async` function runs on the **caller's** actor
+unless explicitly offloaded. That drives these decisions:
+
+- **`ImageProcessing` heavy methods stay synchronous**, invoked from inside the
+  `SecureImageRepository` actor (a non-main actor, so they run off the main thread
+  automatically). Do **not** expose them as `nonisolated async` and call them from a `@MainActor`
+  ViewModel — under approachable concurrency that would run the resize/compress **on the main
+  actor** and stutter the UI. If an image method must be `async` and callable from the main
+  actor, mark it `@concurrent` to offload to the cooperative pool.
+- **Repository read-through paths must respect actor reentrancy.** Patterns like
+  check-cache → decrypt → resize → store cross `await` points; capture results in locals and
+  never assume cached state is unchanged after an `await`. Optionally coalesce concurrent loads
+  of the same key with an in-flight `Task` map.
+- **The slimmed repository `actor` imports no UIKit.** `UIImage` lives only inside
+  `ImageProcessing` (internal) and at the ViewModel boundary. The decoded-`UIImage` cache moves
+  to the UI/VM layer; the repository returns `Data` (and may keep an internal `Data` cache if
+  re-decrypt cost warrants — a PR3 implementation detail).
+- **Per-cell thumbnail loading goes through the existing shared `MixedMediaGalleryViewModel`,
+  not a `@StateObject` per `PhotoCell`.** A grid of cells each owning an observable view model is
+  a performance problem. The cell triggers loading via `.task(id: photo.id)` (so loads cancel on
+  reuse/scroll) and reads from the shared VM / its image loader. This fixes P2 (view ↔ data)
+  without a view-model-per-cell explosion.
+- **ViewModels stay `ObservableObject` / `@Published` for now.** Modern guidance prefers the
+  `@Observable` macro, but SnapSafe's VMs are uniformly `ObservableObject` and the `@Observable`
+  migration is a separately-tracked effort ("What's left" in the project hub). New boundary code
+  matches the existing convention to avoid scope creep.
 
 ## Data flow (thumbnail example)
 
@@ -92,7 +127,7 @@ removal work).
 |----|--------|------|-------|
 | **PR1** | Extract `ImageProcessing`; repo delegates CPU work. No isolation/API change (repo stays `@MainActor`, still returns `UIImage`). | Low | + `ImageProcessingTests` |
 | **PR2** | Extract `PhotoStorageDataSource` (paths + encrypted file I/O + enumeration); repo delegates. Still `@MainActor`. | Low–med | + `PhotoStorageDataSourceTests` |
-| **PR3** | Actor-ify `ThumbnailCache` + `SecureImageRepository`; drop `@MainActor`; read APIs return `Data`; move `UIImage` decode into gallery/detail ViewModels; route `PhotoCell` + `SecureGalleryView` through their VMs; adapt `VideoPlayerView` minimally. | High | Adjust `SecureImageRepositoryTests` for `Data`; + actor concurrency test |
+| **PR3** | Make `SecureImageRepository` an `actor` (drop `@MainActor`, no UIKit import); read APIs return `Data`; move the decoded-`UIImage` cache (`ThumbnailCache`, now a `Sendable` class) and the decode step into the gallery/detail ViewModels; route `PhotoCell` + `SecureGalleryView` through the shared gallery VM via `.task(id:)`; adapt `VideoPlayerView` minimally. | High | Adjust `SecureImageRepositoryTests` for `Data`; + actor reentrancy/concurrency test |
 
 Each PR keeps the build and the existing test suite green. The high-risk concurrency + boundary
 flip is intentionally last, after responsibilities are already isolated.
@@ -102,7 +137,7 @@ flip is intentionally last, after responsibilities are already isolated.
 - Existing `SecureImageRepositoryTests` stay green throughout (adjusted for `Data` returns in PR3).
 - New focused unit tests for `ImageProcessing` (compress/resize/rotate/EXIF round-trips) and
   `PhotoStorageDataSource` (encrypted write→read, enumeration, delete).
-- A task-group concurrency test for the actor'd repo + cache, mirroring the
+- A task-group concurrency / reentrancy test for the actor'd repository, mirroring the
   `AuthorizationRepository` pattern in the concurrency-review note.
 
 ## Out of scope (separate efforts)
