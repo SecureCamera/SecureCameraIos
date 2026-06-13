@@ -283,6 +283,7 @@ struct SecureGalleryView: View {
                 Text(viewModel.decoyConfirmationMessage)
             }
         )
+        .supportedOrientations(.allButUpsideDown)
     }
 
     // Mixed media grid subview
