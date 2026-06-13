@@ -215,11 +215,6 @@ class SecureImageRepository {
         return try await encryptionScheme.decryptFile(encryptedFile)
     }
     
-    /// Compresses a UIImage to JPEG format with specified quality
-    private func compressImageToJpeg(_ image: UIImage, quality: CGFloat) -> Data? {
-        return image.jpegData(compressionQuality: quality)
-    }
-    
     /// Encrypts and saves image data to a file, then renames it to the target file
     private func encryptAndSaveImage(_ imageData: Data, tempFile: URL, targetFile: URL) async throws {
         // Remove files if they exist
@@ -231,63 +226,6 @@ class SecureImageRepository {
         
         // Move temp file to target
         try FileManager.default.moveItem(at: tempFile, to: targetFile)
-    }
-    
-    /// Applies metadata to an image
-    private func applyImageMetadata(
-        _ imageData: Data,
-        location: CLLocation?,
-        applyRotation: Bool,
-        rotationDegrees: Int
-    ) -> Data {
-        guard let source = CGImageSourceCreateWithData(imageData as CFData, nil),
-              let image = CGImageSourceCreateImageAtIndex(source, 0, nil) else {
-            return imageData
-        }
-        
-        let mutableData = NSMutableData()
-        guard let destination = CGImageDestinationCreateWithData(mutableData, UTType.jpeg.identifier as CFString, 1, nil) else {
-            return imageData
-        }
-        
-        var properties: [String: Any] = [:]
-        
-        // Add current timestamp
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy:MM:dd HH:mm:ss"
-        properties[kCGImagePropertyExifDateTimeOriginal as String] = formatter.string(from: Date())
-        
-        // Add orientation
-        if !applyRotation {
-            let orientation = cgImageOrientation(from: rotationDegrees)
-            properties[kCGImagePropertyOrientation as String] = orientation.rawValue
-        }
-        
-        // Add GPS location if available
-        if let location = location {
-            let gpsInfo: [String: Any] = [
-                kCGImagePropertyGPSLatitude as String: abs(location.coordinate.latitude),
-                kCGImagePropertyGPSLatitudeRef as String: location.coordinate.latitude >= 0 ? "N" : "S",
-                kCGImagePropertyGPSLongitude as String: abs(location.coordinate.longitude),
-                kCGImagePropertyGPSLongitudeRef as String: location.coordinate.longitude >= 0 ? "E" : "W"
-            ]
-            properties[kCGImagePropertyGPSDictionary as String] = gpsInfo
-        }
-        
-        CGImageDestinationAddImage(destination, image, properties as CFDictionary)
-        CGImageDestinationFinalize(destination)
-        
-        return mutableData as Data
-    }
-    
-    /// Converts rotation degrees to CGImagePropertyOrientation
-    private func cgImageOrientation(from degrees: Int) -> CGImagePropertyOrientation {
-        switch degrees {
-        case 90: return .right
-        case 180: return .down
-        case 270: return .left
-        default: return .up
-        }
     }
     
     /// Saves a captured image to the gallery
@@ -316,43 +254,21 @@ class SecureImageRepository {
         // Process image
         var processedImage = image.sensorBitmap
         if applyRotation {
-            processedImage = rotateImage(image.sensorBitmap, degrees: image.rotationDegrees)
+            processedImage = ImageProcessing.rotateImage(image.sensorBitmap, degrees: image.rotationDegrees)
         }
         
         // Compress to JPEG
-        guard let jpegData = compressImageToJpeg(processedImage, quality: quality) else {
+        guard let jpegData = ImageProcessing.compressImageToJpeg(processedImage, quality: quality) else {
             throw ImageRepositoryError.compressionFailed
         }
         
         // Apply metadata
-        let updatedData = applyImageMetadata(jpegData, location: location, applyRotation: applyRotation, rotationDegrees: image.rotationDegrees)
+        let updatedData = ImageProcessing.applyImageMetadata(jpegData, location: location, applyRotation: applyRotation, rotationDegrees: image.rotationDegrees)
         
         // Encrypt and save
         try await encryptAndSaveImage(updatedData, tempFile: tempFile, targetFile: photoFile)
         
         return PhotoDef(photoName: filename, photoFormat: "jpg", photoFile: photoFile)
-    }
-    
-    /// Rotates a UIImage by the specified degrees
-    private func rotateImage(_ image: UIImage, degrees: Int) -> UIImage {
-        let radians = CGFloat(degrees) * .pi / 180
-        
-        var newSize = CGRect(origin: CGPoint.zero, size: image.size).applying(CGAffineTransform(rotationAngle: radians)).size
-        newSize.width = floor(newSize.width)
-        newSize.height = floor(newSize.height)
-        
-        UIGraphicsBeginImageContextWithOptions(newSize, false, image.scale)
-        let context = UIGraphicsGetCurrentContext()!
-        
-        context.translateBy(x: newSize.width/2, y: newSize.height/2)
-        context.rotate(by: radians)
-        
-        image.draw(in: CGRect(x: -image.size.width/2, y: -image.size.height/2, width: image.size.width, height: image.size.height))
-        
-        let newImage = UIGraphicsGetImageFromCurrentImageContext()
-        UIGraphicsEndImageContext()
-        
-        return newImage ?? image
     }
     
     /// Reads and decrypts an image file
@@ -405,7 +321,7 @@ class SecureImageRepository {
                 
                 // Create smaller thumbnail
                 let thumbnailSize = CGSize(width: fullImage.size.width / 4, height: fullImage.size.height / 4)
-                thumbnailImage = resizeImage(fullImage, to: thumbnailSize)
+                thumbnailImage = ImageProcessing.resizeImage(fullImage, to: thumbnailSize)
                 
                 // Cache thumbnail to file
                 if let thumbnailImage = thumbnailImage,
@@ -427,15 +343,6 @@ class SecureImageRepository {
         }
         
         return thumbnailImage
-    }
-    
-    /// Resizes an image to the specified size
-    private func resizeImage(_ image: UIImage, to size: CGSize) -> UIImage {
-        UIGraphicsBeginImageContextWithOptions(size, false, 0.0)
-        image.draw(in: CGRect(origin: .zero, size: size))
-        let resizedImage = UIGraphicsGetImageFromCurrentImageContext()
-        UIGraphicsEndImageContext()
-        return resizedImage ?? image
     }
     
     // MARK: - Photo Management
@@ -928,10 +835,10 @@ class SecureImageRepository {
     func updateImage(_ photoDef: PhotoDef, newImageData: Data) async throws {
         // Load existing image to extract EXIF metadata
         let existingImageData = try await decryptJpg(photoDef)
-        let existingMetadata = extractEXIFMetadata(from: existingImageData)
+        let existingMetadata = ImageProcessing.extractEXIFMetadata(from: existingImageData)
         
         // Process the new image with preserved EXIF metadata
-        let processedData = try processImageWithEXIFMetadata(
+        let processedData = try ImageProcessing.processImageWithEXIFMetadata(
             imageData: newImageData,
             preservedEXIFMetadata: existingMetadata,
             filename: photoDef.photoName
@@ -944,84 +851,6 @@ class SecureImageRepository {
         thumbnailCache.clearThumbnail(photoDef.photoName)
         let thumbnailFile = getThumbnailFile(photoDef)
         try? FileManager.default.removeItem(at: thumbnailFile)
-    }
-    
-    // MARK: - Private Helper Methods
-    
-    /// Extracts EXIF metadata from image data
-    private func extractEXIFMetadata(from imageData: Data) -> [String: Any] {
-        var exifMetadata: [String: Any] = [:]
-        
-        guard let imageSource = CGImageSourceCreateWithData(imageData as CFData, nil),
-              let imageProperties = CGImageSourceCopyPropertiesAtIndex(imageSource, 0, nil) as? [String: Any] else {
-            return exifMetadata
-        }
-        
-        // Preserve orientation
-        if let orientation = imageProperties[kCGImagePropertyOrientation as String] as? Int {
-            exifMetadata[kCGImagePropertyOrientation as String] = orientation
-        }
-        
-        // Preserve EXIF data
-        if let exifDict = imageProperties[kCGImagePropertyExifDictionary as String] as? [String: Any] {
-            exifMetadata[kCGImagePropertyExifDictionary as String] = exifDict
-        }
-        
-        // Preserve TIFF data
-        if let tiffDict = imageProperties[kCGImagePropertyTIFFDictionary as String] as? [String: Any] {
-            exifMetadata[kCGImagePropertyTIFFDictionary as String] = tiffDict
-        }
-        
-        // Preserve GPS data
-        if let gpsDict = imageProperties[kCGImagePropertyGPSDictionary as String] as? [String: Any] {
-            exifMetadata[kCGImagePropertyGPSDictionary as String] = gpsDict
-        }
-        
-        return exifMetadata
-    }
-    
-    /// Processes image data while preserving EXIF metadata
-    private func processImageWithEXIFMetadata(
-        imageData: Data,
-        preservedEXIFMetadata: [String: Any],
-        filename _: String
-    ) throws -> Data {
-        guard let image = UIImage(data: imageData) else {
-            throw ImageRepositoryError.invalidImageData
-        }
-        
-        // Convert to JPEG with quality
-        guard let jpegData = image.jpegData(compressionQuality: 0.9) else {
-            throw ImageRepositoryError.compressionFailed
-        }
-        
-        // If no EXIF metadata to preserve, return the processed image
-        if preservedEXIFMetadata.isEmpty {
-            return jpegData
-        }
-        
-        // Create image destination to write JPEG with preserved metadata
-        let mutableData = NSMutableData(data: jpegData)
-        let type = UTType.jpeg.identifier as CFString
-        guard let destination = CGImageDestinationCreateWithData(mutableData as CFMutableData, type, 1, nil) else {
-            return jpegData
-        }
-        
-        // Create image source from processed JPEG
-        guard let source = CGImageSourceCreateWithData(jpegData as CFData, nil),
-              let cgImage = CGImageSourceCreateImageAtIndex(source, 0, nil) else {
-            return jpegData
-        }
-        
-        // Add the image with preserved EXIF metadata
-        CGImageDestinationAddImage(destination, cgImage, preservedEXIFMetadata as CFDictionary)
-        
-        if CGImageDestinationFinalize(destination) {
-            return mutableData as Data
-        }
-        
-        // Fallback to original processed image if metadata preservation fails
-        return jpegData
     }
     
     // MARK: - Helper Methods
