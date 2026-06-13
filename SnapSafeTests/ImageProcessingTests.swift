@@ -88,4 +88,19 @@ final class ImageProcessingTests: XCTestCase {
                        "empty-metadata fast path should still return valid JPEG data")
         XCTAssertNotNil(UIImage(data: result))
     }
+
+    func test_readImageMetadata_parsesDimensionsOrientationAndGps() throws {
+        let base = try XCTUnwrap(
+            ImageProcessing.compressImageToJpeg(solidImage(width: 24, height: 16), quality: 0.9))
+        let location = CLLocation(latitude: 37.3349, longitude: -122.0090)
+        let withMeta = ImageProcessing.applyImageMetadata(
+            base, location: location, applyRotation: false, rotationDegrees: 90)
+        let parsed = try XCTUnwrap(ImageProcessing.readImageMetadata(fromJPEGData: withMeta))
+        XCTAssertEqual(parsed.width, 24)
+        XCTAssertEqual(parsed.height, 16)
+        XCTAssertEqual(parsed.orientation, .right, "90 degrees maps to TIFF orientation 6 (.right)")
+        let gps = try XCTUnwrap(parsed.gps)
+        XCTAssertEqual(gps.latitude, 37.3349, accuracy: 0.0001)
+        XCTAssertEqual(gps.longitude, -122.0090, accuracy: 0.0001)
+    }
 }

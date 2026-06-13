@@ -177,4 +177,44 @@ enum ImageProcessing {
 
         return jpegData
     }
+
+    /// Parses pixel dimensions, orientation, and GPS coordinates out of JPEG data.
+    static func readImageMetadata(fromJPEGData data: Data) -> ParsedImageMetadata? {
+        guard let src = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
+        let props = CGImageSourceCopyPropertiesAtIndex(src, 0, nil) as? [CFString: Any]
+
+        let pixelWidth = (props?[kCGImagePropertyPixelWidth] as? NSNumber)?.intValue
+        let pixelHeight = (props?[kCGImagePropertyPixelHeight] as? NSNumber)?.intValue
+
+        var orientation: TiffOrientation? = nil
+        if let tiff = props?[kCGImagePropertyTIFFDictionary] as? [CFString: Any],
+           let ori = (tiff[kCGImagePropertyTIFFOrientation] as? NSNumber)?.intValue,
+           let mapped = TiffOrientation(rawValue: ori) {
+            orientation = mapped
+        } else if let ori = (props?[kCGImagePropertyOrientation] as? NSNumber)?.intValue,
+                  let mapped = TiffOrientation(rawValue: ori) {
+            // Some writers put orientation at the top level
+            orientation = mapped
+        }
+
+        var gpsCoords: GpsCoordinates? = nil
+        if let gps = props?[kCGImagePropertyGPSDictionary] as? [CFString: Any] {
+            if let lat = gps[kCGImagePropertyGPSLatitude] as? NSNumber,
+               let latRef = gps[kCGImagePropertyGPSLatitudeRef] as? String,
+               let lon = gps[kCGImagePropertyGPSLongitude] as? NSNumber,
+               let lonRef = gps[kCGImagePropertyGPSLongitudeRef] as? String {
+                let latSign = (latRef.uppercased() == "S") ? -1.0 : 1.0
+                let lonSign = (lonRef.uppercased() == "W") ? -1.0 : 1.0
+                gpsCoords = GpsCoordinates(latitude: lat.doubleValue * latSign,
+                                           longitude: lon.doubleValue * lonSign)
+            }
+        }
+
+        return ParsedImageMetadata(
+            width: pixelWidth,
+            height: pixelHeight,
+            orientation: orientation,
+            gps: gpsCoords
+        )
+    }
 }

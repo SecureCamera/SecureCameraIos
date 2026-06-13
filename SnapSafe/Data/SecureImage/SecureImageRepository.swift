@@ -9,8 +9,6 @@ import Foundation
 import Logging
 import UIKit
 import CoreLocation
-import UniformTypeIdentifiers
-import ImageIO
 import CryptoKit
 import AVFoundation
 
@@ -875,7 +873,7 @@ class SecureImageRepository {
         // Your decryptor should return the JPG bytes as Data
         let jpgBytes = try await decryptJpg(photoDef: photoDef)
         
-        if let md = readImageMetadata(fromJPEGData: jpgBytes) {
+        if let md = ImageProcessing.readImageMetadata(fromJPEGData: jpgBytes) {
             orientation = md.orientation
             coords = md.gps
             size = Size(width: md.width ?? 0, height: md.height ?? 0)
@@ -895,46 +893,6 @@ class SecureImageRepository {
         return try await encryptionScheme.decryptFile(photoDef.photoFile)
     }
 
-    // MARK: - ImageIO helpers
-
-    private func readImageMetadata(fromJPEGData data: Data) -> ParsedImageMetadata? {
-        guard let src = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
-        let props = CGImageSourceCopyPropertiesAtIndex(src, 0, nil) as? [CFString: Any]
-        
-        let pixelWidth = (props?[kCGImagePropertyPixelWidth] as? NSNumber)?.intValue
-        let pixelHeight = (props?[kCGImagePropertyPixelHeight] as? NSNumber)?.intValue
-        
-        var orientation: TiffOrientation? = nil
-        if let tiff = props?[kCGImagePropertyTIFFDictionary] as? [CFString: Any],
-           let ori = (tiff[kCGImagePropertyTIFFOrientation] as? NSNumber)?.intValue,
-           let mapped = TiffOrientation(rawValue: ori) {
-            orientation = mapped
-        } else if let ori = (props?[kCGImagePropertyOrientation] as? NSNumber)?.intValue,
-                  let mapped = TiffOrientation(rawValue: ori) {
-            // Some writers put orientation at the top level
-            orientation = mapped
-        }
-        
-        var gpsCoords: GpsCoordinates? = nil
-        if let gps = props?[kCGImagePropertyGPSDictionary] as? [CFString: Any] {
-            if let lat = gps[kCGImagePropertyGPSLatitude] as? NSNumber,
-               let latRef = gps[kCGImagePropertyGPSLatitudeRef] as? String,
-               let lon = gps[kCGImagePropertyGPSLongitude] as? NSNumber,
-               let lonRef = gps[kCGImagePropertyGPSLongitudeRef] as? String {
-                let latSign = (latRef.uppercased() == "S") ? -1.0 : 1.0
-                let lonSign = (lonRef.uppercased() == "W") ? -1.0 : 1.0
-                gpsCoords = GpsCoordinates(latitude: lat.doubleValue * latSign,
-                                           longitude: lon.doubleValue * lonSign)
-            }
-        }
-        
-        return ParsedImageMetadata(
-            width: pixelWidth,
-            height: pixelHeight,
-            orientation: orientation,
-            gps: gpsCoords
-        )
-    }
 }
 
 // MARK: - Errors
@@ -944,26 +902,3 @@ enum ImageRepositoryError: Error {
     case invalidImageData
 }
 
-// MARK: - Metadata
-
-private struct ParsedImageMetadata {
-    let width: Int?
-    let height: Int?
-    let orientation: TiffOrientation?
-    let gps: GpsCoordinates?
-}
-
-struct Size {
-    let width: Int
-    let height: Int
-}
-
-enum TiffOrientation: Int {
-    case up = 1, upMirrored = 2, down = 3, downMirrored = 4
-    case leftMirrored = 5, right = 6, rightMirrored = 7, left = 8
-}
-
-struct GpsCoordinates {
-    let latitude: Double
-    let longitude: Double
-}
