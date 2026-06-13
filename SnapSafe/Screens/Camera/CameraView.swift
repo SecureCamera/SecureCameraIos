@@ -184,71 +184,16 @@ struct CameraPreviewView: UIViewRepresentable {
             y: (viewSize.height - containerSize.height) / 2
         )
 
-        // Create the container view with proper aspect ratio
+        // Create the container view with proper aspect ratio. The capture
+        // area needs no border or corner brackets: the preview is clipped to
+        // exactly the capture aspect, so the letterbox bands already mark it,
+        // and frame lines just collide with the overlaid controls.
         let containerView = UIView(frame: CGRect(origin: containerOrigin, size: containerSize))
         containerView.backgroundColor = .clear
         containerView.clipsToBounds = true
         view.addSubview(containerView)
         holder.previewContainer = containerView
-        
-        // Add visual guides for the capture area
-        
-        // 1. Add a border to visualize the capture area
-        let borderLayer = CALayer()
-        borderLayer.frame = containerView.bounds
-        borderLayer.borderColor = UIColor.white.withAlphaComponent(0.7).cgColor
-        borderLayer.borderWidth = 2.0
-        containerView.layer.addSublayer(borderLayer)
-        
-        // 2. Add corner brackets for a more camera-like appearance
-        let cornerSize: CGFloat = 20.0
-        let cornerThickness: CGFloat = 3.0
-        let cornerColor = UIColor.white.withAlphaComponent(0.8).cgColor
-        
-        // Top-left corner
-        let topLeftCornerH = CALayer()
-        topLeftCornerH.frame = CGRect(x: 0, y: 0, width: cornerSize, height: cornerThickness)
-        topLeftCornerH.backgroundColor = cornerColor
-        containerView.layer.addSublayer(topLeftCornerH)
-        
-        let topLeftCornerV = CALayer()
-        topLeftCornerV.frame = CGRect(x: 0, y: 0, width: cornerThickness, height: cornerSize)
-        topLeftCornerV.backgroundColor = cornerColor
-        containerView.layer.addSublayer(topLeftCornerV)
-        
-        // Top-right corner
-        let topRightCornerH = CALayer()
-        topRightCornerH.frame = CGRect(x: containerSize.width - cornerSize, y: 0, width: cornerSize, height: cornerThickness)
-        topRightCornerH.backgroundColor = cornerColor
-        containerView.layer.addSublayer(topRightCornerH)
-        
-        let topRightCornerV = CALayer()
-        topRightCornerV.frame = CGRect(x: containerSize.width - cornerThickness, y: 0, width: cornerThickness, height: cornerSize)
-        topRightCornerV.backgroundColor = cornerColor
-        containerView.layer.addSublayer(topRightCornerV)
-        
-        // Bottom-left corner
-        let bottomLeftCornerH = CALayer()
-        bottomLeftCornerH.frame = CGRect(x: 0, y: containerSize.height - cornerThickness, width: cornerSize, height: cornerThickness)
-        bottomLeftCornerH.backgroundColor = cornerColor
-        containerView.layer.addSublayer(bottomLeftCornerH)
-        
-        let bottomLeftCornerV = CALayer()
-        bottomLeftCornerV.frame = CGRect(x: 0, y: containerSize.height - cornerSize, width: cornerThickness, height: cornerSize)
-        bottomLeftCornerV.backgroundColor = cornerColor
-        containerView.layer.addSublayer(bottomLeftCornerV)
-        
-        // Bottom-right corner
-        let bottomRightCornerH = CALayer()
-        bottomRightCornerH.frame = CGRect(x: containerSize.width - cornerSize, y: containerSize.height - cornerThickness, width: cornerSize, height: cornerThickness)
-        bottomRightCornerH.backgroundColor = cornerColor
-        containerView.layer.addSublayer(bottomRightCornerH)
-        
-        let bottomRightCornerV = CALayer()
-        bottomRightCornerV.frame = CGRect(x: containerSize.width - cornerThickness, y: containerSize.height - cornerSize, width: cornerThickness, height: cornerSize)
-        bottomRightCornerV.backgroundColor = cornerColor
-        containerView.layer.addSublayer(bottomRightCornerV)
-        
+
         // Create and configure the preview layer
         let previewLayer = AVCaptureVideoPreviewLayer()
         previewLayer.session = cameraModel.session
@@ -331,54 +276,6 @@ struct CameraPreviewView: UIViewRepresentable {
                 }
             }
 
-            if containerView.layer.sublayers?.count ?? 0 > 0 {
-                if let borderLayer = containerView.layer.sublayers?.first(where: { $0.borderWidth > 0 }) {
-                    borderLayer.frame = containerView.bounds
-                }
-
-                let cornerSize: CGFloat = 20.0
-                let cornerThickness: CGFloat = 3.0
-
-                for layer in containerView.layer.sublayers ?? [] {
-                    if layer.borderWidth > 0 { continue }
-                    if layer.frame.origin.x == 0 && layer.frame.origin.y == 0 {
-                        if layer.frame.height == cornerThickness {
-                            layer.frame = CGRect(x: 0, y: 0, width: cornerSize, height: cornerThickness)
-                        } else if layer.frame.width == cornerThickness {
-                            layer.frame = CGRect(x: 0, y: 0, width: cornerThickness, height: cornerSize)
-                        }
-                    } else if layer.frame.origin.y == 0 && layer.frame.origin.x > 0 {
-                        if layer.frame.height == cornerThickness {
-                            layer.frame = CGRect(x: containerSize.width - cornerSize, y: 0, width: cornerSize, height: cornerThickness)
-                        } else if layer.frame.width == cornerThickness {
-                            layer.frame = CGRect(x: containerSize.width - cornerThickness, y: 0, width: cornerThickness, height: cornerSize)
-                        }
-                    } else if layer.frame.origin.x == 0 && layer.frame.origin.y > 0 {
-                        if layer.frame.height == cornerThickness {
-                            layer.frame = CGRect(x: 0, y: containerSize.height - cornerThickness, width: cornerSize, height: cornerThickness)
-                        } else if layer.frame.width == cornerThickness {
-                            layer.frame = CGRect(x: 0, y: containerSize.height - cornerSize, width: cornerThickness, height: cornerSize)
-                        }
-                    } else if layer.frame.origin.x > 0 && layer.frame.origin.y > 0 {
-                        if layer.frame.height == cornerThickness {
-                            layer.frame = CGRect(x: containerSize.width - cornerSize, y: containerSize.height - cornerThickness, width: cornerSize, height: cornerThickness)
-                        } else if layer.frame.width == cornerThickness {
-                            layer.frame = CGRect(x: containerSize.width - cornerThickness, y: containerSize.height - cornerSize, width: cornerThickness, height: cornerSize)
-                        }
-                    }
-                }
-
-                for subview in containerView.subviews {
-                    if let label = subview as? UILabel, label.text == "CAPTURE AREA" {
-                        label.frame = CGRect(
-                            x: (containerSize.width - label.frame.width) / 2,
-                            y: 10,
-                            width: label.frame.width,
-                            height: label.frame.height
-                        )
-                    }
-                }
-            }
         }
 
         if cameraModel.viewSize != containerSize {

@@ -36,6 +36,7 @@ struct CameraContainerView: View {
         // previously shoved the bottom controls up into the preview. The glyphs
         // still rotate in place (iOS Camera style); capture orientation is
         // handled independently by the capture pipeline.
+        GeometryReader { proxy in
         ZStack {
             CameraView(cameraModel: cameraModel, focusExclusionRects: focusExclusionRects, onPinchStarted: {
                 isPinching = true
@@ -54,35 +55,60 @@ struct CameraContainerView: View {
                     .transition(.opacity)
             }
 
-            if cameraModel.isEncryptingVideo {
+            // Saving HUD: stays up for a minimum duration (see the view
+            // model's videoSavingGate) and fades in/out, so a short clip's
+            // near-instant encryption reads as a confirmation, not a flash.
+            if cameraModel.isSavingVideo {
                 VStack(spacing: 12) {
-                    ProgressView(value: cameraModel.encryptionProgress, total: 1.0)
+                    ProgressView(value: min(cameraModel.encryptionProgress, 1.0), total: 1.0)
                         .progressViewStyle(LinearProgressViewStyle(tint: .white))
                         .frame(width: 200)
-                    Text("Encrypting video... \(Int(cameraModel.encryptionProgress * 100))%")
+                    Text("Encrypting & saving…")
                         .font(.caption)
                         .foregroundStyle(.white)
                 }
                 .padding(20)
                 .background(Color.black.opacity(0.7))
                 .clipShape(.rect(cornerRadius: 12))
+                // Rotate in place with the device, like the other camera
+                // chrome — the interface stays locked to portrait.
+                .rotatesWithDevice(orientation)
+                .transition(.opacity)
             }
 
-            controlsColumn
+            if cameraModel.isRecording {
+                recordingIndicatorOverlay
+            }
+
+            controlsColumn(letterbox: letterboxHeight(in: proxy.size))
                 .environment(\.colorScheme, .dark)
         }
-        .ignoresSafeArea()
         .coordinateSpace(.named(Self.cameraSpaceName))
         .onPreferenceChange(FocusExclusionPreferenceKey.self) { rects in
             focusExclusionRects = rects
         }
         .animation(.easeInOut(duration: 0.1), value: isShutterAnimating)
+        .animation(.easeInOut(duration: 0.25), value: cameraModel.isSavingVideo)
+        .animation(.easeInOut(duration: 0.25), value: cameraModel.isRecording)
+        }
+        .ignoresSafeArea()
         .supportedOrientations(.portrait)
         .onAppear {
             Task {
                 await cameraModel.checkAndSetupCamera()
             }
         }
+    }
+
+    /// Height of the black band above/below the preview container in a
+    /// full-screen layout of `size`. The control rows pad themselves by this
+    /// so they sit just inside the image instead of straddling its edges.
+    private func letterboxHeight(in size: CGSize) -> CGFloat {
+        let container = CameraPreviewLayout.containerSize(
+            for: size,
+            aspectRatio: cameraModel.captureAspectRatio
+        )
+        return max(0, (size.height - container.height) / 2)
     }
 
     /// The window's safe-area insets, which stay stable while the interface is
@@ -115,15 +141,11 @@ struct CameraContainerView: View {
 
     // MARK: - Controls overlay (top bar + zoom + mode picker)
 
-    private var controlsColumn: some View {
+    private func controlsColumn(letterbox: CGFloat) -> some View {
         VStack(spacing: 0) {
             // Top controls
             HStack {
                 cameraSwitchButton
-                Spacer()
-                if cameraModel.isRecording {
-                    recordingIndicator
-                }
                 Spacer()
                 flashButton
             }
@@ -131,30 +153,38 @@ struct CameraContainerView: View {
             // gesture on the preview beneath doesn't swallow the buttons' taps
             // (the capture-area container can span the full width on large
             // screens, putting these controls inside it).
-            .background(focusExclusionReporter(expand: 8))
+            .background(focusExclusionReporter(expand: 8, active: !cameraModel.isRecording))
+            .hideWhileRecording(cameraModel.isRecording)
 
             Spacer(minLength: 0)
 
             if showZoomSlider {
                 ZoomSliderView(cameraModel: cameraModel, isVisible: $showZoomSlider, isPinching: isPinching)
                     .padding(.bottom, 10)
+                    .hideWhileRecording(cameraModel.isRecording)
             } else {
                 zoomCapsule
                     .frame(height: orientation.orientation.isLandscape ? 96 : 44)
+                    .hideWhileRecording(cameraModel.isRecording)
             }
 
             // Photo / video toggle
             modePicker
-                .background(focusExclusionReporter(expand: 20))
+                .background(focusExclusionReporter(expand: 20, active: !cameraModel.isRecording))
                 .padding(.bottom, 12)
+                .hideWhileRecording(cameraModel.isRecording)
 
-            // Capture bar (gallery / shutter / settings)
+            // Capture bar (gallery / shutter / settings). Only the shutter
+            // stays visible while recording; gallery + settings fade out so the
+            // viewfinder reads as a single-purpose stop-recording surface.
             HStack {
                 galleryButton
+                    .hideWhileRecording(cameraModel.isRecording)
                 Spacer()
                 captureButton
                 Spacer()
                 settingsButton
+                    .hideWhileRecording(cameraModel.isRecording)
             }
             .frame(maxWidth: 420)
             // Same focus-exclusion treatment as the top bar so these taps reach
@@ -162,8 +192,11 @@ struct CameraContainerView: View {
             .background(focusExclusionReporter(expand: 8))
         }
         .padding(.horizontal, 16)
-        .padding(.top, stableSafeInsets.top + 8)
-        .padding(.bottom, stableSafeInsets.bottom + 4)
+        // Track the preview rect: the rows clear the letterbox bands and sit
+        // inside the image with an even margin (falling back to the stable
+        // safe area on screens where the preview fills the height).
+        .padding(.top, max(stableSafeInsets.top + 8, letterbox + 12))
+        .padding(.bottom, max(stableSafeInsets.bottom + 4, letterbox + 12))
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
@@ -219,6 +252,35 @@ struct CameraContainerView: View {
         .glassControlBackground(in: .rect(cornerRadius: 8))
         .accessibilityLabel("Recording: \(formatDuration(cameraModel.recordingDurationMs))")
         .accessibilityAddTraits(.updatesFrequently)
+    }
+
+    /// Pins the recording capsule to whichever edge is physically up for the
+    /// current orientation, upright. On rotation it cross-fades between
+    /// positions rather than swinging around.
+    private var recordingIndicatorOverlay: some View {
+        let device = orientation.orientation
+        let alignment: Alignment
+        let edge: Edge.Set
+        let inset: CGFloat
+        switch device {
+        case .landscapeLeft:
+            alignment = .leading;  edge = .leading;  inset = 12
+        case .landscapeRight:
+            alignment = .trailing; edge = .trailing; inset = 12
+        case .portraitUpsideDown:
+            alignment = .bottom;   edge = .bottom;   inset = stableSafeInsets.bottom + 8
+        default:
+            alignment = .top;      edge = .top;      inset = stableSafeInsets.top + 8
+        }
+
+        return recordingIndicator
+            .rotationEffect(Utils.getRotationAngle(for: device))
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: alignment)
+            .padding(edge, inset)
+            .allowsHitTesting(false)
+            .id(device)
+            .transition(.opacity)
+            .animation(.easeInOut(duration: 0.2), value: device)
     }
 
     private var zoomCapsule: some View {
@@ -279,7 +341,7 @@ struct CameraContainerView: View {
                 Image(systemName: "photo.on.rectangle")
                     .font(.title2)
                     .foregroundStyle(
-                        (cameraModel.isSavingPhoto || cameraModel.isRecording || cameraModel.isEncryptingVideo)
+                        (cameraModel.isSavingPhoto || cameraModel.isRecording || cameraModel.isSavingVideo)
                             ? .gray : .primary
                     )
                     .rotatesWithDevice(orientation)
@@ -292,7 +354,7 @@ struct CameraContainerView: View {
                 }
             }
         }
-        .disabled(cameraModel.isSavingPhoto || cameraModel.isRecording || cameraModel.isEncryptingVideo)
+        .disabled(cameraModel.isSavingPhoto || cameraModel.isRecording || cameraModel.isSavingVideo)
         .padding()
         .accessibilityLabel("Gallery")
         .accessibilityHint(cameraModel.isSavingPhoto ? "Saving photo" : "")
@@ -302,12 +364,12 @@ struct CameraContainerView: View {
         Button(action: { nav.navigate(to: .settings) }) {
             Image(systemName: "gear")
                 .font(.title2)
-                .foregroundStyle((cameraModel.isRecording || cameraModel.isEncryptingVideo) ? .gray : .primary)
+                .foregroundStyle((cameraModel.isRecording || cameraModel.isSavingVideo) ? .gray : .primary)
                 .rotatesWithDevice(orientation)
                 .padding()
                 .glassControlBackground(in: Circle())
         }
-        .disabled(cameraModel.isRecording || cameraModel.isEncryptingVideo)
+        .disabled(cameraModel.isRecording || cameraModel.isSavingVideo)
         .padding()
         .accessibilityLabel("Settings")
         #if DEBUG
@@ -336,19 +398,22 @@ struct CameraContainerView: View {
             cameraModel.capturePhoto()
         }) {
             ZStack {
+                // Glass interior (sized to the ring's inner edge) so the live
+                // image shows through instead of a solid white slab.
+                Image("snapshutter")
+                    .renderingMode(.template)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 52, height: 52)
+                    .foregroundStyle(cameraModel.isPermissionGranted ? Color.white : Color.gray)
+                    .frame(width: 72, height: 72)
+                    .glassControlBackground(in: Circle())
                 Circle()
                     .strokeBorder(cameraModel.isPermissionGranted ? Color.white : Color.gray, lineWidth: 4)
                     .frame(width: 80, height: 80)
-                    .background(
-                        Circle()
-                            .fill(cameraModel.isPermissionGranted ? Color.white : Color.gray.opacity(0.5))
-                    )
-                Image("snapshutter")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 90, height: 90)
-                    .foregroundStyle(.black)
             }
+            .frame(width: 90, height: 90)
+            .contentShape(Circle())
             .padding()
         }
         .disabled(!cameraModel.isPermissionGranted)
@@ -362,24 +427,27 @@ struct CameraContainerView: View {
             cameraModel.toggleRecording()
         }) {
             ZStack {
-                Circle()
-                    .strokeBorder(cameraModel.isRecording ? Color.red : Color.white, lineWidth: 4)
-                    .frame(width: 80, height: 80)
-                    .background(
+                // Standard iOS record control: white ring, glass interior, red
+                // core that becomes a square while recording.
+                Group {
+                    if cameraModel.isRecording {
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(Color.red)
+                            .frame(width: 32, height: 32)
+                    } else {
                         Circle()
-                            .fill(cameraModel.isRecording ? Color.red : Color.red.opacity(0.8))
-                    )
-                if cameraModel.isRecording {
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(Color.white)
-                        .frame(width: 28, height: 28)
-                } else {
-                    Circle()
-                        .fill(Color.white)
-                        .frame(width: 28, height: 28)
+                            .fill(Color.red)
+                            .frame(width: 36, height: 36)
+                    }
                 }
+                .frame(width: 72, height: 72)
+                .glassControlBackground(in: Circle())
+                Circle()
+                    .strokeBorder(cameraModel.isPermissionGranted ? Color.white : Color.gray, lineWidth: 4)
+                    .frame(width: 80, height: 80)
             }
             .frame(width: 90, height: 90)
+            .contentShape(Circle())
             .padding()
         }
         .disabled(!cameraModel.isPermissionGranted)
@@ -441,6 +509,11 @@ private extension View {
     /// Liquid Glass on iOS 26+, with an `.ultraThinMaterial` fallback on earlier
     /// versions (the deployment floor is iOS 18.5).
     ///
+    /// Uses the CLEAR glass variant, not regular: these controls float over the
+    /// live viewfinder, where regular glass renders as a near-opaque dark disc.
+    /// Per the HIG, clear glass over media needs a dim layer beneath it for
+    /// symbol legibility — hence the black tint inside the shape.
+    ///
     /// The glass is intentionally NOT `.interactive()`: these backgrounds live
     /// inside `Button`s (and tap gestures), and interactive glass installs its
     /// own touch handling that swallows the button's tap. The enclosing control
@@ -448,7 +521,9 @@ private extension View {
     @ViewBuilder
     func glassControlBackground(in shape: some Shape) -> some View {
         if #available(iOS 26.0, *) {
-            self.glassEffect(.regular, in: shape)
+            self
+                .glassEffect(.clear, in: shape)
+                .background(.black.opacity(0.25), in: shape)
         } else {
             self.background(.ultraThinMaterial, in: shape)
         }
@@ -461,5 +536,14 @@ private extension View {
         self
             .rotationEffect(Utils.getRotationAngle(for: observer.orientation))
             .animation(.easeInOut(duration: 0.25), value: observer.orientation)
+    }
+
+    /// Hides a control while video recording is active so only the shutter is
+    /// visible. Opacity fades; hit-testing is disabled in lockstep so the
+    /// invisible button can't be tapped.
+    func hideWhileRecording(_ isRecording: Bool) -> some View {
+        self
+            .opacity(isRecording ? 0 : 1)
+            .allowsHitTesting(!isRecording)
     }
 }
