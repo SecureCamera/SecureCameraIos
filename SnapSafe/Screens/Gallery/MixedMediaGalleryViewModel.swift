@@ -217,8 +217,14 @@ final class MixedMediaGalleryViewModel: ObservableObject {
             mediaItems = allMedia
 
             if isSelectingDecoys {
+                var decoyIds = Set<UUID>()
                 for item in allMedia where await isItemDecoy(item) {
-                    selectedMediaIds.insert(item.id)
+                    decoyIds.insert(item.id)
+                }
+                // Re-check after the awaited enumeration: selection may have been
+                // cancelled while this loop was suspended.
+                if isSelectingDecoys {
+                    selectedMediaIds.formUnion(decoyIds)
                 }
             }
         }
@@ -298,8 +304,14 @@ final class MixedMediaGalleryViewModel: ObservableObject {
             selectedMediaIds.removeAll()
             let items = mediaItems
             Task {
+                var decoyIds = Set<UUID>()
                 for item in items where await isItemDecoy(item) {
-                    selectedMediaIds.insert(item.id)
+                    decoyIds.insert(item.id)
+                }
+                // Re-check after the awaited enumeration: the user may have
+                // cancelled decoy selection while this loop was suspended.
+                if isSelectingDecoys {
+                    selectedMediaIds = decoyIds
                 }
             }
         }
