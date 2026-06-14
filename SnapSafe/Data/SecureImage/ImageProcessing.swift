@@ -183,7 +183,7 @@ enum ImageProcessing {
     /// Decodes a JPEG image, scales it to 1/`scale` of its original dimensions, and re-encodes to JPEG.
     /// Returns nil if the input is not valid JPEG data.
     static func createThumbnailData(fromJPEGData data: Data, scale: CGFloat = 4.0) -> Data? {
-        guard let image = UIImage(data: data) else { return nil }
+        guard scale > 0, let image = UIImage(data: data) else { return nil }
         let size = CGSize(width: image.size.width / scale, height: image.size.height / scale)
         let resized = resizeImage(image, to: size)
         return resized.jpegData(compressionQuality: 0.75)
@@ -196,6 +196,7 @@ enum ImageProcessing {
         let generator = AVAssetImageGenerator(asset: asset)
         generator.appliesPreferredTrackTransform = true
         generator.maximumSize = CGSize(width: 600, height: 600)
+        // Allow some tolerance so very short clips still yield a frame.
         generator.requestedTimeToleranceBefore = CMTime(seconds: 1, preferredTimescale: 600)
         generator.requestedTimeToleranceAfter = CMTime(seconds: 1, preferredTimescale: 600)
         do {
