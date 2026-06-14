@@ -26,6 +26,12 @@ final class AddDecoyPhotoUseCase: @unchecked Sendable {
     }
 
     func addDecoyPhoto(photoDef: PhotoDef) async -> Bool {
+        // Enforce the decoy limit BEFORE any cryptographic work: at the limit we
+        // must not read the plaintext poison-pill PIN or derive a key.
+        guard await imageRepository.numDecoys() < SecureImageRepository.maxDecoyItems else {
+            return false
+        }
+
         guard
             let ppp = await pinRepository.getHashedPoisonPillPin(),
             let plain = await pinRepository.getPlainPoisonPillPin()

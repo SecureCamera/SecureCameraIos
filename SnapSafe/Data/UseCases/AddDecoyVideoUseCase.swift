@@ -27,6 +27,13 @@ final class AddDecoyVideoUseCase: @unchecked Sendable {
     }
 
     func addDecoyVideo(videoDef: VideoDef) async -> Bool {
+        // Enforce the decoy limit BEFORE any cryptographic work: at the limit we
+        // must not read the plaintext poison-pill PIN or derive a key. The limit
+        // is shared across photos and videos (numDecoys() counts both).
+        guard await imageRepository.numDecoys() < SecureImageRepository.maxDecoyItems else {
+            return false
+        }
+
         guard
             let ppp = await pinRepository.getHashedPoisonPillPin(),
             let plain = await pinRepository.getPlainPoisonPillPin()

@@ -62,7 +62,9 @@ final class MixedMediaGalleryViewModel: ObservableObject {
     // Decoy support
     var isSelecting: Bool { selectionMode != .none }
     var isSelectingDecoys: Bool { selectionMode == .decoy }
-    @Published var maxDecoys: Int = 10
+    // Selection cap for batch decoy mode. Tied to the single source of truth so
+    // the UI cap can never drift from what the use cases actually enforce.
+    let maxDecoys = SecureImageRepository.maxDecoyItems
     @Published var showDecoyLimitWarning: Bool = false
     @Published var showDecoyConfirmation: Bool = false
     @Published var isPoisonPillConfigured: Bool = false

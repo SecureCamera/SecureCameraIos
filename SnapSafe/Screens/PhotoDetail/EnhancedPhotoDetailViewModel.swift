@@ -51,6 +51,7 @@ class EnhancedPhotoDetailViewModel: ObservableObject {
 
     // Toolbar state
     @Published var showDeleteConfirmation = false
+    @Published var showDecoyLimitAlert = false
     @Published var isDecoyOperationLoading = false
     @Published var isPoisonPillConfigured = false
 
@@ -255,6 +256,10 @@ class EnhancedPhotoDetailViewModel: ObservableObject {
         preloadAdjacentPhotos(currentIndex: currentIndex)
         loadPoisonPillConfiguration()
         showCounterThenAutoHide()
+        // Load the decoy state for the initially shown photo. handleIndexChange
+        // only fires when the index *changes* (a swipe), so without this the
+        // first photo's button label is stuck at its default ("Add Decoy").
+        refreshDecoyState()
     }
 
     /// Shows the counter chip and (for photos) schedules it to fade out after
@@ -373,6 +378,16 @@ class EnhancedPhotoDetailViewModel: ObservableObject {
                     isDecoyOperationLoading = false
                 }
             } else {
+                // Pre-check the limit so we can show the limit alert without
+                // attempting (and without conflating "at limit" with a crypto
+                // failure). The use case enforces the same limit authoritatively.
+                guard await secureImageRepository.numDecoys() < SecureImageRepository.maxDecoyItems else {
+                    await MainActor.run {
+                        isDecoyOperationLoading = false
+                        showDecoyLimitAlert = true
+                    }
+                    return
+                }
                 Logger.ui.debug("Adding decoy status to photo", metadata: ["photoId": .stringConvertible(photoDef.id)])
                 let success = await addDecoyPhotoUseCase.addDecoyPhoto(photoDef: photoDef)
                 await MainActor.run {
