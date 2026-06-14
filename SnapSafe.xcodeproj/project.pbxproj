@@ -136,6 +136,8 @@
 		A98EBC212FDE1ACD00FA9CCB /* PhotoStorageDataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A98EBC202FDE1ACD00FA9CCB /* PhotoStorageDataSource.swift */; };
 		A98EBC232FDE1B1300FA9CCB /* PhotoStorageDataSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A98EBC222FDE1B1300FA9CCB /* PhotoStorageDataSourceTests.swift */; };
 		A98EBC252FDE4C3B00FA9CCB /* PINEntryField.swift in Sources */ = {isa = PBXBuildFile; fileRef = A98EBC242FDE4C3B00FA9CCB /* PINEntryField.swift */; };
+		A98EBC632FDF673700FA9CCB /* AVMetadataItemFactoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A98EBC622FDF673700FA9CCB /* AVMetadataItemFactoryTests.swift */; };
+		A98EBC652FDF681000FA9CCB /* AVMetadataItemFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = A98EBC642FDF681000FA9CCB /* AVMetadataItemFactory.swift */; };
 		A9D60B1B2FC5065C00683A92 /* VideoExportTestHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9D60B1A2FC5065C00683A92 /* VideoExportTestHelper.swift */; };
 		A9D60B1D2FC5067900683A92 /* VideoExportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9D60B1C2FC5067900683A92 /* VideoExportTests.swift */; };
 		A9D60B1F2FC506B600683A92 /* DeveloperToolsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9D60B1E2FC506B600683A92 /* DeveloperToolsView.swift */; };
@@ -313,6 +315,8 @@
 		A98EBC202FDE1ACD00FA9CCB /* PhotoStorageDataSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoStorageDataSource.swift; sourceTree = "<group>"; };
 		A98EBC222FDE1B1300FA9CCB /* PhotoStorageDataSourceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoStorageDataSourceTests.swift; sourceTree = "<group>"; };
 		A98EBC242FDE4C3B00FA9CCB /* PINEntryField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PINEntryField.swift; sourceTree = "<group>"; };
+		A98EBC622FDF673700FA9CCB /* AVMetadataItemFactoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AVMetadataItemFactoryTests.swift; sourceTree = "<group>"; };
+		A98EBC642FDF681000FA9CCB /* AVMetadataItemFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AVMetadataItemFactory.swift; sourceTree = "<group>"; };
 		A9C449132E9CC85800CFE854 /* SnapSafeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SnapSafeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A9D60B1A2FC5065C00683A92 /* VideoExportTestHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoExportTestHelper.swift; sourceTree = "<group>"; };
 		A9D60B1C2FC5067900683A92 /* VideoExportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoExportTests.swift; sourceTree = "<group>"; };
@@ -522,6 +526,7 @@
 				C0FFEE000000000000000111 /* MinimumVisibilityGate.swift */,
 				66A404CC2E67F0960054FFE7 /* DataExt.swift */,
 				667FF82A2E6CB1C400FB3E02 /* getRotationAngle.swift */,
+				A98EBC642FDF681000FA9CCB /* AVMetadataItemFactory.swift */,
 			);
 			path = Util;
 			sourceTree = "<group>";
@@ -803,6 +808,7 @@
 				F10BAC24976F36840D24E6B6 /* OrientationRotationTests.swift */,
 				A98EBC122FDE07AB00FA9CCB /* ImageProcessingTests.swift */,
 				A98EBC222FDE1B1300FA9CCB /* PhotoStorageDataSourceTests.swift */,
+				A98EBC622FDF673700FA9CCB /* AVMetadataItemFactoryTests.swift */,
 			);
 			path = SnapSafeTests;
 			sourceTree = "<group>";
@@ -1028,6 +1034,7 @@
 				667FF8102E6A9EE600FB3E02 /* Clock.swift in Sources */,
 				C0FFEE000000000000000112 /* MinimumVisibilityGate.swift in Sources */,
 				6660FC3F2E76952700C0B617 /* PINSetupIntroView.swift in Sources */,
+				A98EBC652FDF681000FA9CCB /* AVMetadataItemFactory.swift in Sources */,
 				660130A92E67753600D07E9C /* AppDependencyInjection.swift in Sources */,
 				A91DBC5E2DE58191001F42ED /* ZoomableImageView.swift in Sources */,
 				A9D60B1B2FC5065C00683A92 /* VideoExportTestHelper.swift in Sources */,
@@ -1139,6 +1146,7 @@
 				24194F171D3CBDF42B72D556 /* HardwareEncryptionSchemeFileProtectionTests.swift in Sources */,
 				24194F181D3CBDF42B72D557 /* HardwareEncryptionSchemeSecurityResetTests.swift in Sources */,
 				F11C39ACCEDC8B8CAEA2C214 /* PinDEKWrapperTests.swift in Sources */,
+				A98EBC632FDF673700FA9CCB /* AVMetadataItemFactoryTests.swift in Sources */,
 				33145A757800B951872791FC /* HardwareEncryptionSchemePinBindingTests.swift in Sources */,
 				86FA0BDF73A263C07D744E4D /* FileBasedSettingsDataSourceProtectionTests.swift in Sources */,
 				6D125407D63ACE7CF6CB74FE /* OrientationRotationTests.swift in Sources */,
