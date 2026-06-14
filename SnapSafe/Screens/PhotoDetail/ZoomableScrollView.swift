@@ -182,7 +182,7 @@ struct ZoomableScrollView<Content: View>: UIViewRepresentable {
         }
 
         // MARK: – Single Tap
-        @objc internal func handleSingleTap(_ gesture: UITapGestureRecognizer) {
+        @objc internal func handleSingleTap(_: UITapGestureRecognizer) {
             onSingleTap?()
         }
 

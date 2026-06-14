@@ -22,7 +22,6 @@ actor SecureImageRepository {
     static let videosDir = PhotoStorageDataSource.videosDir
     static let videoThumbnailsDir = PhotoStorageDataSource.videoThumbnailsDir
     static let decoyVideoThumbnailsDir = PhotoStorageDataSource.decoyVideoThumbnailsDir
-    static let thumbnailsDir = PhotoStorageDataSource.thumbnailsDir
     static let maxDecoyPhotos = 10
 
     // MARK: - Dependencies
@@ -103,10 +102,6 @@ actor SecureImageRepository {
     }
 
     // MARK: - Image Operations
-
-    private func encryptToFile(_ data: Data, targetFile: URL) async throws {
-        try await storage.encryptToFile(data, targetFile: targetFile)
-    }
 
     private func decryptFile(_ encryptedFile: URL) async throws -> Data {
         try await storage.decryptFile(encryptedFile)
