@@ -15,7 +15,7 @@ import Logging
  purely a pass-through. But we have an AddDecoyPhotoUseCase,
  so I like the obvious symetry of having both.
  */
-final class RemoveDecoyPhotoUseCase {
+final class RemoveDecoyPhotoUseCase: @unchecked Sendable {
     private let imageRepository: SecureImageRepository
 
     init(
