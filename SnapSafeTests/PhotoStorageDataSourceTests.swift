@@ -75,4 +75,30 @@ final class PhotoStorageDataSourceTests: XCTestCase {
         let recovered = try await ds.decryptFile(target)
         XCTAssertEqual(recovered, original, "round-tripped bytes should match the original")
     }
+
+    func test_decoyEnumeration_filtersByExtension() throws {
+        let ds = makeDataSource(encryptionScheme: PassThroughEncryptionScheme())
+        let decoyDir = ds.getDecoyDirectory()
+        try Data().write(to: decoyDir.appendingPathComponent("a.jpg"))
+        try Data().write(to: decoyDir.appendingPathComponent("b.jpg"))
+        try Data().write(to: decoyDir.appendingPathComponent("c.secv"))
+        try Data().write(to: decoyDir.appendingPathComponent("note.txt"))
+
+        let jpgs = ds.getDecoyFiles().map { $0.lastPathComponent }.sorted()
+        XCTAssertEqual(jpgs, ["a.jpg", "b.jpg"], "getDecoyFiles should return only .jpg files; got \(jpgs)")
+
+        let secvs = ds.getDecoyVideoFiles().map { $0.lastPathComponent }
+        XCTAssertEqual(secvs, ["c.secv"], "getDecoyVideoFiles should return only .secv files; got \(secvs)")
+    }
+
+    func test_getDecoyFile_isUnderDecoyDirectory() {
+        let ds = makeDataSource(encryptionScheme: PassThroughEncryptionScheme())
+        let photo = PhotoDef(photoName: "photo_x.jpg", photoFormat: "jpg",
+                             photoFile: tempRoot.appendingPathComponent("photo_x.jpg"))
+        let decoyFile = ds.getDecoyFile(photo)
+        XCTAssertEqual(decoyFile.lastPathComponent, "photo_x.jpg")
+        XCTAssertEqual(decoyFile.deletingLastPathComponent().standardized.path,
+                       ds.getDecoyDirectory().standardized.path,
+                       "decoy file should live under the decoy directory")
+    }
 }
