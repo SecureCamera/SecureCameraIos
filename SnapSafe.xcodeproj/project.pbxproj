@@ -135,6 +135,7 @@
 		A98EBC1F2FDE170C00FA9CCB /* ImageMetadataTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A98EBC1E2FDE170C00FA9CCB /* ImageMetadataTypes.swift */; };
 		A98EBC212FDE1ACD00FA9CCB /* PhotoStorageDataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A98EBC202FDE1ACD00FA9CCB /* PhotoStorageDataSource.swift */; };
 		A98EBC232FDE1B1300FA9CCB /* PhotoStorageDataSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A98EBC222FDE1B1300FA9CCB /* PhotoStorageDataSourceTests.swift */; };
+		A98EBC252FDE4C3B00FA9CCB /* PINEntryField.swift in Sources */ = {isa = PBXBuildFile; fileRef = A98EBC242FDE4C3B00FA9CCB /* PINEntryField.swift */; };
 		A9D60B1B2FC5065C00683A92 /* VideoExportTestHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9D60B1A2FC5065C00683A92 /* VideoExportTestHelper.swift */; };
 		A9D60B1D2FC5067900683A92 /* VideoExportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9D60B1C2FC5067900683A92 /* VideoExportTests.swift */; };
 		A9D60B1F2FC506B600683A92 /* DeveloperToolsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9D60B1E2FC506B600683A92 /* DeveloperToolsView.swift */; };
@@ -172,7 +173,6 @@
 		D54FBF5A0C3BABB963AB33CF /* FakeEncryptionScheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2414533D313F8BEF8E1DB17D /* FakeEncryptionScheme.swift */; };
 		E81315B178D3FB88663F856F /* FakeVideoEncryptionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2AD9082F22CD2A9FC7CD33B /* FakeVideoEncryptionService.swift */; };
 		F11C39ACCEDC8B8CAEA2C214 /* PinDEKWrapperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 332C6DF332A8DDCFFDFA5FDB /* PinDEKWrapperTests.swift */; };
-		F5928EF067F8CDFB35D572D3 /* FakeThumbnailCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 177F44BD6B96C2A8659FAC80 /* FakeThumbnailCache.swift */; };
 		F994CE57BC4263827C4C1DB9 /* DecoyVideoIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E122542F8E8343FD9E2471E5 /* DecoyVideoIntegrationTests.swift */; };
 /* End PBXBuildFile section */
 
@@ -197,7 +197,6 @@
 		0B07498650554419769A4053 /* HardwareEncryptionSchemeFileProtectionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HardwareEncryptionSchemeFileProtectionTests.swift; sourceTree = "<group>"; };
 		0B07498750554419769A4054 /* HardwareEncryptionSchemeSecurityResetTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HardwareEncryptionSchemeSecurityResetTests.swift; sourceTree = "<group>"; };
 		13CBF89B43CD2D2FE8EBA109 /* FileBasedSettingsDataSourceProtectionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FileBasedSettingsDataSourceProtectionTests.swift; sourceTree = "<group>"; };
-		177F44BD6B96C2A8659FAC80 /* FakeThumbnailCache.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FakeThumbnailCache.swift; sourceTree = "<group>"; };
 		2414533D313F8BEF8E1DB17D /* FakeEncryptionScheme.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FakeEncryptionScheme.swift; sourceTree = "<group>"; };
 		332C6DF332A8DDCFFDFA5FDB /* PinDEKWrapperTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PinDEKWrapperTests.swift; sourceTree = "<group>"; };
 		345B31B24DBF8A6CAC9E2617 /* InlineVideoPlayerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = InlineVideoPlayerView.swift; sourceTree = "<group>"; };
@@ -313,6 +312,7 @@
 		A98EBC1E2FDE170C00FA9CCB /* ImageMetadataTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageMetadataTypes.swift; sourceTree = "<group>"; };
 		A98EBC202FDE1ACD00FA9CCB /* PhotoStorageDataSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoStorageDataSource.swift; sourceTree = "<group>"; };
 		A98EBC222FDE1B1300FA9CCB /* PhotoStorageDataSourceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoStorageDataSourceTests.swift; sourceTree = "<group>"; };
+		A98EBC242FDE4C3B00FA9CCB /* PINEntryField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PINEntryField.swift; sourceTree = "<group>"; };
 		A9C449132E9CC85800CFE854 /* SnapSafeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SnapSafeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A9D60B1A2FC5065C00683A92 /* VideoExportTestHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoExportTestHelper.swift; sourceTree = "<group>"; };
 		A9D60B1C2FC5067900683A92 /* VideoExportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoExportTests.swift; sourceTree = "<group>"; };
@@ -397,7 +397,6 @@
 			isa = PBXGroup;
 			children = (
 				2414533D313F8BEF8E1DB17D /* FakeEncryptionScheme.swift */,
-				177F44BD6B96C2A8659FAC80 /* FakeThumbnailCache.swift */,
 				A2AD9082F22CD2A9FC7CD33B /* FakeVideoEncryptionService.swift */,
 			);
 			path = Util;
@@ -599,6 +598,7 @@
 			children = (
 				667FF8302E6CD94500FB3E02 /* PINVerificationViewModel.swift */,
 				A91DBC4D2DE58191001F42ED /* PINVerificationView.swift */,
+				A98EBC242FDE4C3B00FA9CCB /* PINEntryField.swift */,
 			);
 			path = PinVerification;
 			sourceTree = "<group>";
@@ -1088,6 +1088,7 @@
 				660130BC2E67AD1D00D07E9C /* AuthorizationRepository.swift in Sources */,
 				660130BE2E67AD1D00D07E9C /* EncryptionScheme.swift in Sources */,
 				A9D60B212FC506CE00683A92 /* RunVideoExportTests.swift in Sources */,
+				A98EBC252FDE4C3B00FA9CCB /* PINEntryField.swift in Sources */,
 				660130BF2E67AD1D00D07E9C /* HashedPin.swift in Sources */,
 				660130C02E67AD1D00D07E9C /* PassThroughEncryptionScheme.swift in Sources */,
 				6660FC4E2E83736200C0B617 /* FileBasedSettingsDataSource.swift in Sources */,
@@ -1119,7 +1120,6 @@
 				A95B2E252F31D19700EE7291 /* SECVFileFormat.swift in Sources */,
 				66A404D72E694A450054FFE7 /* PinRepositoryTest.swift in Sources */,
 				D54FBF5A0C3BABB963AB33CF /* FakeEncryptionScheme.swift in Sources */,
-				F5928EF067F8CDFB35D572D3 /* FakeThumbnailCache.swift in Sources */,
 				C0FFEE0000000000000000B2 /* CameraZoomMappingTests.swift in Sources */,
 				A98EBC132FDE07AB00FA9CCB /* ImageProcessingTests.swift in Sources */,
 				C0FFEE0000000000000000E2 /* CameraPreviewLayoutTests.swift in Sources */,

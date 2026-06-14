@@ -12,7 +12,7 @@ import Logging
 
 /// Service for encrypting and decrypting videos using the SECV format.
 @MainActor
-protocol VideoEncryptionServiceProtocol {
+protocol VideoEncryptionServiceProtocol: Sendable {
     /// Encrypt a video file using SECV format.
     /// - Parameters:
     ///   - inputURL: URL of the unencrypted video file

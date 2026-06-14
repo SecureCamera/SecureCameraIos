@@ -501,10 +501,13 @@ final class VideoPlayerViewModel: ObservableObject {
     // MARK: - Gallery Actions (inline detail player)
 
     func loadActionState() {
-        isDecoy = secureImageRepository.isDecoyVideo(videoDef)
         Task {
+            let decoy = await secureImageRepository.isDecoyVideo(videoDef)
             let configured = await pinRepository.hasPoisonPillPin()
-            await MainActor.run { self.isPoisonPillConfigured = configured }
+            await MainActor.run {
+                self.isDecoy = decoy
+                self.isPoisonPillConfigured = configured
+            }
         }
     }
 
@@ -512,7 +515,7 @@ final class VideoPlayerViewModel: ObservableObject {
         isDecoyOperationLoading = true
         Task {
             if isDecoy {
-                _ = secureImageRepository.removeDecoyVideo(videoDef)
+                _ = await secureImageRepository.removeDecoyVideo(videoDef)
                 await MainActor.run {
                     self.isDecoy = false
                     self.isDecoyOperationLoading = false
@@ -553,8 +556,10 @@ final class VideoPlayerViewModel: ObservableObject {
     func deleteVideo() {
         cleanup()
         try? FileManager.default.removeItem(at: videoDef.videoFile)
-        secureImageRepository.deleteVideoThumbnail(forVideoNamed: videoDef.videoName)
-        _ = secureImageRepository.removeDecoyVideo(videoDef)
+        Task {
+            await secureImageRepository.deleteVideoThumbnail(forVideoNamed: videoDef.videoName)
+            _ = await secureImageRepository.removeDecoyVideo(videoDef)
+        }
     }
 
     private func presentShareSheet(with items: [Any]) {

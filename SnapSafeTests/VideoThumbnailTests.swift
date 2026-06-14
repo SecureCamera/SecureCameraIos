@@ -32,11 +32,12 @@ final class VideoThumbnailTests: XCTestCase {
         decoyVideoThumbnailsDirectory = tempDirectory.appendingPathComponent(SecureImageRepository.decoyVideoThumbnailsDir)
 
         fakeEncryption = FakeEncryptionScheme()
-        repository = VideoTestableSecureImageRepository(
-            tempDirectory: tempDirectory,
-            thumbnailCache: FakeThumbnailCache(),
+        repository = SecureImageRepository(
+            thumbnailCache: ThumbnailCache(),
             encryptionScheme: fakeEncryption,
-            videoEncryptionService: FakeVideoEncryptionService()
+            videoEncryptionService: FakeVideoEncryptionService(),
+            applicationSupportDirectory: tempDirectory,
+            cachesDirectory: tempDirectory
         )
     }
 
@@ -77,7 +78,7 @@ final class VideoThumbnailTests: XCTestCase {
         let file = videoThumbnailsDirectory.appendingPathComponent("video_20230101_120000.jpg")
         XCTAssertTrue(FileManager.default.fileExists(atPath: file.path))
 
-        repository.deleteVideoThumbnail(forVideoNamed: "video_20230101_120000")
+        await repository.deleteVideoThumbnail(forVideoNamed: "video_20230101_120000")
         XCTAssertFalse(FileManager.default.fileExists(atPath: file.path))
     }
 

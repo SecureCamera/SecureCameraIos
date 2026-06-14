@@ -29,11 +29,12 @@ final class VideoImportTests: XCTestCase {
         try FileManager.default.createDirectory(at: videosDirectory, withIntermediateDirectories: true)
         videoThumbnailsDirectory = tempDirectory.appendingPathComponent(SecureImageRepository.videoThumbnailsDir)
 
-        repository = VideoTestableSecureImageRepository(
-            tempDirectory: tempDirectory,
-            thumbnailCache: FakeThumbnailCache(),
+        repository = SecureImageRepository(
+            thumbnailCache: ThumbnailCache(),
             encryptionScheme: FakeEncryptionScheme(),
-            videoEncryptionService: FakeVideoEncryptionService()
+            videoEncryptionService: FakeVideoEncryptionService(),
+            applicationSupportDirectory: tempDirectory,
+            cachesDirectory: tempDirectory
         )
     }
 
