@@ -13,8 +13,10 @@
 //  re-verify thread safety or migrate these two to UIGraphicsImageRenderer.
 //
 
+import AVFoundation
 import CoreLocation
 import ImageIO
+import Logging
 import UIKit
 import UniformTypeIdentifiers
 
@@ -176,6 +178,34 @@ enum ImageProcessing {
         }
 
         return jpegData
+    }
+
+    /// Decodes a JPEG image, scales it to 1/`scale` of its original dimensions, and re-encodes to JPEG.
+    /// Returns nil if the input is not valid JPEG data.
+    static func createThumbnailData(fromJPEGData data: Data, scale: CGFloat = 4.0) -> Data? {
+        guard let image = UIImage(data: data) else { return nil }
+        let size = CGSize(width: image.size.width / scale, height: image.size.height / scale)
+        let resized = resizeImage(image, to: size)
+        return resized.jpegData(compressionQuality: 0.75)
+    }
+
+    /// Generates a JPEG thumbnail from a plaintext video file using AVAssetImageGenerator.
+    /// Returns nil if the video has no frames or generation fails.
+    static func generateVideoThumbnailJPEG(fromVideoAt url: URL) async -> Data? {
+        let asset = AVURLAsset(url: url)
+        let generator = AVAssetImageGenerator(asset: asset)
+        generator.appliesPreferredTrackTransform = true
+        generator.maximumSize = CGSize(width: 600, height: 600)
+        generator.requestedTimeToleranceBefore = CMTime(seconds: 1, preferredTimescale: 600)
+        generator.requestedTimeToleranceAfter = CMTime(seconds: 1, preferredTimescale: 600)
+        do {
+            let result = try await generator.image(at: CMTime(seconds: 0, preferredTimescale: 600))
+            let image = UIImage(cgImage: result.image)
+            return image.jpegData(compressionQuality: 0.7)
+        } catch {
+            Logger.storage.error("AVAssetImageGenerator failed: \(error)")
+            return nil
+        }
     }
 
     /// Parses pixel dimensions, orientation, and GPS coordinates out of JPEG data.
