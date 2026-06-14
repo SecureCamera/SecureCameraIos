@@ -125,4 +125,12 @@ final class ImageProcessingTests: XCTestCase {
         let result = ImageProcessing.createThumbnailData(fromJPEGData: Data([0x00, 0x01, 0x02]))
         XCTAssertNil(result, "createThumbnailData should return nil for non-JPEG data")
     }
+
+    func test_createThumbnailData_invalidScale_returnsNil() {
+        let jpeg = ImageProcessing.compressImageToJpeg(solidImage(width: 16, height: 16), quality: 0.9)!
+        XCTAssertNil(ImageProcessing.createThumbnailData(fromJPEGData: jpeg, scale: 0),
+                     "scale of 0 should return nil")
+        XCTAssertNil(ImageProcessing.createThumbnailData(fromJPEGData: jpeg, scale: -1),
+                     "negative scale should return nil")
+    }
 }

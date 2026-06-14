@@ -508,7 +508,10 @@ class SecureImageRepository {
             }
             let file = storage.getVideoThumbnailFile(forVideoNamed: name)
             try await encryptionScheme.encryptToFile(plain: jpeg, targetFile: file)
-            guard let img = UIImage(data: jpeg) else { return }
+            guard let img = UIImage(data: jpeg) else {
+                Logger.storage.warning("Thumbnail encrypted but UIImage decode failed for video '\(name)' — in-memory cache miss")
+                return
+            }
             thumbnailCache.putVideoThumbnail(name, img)
         } catch {
             Logger.storage.error("Failed to store video thumbnail: \(error)")
