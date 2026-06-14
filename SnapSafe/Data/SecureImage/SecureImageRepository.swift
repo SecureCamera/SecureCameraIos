@@ -10,6 +10,7 @@ import Logging
 import UIKit
 import CoreLocation
 import CryptoKit
+import AVFoundation
 
 actor SecureImageRepository {
 
@@ -683,6 +684,91 @@ actor SecureImageRepository {
         )
     }
 
+    func getVideoMetaData(_ videoDef: VideoDef) async throws -> VideoMetaData {
+        // 1. File size from disk.
+        let attributes = try FileManager.default.attributesOfItem(atPath: videoDef.videoFile.path)
+        let fileSize = (attributes[.size] as? Int64) ?? 0
+
+        // 2. Build an AVAsset that reads the (decrypted) bytes. For .secv we route
+        //    through EncryptedVideoDataSource so no temp plaintext is written.
+        let asset: AVURLAsset
+        if videoDef.isEncrypted {
+            let key = SymmetricKey(data: try await encryptionScheme.getDerivedKey())
+            guard let encrypted = AVAsset.makeEncryptedVideoAsset(
+                with: videoDef.videoFile, encryptionKey: key) else {
+                throw SECVError.decryptionFailed
+            }
+            asset = encrypted
+        } else {
+            asset = AVURLAsset(url: videoDef.videoFile)
+        }
+
+        // 3. Load duration + common metadata.
+        let (commonMetadata, duration) = try await asset.load(.commonMetadata, .duration)
+
+        // 4. Location (ISO 6709), if embedded.
+        var location: GpsCoordinates?
+        if let item = AVMetadataItem.metadataItems(
+            from: commonMetadata, filteredByIdentifier: .commonIdentifierLocation).first,
+           let iso = try await item.load(.stringValue) {
+            location = AVMetadataItemFactory.parseISO6709(iso)
+        }
+
+        // 5. Capture date: embedded creation date, else filename, else epoch.
+        var dateTaken = Date(timeIntervalSince1970: 0)
+        var dateSource: DateSource = .filename
+        if let item = AVMetadataItem.metadataItems(
+            from: commonMetadata, filteredByIdentifier: .commonIdentifierCreationDate).first {
+            let dateValue = try await item.load(.dateValue)
+            let stringValue = try await item.load(.stringValue)
+            if let embedded = dateValue ?? stringValue.flatMap({ AVMetadataItemFactory.iso8601Date(from: $0) }) {
+                dateTaken = embedded
+                dateSource = .embedded
+            } else if let fromName = videoDef.dateTaken() {
+                dateTaken = fromName
+                dateSource = .filename
+            }
+        } else if let fromName = videoDef.dateTaken() {
+            dateTaken = fromName
+            dateSource = .filename
+        }
+
+        // 6. Technical fields from the first video track (best-effort: any
+        //    missing/zero field becomes nil and renders as "—").
+        var resolution = Size(width: 0, height: 0)
+        var orientation: TiffOrientation?
+        var codec: String?
+        var frameRate: Double?
+        var bitrate: Int?
+
+        if let track = try await asset.loadTracks(withMediaType: .video).first {
+            let (naturalSize, transform, nominalFrameRate, dataRate, formats) = try await track.load(
+                .naturalSize, .preferredTransform, .nominalFrameRate, .estimatedDataRate, .formatDescriptions)
+
+            resolution = Size(width: Int(abs(naturalSize.width)), height: Int(abs(naturalSize.height)))
+            orientation = AVMetadataItemFactory.videoOrientation(fromTransform: transform)
+            if nominalFrameRate > 0 { frameRate = Double(nominalFrameRate) }
+            if dataRate > 0 { bitrate = Int(dataRate) }
+            if let format = formats.first {
+                codec = AVMetadataItemFactory.codecString(
+                    fromMediaSubType: CMFormatDescriptionGetMediaSubType(format))
+            }
+        }
+
+        let seconds = duration.seconds
+        return VideoMetaData(
+            resolution: resolution,
+            duration: seconds.isFinite ? seconds : 0,
+            dateTaken: dateTaken,
+            dateTakenSource: dateSource,
+            location: location,
+            orientation: orientation,
+            codec: codec,
+            frameRate: frameRate,
+            bitrate: bitrate,
+            fileSize: fileSize
+        )
+    }
 }
 
 // MARK: - Errors
