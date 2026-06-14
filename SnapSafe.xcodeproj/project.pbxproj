@@ -138,6 +138,8 @@
 		A98EBC252FDE4C3B00FA9CCB /* PINEntryField.swift in Sources */ = {isa = PBXBuildFile; fileRef = A98EBC242FDE4C3B00FA9CCB /* PINEntryField.swift */; };
 		A98EBC632FDF673700FA9CCB /* AVMetadataItemFactoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A98EBC622FDF673700FA9CCB /* AVMetadataItemFactoryTests.swift */; };
 		A98EBC652FDF681000FA9CCB /* AVMetadataItemFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = A98EBC642FDF681000FA9CCB /* AVMetadataItemFactory.swift */; };
+		A98EBC672FDF6D1500FA9CCB /* VideoMetaDataFormattingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A98EBC662FDF6D1500FA9CCB /* VideoMetaDataFormattingTests.swift */; };
+		A98EBC692FDF6DD000FA9CCB /* VideoMetaData.swift in Sources */ = {isa = PBXBuildFile; fileRef = A98EBC682FDF6DD000FA9CCB /* VideoMetaData.swift */; };
 		A9D60B1B2FC5065C00683A92 /* VideoExportTestHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9D60B1A2FC5065C00683A92 /* VideoExportTestHelper.swift */; };
 		A9D60B1D2FC5067900683A92 /* VideoExportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9D60B1C2FC5067900683A92 /* VideoExportTests.swift */; };
 		A9D60B1F2FC506B600683A92 /* DeveloperToolsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9D60B1E2FC506B600683A92 /* DeveloperToolsView.swift */; };
@@ -317,6 +319,8 @@
 		A98EBC242FDE4C3B00FA9CCB /* PINEntryField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PINEntryField.swift; sourceTree = "<group>"; };
 		A98EBC622FDF673700FA9CCB /* AVMetadataItemFactoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AVMetadataItemFactoryTests.swift; sourceTree = "<group>"; };
 		A98EBC642FDF681000FA9CCB /* AVMetadataItemFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AVMetadataItemFactory.swift; sourceTree = "<group>"; };
+		A98EBC662FDF6D1500FA9CCB /* VideoMetaDataFormattingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoMetaDataFormattingTests.swift; sourceTree = "<group>"; };
+		A98EBC682FDF6DD000FA9CCB /* VideoMetaData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoMetaData.swift; sourceTree = "<group>"; };
 		A9C449132E9CC85800CFE854 /* SnapSafeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SnapSafeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A9D60B1A2FC5065C00683A92 /* VideoExportTestHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoExportTestHelper.swift; sourceTree = "<group>"; };
 		A9D60B1C2FC5067900683A92 /* VideoExportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoExportTests.swift; sourceTree = "<group>"; };
@@ -679,6 +683,7 @@
 				A91DBC252DE58191001F42ED /* AppearanceMode.swift */,
 				A91DBC262DE58191001F42ED /* DetectedFace.swift */,
 				A91DBC272DE58191001F42ED /* MaskMode.swift */,
+				A98EBC682FDF6DD000FA9CCB /* VideoMetaData.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -809,6 +814,7 @@
 				A98EBC122FDE07AB00FA9CCB /* ImageProcessingTests.swift */,
 				A98EBC222FDE1B1300FA9CCB /* PhotoStorageDataSourceTests.swift */,
 				A98EBC622FDF673700FA9CCB /* AVMetadataItemFactoryTests.swift */,
+				A98EBC662FDF6D1500FA9CCB /* VideoMetaDataFormattingTests.swift */,
 			);
 			path = SnapSafeTests;
 			sourceTree = "<group>";
@@ -1085,6 +1091,7 @@
 				A95B2E2F2F42F18F00EE7291 /* VideoPlayerView.swift in Sources */,
 				66A404CB2E67EB7F0054FFE7 /* PinCrypto.swift in Sources */,
 				A98EBC112FDE079C00FA9CCB /* ImageProcessing.swift in Sources */,
+				A98EBC692FDF6DD000FA9CCB /* VideoMetaData.swift in Sources */,
 				A91DBC702DE58191001F42ED /* LocationRepository.swift in Sources */,
 				A9E6B6AF2E6EAD3D00BB6F19 /* SecurityOverlayViewModel.swift in Sources */,
 				A91DBC732DE58191001F42ED /* PINSetupView.swift in Sources */,
@@ -1134,6 +1141,7 @@
 				C0FFEE0000000000000000F2 /* EnhancedPhotoDetailViewModelDragTests.swift in Sources */,
 				C0FFEE000000000000000122 /* MinimumVisibilityGateTests.swift in Sources */,
 				68109942731A0033DBA31CA8 /* PoisonPillVideoDeletionTests.swift in Sources */,
+				A98EBC672FDF6D1500FA9CCB /* VideoMetaDataFormattingTests.swift in Sources */,
 				71A1063EE417231D3E6A771B /* SECVFileFormatTests.swift in Sources */,
 				78BAE12E96629EA55F066179 /* SecureImageRepositoryTests.swift in Sources */,
 				7CBC61415276C81597CDBF80 /* VerifyPinUseCaseTests.swift in Sources */,
