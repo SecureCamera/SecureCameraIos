@@ -9,7 +9,6 @@ import PhotosUI
 import SwiftUI
 import Logging
 import CryptoKit
-import FactoryKit
 
 
 // Empty state view when no media exist
@@ -296,18 +295,16 @@ struct SecureGalleryView: View {
                             photo: photoDef,
                             isSelected: viewModel.isSelected(item),
                             isSelecting: viewModel.isSelecting,
-                            onTap: {
-                                viewModel.handleMediaTap(item)
-                            }
+                            onTap: { viewModel.handleMediaTap(item) },
+                            galleryViewModel: viewModel
                         )
                     } else if item.mediaType == .video {
                         VideoCellView(
                             item: item,
                             isSelected: viewModel.isSelected(item),
                             isSelecting: viewModel.isSelecting,
-                            onTap: {
-                                viewModel.handleMediaTap(item)
-                            }
+                            onTap: { viewModel.handleMediaTap(item) },
+                            galleryViewModel: viewModel
                         )
                     }
                 }
@@ -324,12 +321,14 @@ struct VideoCellView: View {
     let isSelected: Bool
     let isSelecting: Bool
     let onTap: () -> Void
+    @ObservedObject var galleryViewModel: MixedMediaGalleryViewModel
 
-    @Injected(\.secureImageRepository)
-    private var secureImageRepository: SecureImageRepository
-
-    @State private var thumbnail: UIImage? = nil
     @State private var isDecoy: Bool = false
+
+    private var thumbnail: UIImage? {
+        guard let name = item.videoDef?.videoName else { return nil }
+        return galleryViewModel.videoThumbnails[name]
+    }
 
     private let cellSize: CGFloat = 100
 
@@ -405,12 +404,10 @@ struct VideoCellView: View {
         .accessibilityLabel("Video: \(item.mediaName)")
         .accessibilityHint(isSelecting ? "Double-tap to \(isSelected ? "deselect" : "select")" : "Double-tap to open")
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
-        .task {
+        .task(id: item.videoDef?.videoName) {
             if let videoDef = item.videoDef {
-                if let data = await secureImageRepository.readVideoThumbnail(videoDef) {
-                    thumbnail = UIImage(data: data)
-                }
-                isDecoy = await secureImageRepository.isDecoyVideo(videoDef)
+                await galleryViewModel.loadVideoThumbnail(for: videoDef)
+                isDecoy = await galleryViewModel.isDecoyVideo(videoDef)
             }
         }
     }
