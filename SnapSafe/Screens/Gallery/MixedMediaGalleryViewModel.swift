@@ -196,6 +196,20 @@ final class MixedMediaGalleryViewModel: ObservableObject {
         videoThumbnails[key] = image
     }
 
+    /// Drops a photo's thumbnail from both the in-memory cache and the published
+    /// dict. Called on delete so a stale decrypted bitmap isn't retained or served
+    /// for a later item that reuses the same name.
+    private func invalidatePhotoThumbnail(_ photo: PhotoDef) {
+        thumbnailCache.evictThumbnail(photo)
+        photoThumbnails.removeValue(forKey: photo.photoName)
+    }
+
+    /// Drops a video's thumbnail from both the in-memory cache and the published dict.
+    private func invalidateVideoThumbnail(named name: String) {
+        thumbnailCache.evictVideoThumbnail(name)
+        videoThumbnails.removeValue(forKey: name)
+    }
+
     /// Whether the given photo is currently marked as a decoy.
     func isDecoyPhoto(_ photo: PhotoDef) async -> Bool {
         await secureImageRepository.isDecoyPhoto(photo)
@@ -416,10 +430,12 @@ final class MixedMediaGalleryViewModel: ObservableObject {
             for mediaItem in selectedItems {
                 if let photoDef = mediaItem.photoDef {
                     _ = await secureImageRepository.deleteImage(photoDef)
+                    invalidatePhotoThumbnail(photoDef)
                 } else if let videoDef = mediaItem.videoDef {
                     try? FileManager.default.removeItem(at: videoDef.videoFile)
                     await secureImageRepository.deleteVideoThumbnail(forVideoNamed: videoDef.videoName)
                     _ = await secureImageRepository.removeDecoyVideo(videoDef)
+                    invalidateVideoThumbnail(named: videoDef.videoName)
                 }
             }
 
@@ -629,6 +645,10 @@ final class MixedMediaGalleryViewModel: ObservableObject {
                     self?.currentActivityController?.dismiss(animated: false)
                     self?.currentActivityController = nil
                     self?.mediaItems.removeAll()
+                    // Drop decrypted thumbnail bitmaps so they don't linger in
+                    // memory after the session is locked or revoked.
+                    self?.photoThumbnails.removeAll()
+                    self?.videoThumbnails.removeAll()
                 }
             }
             .store(in: &cancellables)
