@@ -103,4 +103,26 @@ final class ImageProcessingTests: XCTestCase {
         XCTAssertEqual(gps.latitude, 37.3349, accuracy: 0.0001)
         XCTAssertEqual(gps.longitude, -122.0090, accuracy: 0.0001)
     }
+
+    func test_createThumbnailData_reducesImageSize() throws {
+        // 80×80 image → scale=4 → 20×20 thumbnail
+        let original = try XCTUnwrap(
+            ImageProcessing.compressImageToJpeg(solidImage(width: 80, height: 80), quality: 0.9)
+        )
+        let thumbData = try XCTUnwrap(
+            ImageProcessing.createThumbnailData(fromJPEGData: original, scale: 4),
+            "createThumbnailData should return non-nil for valid JPEG input"
+        )
+        // Must still be valid JPEG
+        XCTAssertEqual(Array(thumbData.prefix(2)), [0xFF, 0xD8],
+                       "thumbnail must be JPEG; got \(Array(thumbData.prefix(2)).map { String($0, radix: 16) })")
+        // Thumbnail must be substantially smaller than the original
+        XCTAssertLessThan(thumbData.count, original.count,
+                          "thumbnail (\(thumbData.count) bytes) should be smaller than original (\(original.count) bytes)")
+    }
+
+    func test_createThumbnailData_returnsNilForInvalidInput() {
+        let result = ImageProcessing.createThumbnailData(fromJPEGData: Data([0x00, 0x01, 0x02]))
+        XCTAssertNil(result, "createThumbnailData should return nil for non-JPEG data")
+    }
 }

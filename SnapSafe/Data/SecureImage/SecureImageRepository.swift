@@ -492,16 +492,15 @@ class SecureImageRepository {
     /// while the plaintext file still exists; the thumbnail cannot be recreated
     /// once the video is encrypted and the plaintext is deleted.
     func generateAndStoreVideoThumbnail(forVideoNamed name: String, fromPlaintextVideo url: URL) async {
-        guard let image = await Self.generateThumbnail(fromVideoAt: url) else {
+        guard let jpeg = await ImageProcessing.generateVideoThumbnailJPEG(fromVideoAt: url) else {
             Logger.storage.error("Failed to generate video thumbnail", metadata: ["video": .string(name)])
             return
         }
-        await storeVideoThumbnail(image, forVideoNamed: name)
+        await storeVideoThumbnail(jpeg, forVideoNamed: name)
     }
 
-    /// Stores an already-generated thumbnail image, encrypted with the current key.
-    func storeVideoThumbnail(_ image: UIImage, forVideoNamed name: String) async {
-        guard let jpeg = image.jpegData(compressionQuality: 0.7) else { return }
+    /// Stores an already-generated JPEG thumbnail, encrypted with the current key.
+    func storeVideoThumbnail(_ jpeg: Data, forVideoNamed name: String) async {
         do {
             let dir = getVideoThumbnailsDirectory()
             if !FileManager.default.fileExists(atPath: dir.path) {
@@ -509,7 +508,8 @@ class SecureImageRepository {
             }
             let file = storage.getVideoThumbnailFile(forVideoNamed: name)
             try await encryptionScheme.encryptToFile(plain: jpeg, targetFile: file)
-            thumbnailCache.putVideoThumbnail(name, image)
+            guard let img = UIImage(data: jpeg) else { return }
+            thumbnailCache.putVideoThumbnail(name, img)
         } catch {
             Logger.storage.error("Failed to store video thumbnail: \(error)")
         }
@@ -595,24 +595,6 @@ class SecureImageRepository {
         }
 
         try? FileManager.default.removeItem(at: decoyDir)
-    }
-
-    private static func generateThumbnail(fromVideoAt url: URL) async -> UIImage? {
-        let asset = AVURLAsset(url: url)
-        let generator = AVAssetImageGenerator(asset: asset)
-        generator.appliesPreferredTrackTransform = true
-        generator.maximumSize = CGSize(width: 600, height: 600)
-        // Allow some tolerance so very short clips still yield a frame.
-        generator.requestedTimeToleranceBefore = CMTime(seconds: 1, preferredTimescale: 600)
-        generator.requestedTimeToleranceAfter = CMTime(seconds: 1, preferredTimescale: 600)
-
-        do {
-            let result = try await generator.image(at: CMTime(seconds: 0, preferredTimescale: 600))
-            return UIImage(cgImage: result.image)
-        } catch {
-            Logger.storage.error("AVAssetImageGenerator failed: \(error)")
-            return nil
-        }
     }
 
     // MARK: - Decoy Photo Operations

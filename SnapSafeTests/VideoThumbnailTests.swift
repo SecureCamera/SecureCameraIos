@@ -52,7 +52,7 @@ final class VideoThumbnailTests: XCTestCase {
     }
 
     func testStoreVideoThumbnailWritesEncryptedFile() async {
-        await repository.storeVideoThumbnail(makeTestImage(), forVideoNamed: "video_20230101_120000")
+        await repository.storeVideoThumbnail(makeTestJPEG(), forVideoNamed: "video_20230101_120000")
 
         let file = videoThumbnailsDirectory.appendingPathComponent("video_20230101_120000.jpg")
         XCTAssertTrue(FileManager.default.fileExists(atPath: file.path),
@@ -60,7 +60,7 @@ final class VideoThumbnailTests: XCTestCase {
     }
 
     func testReadVideoThumbnailReturnsStoredImage() async {
-        await repository.storeVideoThumbnail(makeTestImage(), forVideoNamed: "video_20230101_120000")
+        await repository.storeVideoThumbnail(makeTestJPEG(), forVideoNamed: "video_20230101_120000")
 
         let videoDef = VideoDef(
             videoName: "video_20230101_120000",
@@ -73,7 +73,7 @@ final class VideoThumbnailTests: XCTestCase {
     }
 
     func testDeleteVideoThumbnailRemovesFile() async {
-        await repository.storeVideoThumbnail(makeTestImage(), forVideoNamed: "video_20230101_120000")
+        await repository.storeVideoThumbnail(makeTestJPEG(), forVideoNamed: "video_20230101_120000")
         let file = videoThumbnailsDirectory.appendingPathComponent("video_20230101_120000.jpg")
         XCTAssertTrue(FileManager.default.fileExists(atPath: file.path))
 
@@ -84,8 +84,8 @@ final class VideoThumbnailTests: XCTestCase {
     /// Security: video thumbnails are derived from real frames and must be
     /// destroyed when the poison pill fires.
     func testActivatePoisonPillDeletesAllVideoThumbnails() async {
-        await repository.storeVideoThumbnail(makeTestImage(), forVideoNamed: "video_a")
-        await repository.storeVideoThumbnail(makeTestImage(), forVideoNamed: "video_b")
+        await repository.storeVideoThumbnail(makeTestJPEG(), forVideoNamed: "video_a")
+        await repository.storeVideoThumbnail(makeTestJPEG(), forVideoNamed: "video_b")
         XCTAssertTrue(FileManager.default.fileExists(atPath: videoThumbnailsDirectory.path))
 
         await repository.activatePoisonPill()
@@ -103,10 +103,10 @@ final class VideoThumbnailTests: XCTestCase {
         let decoyVideoFile = videosDirectory.appendingPathComponent("video_decoy.secv")
         try Data("decoy-original".utf8).write(to: decoyVideoFile)
         let decoyVideoDef = VideoDef(videoName: "video_decoy", videoFormat: "secv", videoFile: decoyVideoFile)
-        await repository.storeVideoThumbnail(makeTestImage(), forVideoNamed: "video_decoy")
+        await repository.storeVideoThumbnail(makeTestJPEG(), forVideoNamed: "video_decoy")
 
         // A non-decoy video's thumbnail.
-        await repository.storeVideoThumbnail(makeTestImage(), forVideoNamed: "video_regular")
+        await repository.storeVideoThumbnail(makeTestJPEG(), forVideoNamed: "video_regular")
 
         // The decoy thumbnail re-encryption decrypts the current thumbnail; make
         // the fake return some jpeg bytes for that decrypt.
@@ -135,12 +135,13 @@ final class VideoThumbnailTests: XCTestCase {
 
     // MARK: - Helpers
 
-    private func makeTestImage() -> UIImage {
+    private func makeTestJPEG() -> Data {
         let size = CGSize(width: 40, height: 40)
         let renderer = UIGraphicsImageRenderer(size: size)
-        return renderer.image { ctx in
+        let image = renderer.image { ctx in
             UIColor.systemBlue.setFill()
             ctx.fill(CGRect(origin: .zero, size: size))
         }
+        return image.jpegData(compressionQuality: 0.7)!
     }
 }
