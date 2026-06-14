@@ -56,6 +56,8 @@ final class MixedMediaGalleryViewModel: ObservableObject {
     @Published var pickerItems: [PhotosPickerItem] = []
     @Published var isImporting: Bool = false
     @Published var importProgress: Float = 0
+    @Published var photoThumbnails: [String: UIImage] = [:]   // keyed by photoName
+    @Published var videoThumbnails: [String: UIImage] = [:]   // keyed by videoName
 
     // Decoy support
     var isSelecting: Bool { selectionMode != .none }
@@ -75,6 +77,9 @@ final class MixedMediaGalleryViewModel: ObservableObject {
 
     @Injected(\.secureImageRepository)
     private var secureImageRepository: SecureImageRepository
+
+    @Injected(\.thumbnailCache)
+    private var thumbnailCache: ThumbnailCache
 
     @Injected(\.videoEncryptionService)
     private var videoEncryptionService: VideoEncryptionService
@@ -157,6 +162,48 @@ final class MixedMediaGalleryViewModel: ObservableObject {
             return await secureImageRepository.isDecoyVideo(videoDef)
         }
         return false
+    }
+
+    // MARK: - Thumbnails
+
+    /// Loads the thumbnail for a photo, preferring the in-memory cache and falling
+    /// back to a disk decrypt. Publishes the result so observing cells update.
+    func loadThumbnail(for photo: PhotoDef) async {
+        let key = photo.photoName
+        if photoThumbnails[key] != nil { return }
+        if let cached = thumbnailCache.getThumbnail(photo) {
+            photoThumbnails[key] = cached
+            return
+        }
+        guard let data = await secureImageRepository.readThumbnail(photo),
+              let image = UIImage(data: data) else { return }
+        thumbnailCache.putThumbnail(photo, image)
+        photoThumbnails[key] = image
+    }
+
+    /// Loads the thumbnail for a video, preferring the in-memory cache and falling
+    /// back to a disk decrypt. Publishes the result so observing cells update.
+    func loadVideoThumbnail(for video: VideoDef) async {
+        let key = video.videoName
+        if videoThumbnails[key] != nil { return }
+        if let cached = thumbnailCache.getVideoThumbnail(key) {
+            videoThumbnails[key] = cached
+            return
+        }
+        guard let data = await secureImageRepository.readVideoThumbnail(video),
+              let image = UIImage(data: data) else { return }
+        thumbnailCache.putVideoThumbnail(key, image)
+        videoThumbnails[key] = image
+    }
+
+    /// Whether the given photo is currently marked as a decoy.
+    func isDecoyPhoto(_ photo: PhotoDef) async -> Bool {
+        await secureImageRepository.isDecoyPhoto(photo)
+    }
+
+    /// Whether the given video is currently marked as a decoy.
+    func isDecoyVideo(_ video: VideoDef) async -> Bool {
+        await secureImageRepository.isDecoyVideo(video)
     }
 
     var navigationTitle: String {

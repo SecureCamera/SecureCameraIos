@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import FactoryKit
 
 
 // Photo cell view for gallery items
@@ -15,20 +14,19 @@ struct PhotoCell: View {
     let isSelected: Bool
     let isSelecting: Bool
     let onTap: () -> Void
+    @ObservedObject var galleryViewModel: MixedMediaGalleryViewModel
 
-    @Injected(\.secureImageRepository)
-    private var secureImageRepository: SecureImageRepository
-    
     // Track whether this cell is visible in the viewport
     @State private var isVisible: Bool = false
-    @State private var thumbnail: UIImage? = nil
     @State private var isDecoy: Bool = false
-    
+
     // Cell size
     private let cellSize: CGFloat = 100
-    
+
+    private var thumbnail: UIImage? { galleryViewModel.photoThumbnails[photo.photoName] }
+
     var body: some View {
-        
+
         ZStack {
             // Photo image that fills the entire cell
             Image(uiImage: thumbnail ?? UIImage())
@@ -67,7 +65,7 @@ struct PhotoCell: View {
                     }
                 }
             }
-            
+
             // Decoy indicator (bottom-left)
             if isDecoy {
                 VStack {
@@ -88,11 +86,9 @@ struct PhotoCell: View {
         .accessibilityAddTraits(isSelected ? [.isSelected, .isButton] : [.isButton])
         .accessibilityActivationPoint(.center)
         .onTapGesture(perform: onTap)
-        .task {
-            if let data = await self.secureImageRepository.readThumbnail(photo) {
-                thumbnail = UIImage(data: data)
-            }
-            isDecoy = await secureImageRepository.isDecoyPhoto(photo)
+        .task(id: photo.photoName) {
+            await galleryViewModel.loadThumbnail(for: photo)
+            isDecoy = await galleryViewModel.isDecoyPhoto(photo)
         }
     }
 }
