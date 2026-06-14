@@ -8,6 +8,8 @@
 import Foundation
 import AVFoundation
 import Combine
+import CoreLocation
+import FactoryKit
 import Logging
 
 // periphery:ignore all
@@ -48,6 +50,11 @@ final class VideoCaptureService: NSObject, ObservableObject, VideoCapturing {
     private var activeMovieOutput: AVCaptureMovieFileOutput?
     private var durationTimer: Timer?
     private var recordingStartTime: Date?
+
+    // MARK: - Dependencies
+
+    @Injected(\.locationRepository)
+    private var locationRepository: LocationRepository
 
     // MARK: - Directory Management
 
@@ -108,6 +115,12 @@ final class VideoCaptureService: NSObject, ObservableObject, VideoCapturing {
                 connection.videoRotationAngle = rotationCoordinator.videoRotationAngleForHorizonLevelCapture
             }
         }
+
+        // Embed capture location (single point, sampled at record-start, matching
+        // how photos sample at shutter) and creation date into the QuickTime header.
+        // AVCaptureMovieFileOutput writes these during recording; no post pass.
+        let location = locationRepository.lastLocation
+        movieOutput.metadata = AVMetadataItemFactory.makeCaptureItems(location: location, date: Date())
 
         // Start recording
         movieOutput.startRecording(to: outputURL, recordingDelegate: self)
