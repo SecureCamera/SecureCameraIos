@@ -615,6 +615,16 @@ actor SecureImageRepository {
         }
     }
 
+    /// Removes all decoy videos and their decoy thumbnails. Called when the
+    /// poison pill is removed so the gallery stops showing the decoy badge.
+    func removeAllDecoyVideos() {
+        let decoyFiles = storage.getDecoyVideoFiles()
+        for file in decoyFiles {
+            try? FileManager.default.removeItem(at: file)
+        }
+        deleteAllDecoyVideoThumbnails()
+    }
+
     // MARK: - Update Operations
 
     /// Updates an existing image with new image data while preserving EXIF metadata

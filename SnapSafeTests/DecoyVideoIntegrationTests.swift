@@ -72,6 +72,47 @@ final class DecoyVideoIntegrationTests: XCTestCase {
                       "isDecoyVideo must be true after marking — this is what drives the gallery decoy badge")
     }
 
+    /// After the poison pill is removed (RemovePoisonPillUseCase calls
+    /// removeAllDecoyVideos), a previously-decoy video must no longer report as
+    /// decoy. Otherwise the gallery keeps showing a stale "shield" badge on the
+    /// thumbnail.
+    func testRemoveAllDecoyVideosClearsDecoyState() async throws {
+        let videoService = VideoEncryptionService()
+        let currentKey = SymmetricKey(data: Data(count: 32))
+
+        let plainURL = tempDirectory.appendingPathComponent("plain.mov")
+        try Data(repeating: 0x42, count: 8192).write(to: plainURL)
+
+        let videoFile = videosDirectory.appendingPathComponent("video_20260614_000000.secv")
+        FileManager.default.createFile(atPath: videoFile.path, contents: nil)
+        try await videoService.encryptVideoForDecoy(inputURL: plainURL, outputURL: videoFile, encryptionKey: currentKey)
+
+        let videoDef = VideoDef(
+            videoName: "video_20260614_000000",
+            videoFormat: "secv",
+            videoFile: videoFile
+        )
+
+        let repo = SecureImageRepository(
+            thumbnailCache: ThumbnailCache(),
+            encryptionScheme: FakeEncryptionScheme(),
+            videoEncryptionService: videoService,
+            applicationSupportDirectory: tempDirectory,
+            cachesDirectory: tempDirectory
+        )
+
+        let marked = await repo.addDecoyVideoWithKey(videoDef, keyData: Data(repeating: 0xAB, count: 32))
+        XCTAssertTrue(marked, "precondition: video must be markable as decoy")
+        let isDecoyBefore = await repo.isDecoyVideo(videoDef)
+        XCTAssertTrue(isDecoyBefore, "precondition: isDecoyVideo must be true after marking, got \(isDecoyBefore)")
+
+        await repo.removeAllDecoyVideos()
+
+        let isDecoyAfter = await repo.isDecoyVideo(videoDef)
+        XCTAssertFalse(isDecoyAfter,
+                       "isDecoyVideo must be false after removeAllDecoyVideos — otherwise the gallery keeps showing the decoy badge. Got \(isDecoyAfter)")
+    }
+
     /// Regression for the SECV decrypt bug: encrypt then decrypt must recover the
     /// original bytes exactly for a single (partial) chunk.
     func testVideoEncryptDecryptRoundTripSingleChunk() async throws {
