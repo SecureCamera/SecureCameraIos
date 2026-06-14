@@ -534,7 +534,7 @@ final class MixedMediaGalleryViewModel: ObservableObject {
                         Logger.ui.error("Failed to add decoy photo")
                     }
                 } else {
-                    _ = await secureImageRepository.removeDecoyPhoto(photoDef)
+                    _ = await removeDecoyPhotoUseCase.removeDecoyPhoto(photoDef)
                 }
             } else if let videoDef = item.videoDef {
                 if isSelected {

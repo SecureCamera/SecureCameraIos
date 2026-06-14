@@ -366,7 +366,7 @@ class EnhancedPhotoDetailViewModel: ObservableObject {
             let decoy = await secureImageRepository.isDecoyPhoto(photoDef)
             if decoy {
                 Logger.ui.debug("Removing decoy status from photo", metadata: ["photoId": .stringConvertible(photoDef.id)])
-                let removed = await secureImageRepository.removeDecoyPhoto(photoDef)
+                let removed = await removeDecoyPhotoUseCase.removeDecoyPhoto(photoDef)
                 Logger.ui.debug("removeDecoyPhoto result: \(removed)")
                 await MainActor.run {
                     isCurrentPhotoDecoy = false
