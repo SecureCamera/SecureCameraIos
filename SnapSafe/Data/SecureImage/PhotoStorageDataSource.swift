@@ -161,4 +161,60 @@ struct PhotoStorageDataSource {
         // Move temp file to target
         try FileManager.default.moveItem(at: tempFile, to: targetFile)
     }
+
+    // MARK: - File paths
+
+    func getThumbnailFile(_ photoDef: PhotoDef) -> URL {
+        return getThumbnailsDirectory().appendingPathComponent(photoDef.photoName)
+    }
+
+    func getDecoyFile(_ photoDef: PhotoDef) -> URL {
+        return getDecoyDirectory().appendingPathComponent(photoDef.photoName)
+    }
+
+    func getDecoyVideoFile(_ videoDef: VideoDef) -> URL {
+        return getDecoyDirectory().appendingPathComponent(videoDef.videoFile.lastPathComponent)
+    }
+
+    func getVideoThumbnailFile(forVideoNamed name: String) -> URL {
+        return getVideoThumbnailsDirectory().appendingPathComponent(name).appendingPathExtension("jpg")
+    }
+
+    func getDecoyVideoThumbnailFile(forVideoNamed name: String) -> URL {
+        return getDecoyVideoThumbnailsDirectory().appendingPathComponent(name).appendingPathExtension("jpg")
+    }
+
+    // MARK: - Decoy file enumeration
+
+    /// Decoy photo files (`.jpg`) currently in the decoy directory.
+    func getDecoyFiles() -> [URL] {
+        let dir = getDecoyDirectory()
+
+        guard FileManager.default.fileExists(atPath: dir.path) else {
+            return []
+        }
+
+        do {
+            let files = try FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)
+            return files.filter { $0.hasDirectoryPath == false && $0.pathExtension == "jpg" }
+        } catch {
+            return []
+        }
+    }
+
+    /// Decoy video files (`.secv`) currently in the decoy directory.
+    func getDecoyVideoFiles() -> [URL] {
+        let dir = getDecoyDirectory()
+
+        guard FileManager.default.fileExists(atPath: dir.path) else {
+            return []
+        }
+
+        do {
+            let files = try FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)
+            return files.filter { $0.hasDirectoryPath == false && $0.pathExtension.lowercased() == "secv" }
+        } catch {
+            return []
+        }
+    }
 }

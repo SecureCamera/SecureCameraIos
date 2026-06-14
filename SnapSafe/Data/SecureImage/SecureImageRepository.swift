@@ -177,10 +177,6 @@ class SecureImageRepository {
     
     // MARK: - Thumbnail Operations
     
-    private func getThumbnailFile(_ photoDef: PhotoDef) -> URL {
-        return getThumbnailsDirectory().appendingPathComponent(photoDef.photoName)
-    }
-    
     /// Reads or creates a thumbnail for the given photo
     func readThumbnail(_ photo: PhotoDef) async -> UIImage? {
         // Check cache first
@@ -188,7 +184,7 @@ class SecureImageRepository {
             return cachedThumbnail
         }
         
-        let thumbFile = getThumbnailFile(photo)
+        let thumbFile = storage.getThumbnailFile(photo)
         var thumbnailImage: UIImage?
         
         if FileManager.default.fileExists(atPath: thumbFile.path) {
@@ -270,10 +266,10 @@ class SecureImageRepository {
         thumbnailCache.evictThumbnail(photoDef)
         
         if deleteDecoy && isDecoyPhoto(photoDef) {
-            try? FileManager.default.removeItem(at: getDecoyFile(photoDef))
+            try? FileManager.default.removeItem(at: storage.getDecoyFile(photoDef))
         }
         
-        let thumbnailFile = getThumbnailFile(photoDef)
+        let thumbnailFile = storage.getThumbnailFile(photoDef)
         try? FileManager.default.removeItem(at: thumbnailFile)
         
         if FileManager.default.fileExists(atPath: photoDef.photoFile.path) {
@@ -314,7 +310,7 @@ class SecureImageRepository {
         try? FileManager.default.createDirectory(at: thumbnailsDir, withIntermediateDirectories: true)
         
         // Move decoy files back to gallery
-        let decoyFiles = getDecoyFiles()
+        let decoyFiles = storage.getDecoyFiles()
         for file in decoyFiles {
             let targetFile = galleryDir.appendingPathComponent(file.lastPathComponent)
             try? FileManager.default.moveItem(at: file, to: targetFile)
@@ -336,7 +332,7 @@ class SecureImageRepository {
     /// directory this relies on.
     private func deleteNonDecoyVideos() {
         let videosDir = getVideosDirectory()
-        let decoyVideoFiles = getDecoyVideoFiles()
+        let decoyVideoFiles = storage.getDecoyVideoFiles()
         let decoyVideoNames = Set(decoyVideoFiles.map { $0.lastPathComponent })
 
         // 1. Destroy every video that isn't a decoy.
@@ -357,59 +353,21 @@ class SecureImageRepository {
 
     // MARK: - Decoy Operations
     
-    private func getDecoyFile(_ photoDef: PhotoDef) -> URL {
-        return getDecoyDirectory().appendingPathComponent(photoDef.photoName)
-    }
-    
-    private func getDecoyFiles() -> [URL] {
-        let dir = getDecoyDirectory()
-        
-        guard FileManager.default.fileExists(atPath: dir.path) else {
-            return []
-        }
-        
-        do {
-            let files = try FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)
-            return files.filter { $0.hasDirectoryPath == false && $0.pathExtension == "jpg" }
-        } catch {
-            return []
-        }
-    }
-    
     /// Checks if a photo is marked as decoy
     func isDecoyPhoto(_ photoDef: PhotoDef) -> Bool {
-        return FileManager.default.fileExists(atPath: getDecoyFile(photoDef).path)
+        return FileManager.default.fileExists(atPath: storage.getDecoyFile(photoDef).path)
     }
 
     /// Gets the total number of decoys (photos + videos); the limit is shared.
     func numDecoys() -> Int {
-        return getDecoyFiles().count + getDecoyVideoFiles().count
+        return storage.getDecoyFiles().count + storage.getDecoyVideoFiles().count
     }
 
     // MARK: - Decoy Video Operations
 
-    private func getDecoyVideoFile(_ videoDef: VideoDef) -> URL {
-        return getDecoyDirectory().appendingPathComponent(videoDef.videoFile.lastPathComponent)
-    }
-
-    private func getDecoyVideoFiles() -> [URL] {
-        let dir = getDecoyDirectory()
-
-        guard FileManager.default.fileExists(atPath: dir.path) else {
-            return []
-        }
-
-        do {
-            let files = try FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)
-            return files.filter { $0.hasDirectoryPath == false && $0.pathExtension.lowercased() == "secv" }
-        } catch {
-            return []
-        }
-    }
-
     /// Checks if a video is marked as a decoy.
     func isDecoyVideo(_ videoDef: VideoDef) -> Bool {
-        return FileManager.default.fileExists(atPath: getDecoyVideoFile(videoDef).path)
+        return FileManager.default.fileExists(atPath: storage.getDecoyVideoFile(videoDef).path)
     }
 
     /// Adds a video as a decoy: decrypts it with the current key and re-encrypts
@@ -445,7 +403,7 @@ class SecureImageRepository {
             )
 
             // Re-encrypt with the poison-pill key into the decoy directory.
-            let decoyFile = getDecoyVideoFile(videoDef)
+            let decoyFile = storage.getDecoyVideoFile(videoDef)
             if FileManager.default.fileExists(atPath: decoyFile.path) {
                 try FileManager.default.removeItem(at: decoyFile)
             }
@@ -473,7 +431,7 @@ class SecureImageRepository {
         // Also drop the decoy thumbnail copy (if any).
         removeDecoyVideoThumbnail(forVideoNamed: videoDef.videoName)
 
-        let decoyFile = getDecoyVideoFile(videoDef)
+        let decoyFile = storage.getDecoyVideoFile(videoDef)
         guard FileManager.default.fileExists(atPath: decoyFile.path) else {
             return false
         }
@@ -529,10 +487,6 @@ class SecureImageRepository {
 
     // MARK: - Video Thumbnails
 
-    private func getVideoThumbnailFile(forVideoNamed name: String) -> URL {
-        return getVideoThumbnailsDirectory().appendingPathComponent(name).appendingPathExtension("jpg")
-    }
-
     /// Generates a thumbnail from a plaintext video file (e.g. the temporary
     /// `.mov` that exists at record time) and stores it encrypted. Call this
     /// while the plaintext file still exists; the thumbnail cannot be recreated
@@ -553,7 +507,7 @@ class SecureImageRepository {
             if !FileManager.default.fileExists(atPath: dir.path) {
                 try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
             }
-            let file = dir.appendingPathComponent(name).appendingPathExtension("jpg")
+            let file = storage.getVideoThumbnailFile(forVideoNamed: name)
             try await encryptionScheme.encryptToFile(plain: jpeg, targetFile: file)
             thumbnailCache.putVideoThumbnail(name, image)
         } catch {
@@ -566,7 +520,7 @@ class SecureImageRepository {
         if let cached = thumbnailCache.getVideoThumbnail(videoDef.videoName) {
             return cached
         }
-        let file = getVideoThumbnailFile(forVideoNamed: videoDef.videoName)
+        let file = storage.getVideoThumbnailFile(forVideoNamed: videoDef.videoName)
         guard FileManager.default.fileExists(atPath: file.path) else { return nil }
         do {
             let data = try await encryptionScheme.decryptFile(file)
@@ -581,7 +535,7 @@ class SecureImageRepository {
 
     func deleteVideoThumbnail(forVideoNamed name: String) {
         thumbnailCache.evictVideoThumbnail(name)
-        try? FileManager.default.removeItem(at: getVideoThumbnailFile(forVideoNamed: name))
+        try? FileManager.default.removeItem(at: storage.getVideoThumbnailFile(forVideoNamed: name))
     }
 
     /// Removes all video thumbnails. Used on poison-pill activation and security
@@ -591,15 +545,11 @@ class SecureImageRepository {
         try? FileManager.default.removeItem(at: getVideoThumbnailsDirectory())
     }
 
-    private func getDecoyVideoThumbnailFile(forVideoNamed name: String) -> URL {
-        return getDecoyVideoThumbnailsDirectory().appendingPathComponent(name).appendingPathExtension("jpg")
-    }
-
     /// Re-encrypts a video's thumbnail with the poison-pill key and stores it in
     /// the decoy video thumbnails directory, so it survives the poison pill (the
     /// real-key thumbnail is destroyed then). No-op if the video has no thumbnail.
     private func storeDecoyVideoThumbnail(forVideoNamed name: String, poisonKeyData: Data) async {
-        let thumbFile = getVideoThumbnailFile(forVideoNamed: name)
+        let thumbFile = storage.getVideoThumbnailFile(forVideoNamed: name)
         guard FileManager.default.fileExists(atPath: thumbFile.path) else { return }
         do {
             let jpeg = try await encryptionScheme.decryptFile(thumbFile)
@@ -610,7 +560,7 @@ class SecureImageRepository {
             try await encryptionScheme.encryptToFile(
                 plain: jpeg,
                 keyBytes: poisonKeyData,
-                targetFile: getDecoyVideoThumbnailFile(forVideoNamed: name)
+                targetFile: storage.getDecoyVideoThumbnailFile(forVideoNamed: name)
             )
         } catch {
             Logger.security.error("Failed to store decoy video thumbnail: \(error)")
@@ -618,7 +568,7 @@ class SecureImageRepository {
     }
 
     private func removeDecoyVideoThumbnail(forVideoNamed name: String) {
-        try? FileManager.default.removeItem(at: getDecoyVideoThumbnailFile(forVideoNamed: name))
+        try? FileManager.default.removeItem(at: storage.getDecoyVideoThumbnailFile(forVideoNamed: name))
     }
 
     func deleteAllDecoyVideoThumbnails() {
@@ -682,7 +632,7 @@ class SecureImageRepository {
                 try FileManager.default.createDirectory(at: decoyDir, withIntermediateDirectories: true)
             }
             
-            let decoyFile = getDecoyFile(photoDef)
+            let decoyFile = storage.getDecoyFile(photoDef)
             try await encryptionScheme.encryptToFile(
                 plain: jpegData,
                 keyBytes: keyData,
@@ -698,7 +648,7 @@ class SecureImageRepository {
     /// Removes a decoy photo
     @discardableResult
     func removeDecoyPhoto(_ photoDef: PhotoDef) -> Bool {
-        let decoyFile = getDecoyFile(photoDef)
+        let decoyFile = storage.getDecoyFile(photoDef)
         guard FileManager.default.fileExists(atPath: decoyFile.path) else {
             return false
         }
@@ -713,7 +663,7 @@ class SecureImageRepository {
     
     /// Removes all decoy photos
     func removeAllDecoyPhotos() {
-        let decoyFiles = getDecoyFiles()
+        let decoyFiles = storage.getDecoyFiles()
         for file in decoyFiles {
             try? FileManager.default.removeItem(at: file)
         }
@@ -739,7 +689,7 @@ class SecureImageRepository {
         
         // Clear thumbnail cache to force regeneration
         thumbnailCache.clearThumbnail(photoDef.photoName)
-        let thumbnailFile = getThumbnailFile(photoDef)
+        let thumbnailFile = storage.getThumbnailFile(photoDef)
         try? FileManager.default.removeItem(at: thumbnailFile)
     }
     
