@@ -29,11 +29,12 @@ final class PoisonPillVideoDeletionTests: XCTestCase {
         decoyDirectory = tempDirectory.appendingPathComponent(SecureImageRepository.decoysDir)
         videosDirectory = tempDirectory.appendingPathComponent(SecureImageRepository.videosDir)
 
-        repository = VideoTestableSecureImageRepository(
-            tempDirectory: tempDirectory,
-            thumbnailCache: FakeThumbnailCache(),
+        repository = SecureImageRepository(
+            thumbnailCache: ThumbnailCache(),
             encryptionScheme: FakeEncryptionScheme(),
-            videoEncryptionService: FakeVideoEncryptionService()
+            videoEncryptionService: FakeVideoEncryptionService(),
+            applicationSupportDirectory: tempDirectory,
+            cachesDirectory: tempDirectory
         )
     }
 
@@ -74,7 +75,7 @@ final class PoisonPillVideoDeletionTests: XCTestCase {
         await repository.activatePoisonPill()
 
         // Then - only the decoy photo survives.
-        let photos = repository.getPhotos()
+        let photos = await repository.getPhotos()
         XCTAssertEqual(photos.count, 1)
         XCTAssertEqual(photos.first?.photoName, "photo_20230101_120000_00.jpg")
 
@@ -95,11 +96,12 @@ final class PoisonPillVideoDeletionTests: XCTestCase {
         let videoDef = VideoDef(videoName: "video_20230101_120000", videoFormat: "secv", videoFile: videoFile)
 
         let fakeVideo = FakeVideoEncryptionService()
-        let repo = VideoTestableSecureImageRepository(
-            tempDirectory: tempDirectory,
-            thumbnailCache: FakeThumbnailCache(),
+        let repo = SecureImageRepository(
+            thumbnailCache: ThumbnailCache(),
             encryptionScheme: FakeEncryptionScheme(),
-            videoEncryptionService: fakeVideo
+            videoEncryptionService: fakeVideo,
+            applicationSupportDirectory: tempDirectory,
+            cachesDirectory: tempDirectory
         )
 
         // When
@@ -109,7 +111,8 @@ final class PoisonPillVideoDeletionTests: XCTestCase {
         XCTAssertTrue(success)
         XCTAssertTrue(fakeVideo.decryptForSharingCalled, "Should decrypt the original with the current key")
         XCTAssertTrue(fakeVideo.encryptForDecoyCalled, "Should re-encrypt with the poison-pill key")
-        XCTAssertTrue(repo.isDecoyVideo(videoDef), "Video should be marked as a decoy")
+        let isDecoy = await repo.isDecoyVideo(videoDef)
+        XCTAssertTrue(isDecoy, "Video should be marked as a decoy")
 
         let decoyCopy = decoyDirectory.appendingPathComponent("video_20230101_120000.secv")
         XCTAssertTrue(FileManager.default.fileExists(atPath: decoyCopy.path))
@@ -134,7 +137,8 @@ final class PoisonPillVideoDeletionTests: XCTestCase {
         // Mark the decoy video (re-encrypts into the decoy dir with the poison key).
         let added = await repository.addDecoyVideoWithKey(decoyVideoDef, keyData: Data(repeating: 0xAB, count: 32))
         XCTAssertTrue(added)
-        XCTAssertTrue(repository.isDecoyVideo(decoyVideoDef))
+        let isDecoy = await repository.isDecoyVideo(decoyVideoDef)
+        XCTAssertTrue(isDecoy)
 
         // When
         await repository.activatePoisonPill()
@@ -148,27 +152,5 @@ final class PoisonPillVideoDeletionTests: XCTestCase {
         // And the non-decoy video is destroyed.
         XCTAssertFalse(FileManager.default.fileExists(atPath: regularVideo.path),
                        "Non-decoy video should be destroyed")
-    }
-}
-
-// MARK: - Testable Repository
-
-/// Routes every storage directory into a temp directory by injecting the base
-/// roots, so hosted tests never read from or write to the real app container.
-@MainActor
-final class VideoTestableSecureImageRepository: SecureImageRepository {
-    init(
-        tempDirectory: URL,
-        thumbnailCache: ThumbnailCache,
-        encryptionScheme: EncryptionScheme,
-        videoEncryptionService: VideoEncryptionServiceProtocol
-    ) {
-        super.init(
-            thumbnailCache: thumbnailCache,
-            encryptionScheme: encryptionScheme,
-            videoEncryptionService: videoEncryptionService,
-            applicationSupportDirectory: tempDirectory,
-            cachesDirectory: tempDirectory
-        )
     }
 }

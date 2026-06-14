@@ -134,9 +134,17 @@ class EnhancedPhotoDetailViewModel: ObservableObject {
         currentMediaItem?.mediaType == .video
     }
 
-    var isCurrentPhotoDecoy: Bool {
-        guard let photoDef = currentPhotoDef else { return false }
-        return secureImageRepository.isDecoyPhoto(photoDef)
+    @Published private(set) var isCurrentPhotoDecoy: Bool = false
+
+    private func refreshDecoyState() {
+        guard let photoDef = currentPhotoDef else {
+            isCurrentPhotoDecoy = false
+            return
+        }
+        Task {
+            let decoy = await secureImageRepository.isDecoyPhoto(photoDef)
+            await MainActor.run { self.isCurrentPhotoDecoy = decoy }
+        }
     }
 
     var decoyButtonTitle: String {
@@ -168,6 +176,7 @@ class EnhancedPhotoDetailViewModel: ObservableObject {
         showCounterThenAutoHide()
 
         preloadAdjacentPhotos(currentIndex: newIndex)
+        refreshDecoyState()
 
         Task {
             try await Task.sleep(for: .milliseconds(800))
@@ -290,7 +299,7 @@ class EnhancedPhotoDetailViewModel: ObservableObject {
             Logger.ui.debug("Attempting to delete file", metadata: [
                 "filename": .string(photoDef.photoName)
             ])
-            secureImageRepository.deleteImage(photoDef)
+            _ = await secureImageRepository.deleteImage(photoDef)
             Logger.ui.debug("File deletion successful")
             await MainActor.run {
                 Logger.ui.debug("Calling onDelete callback")
@@ -306,7 +315,8 @@ class EnhancedPhotoDetailViewModel: ObservableObject {
 
         Task {
             do {
-                let image = try await secureImageRepository.readImage(photoDef)
+                let data = try await secureImageRepository.readImage(photoDef)
+                guard let image = UIImage(data: data) else { throw ImageRepositoryError.invalidImageData }
 
                 if let imageData = image.jpegData(compressionQuality: 0.9) {
                     let fileURL = try prepareForSharingUseCase.preparePhotoForSharing(imageData: imageData)
@@ -353,16 +363,20 @@ class EnhancedPhotoDetailViewModel: ObservableObject {
         isDecoyOperationLoading = true
 
         Task {
-            if isCurrentPhotoDecoy {
+            let decoy = await secureImageRepository.isDecoyPhoto(photoDef)
+            if decoy {
                 Logger.ui.debug("Removing decoy status from photo", metadata: ["photoId": .stringConvertible(photoDef.id)])
+                let removed = await secureImageRepository.removeDecoyPhoto(photoDef)
+                Logger.ui.debug("removeDecoyPhoto result: \(removed)")
                 await MainActor.run {
-                    _ = removeDecoyPhotoUseCase.removeDecoyPhoto(photoDef)
+                    isCurrentPhotoDecoy = false
                     isDecoyOperationLoading = false
                 }
             } else {
                 Logger.ui.debug("Adding decoy status to photo", metadata: ["photoId": .stringConvertible(photoDef.id)])
                 let success = await addDecoyPhotoUseCase.addDecoyPhoto(photoDef: photoDef)
                 await MainActor.run {
+                    isCurrentPhotoDecoy = success
                     isDecoyOperationLoading = false
                 }
                 if success {

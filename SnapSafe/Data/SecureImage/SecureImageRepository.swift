@@ -10,13 +10,11 @@ import Logging
 import UIKit
 import CoreLocation
 import CryptoKit
-import AVFoundation
 
-@MainActor
-class SecureImageRepository {
-    
+actor SecureImageRepository {
+
     // MARK: - Constants
-    
+
     // Directory names live on PhotoStorageDataSource; these aliases preserve the
     // existing `SecureImageRepository.<dir>` references (used by tests).
     static let photosDir = PhotoStorageDataSource.photosDir
@@ -26,10 +24,10 @@ class SecureImageRepository {
     static let decoyVideoThumbnailsDir = PhotoStorageDataSource.decoyVideoThumbnailsDir
     static let thumbnailsDir = PhotoStorageDataSource.thumbnailsDir
     static let maxDecoyPhotos = 10
-    
+
     // MARK: - Dependencies
-    
-    let thumbnailCache: ThumbnailCache
+
+    nonisolated let thumbnailCache: ThumbnailCache
     private let encryptionScheme: EncryptionScheme
     private let videoEncryptionService: VideoEncryptionServiceProtocol
     private let storage: PhotoStorageDataSource
@@ -53,7 +51,7 @@ class SecureImageRepository {
         self.storage = PhotoStorageDataSource(
             encryptionScheme: encryptionScheme, appSupportRoot: appSupportRoot, cachesRoot: cachesRoot)
     }
-    
+
     // MARK: - Directory Management
 
     func getGalleryDirectory() -> URL { storage.getGalleryDirectory() }
@@ -62,9 +60,9 @@ class SecureImageRepository {
     func getVideoThumbnailsDirectory() -> URL { storage.getVideoThumbnailsDirectory() }
     func getDecoyVideoThumbnailsDirectory() -> URL { storage.getDecoyVideoThumbnailsDirectory() }
     private func getThumbnailsDirectory() -> URL { storage.getThumbnailsDirectory() }
-    
+
     // MARK: - Security Operations
-    
+
     func evictKey() async {
         await encryptionScheme.evictKey()
     }
@@ -93,7 +91,7 @@ class SecureImageRepository {
         clearAllThumbnails()
         await evictKey()
     }
-    
+
     private func clearAllThumbnails() {
         let thumbnailsDir = getThumbnailsDirectory()
         do {
@@ -103,9 +101,9 @@ class SecureImageRepository {
         }
         thumbnailCache.clear()
     }
-    
+
     // MARK: - Image Operations
-    
+
     private func encryptToFile(_ data: Data, targetFile: URL) async throws {
         try await storage.encryptToFile(data, targetFile: targetFile)
     }
@@ -117,7 +115,7 @@ class SecureImageRepository {
     private func encryptAndSaveImage(_ imageData: Data, tempFile: URL, targetFile: URL) async throws {
         try await storage.encryptAndSaveImage(imageData, tempFile: tempFile, targetFile: targetFile)
     }
-    
+
     /// Saves a captured image to the gallery
     func saveImage(
         _ image: CapturedImage,
@@ -126,72 +124,60 @@ class SecureImageRepository {
         quality: CGFloat = 0.9
     ) async throws -> PhotoDef {
         let dir = getGalleryDirectory()
-        
+
         // Create directory if it doesn't exist
         if !FileManager.default.fileExists(atPath: dir.path) {
             try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         }
-        
+
         // Generate filename
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyyMMdd_HHmmss_SS"
         dateFormatter.locale = Locale(identifier: "en_US_POSIX")
         let filename = "photo_\(dateFormatter.string(from: image.timestamp)).jpg"
-        
+
         let photoFile = dir.appendingPathComponent(filename)
         let tempFile = dir.appendingPathComponent("\(filename).tmp")
-        
+
         // Process image
         var processedImage = image.sensorBitmap
         if applyRotation {
             processedImage = ImageProcessing.rotateImage(image.sensorBitmap, degrees: image.rotationDegrees)
         }
-        
+
         // Compress to JPEG
         guard let jpegData = ImageProcessing.compressImageToJpeg(processedImage, quality: quality) else {
             throw ImageRepositoryError.compressionFailed
         }
-        
+
         // Apply metadata
         let updatedData = ImageProcessing.applyImageMetadata(jpegData, location: location, applyRotation: applyRotation, rotationDegrees: image.rotationDegrees)
-        
+
         // Encrypt and save
         try await encryptAndSaveImage(updatedData, tempFile: tempFile, targetFile: photoFile)
-        
+
         return PhotoDef(photoName: filename, photoFormat: "jpg", photoFile: photoFile)
     }
-    
-    /// Reads and decrypts an image file
-    func readImage(_ photo: PhotoDef) async throws -> UIImage {
-        let data = try await decryptFile(photo.photoFile)
-        guard let image = UIImage(data: data) else {
-            throw ImageRepositoryError.invalidImageData
-        }
-        return image
+
+    /// Reads and decrypts an image file, returning raw JPEG data
+    func readImage(_ photo: PhotoDef) async throws -> Data {
+        return try await storage.decryptFile(photo.photoFile)
     }
-    
+
     /// Decrypts and returns JPEG data
     func decryptJpg(_ photo: PhotoDef) async throws -> Data {
         return try await decryptFile(photo.photoFile)
     }
-    
+
     // MARK: - Thumbnail Operations
-    
-    /// Reads or creates a thumbnail for the given photo
-    func readThumbnail(_ photo: PhotoDef) async -> UIImage? {
-        // Check cache first
-        if let cachedThumbnail = thumbnailCache.getThumbnail(photo) {
-            return cachedThumbnail
-        }
-        
+
+    /// Reads or creates a thumbnail for the given photo, returning raw JPEG data
+    func readThumbnail(_ photo: PhotoDef) async -> Data? {
         let thumbFile = storage.getThumbnailFile(photo)
-        var thumbnailImage: UIImage?
-        
+
         if FileManager.default.fileExists(atPath: thumbFile.path) {
-            // Decrypt existing thumbnail
             do {
-                let data = try await decryptFile(thumbFile)
-                thumbnailImage = UIImage(data: data)
+                return try await storage.decryptFile(thumbFile)
             } catch {
                 Logger.storage.error("Failed to decrypt thumbnail", metadata: [
                     "photoName": .string(photo.photoName),
@@ -199,48 +185,36 @@ class SecureImageRepository {
                 ])
                 return nil
             }
-        } else if FileManager.default.fileExists(atPath: photo.photoFile.path) {
-            // Create thumbnail from full image
-            do {
-                let data = try await decryptFile(photo.photoFile)
-                guard let fullImage = UIImage(data: data) else { return nil }
-                
-                // Create smaller thumbnail
-                let thumbnailSize = CGSize(width: fullImage.size.width / 4, height: fullImage.size.height / 4)
-                thumbnailImage = ImageProcessing.resizeImage(fullImage, to: thumbnailSize)
-                
-                // Cache thumbnail to file
-                if let thumbnailImage = thumbnailImage,
-                   let thumbnailData = thumbnailImage.jpegData(compressionQuality: 0.75) {
-                    try await encryptToFile(thumbnailData, targetFile: thumbFile)
-                }
-            } catch {
-                Logger.storage.error("Failed to create thumbnail", metadata: [
-                    "photoName": .string(photo.photoName),
-                    "error": .string(String(describing: error))
-                ])
-                return nil
-            }
         }
-        
-        // Cache in memory
-        if let thumbnailImage = thumbnailImage {
-            thumbnailCache.putThumbnail(photo, thumbnailImage)
+
+        guard FileManager.default.fileExists(atPath: photo.photoFile.path) else { return nil }
+
+        do {
+            let fullData = try await storage.decryptFile(photo.photoFile)
+            guard let thumbnailData = ImageProcessing.createThumbnailData(fromJPEGData: fullData) else { return nil }
+            // Reentrancy note: two concurrent calls for the same photo may both create the
+            // thumbnail file; the last write wins and both return valid data.
+            try await storage.encryptToFile(thumbnailData, targetFile: thumbFile)
+            return thumbnailData
+        } catch {
+            Logger.storage.error("Failed to create thumbnail", metadata: [
+                "photoName": .string(photo.photoName),
+                "error": .string(String(describing: error))
+            ])
+            return nil
         }
-        
-        return thumbnailImage
     }
-    
+
     // MARK: - Photo Management
-    
+
     /// Gets all photos in the gallery
     func getPhotos() -> [PhotoDef] {
         let dir = getGalleryDirectory()
-        
+
         guard FileManager.default.fileExists(atPath: dir.path) else {
             return []
         }
-        
+
         do {
             let files = try FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)
             return files
@@ -259,19 +233,19 @@ class SecureImageRepository {
             return []
         }
     }
-    
+
     /// Deletes a single image
     @discardableResult
     func deleteImage(_ photoDef: PhotoDef, deleteDecoy: Bool = true) -> Bool {
         thumbnailCache.evictThumbnail(photoDef)
-        
+
         if deleteDecoy && isDecoyPhoto(photoDef) {
             try? FileManager.default.removeItem(at: storage.getDecoyFile(photoDef))
         }
-        
+
         let thumbnailFile = storage.getThumbnailFile(photoDef)
         try? FileManager.default.removeItem(at: thumbnailFile)
-        
+
         if FileManager.default.fileExists(atPath: photoDef.photoFile.path) {
             do {
                 try FileManager.default.removeItem(at: photoDef.photoFile)
@@ -280,42 +254,42 @@ class SecureImageRepository {
                 return false
             }
         }
-        
+
         return false
     }
-    
+
     /// Deletes multiple images
     @discardableResult
     func deleteImages(_ photos: [PhotoDef], deleteDecoy: Bool = true) -> Bool {
         return photos.allSatisfy { deleteImage($0, deleteDecoy: deleteDecoy) }
     }
-    
+
     /// Deletes all images
     func deleteAllImages(deleteDecoy: Bool = true) {
         let photos = getPhotos()
         deleteImages(photos, deleteDecoy: deleteDecoy)
     }
-    
+
     /// Deletes all non-decoy images and restores decoys
     func deleteNonDecoyImages() {
         let galleryDir = getGalleryDirectory()
         let thumbnailsDir = getThumbnailsDirectory()
-        
+
         // Remove all current images and thumbnails
         try? FileManager.default.removeItem(at: galleryDir)
         try? FileManager.default.removeItem(at: thumbnailsDir)
-        
+
         // Recreate directories
         try? FileManager.default.createDirectory(at: galleryDir, withIntermediateDirectories: true)
         try? FileManager.default.createDirectory(at: thumbnailsDir, withIntermediateDirectories: true)
-        
+
         // Move decoy files back to gallery
         let decoyFiles = storage.getDecoyFiles()
         for file in decoyFiles {
             let targetFile = galleryDir.appendingPathComponent(file.lastPathComponent)
             try? FileManager.default.moveItem(at: file, to: targetFile)
         }
-        
+
         // Remove decoy directory
         try? FileManager.default.removeItem(at: getDecoyDirectory())
     }
@@ -352,7 +326,7 @@ class SecureImageRepository {
     }
 
     // MARK: - Decoy Operations
-    
+
     /// Checks if a photo is marked as decoy
     func isDecoyPhoto(_ photoDef: PhotoDef) -> Bool {
         return FileManager.default.fileExists(atPath: storage.getDecoyFile(photoDef).path)
@@ -508,28 +482,17 @@ class SecureImageRepository {
             }
             let file = storage.getVideoThumbnailFile(forVideoNamed: name)
             try await encryptionScheme.encryptToFile(plain: jpeg, targetFile: file)
-            guard let img = UIImage(data: jpeg) else {
-                Logger.storage.warning("Thumbnail encrypted but UIImage decode failed for video '\(name)' — in-memory cache miss")
-                return
-            }
-            thumbnailCache.putVideoThumbnail(name, img)
         } catch {
             Logger.storage.error("Failed to store video thumbnail: \(error)")
         }
     }
 
-    /// Reads (and decrypts) a video's thumbnail, if one exists.
-    func readVideoThumbnail(_ videoDef: VideoDef) async -> UIImage? {
-        if let cached = thumbnailCache.getVideoThumbnail(videoDef.videoName) {
-            return cached
-        }
+    /// Reads (and decrypts) a video's thumbnail, returning raw JPEG data if one exists.
+    func readVideoThumbnail(_ videoDef: VideoDef) async -> Data? {
         let file = storage.getVideoThumbnailFile(forVideoNamed: videoDef.videoName)
         guard FileManager.default.fileExists(atPath: file.path) else { return nil }
         do {
-            let data = try await encryptionScheme.decryptFile(file)
-            guard let image = UIImage(data: data) else { return nil }
-            thumbnailCache.putVideoThumbnail(videoDef.videoName, image)
-            return image
+            return try await encryptionScheme.decryptFile(file)
         } catch {
             Logger.storage.error("Failed to read video thumbnail: \(error)")
             return nil
@@ -607,29 +570,29 @@ class SecureImageRepository {
         guard numDecoys() < Self.maxDecoyPhotos else {
             return false
         }
-        
+
         do {
             let jpegData = try await decryptJpg(photoDef)
             let decoyDir = getDecoyDirectory()
-            
+
             // Create decoy directory if needed
             if !FileManager.default.fileExists(atPath: decoyDir.path) {
                 try FileManager.default.createDirectory(at: decoyDir, withIntermediateDirectories: true)
             }
-            
+
             let decoyFile = storage.getDecoyFile(photoDef)
             try await encryptionScheme.encryptToFile(
                 plain: jpegData,
                 keyBytes: keyData,
                 targetFile: decoyFile
             )
-            
+
             return true
         } catch {
             return false
         }
     }
-    
+
     /// Removes a decoy photo
     @discardableResult
     func removeDecoyPhoto(_ photoDef: PhotoDef) -> Bool {
@@ -637,7 +600,7 @@ class SecureImageRepository {
         guard FileManager.default.fileExists(atPath: decoyFile.path) else {
             return false
         }
-        
+
         do {
             try FileManager.default.removeItem(at: decoyFile)
             return true
@@ -645,7 +608,7 @@ class SecureImageRepository {
             return false
         }
     }
-    
+
     /// Removes all decoy photos
     func removeAllDecoyPhotos() {
         let decoyFiles = storage.getDecoyFiles()
@@ -653,31 +616,31 @@ class SecureImageRepository {
             try? FileManager.default.removeItem(at: file)
         }
     }
-    
+
     // MARK: - Update Operations
-    
+
     /// Updates an existing image with new image data while preserving EXIF metadata
     func updateImage(_ photoDef: PhotoDef, newImageData: Data) async throws {
         // Load existing image to extract EXIF metadata
         let existingImageData = try await decryptJpg(photoDef)
         let existingMetadata = ImageProcessing.extractEXIFMetadata(from: existingImageData)
-        
+
         // Process the new image with preserved EXIF metadata
         let processedData = try ImageProcessing.processImageWithEXIFMetadata(
             imageData: newImageData,
             preservedEXIFMetadata: existingMetadata,
             filename: photoDef.photoName
         )
-        
+
         // Save the updated image
         try await encryptionScheme.encryptToFile(plain: processedData, targetFile: photoDef.photoFile)
-        
+
         // Clear thumbnail cache to force regeneration
         thumbnailCache.clearThumbnail(photoDef.photoName)
         let thumbnailFile = storage.getThumbnailFile(photoDef)
         try? FileManager.default.removeItem(at: thumbnailFile)
     }
-    
+
     // MARK: - Helper Methods
 
     struct PhotoMetaData {
@@ -689,35 +652,27 @@ class SecureImageRepository {
 
     // MARK: - Main API
 
-    @MainActor
     func getPhotoMetaData(_ photoDef: PhotoDef) async throws -> PhotoMetaData {
         let dateTaken: Date = photoDef.dateTaken() ?? Date(timeIntervalSince1970: 0)
-        
+
         var orientation: TiffOrientation? = nil
         var coords: GpsCoordinates? = nil
         var size = Size(width: 0, height: 0)
-        
-        // Your decryptor should return the JPG bytes as Data
-        let jpgBytes = try await decryptJpg(photoDef: photoDef)
-        
+
+        let jpgBytes = try await decryptJpg(photoDef)
+
         if let md = ImageProcessing.readImageMetadata(fromJPEGData: jpgBytes) {
             orientation = md.orientation
             coords = md.gps
             size = Size(width: md.width ?? 0, height: md.height ?? 0)
         }
-        
+
         return PhotoMetaData(
             resolution: size,
             dateTaken: dateTaken,
             location: coords,
             orientation: orientation
         )
-    }
-
-    // MARK: - Decrypt (stub; replace with your implementation)
-
-    func decryptJpg(photoDef: PhotoDef) async throws -> Data {
-        return try await encryptionScheme.decryptFile(photoDef.photoFile)
     }
 
 }
@@ -728,4 +683,3 @@ enum ImageRepositoryError: Error {
     case compressionFailed
     case invalidImageData
 }
-

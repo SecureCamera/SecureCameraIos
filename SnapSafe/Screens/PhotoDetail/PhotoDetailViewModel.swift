@@ -88,7 +88,8 @@ class PhotoDetailViewModel: ObservableObject {
         isImageLoading = true
         
         do {
-            let image = try await secureImageRepository.readImage(photoDef)
+            let data = try await secureImageRepository.readImage(photoDef)
+            guard let image = UIImage(data: data) else { throw ImageRepositoryError.invalidImageData }
             await MainActor.run {
                 self.currentImage = image
                 self.isImageLoading = false
@@ -145,7 +146,7 @@ class PhotoDetailViewModel: ObservableObject {
             Logger.ui.debug("Attempting to delete file", metadata: [
                 "filename": .string(photoDefToDelete.photoName)
             ])
-            self.secureImageRepository.deleteImage(photoDefToDelete)
+            _ = await self.secureImageRepository.deleteImage(photoDefToDelete)
             Logger.ui.debug("File deletion successful")
             
             // All UI updates must happen on the main thread

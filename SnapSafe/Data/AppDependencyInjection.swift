@@ -95,14 +95,12 @@ extension Container {
         self { LocationRepository() }.singleton
     }
     
-    @MainActor
     var thumbnailCache: Factory<ThumbnailCache> {
-        self { @MainActor in ThumbnailCache() }.singleton
+        self { ThumbnailCache() }.singleton
     }
-    
-    @MainActor
+
     var secureImageRepository: Factory<SecureImageRepository> {
-        self { @MainActor in SecureImageRepository(
+        self { SecureImageRepository(
             thumbnailCache: self.thumbnailCache(),
             encryptionScheme: self.encryptionScheme(),
             videoEncryptionService: self.videoEncryptionService()
@@ -173,8 +171,7 @@ extension Container {
 
     // MARK: - Video
 
-    @MainActor
     var videoEncryptionService: Factory<VideoEncryptionService> {
-        self { @MainActor in VideoEncryptionService() }.shared
+        self { VideoEncryptionService() }.shared
     }
 }

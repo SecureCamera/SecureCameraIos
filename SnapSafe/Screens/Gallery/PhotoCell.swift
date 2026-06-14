@@ -89,8 +89,10 @@ struct PhotoCell: View {
         .accessibilityActivationPoint(.center)
         .onTapGesture(perform: onTap)
         .task {
-            thumbnail = await self.secureImageRepository.readThumbnail(photo)
-            isDecoy = secureImageRepository.isDecoyPhoto(photo)
+            if let data = await self.secureImageRepository.readThumbnail(photo) {
+                thumbnail = UIImage(data: data)
+            }
+            isDecoy = await secureImageRepository.isDecoyPhoto(photo)
         }
     }
 }

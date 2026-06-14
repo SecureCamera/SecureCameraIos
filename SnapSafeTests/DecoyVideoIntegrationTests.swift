@@ -54,11 +54,12 @@ final class DecoyVideoIntegrationTests: XCTestCase {
             videoFile: videoFile
         )
 
-        let repo = VideoTestableSecureImageRepository(
-            tempDirectory: tempDirectory,
-            thumbnailCache: FakeThumbnailCache(),
+        let repo = SecureImageRepository(
+            thumbnailCache: ThumbnailCache(),
             encryptionScheme: FakeEncryptionScheme(),
-            videoEncryptionService: videoService
+            videoEncryptionService: videoService,
+            applicationSupportDirectory: tempDirectory,
+            cachesDirectory: tempDirectory
         )
 
         // When — mark the video as a decoy (real decrypt + re-encrypt).
@@ -66,7 +67,8 @@ final class DecoyVideoIntegrationTests: XCTestCase {
 
         // Then
         XCTAssertTrue(success, "Marking a video as a decoy must succeed with the real encryption service")
-        XCTAssertTrue(repo.isDecoyVideo(videoDef),
+        let isDecoy = await repo.isDecoyVideo(videoDef)
+        XCTAssertTrue(isDecoy,
                       "isDecoyVideo must be true after marking — this is what drives the gallery decoy badge")
     }
 
@@ -90,11 +92,12 @@ final class DecoyVideoIntegrationTests: XCTestCase {
         let plainURL = tempDirectory.appendingPathComponent("import.mov")
         try plaintext.write(to: plainURL)
 
-        let repo = VideoTestableSecureImageRepository(
-            tempDirectory: tempDirectory,
-            thumbnailCache: FakeThumbnailCache(),
+        let repo = SecureImageRepository(
+            thumbnailCache: ThumbnailCache(),
             encryptionScheme: FakeEncryptionScheme(),
-            videoEncryptionService: VideoEncryptionService()
+            videoEncryptionService: VideoEncryptionService(),
+            applicationSupportDirectory: tempDirectory,
+            cachesDirectory: tempDirectory
         )
 
         let imported = await repo.importVideo(from: plainURL)

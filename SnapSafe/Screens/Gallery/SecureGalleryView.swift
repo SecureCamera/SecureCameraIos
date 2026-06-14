@@ -407,8 +407,10 @@ struct VideoCellView: View {
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
         .task {
             if let videoDef = item.videoDef {
-                thumbnail = await secureImageRepository.readVideoThumbnail(videoDef)
-                isDecoy = secureImageRepository.isDecoyVideo(videoDef)
+                if let data = await secureImageRepository.readVideoThumbnail(videoDef) {
+                    thumbnail = UIImage(data: data)
+                }
+                isDecoy = await secureImageRepository.isDecoyVideo(videoDef)
             }
         }
     }

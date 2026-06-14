@@ -24,7 +24,7 @@ final class RemoveDecoyPhotoUseCase {
         self.imageRepository = imageRepository
     }
 
-    @MainActor func removeDecoyPhoto(_ photoDef: PhotoDef) -> Bool {
-        return self.imageRepository.removeDecoyPhoto(photoDef)
+    func removeDecoyPhoto(_ photoDef: PhotoDef) async -> Bool {
+        return await self.imageRepository.removeDecoyPhoto(photoDef)
     }
 }

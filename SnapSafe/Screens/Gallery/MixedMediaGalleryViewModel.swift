@@ -150,11 +150,11 @@ final class MixedMediaGalleryViewModel: ObservableObject {
     }
 
     /// Whether the given media item is currently marked as a decoy.
-    private func isItemDecoy(_ item: GalleryMediaItem) -> Bool {
+    private func isItemDecoy(_ item: GalleryMediaItem) async -> Bool {
         if let photoDef = item.photoDef {
-            return secureImageRepository.isDecoyPhoto(photoDef)
+            return await secureImageRepository.isDecoyPhoto(photoDef)
         } else if let videoDef = item.videoDef {
-            return secureImageRepository.isDecoyVideo(videoDef)
+            return await secureImageRepository.isDecoyVideo(videoDef)
         }
         return false
     }
@@ -200,7 +200,7 @@ final class MixedMediaGalleryViewModel: ObservableObject {
     func loadMediaItems() {
         Task {
             // Load photos
-            let photoMetadata = secureImageRepository.getPhotos()
+            let photoMetadata = await secureImageRepository.getPhotos()
             let encKey = encryptionKey
             let photos = photoMetadata.map { GalleryMediaItem(mediaItem: $0, encryptionKey: nil) }
 
@@ -217,7 +217,7 @@ final class MixedMediaGalleryViewModel: ObservableObject {
             mediaItems = allMedia
 
             if isSelectingDecoys {
-                for item in allMedia where isItemDecoy(item) {
+                for item in allMedia where await isItemDecoy(item) {
                     selectedMediaIds.insert(item.id)
                 }
             }
@@ -296,8 +296,11 @@ final class MixedMediaGalleryViewModel: ObservableObject {
 
         if mode == .decoy {
             selectedMediaIds.removeAll()
-            for item in mediaItems where isItemDecoy(item) {
-                selectedMediaIds.insert(item.id)
+            let items = mediaItems
+            Task {
+                for item in items where await isItemDecoy(item) {
+                    selectedMediaIds.insert(item.id)
+                }
             }
         }
     }
@@ -353,11 +356,11 @@ final class MixedMediaGalleryViewModel: ObservableObject {
         Task {
             for mediaItem in selectedItems {
                 if let photoDef = mediaItem.photoDef {
-                    secureImageRepository.deleteImage(photoDef)
+                    _ = await secureImageRepository.deleteImage(photoDef)
                 } else if let videoDef = mediaItem.videoDef {
                     try? FileManager.default.removeItem(at: videoDef.videoFile)
-                    secureImageRepository.deleteVideoThumbnail(forVideoNamed: videoDef.videoName)
-                    _ = secureImageRepository.removeDecoyVideo(videoDef)
+                    await secureImageRepository.deleteVideoThumbnail(forVideoNamed: videoDef.videoName)
+                    _ = await secureImageRepository.removeDecoyVideo(videoDef)
                 }
             }
 
@@ -429,7 +432,10 @@ final class MixedMediaGalleryViewModel: ObservableObject {
 
     func saveDecoySelections() async {
         // Only items whose decoy state actually changes need work.
-        let pending = mediaItems.filter { selectedMediaIds.contains($0.id) != isItemDecoy($0) }
+        var pending: [GalleryMediaItem] = []
+        for item in mediaItems where selectedMediaIds.contains(item.id) != (await isItemDecoy(item)) {
+            pending.append(item)
+        }
 
         guard !pending.isEmpty else {
             selectionMode = .none
@@ -453,7 +459,7 @@ final class MixedMediaGalleryViewModel: ObservableObject {
                         Logger.ui.error("Failed to add decoy photo")
                     }
                 } else {
-                    _ = removeDecoyPhotoUseCase.removeDecoyPhoto(photoDef)
+                    _ = await secureImageRepository.removeDecoyPhoto(photoDef)
                 }
             } else if let videoDef = item.videoDef {
                 if isSelected {
@@ -461,7 +467,7 @@ final class MixedMediaGalleryViewModel: ObservableObject {
                         Logger.ui.error("Failed to add decoy video")
                     }
                 } else {
-                    _ = secureImageRepository.removeDecoyVideo(videoDef)
+                    _ = await secureImageRepository.removeDecoyVideo(videoDef)
                 }
             }
 
@@ -490,11 +496,9 @@ final class MixedMediaGalleryViewModel: ObservableObject {
 
         for mediaItem in selectedItems {
             if let photoDef = mediaItem.photoDef {
-                if let image = try? await secureImageRepository.readImage(photoDef) {
-                    if let imageData = image.jpegData(compressionQuality: 0.9) {
-                        if let fileURL = try? prepareForSharingUseCase.preparePhotoForSharing(imageData: imageData) {
-                            itemsToShare.append(fileURL)
-                        }
+                if let data = try? await secureImageRepository.readImage(photoDef) {
+                    if let fileURL = try? prepareForSharingUseCase.preparePhotoForSharing(imageData: data) {
+                        itemsToShare.append(fileURL)
                     }
                 }
             } else if let videoDef = mediaItem.videoDef, videoDef.isEncrypted, let encryptionKey = encryptionKey {

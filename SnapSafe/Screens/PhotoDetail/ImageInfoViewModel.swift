@@ -145,12 +145,13 @@ class ImageInfoViewModel: ObservableObject {
             let metadata = try await secureImageRepository.getPhotoMetaData(photoDef)
             
             // Load the full image
-            let image = try await secureImageRepository.readImage(photoDef)
-            
+            let imageData = try await secureImageRepository.readImage(photoDef)
+            guard let image = UIImage(data: imageData) else { throw ImageRepositoryError.invalidImageData }
+
             // Load raw JPEG data to extract raw metadata
-            let jpegData = try await secureImageRepository.decryptJpg(photoDef: photoDef)
+            let jpegData = try await secureImageRepository.decryptJpg(photoDef)
             let rawMeta = extractRawMetadata(from: jpegData)
-            
+
             await MainActor.run {
                 self.imageMetadata = metadata
                 self.fullImage = image

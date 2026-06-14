@@ -112,7 +112,8 @@ final class PhotoObfuscationViewModel: ObservableObject {
         isImageLoading = true
         
         do {
-            let image = try await secureImageRepository.readImage(photoDef)
+            let data = try await secureImageRepository.readImage(photoDef)
+            guard let image = UIImage(data: data) else { throw ImageRepositoryError.invalidImageData }
             await MainActor.run {
                 self.currentImage = image
                 self.isImageLoading = false
