@@ -137,6 +137,10 @@ struct MediaToolbarButton<Indicator: View>: View {
             .frame(maxWidth: .infinity)
             .frame(minHeight: 44)
             .padding(.vertical, 8)
+            // Required: makes the full stretched/padded frame hittable. Without
+            // it only the icon/text glyphs accept taps and presses landing in the
+            // surrounding area fall through to the pager behind the toolbar.
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(label)
