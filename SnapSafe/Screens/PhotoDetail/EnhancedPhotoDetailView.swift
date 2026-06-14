@@ -216,5 +216,15 @@ struct EnhancedPhotoDetailView: View {
                 Text("Are you sure you want to delete this photo? This action cannot be undone.")
             }
         )
+        .alert(
+            "Decoy Limit Reached",
+            isPresented: $viewModel.showDecoyLimitAlert,
+            actions: {
+                Button("OK", role: .cancel) {}
+            },
+            message: {
+                Text("You can have a maximum of 10 decoy items. Remove an existing decoy before adding a new one.")
+            }
+        )
     }
 }

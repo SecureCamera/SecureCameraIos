@@ -153,6 +153,11 @@ struct InlineVideoPlayerView: View {
         } message: {
             Text("Are you sure you want to delete this video? This action cannot be undone.")
         }
+        .alert("Decoy Limit Reached", isPresented: $viewModel.showDecoyLimitAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("You can have a maximum of 10 decoy items. Remove an existing decoy before adding a new one.")
+        }
     }
 }
 

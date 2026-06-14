@@ -340,7 +340,7 @@ final class SecureImageRepositoryTests: XCTestCase {
         try FileManager.default.createDirectory(at: decoyDirectory, withIntermediateDirectories: true)
 
         // Create max number of decoys
-        for i in 0..<SecureImageRepository.maxDecoyPhotos {
+        for i in 0..<SecureImageRepository.maxDecoyItems {
             let decoyFile = decoyDirectory.appendingPathComponent("photo_20230101_120000_0\(i).jpg")
             try Data().write(to: decoyFile)
         }

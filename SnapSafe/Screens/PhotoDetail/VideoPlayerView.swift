@@ -174,6 +174,7 @@ final class VideoPlayerViewModel: ObservableObject {
     @Published var isPoisonPillConfigured = false
     @Published var isDecoy = false
     @Published var isDecoyOperationLoading = false
+    @Published var showDecoyLimitAlert = false
 
     var decoyButtonTitle: String { isDecoy ? "Remove Decoy" : "Add Decoy" }
     var decoyButtonIcon: String { isDecoy ? "shield.slash" : "shield" }
@@ -521,6 +522,16 @@ final class VideoPlayerViewModel: ObservableObject {
                     self.isDecoyOperationLoading = false
                 }
             } else {
+                // Pre-check the limit so the limit alert only shows when actually
+                // at the limit, not for an unrelated failure. The use case enforces
+                // the same limit authoritatively.
+                guard await secureImageRepository.numDecoys() < SecureImageRepository.maxDecoyItems else {
+                    await MainActor.run {
+                        self.isDecoyOperationLoading = false
+                        self.showDecoyLimitAlert = true
+                    }
+                    return
+                }
                 let success = await addDecoyVideoUseCase.addDecoyVideo(videoDef: videoDef)
                 await MainActor.run {
                     self.isDecoy = success

@@ -22,7 +22,10 @@ actor SecureImageRepository {
     static let videosDir = PhotoStorageDataSource.videosDir
     static let videoThumbnailsDir = PhotoStorageDataSource.videoThumbnailsDir
     static let decoyVideoThumbnailsDir = PhotoStorageDataSource.decoyVideoThumbnailsDir
-    static let maxDecoyPhotos = 10
+    /// The single source of truth for the maximum number of decoys a user may
+    /// have. The limit is shared across photos AND videos combined; the current
+    /// total is `numDecoys()`. All add-decoy paths must enforce this constant.
+    static let maxDecoyItems = 10
 
     // MARK: - Dependencies
 
@@ -343,7 +346,7 @@ actor SecureImageRepository {
     /// the plaintext with the poison-pill key into the decoy directory, so it
     /// remains playable after the poison pill destroys the real key.
     func addDecoyVideoWithKey(_ videoDef: VideoDef, keyData: Data) async -> Bool {
-        guard numDecoys() < Self.maxDecoyPhotos else {
+        guard numDecoys() < Self.maxDecoyItems else {
             return false
         }
 
@@ -562,7 +565,7 @@ actor SecureImageRepository {
 
     /// Adds a photo as decoy with specific key
     func addDecoyPhotoWithKey(_ photoDef: PhotoDef, keyData: Data) async -> Bool {
-        guard numDecoys() < Self.maxDecoyPhotos else {
+        guard numDecoys() < Self.maxDecoyItems else {
             return false
         }
 
