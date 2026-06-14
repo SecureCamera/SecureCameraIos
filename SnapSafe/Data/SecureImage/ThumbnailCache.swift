@@ -7,8 +7,7 @@
 
 import UIKit
 
-@MainActor
-class ThumbnailCache {
+final class ThumbnailCache {
     private var cache = NSCache<NSString, UIImage>()
     
     init() {
@@ -51,3 +50,10 @@ class ThumbnailCache {
         cache.removeAllObjects()
     }
 }
+
+// MARK: - Sendable
+
+// NSCache is documented thread-safe; direct access to the backing `cache`
+// only happens through this class's own methods, so @unchecked Sendable is
+// legitimate here.
+extension ThumbnailCache: @unchecked Sendable {}
