@@ -9,20 +9,18 @@ import SwiftUI
 
 struct PINVerificationView: View {
     @StateObject private var viewModel = PINVerificationViewModel()
-    @FocusState private var isPINFieldFocused: Bool
     @Environment(\.scenePhase) private var scenePhase
 
-    // Reveal the action once the user has started entering a PIN (or while a
-    // verification is in flight) — avoids an idle, disabled button at rest.
     private var showUnlockButton: Bool {
         !viewModel.pin.isEmpty || viewModel.isLoading
     }
 
+    private var shouldFocusField: Bool {
+        scenePhase == .active && !viewModel.isLoading
+    }
+
     private var unlockButton: some View {
-        Button(action: {
-            isPINFieldFocused = false
-            viewModel.unlockButtonTapped()
-        }) {
+        Button(action: viewModel.unlockButtonTapped) {
             HStack {
                 if viewModel.isLastAttempt {
                     Image(systemName: "exclamationmark.triangle.fill")
@@ -48,24 +46,12 @@ struct PINVerificationView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 30) {
-                // The icon slides up out of view once the field is focused,
-                // freeing vertical room so the button sits just above the
-                // keypad (mirrors the poison-pill PIN entry screen).
-                if !isPINFieldFocused {
-                    Image(systemName: "lock.shield")
-                        .font(.system(size: 70))
-                        .foregroundStyle(.blue)
-                        .padding(.top, 50)
-                        .accessibilityHidden(true)   // decorative — text labels provide context
-                        .transition(.move(edge: .top).combined(with: .opacity))
-                }
-
+            VStack(spacing: 24) {
                 Text("SnapSafe")
                     .foregroundStyle(.primary)
                     .font(.largeTitle)
                     .bold()
-                    .padding(.top, isPINFieldFocused ? 24 : 0)
+                    .padding(.top, 32)
 
                 Text("Enter your PIN to continue")
                     .foregroundStyle(.secondary)
@@ -74,50 +60,36 @@ struct PINVerificationView: View {
                     Text(viewModel.attemptsWarningMessage)
                         .foregroundStyle(.red)
                         .font(.callout)
-                        .padding(.top, 5)
                 }
 
-                SecureField("PIN", text: $viewModel.pin, prompt: Text("PIN").foregroundStyle(.secondary))
-                    .keyboardType(.numberPad)
-                    .textContentType(.oneTimeCode)
-                    .multilineTextAlignment(.center)
-                    .padding()
-                    .foregroundStyle(.primary)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color(UIColor.systemGray3), lineWidth: 1)
-                    )
-                    .padding(.horizontal, 50)
-                    .focused($isPINFieldFocused)
-                    .disabled(viewModel.isLoading)
-                    .onChange(of: viewModel.pin) { _, newValue in
-                        viewModel.updatePIN(newValue)
-                    }
-                    .onChange(of: viewModel.isLoading) { _, isLoading in
-                        if isLoading {
-                            isPINFieldFocused = false
-                        }
-                    }
+                PINEntryField(
+                    text: $viewModel.pin,
+                    maxLength: MAX_PIN_LENGTH,
+                    isEnabled: !viewModel.isLoading,
+                    shouldFocus: shouldFocusField
+                )
+                .frame(height: 52)
+                .padding(.horizontal, 50)
+                .onChange(of: viewModel.pin) { _, newValue in
+                    viewModel.updatePIN(newValue)
+                }
 
                 if viewModel.showError {
                     Text(viewModel.errorMessage)
                         .foregroundStyle(.red)
                         .font(.callout)
-                        .padding(.top, 5)
                 }
 
                 if viewModel.showRetryableError {
                     Text(viewModel.retryableErrorMessage)
                         .foregroundStyle(.orange)
                         .font(.callout)
-                        .padding(.top, 5)
                 }
 
                 if viewModel.shouldShowAttemptsWarning {
                     Text("10 failed attempts will result in a full data wipe.\nALL PHOTOS WILL BE LOST!")
                         .foregroundStyle(.red)
                         .font(.callout)
-                        .padding(.top, 5)
                         .accessibilityLabel("Warning: 10 failed attempts will result in a full data wipe. All photos will be lost.")
                 }
             }
@@ -133,22 +105,17 @@ struct PINVerificationView: View {
             }
         }
         .animation(.snappy, value: showUnlockButton)
-        .animation(.snappy, value: isPINFieldFocused)
-        .onAppear {
+        .task {
             viewModel.onAppear()
-            isPINFieldFocused = true
         }
         .onDisappear {
             viewModel.onDisappear()
         }
         .onChange(of: scenePhase) { _, newPhase in
-            // Clear PIN content and dismiss keyboard when app goes to background or inactive
-            if newPhase == .background || newPhase == .inactive {
-                isPINFieldFocused = false
+            if newPhase != .active {
                 viewModel.clearPinContent()
             }
         }
-        .onChange(of: viewModel.showError) { _, showError in }
         .obscuredWhenInactive()
         .screenCaptureProtected()
         .sensoryFeedback(.impact(weight: .light), trigger: viewModel.pin)
