@@ -27,7 +27,7 @@ private enum PrefKeys: String {
 enum Defaults {
     static let sanitizeFileName: Bool = true
     static let sanitizeMetadata: Bool = true
-    static let sessionTimeoutMs: Int64 = 60_000
+    static let sessionTimeoutMs: Int64 = 300_000
 }
 
 // MARK: - UserDefaults Impl
