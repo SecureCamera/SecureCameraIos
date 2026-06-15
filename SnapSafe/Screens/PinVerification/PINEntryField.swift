@@ -12,11 +12,12 @@ struct PINEntryField: UIViewRepresentable {
     let maxLength: Int
     let isEnabled: Bool
     let shouldFocus: Bool
+    let pinType: PINType
 
     func makeUIView(context: Context) -> PaddedSecureTextField {
         let field = PaddedSecureTextField()
         field.isSecureTextEntry = true
-        field.keyboardType = .numberPad
+        field.keyboardType = pinType == .alphanumeric ? .default : .numberPad
         field.textContentType = .oneTimeCode
         field.textAlignment = .center
         field.borderStyle = .none
@@ -40,7 +41,9 @@ struct PINEntryField: UIViewRepresentable {
     func updateUIView(_ uiView: PaddedSecureTextField, context: Context) {
         if uiView.text != text { uiView.text = text }
         uiView.isEnabled = isEnabled
+        uiView.keyboardType = pinType == .alphanumeric ? .default : .numberPad
         context.coordinator.maxLength = maxLength
+        context.coordinator.pinType = pinType
 
         // Hand the desired focus state to the field. The field itself owns the
         // *when* — it (re)attempts first responder on window attachment and
@@ -50,22 +53,30 @@ struct PINEntryField: UIViewRepresentable {
     }
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(text: $text, maxLength: maxLength)
+        Coordinator(text: $text, maxLength: maxLength, pinType: pinType)
     }
 
     @MainActor
     final class Coordinator: NSObject, UITextFieldDelegate {
         @Binding var text: String
         var maxLength: Int
+        var pinType: PINType
 
-        init(text: Binding<String>, maxLength: Int) {
+        init(text: Binding<String>, maxLength: Int, pinType: PINType) {
             self._text = text
             self.maxLength = maxLength
+            self.pinType = pinType
         }
 
         @objc func editingChanged(_ sender: UITextField) {
             let raw = sender.text ?? ""
-            let filtered = String(raw.filter(\.isNumber).prefix(maxLength))
+            let filtered: String
+            switch pinType {
+            case .numeric:
+                filtered = String(raw.filter(\.isNumber).prefix(maxLength))
+            case .alphanumeric:
+                filtered = String(raw.filter { $0.isLetter || $0.isNumber }.prefix(maxLength))
+            }
             if filtered != raw { sender.text = filtered }
             if text != filtered { text = filtered }
         }
