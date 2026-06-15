@@ -99,7 +99,16 @@ struct PoisonPillPinCreationView: View {
                     .onChange(of: pin) { _, newValue in
                         onPinChange(newValue)
                     }
-                
+
+                if !pin.isEmpty && pin.count < 6 {
+                    Text(PINStrings.shortPinWarning)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 50)
+                        .transition(.opacity)
+                }
+
                 SecureField("Confirm PIN", text: $confirmPin)
                     .keyboardType(.numberPad)
                     .textContentType(.oneTimeCode)
@@ -117,7 +126,8 @@ struct PoisonPillPinCreationView: View {
                         onConfirmPinChange(newValue)
                     }
             }
-            
+            .animation(.snappy, value: !pin.isEmpty && pin.count < 6)
+
             // Error Message
             if showError {
                 Text(errorMessage)

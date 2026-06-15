@@ -114,6 +114,7 @@
 		A91DBC6D2DE58191001F42ED /* FaceDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC462DE58191001F42ED /* FaceDetector.swift */; };
 		A91DBC702DE58191001F42ED /* LocationRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC492DE58191001F42ED /* LocationRepository.swift */; };
 		A91DBC732DE58191001F42ED /* PINSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC4C2DE58191001F42ED /* PINSetupView.swift */; };
+		A9BB000B2FC506E700683A92 /* PINStrings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9BB000A2FC506E700683A92 /* PINStrings.swift */; };
 		A91DBC742DE58191001F42ED /* PINVerificationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC4D2DE58191001F42ED /* PINVerificationView.swift */; };
 		A91DBC752DE58191001F42ED /* PrivacyShield.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC4E2DE58191001F42ED /* PrivacyShield.swift */; };
 		A91DBC762DE58191001F42ED /* ScreenCaptureManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC4F2DE58191001F42ED /* ScreenCaptureManager.swift */; };
@@ -301,6 +302,7 @@
 		A91DBC462DE58191001F42ED /* FaceDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceDetector.swift; sourceTree = "<group>"; };
 		A91DBC492DE58191001F42ED /* LocationRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationRepository.swift; sourceTree = "<group>"; };
 		A91DBC4C2DE58191001F42ED /* PINSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PINSetupView.swift; sourceTree = "<group>"; };
+		A9BB000A2FC506E700683A92 /* PINStrings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PINStrings.swift; sourceTree = "<group>"; };
 		A91DBC4D2DE58191001F42ED /* PINVerificationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PINVerificationView.swift; sourceTree = "<group>"; };
 		A91DBC4E2DE58191001F42ED /* PrivacyShield.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyShield.swift; sourceTree = "<group>"; };
 		A91DBC4F2DE58191001F42ED /* ScreenCaptureManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenCaptureManager.swift; sourceTree = "<group>"; };
@@ -572,6 +574,7 @@
 				6660FC3D2E76952700C0B617 /* PINSetupIntroView.swift */,
 				667FF8142E6BB00900FB3E02 /* PINSetupViewModel.swift */,
 				A91DBC4C2DE58191001F42ED /* PINSetupView.swift */,
+				A9BB000A2FC506E700683A92 /* PINStrings.swift */,
 			);
 			path = PinSetup;
 			sourceTree = "<group>";
@@ -1102,6 +1105,7 @@
 				A91DBC702DE58191001F42ED /* LocationRepository.swift in Sources */,
 				A9E6B6AF2E6EAD3D00BB6F19 /* SecurityOverlayViewModel.swift in Sources */,
 				A91DBC732DE58191001F42ED /* PINSetupView.swift in Sources */,
+				A9BB000B2FC506E700683A92 /* PINStrings.swift in Sources */,
 				669751352E6A64330059C5F3 /* CreatePinUseCase.swift in Sources */,
 				A91DBC742DE58191001F42ED /* PINVerificationView.swift in Sources */,
 				A95B2E262F31D19700EE7291 /* SECVFileFormat.swift in Sources */,
