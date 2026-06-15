@@ -15,6 +15,8 @@ import CryptoKit
 struct InlineVideoPlayerView: View {
     /// Called when the video is deleted, so the parent can pop the detail view.
     let onRequestDismiss: () -> Void
+    /// Presents the video info sheet for this page's video.
+    let onInfo: () -> Void
     /// Reports glass-control visibility so the page-level photo counter chip
     /// can fade in/out alongside the video transport.
     var onControlsVisibilityChange: ((Bool) -> Void)? = nil
@@ -36,10 +38,12 @@ struct InlineVideoPlayerView: View {
         encryptionKey: SymmetricKey?,
         isZoomed: Binding<Bool> = .constant(false),
         onRequestDismiss: @escaping () -> Void,
+        onInfo: @escaping () -> Void = {},
         onControlsVisibilityChange: ((Bool) -> Void)? = nil
     ) {
         self._isZoomed = isZoomed
         self.onRequestDismiss = onRequestDismiss
+        self.onInfo = onInfo
         self.onControlsVisibilityChange = onControlsVisibilityChange
         _viewModel = StateObject(wrappedValue: VideoPlayerViewModel(videoDef: videoDef, encryptionKey: encryptionKey))
     }
@@ -111,6 +115,7 @@ struct InlineVideoPlayerView: View {
                 // the offset update and make the video frame shake.
                 if viewModel.showControls {
                     VideoDetailToolbar(
+                        onInfo: onInfo,
                         onShare: { viewModel.share() },
                         onDelete: { showDeleteConfirmation = true },
                         onToggleDecoy: { viewModel.toggleDecoy() },

@@ -111,6 +111,7 @@ struct EnhancedPhotoDetailView: View {
                     chromeState: chromeState,
                     isDismissDragging: viewModel.isDismissDragging,
                     onRequestDismiss: { dismiss() },
+                    onVideoInfo: { videoDef in nav.presentSheet(.videoInfo(videoDef)) },
                     onVideoControlsVisibilityChange: { visible in
                         withAnimation(.easeInOut(duration: 0.2)) {
                             viewModel.isVideoControlsVisible = visible
