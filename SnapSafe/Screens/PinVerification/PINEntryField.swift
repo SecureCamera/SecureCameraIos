@@ -69,10 +69,6 @@ struct PINEntryField: UIViewRepresentable {
             if filtered != raw { sender.text = filtered }
             if text != filtered { text = filtered }
         }
-
-        func textFieldShouldEndEditing(_ textField: UITextField) -> Bool {
-            textField.isEnabled == false
-        }
     }
 }
 
