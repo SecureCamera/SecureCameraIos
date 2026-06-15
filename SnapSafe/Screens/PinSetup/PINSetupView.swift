@@ -73,8 +73,20 @@ struct PINSetupView: View {
                         .padding(.horizontal)
                     
                     VStack(spacing: 20) {
+                        Toggle(isOn: $viewModel.isAlphanumeric) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Use Alphanumeric PIN")
+                                    .font(.subheadline)
+                                Text("Letters and numbers allowed")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .padding(.horizontal, min(50, UIScreen.main.bounds.width * 0.1))
+                        .disabled(!viewModel.pin.isEmpty || !viewModel.confirmPin.isEmpty)
+
                         SecureField("Enter PIN", text: $viewModel.pin)
-                            .keyboardType(.numberPad)
+                            .keyboardType(viewModel.isAlphanumeric ? .default : .numberPad)
                             .textContentType(.oneTimeCode)
                             .multilineTextAlignment(.center)
                             .padding()
@@ -91,7 +103,7 @@ struct PINSetupView: View {
                         }
 
                         SecureField("Confirm PIN", text: $viewModel.confirmPin)
-                            .keyboardType(.numberPad)
+                            .keyboardType(viewModel.isAlphanumeric ? .default : .numberPad)
                             .textContentType(.oneTimeCode)
                             .multilineTextAlignment(.center)
                             .padding()
