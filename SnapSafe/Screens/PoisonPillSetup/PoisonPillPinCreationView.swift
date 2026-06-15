@@ -13,6 +13,7 @@ struct PoisonPillPinCreationView: View {
     @Binding var showError: Bool
     @Binding var errorMessage: String
     @Binding var isLoading: Bool
+    @Binding var isAlphanumeric: Bool
     @Environment(\.scenePhase) private var scenePhase
     @FocusState private var focusedField: Field?
 
@@ -83,8 +84,20 @@ struct PoisonPillPinCreationView: View {
             
             // PIN Input Fields
             VStack(spacing: 20) {
+                Toggle(isOn: $isAlphanumeric) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Use Alphanumeric PIN")
+                            .font(.subheadline)
+                        Text("Letters and numbers allowed")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .padding(.horizontal, 50)
+                .disabled(!pin.isEmpty || !confirmPin.isEmpty)
+
                 SecureField("Enter new PIN", text: $pin)
-                    .keyboardType(.numberPad)
+                    .keyboardType(isAlphanumeric ? .default : .numberPad)
                     .textContentType(.oneTimeCode)
                     .multilineTextAlignment(.center)
                     .focused($focusedField, equals: .pin)
@@ -110,7 +123,7 @@ struct PoisonPillPinCreationView: View {
                 }
 
                 SecureField("Confirm PIN", text: $confirmPin)
-                    .keyboardType(.numberPad)
+                    .keyboardType(isAlphanumeric ? .default : .numberPad)
                     .textContentType(.oneTimeCode)
                     .multilineTextAlignment(.center)
                     .focused($focusedField, equals: .confirm)
@@ -190,7 +203,8 @@ struct PoisonPillPinCreationView: View {
     @Previewable @State var showError = false
     @Previewable @State var errorMessage = ""
     @Previewable @State var isLoading = false
-    
+    @Previewable @State var isAlphanumeric = false
+
     return NavigationStack {
         PoisonPillPinCreationView(
             pin: $pin,
@@ -198,6 +212,7 @@ struct PoisonPillPinCreationView: View {
             showError: $showError,
             errorMessage: $errorMessage,
             isLoading: $isLoading,
+            isAlphanumeric: $isAlphanumeric,
             canProceed: false,
             onPinChange: { _ in },
             onConfirmPinChange: { _ in },
