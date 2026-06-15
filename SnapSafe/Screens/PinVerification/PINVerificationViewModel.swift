@@ -20,7 +20,8 @@ final class PINVerificationViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var backoffSeconds = 0
     @Published var failedAttempts = 0
-    
+    @Published var pinType: PINType = .numeric
+
     // MARK: - Timer
     private var backoffTimer: Timer?
     
@@ -34,8 +35,11 @@ final class PINVerificationViewModel: ObservableObject {
     
     @Injected(\.securityResetUseCase)
     private var securityResetUseCase: SecurityResetUseCase
-    
-    
+
+    @Injected(\.pinRepository)
+    private var pinRepository: PinRepository
+
+
     // MARK: - Computed Properties
     
     var isUnlockButtonDisabled: Bool {
@@ -91,6 +95,7 @@ final class PINVerificationViewModel: ObservableObject {
         Task {
             await updateBackoffTime()
             await updateCurrentFailedAttempts()
+            await updatePinType()
         }
     }
     
@@ -99,17 +104,20 @@ final class PINVerificationViewModel: ObservableObject {
     }
     
     func updatePIN(_ newValue: String) {
-        // Limit to 10 digits
+        // Limit to max length
         var filteredValue = newValue
         if filteredValue.count > MAX_PIN_LENGTH {
             filteredValue = String(filteredValue.prefix(MAX_PIN_LENGTH))
         }
-        
-        // Only allow numbers
-        if !filteredValue.allSatisfy({ $0.isNumber }) {
+
+        // Filter characters based on the stored PIN type
+        switch pinType {
+        case .numeric:
             filteredValue = filteredValue.filter { $0.isNumber }
+        case .alphanumeric:
+            filteredValue = filteredValue.filter { $0.isLetter || $0.isNumber }
         }
-        
+
         pin = filteredValue
     }
     
@@ -225,6 +233,11 @@ final class PINVerificationViewModel: ObservableObject {
         await MainActor.run {
             self.failedAttempts = attempts
         }
+    }
+
+    private func updatePinType() async {
+        guard let hashedPin = await pinRepository.getHashedPin() else { return }
+        await MainActor.run { self.pinType = hashedPin.pinType }
     }
     
     private func startBackoffTimer() {
