@@ -114,7 +114,6 @@
 		A91DBC6D2DE58191001F42ED /* FaceDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC462DE58191001F42ED /* FaceDetector.swift */; };
 		A91DBC702DE58191001F42ED /* LocationRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC492DE58191001F42ED /* LocationRepository.swift */; };
 		A91DBC732DE58191001F42ED /* PINSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC4C2DE58191001F42ED /* PINSetupView.swift */; };
-		A9BB000B2FC506E700683A92 /* PINStrings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9BB000A2FC506E700683A92 /* PINStrings.swift */; };
 		A91DBC742DE58191001F42ED /* PINVerificationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC4D2DE58191001F42ED /* PINVerificationView.swift */; };
 		A91DBC752DE58191001F42ED /* PrivacyShield.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC4E2DE58191001F42ED /* PrivacyShield.swift */; };
 		A91DBC762DE58191001F42ED /* ScreenCaptureManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91DBC4F2DE58191001F42ED /* ScreenCaptureManager.swift */; };
@@ -144,6 +143,8 @@
 		A98EBC6B2FDF702B00FA9CCB /* VideoMetaDataTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A98EBC6A2FDF702B00FA9CCB /* VideoMetaDataTests.swift */; };
 		A98EBC6D2FDF743100FA9CCB /* VideoInfoViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A98EBC6C2FDF743100FA9CCB /* VideoInfoViewModel.swift */; };
 		A98EBC6F2FDF74C500FA9CCB /* VideoInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A98EBC6E2FDF74C500FA9CCB /* VideoInfoView.swift */; };
+		A98EBCC12FDFF73900FA9CCB /* PINType.swift in Sources */ = {isa = PBXBuildFile; fileRef = A98EBCC02FDFF73900FA9CCB /* PINType.swift */; };
+		A9BB000B2FC506E700683A92 /* PINStrings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9BB000A2FC506E700683A92 /* PINStrings.swift */; };
 		A9D60B1B2FC5065C00683A92 /* VideoExportTestHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9D60B1A2FC5065C00683A92 /* VideoExportTestHelper.swift */; };
 		A9D60B1D2FC5067900683A92 /* VideoExportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9D60B1C2FC5067900683A92 /* VideoExportTests.swift */; };
 		A9D60B1F2FC506B600683A92 /* DeveloperToolsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9D60B1E2FC506B600683A92 /* DeveloperToolsView.swift */; };
@@ -302,7 +303,6 @@
 		A91DBC462DE58191001F42ED /* FaceDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceDetector.swift; sourceTree = "<group>"; };
 		A91DBC492DE58191001F42ED /* LocationRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationRepository.swift; sourceTree = "<group>"; };
 		A91DBC4C2DE58191001F42ED /* PINSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PINSetupView.swift; sourceTree = "<group>"; };
-		A9BB000A2FC506E700683A92 /* PINStrings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PINStrings.swift; sourceTree = "<group>"; };
 		A91DBC4D2DE58191001F42ED /* PINVerificationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PINVerificationView.swift; sourceTree = "<group>"; };
 		A91DBC4E2DE58191001F42ED /* PrivacyShield.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyShield.swift; sourceTree = "<group>"; };
 		A91DBC4F2DE58191001F42ED /* ScreenCaptureManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenCaptureManager.swift; sourceTree = "<group>"; };
@@ -328,6 +328,8 @@
 		A98EBC6A2FDF702B00FA9CCB /* VideoMetaDataTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoMetaDataTests.swift; sourceTree = "<group>"; };
 		A98EBC6C2FDF743100FA9CCB /* VideoInfoViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoInfoViewModel.swift; sourceTree = "<group>"; };
 		A98EBC6E2FDF74C500FA9CCB /* VideoInfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoInfoView.swift; sourceTree = "<group>"; };
+		A98EBCC02FDFF73900FA9CCB /* PINType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PINType.swift; sourceTree = "<group>"; };
+		A9BB000A2FC506E700683A92 /* PINStrings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PINStrings.swift; sourceTree = "<group>"; };
 		A9C449132E9CC85800CFE854 /* SnapSafeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SnapSafeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A9D60B1A2FC5065C00683A92 /* VideoExportTestHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoExportTestHelper.swift; sourceTree = "<group>"; };
 		A9D60B1C2FC5067900683A92 /* VideoExportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoExportTests.swift; sourceTree = "<group>"; };
@@ -488,6 +490,7 @@
 				66A404D22E67FD720054FFE7 /* PinRepository.swift */,
 				66A404D42E6800840054FFE7 /* PinRepositoryImpl.swift */,
 				660130B92E67AD1D00D07E9C /* HashedPin.swift */,
+				A98EBCC02FDFF73900FA9CCB /* PINType.swift */,
 			);
 			path = PIN;
 			sourceTree = "<group>";
@@ -1010,6 +1013,7 @@
 				6660FC692E8529F900C0B617 /* CameraDeviceService.swift in Sources */,
 				A9D60B1F2FC506B600683A92 /* DeveloperToolsView.swift in Sources */,
 				C0FFEE0000000000000000A2 /* CameraZoomMapping.swift in Sources */,
+				A98EBCC12FDFF73900FA9CCB /* PINType.swift in Sources */,
 				C0FFEE0000000000000000D2 /* CameraPreviewLayout.swift in Sources */,
 				6660FC6A2E8529F900C0B617 /* CameraZoomService.swift in Sources */,
 				6660FC6B2E8529F900C0B617 /* CameraFocusService.swift in Sources */,
