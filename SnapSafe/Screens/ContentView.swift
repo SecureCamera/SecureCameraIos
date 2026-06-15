@@ -64,12 +64,14 @@ struct ContentView: View {
     // MARK: - Navigation Methods
     
     private func navigateToRootDestination() {
-        // Clear current navigation path and navigate to root destination
+        // Clear current navigation path and navigate to root destination.
         nav.clearNavigationStack()
-        nav.navigate(to: currentRootDestination)
+        if let destination = currentRootDestination {
+            nav.navigate(to: destination)
+        }
     }
-    
-    private var currentRootDestination: AppDestination {
+
+    private var currentRootDestination: AppDestination? {
         #if DEBUG
         if CommandLine.arguments.contains("-SkipAuthentication") {
             return .camera
@@ -78,7 +80,11 @@ struct ContentView: View {
         if viewModel.hasCompletedIntro == false {
             return .pinSetup
         } else if !viewModel.isAuthenticated {
-            return .pinVerification
+            // Authentication is owned entirely by the security overlay
+            // (.securityManaged()). Leave the nav stack at its empty Color.clear
+            // root so we do NOT mount a second, competing PIN screen underneath
+            // the overlay — two PIN text fields deadlock first responder.
+            return nil
         } else {
             return .camera
         }
