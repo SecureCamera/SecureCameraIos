@@ -18,6 +18,7 @@ enum AppDestination: Hashable {
     case camera
     case photoDetail(allMedia: [GalleryMediaItem], initialIndex: Int)
     case photoInfo(PhotoDef)
+    case videoInfo(VideoDef)
     case photoObfuscation(PhotoDef)
     case poisonPillSetupWizard
     case videoPlayer(VideoDef, Data?)
@@ -87,6 +88,7 @@ extension AppDestination: Identifiable {
         case .camera: return "camera"
         case .photoDetail(_, let initialIndex): return "photoDetail_\(initialIndex)"
         case .photoInfo(let photoDef): return "photoInfo_\(photoDef.photoName)"
+        case .videoInfo(let videoDef): return "videoInfo_\(videoDef.videoName)"
         case .photoObfuscation(let photoDef): return "photoObfuscation_\(photoDef.photoName)"
         case .poisonPillSetupWizard: return "poisonPillSetupWizard"
         case .videoPlayer(let videoDef, _): return "videoPlayer_\(videoDef.videoName)"
