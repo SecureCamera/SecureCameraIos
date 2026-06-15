@@ -147,7 +147,6 @@
 		A9D60B1D2FC5067900683A92 /* VideoExportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9D60B1C2FC5067900683A92 /* VideoExportTests.swift */; };
 		A9D60B1F2FC506B600683A92 /* DeveloperToolsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9D60B1E2FC506B600683A92 /* DeveloperToolsView.swift */; };
 		A9D60B212FC506CE00683A92 /* RunVideoExportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9D60B202FC506CE00683A92 /* RunVideoExportTests.swift */; };
-		A9D60B232FC506E700683A92 /* VIDEO_EXPORT_TESTING.md in Resources */ = {isa = PBXBuildFile; fileRef = A9D60B222FC506E700683A92 /* VIDEO_EXPORT_TESTING.md */; };
 		A9E6B6962E6E47B500BB6F19 /* ThumbnailCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9E6B6942E6E47B500BB6F19 /* ThumbnailCache.swift */; };
 		A9E6B6972E6E47B500BB6F19 /* SecureImageRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9E6B6932E6E47B500BB6F19 /* SecureImageRepository.swift */; };
 		A9E6B6992E6E47E700BB6F19 /* PhotoDef.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9E6B6982E6E47E700BB6F19 /* PhotoDef.swift */; };
@@ -332,7 +331,6 @@
 		A9D60B1C2FC5067900683A92 /* VideoExportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoExportTests.swift; sourceTree = "<group>"; };
 		A9D60B1E2FC506B600683A92 /* DeveloperToolsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeveloperToolsView.swift; sourceTree = "<group>"; };
 		A9D60B202FC506CE00683A92 /* RunVideoExportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunVideoExportTests.swift; sourceTree = "<group>"; };
-		A9D60B222FC506E700683A92 /* VIDEO_EXPORT_TESTING.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = VIDEO_EXPORT_TESTING.md; sourceTree = "<group>"; };
 		A9DE37472DC5F34400679C2C /* SnapSafe.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SnapSafe.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A9DE37572DC5F34600679C2C /* SnapSafeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SnapSafeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A9E6B6932E6E47B500BB6F19 /* SecureImageRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureImageRepository.swift; sourceTree = "<group>"; };
@@ -762,7 +760,6 @@
 				A9D60B1C2FC5067900683A92 /* VideoExportTests.swift */,
 				A9D60B1E2FC506B600683A92 /* DeveloperToolsView.swift */,
 				A9D60B202FC506CE00683A92 /* RunVideoExportTests.swift */,
-				A9D60B222FC506E700683A92 /* VIDEO_EXPORT_TESTING.md */,
 			);
 			path = SnapSafe;
 			sourceTree = "<group>";
@@ -975,7 +972,6 @@
 				A91DBC7B2DE58191001F42ED /* Assets.xcassets in Resources */,
 				C0FFEE0000000000000000C2 /* PrivacyInfo.xcprivacy in Resources */,
 				A9E6B6B72E7247D300BB6F19 /* Localizable.xcstrings in Resources */,
-				A9D60B232FC506E700683A92 /* VIDEO_EXPORT_TESTING.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
