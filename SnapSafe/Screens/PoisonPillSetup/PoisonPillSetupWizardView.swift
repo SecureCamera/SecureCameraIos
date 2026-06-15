@@ -140,6 +140,7 @@ struct PoisonPillSetupWizardView: View {
                 showError: $viewModel.showError,
                 errorMessage: $viewModel.errorMessage,
                 isLoading: $viewModel.isLoading,
+                isAlphanumeric: $viewModel.isAlphanumeric,
                 canProceed: viewModel.canProceedFromPinCreation,
                 onPinChange: viewModel.updatePIN,
                 onConfirmPinChange: viewModel.updateConfirmPIN,

@@ -41,7 +41,8 @@ final class PoisonPillSetupWizardViewModel: ObservableObject {
     @Published var showError: Bool = false
     @Published var errorMessage: String = ""
     @Published var isLoading: Bool = false
-    
+    @Published var isAlphanumeric: Bool = false
+
     // MARK: - Dependencies
 
     @Injected(\.createPoisonPillUseCase)
@@ -62,15 +63,19 @@ final class PoisonPillSetupWizardViewModel: ObservableObject {
     // MARK: - PIN Validation Methods
     func validateAndFilterPIN(_ newValue: String) -> String {
         var filtered = newValue
-        
-        // Only allow numbers
-        filtered = filtered.filter { $0.isNumber }
-        
-        // Limit to max digits
+
+        // Allow letters and numbers for alphanumeric PINs, numbers only otherwise
+        if isAlphanumeric {
+            filtered = filtered.filter { $0.isLetter || $0.isNumber }
+        } else {
+            filtered = filtered.filter { $0.isNumber }
+        }
+
+        // Limit to max length
         if filtered.count > MAX_PIN_LENGTH {
             filtered = String(filtered.prefix(MAX_PIN_LENGTH))
         }
-        
+
         return filtered
     }
     
@@ -135,20 +140,24 @@ final class PoisonPillSetupWizardViewModel: ObservableObject {
         
         isLoading = true
         showError = false
-        
+
+        let pinType: PINType = isAlphanumeric ? .alphanumeric : .numeric
+
         // Check PIN strength
-        if !pinStrengthCheckUseCase.isPinStrongEnough(pin) {
+        if !pinStrengthCheckUseCase.isPinStrongEnough(pin, pinType: pinType) {
             showError = true
-            errorMessage = "PIN is too weak. Avoid common patterns like 1234 or repeated digits."
+            errorMessage = isAlphanumeric
+                ? "PIN is too weak. Avoid common words and repeated characters."
+                : "PIN is too weak. Avoid common patterns like 1234 or repeated digits."
             isLoading = false
             // Clear PIN fields like in PINSetupViewModel
             pin = ""
             confirmPin = ""
             return false
         }
-        
+
         Logger.security.info("Setting up poison pill PIN")
-        let success: Bool = await self.createPoisonPillUseCase.createPin(pppin: pin)
+        let success: Bool = await self.createPoisonPillUseCase.createPin(pppin: pin, pinType: pinType)
         
         isLoading = false
         
