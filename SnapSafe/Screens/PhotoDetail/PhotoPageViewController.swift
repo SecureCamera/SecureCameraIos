@@ -25,6 +25,8 @@ struct PhotoPageViewController: UIViewControllerRepresentable {
     let isDismissDragging: Bool
     /// Invoked when a video page deletes its video, so the detail view can pop.
     let onRequestDismiss: () -> Void
+    /// Invoked when a video page's Info button is tapped, with that page's video.
+    let onVideoInfo: (VideoDef) -> Void
     /// Invoked by inline video pages when their glass controls show/hide, so
     /// the photo counter chip overlay can fade together with them.
     let onVideoControlsVisibilityChange: (Bool) -> Void
@@ -37,6 +39,7 @@ struct PhotoPageViewController: UIViewControllerRepresentable {
         chromeState: PagerChromeState,
         isDismissDragging: Bool,
         onRequestDismiss: @escaping () -> Void,
+        onVideoInfo: @escaping (VideoDef) -> Void = { _ in },
         onVideoControlsVisibilityChange: @escaping (Bool) -> Void = { _ in }
     ) {
         self.allMedia = allMedia
@@ -45,6 +48,7 @@ struct PhotoPageViewController: UIViewControllerRepresentable {
         self.chromeState = chromeState
         self.isDismissDragging = isDismissDragging
         self.onRequestDismiss = onRequestDismiss
+        self.onVideoInfo = onVideoInfo
         self.onVideoControlsVisibilityChange = onVideoControlsVisibilityChange
     }
 
@@ -82,6 +86,7 @@ struct PhotoPageViewController: UIViewControllerRepresentable {
         context.coordinator.isZoomedBinding = _isZoomed
         context.coordinator.isDismissDragging = isDismissDragging
         context.coordinator.onRequestDismiss = onRequestDismiss
+        context.coordinator.onVideoInfo = onVideoInfo
         context.coordinator.onVideoControlsVisibilityChange = onVideoControlsVisibilityChange
         context.coordinator.updatePagingEnabled()
     }
@@ -93,6 +98,7 @@ struct PhotoPageViewController: UIViewControllerRepresentable {
             isZoomedBinding: _isZoomed,
             chromeState: chromeState,
             onRequestDismiss: onRequestDismiss,
+            onVideoInfo: onVideoInfo,
             onVideoControlsVisibilityChange: onVideoControlsVisibilityChange
         )
     }
@@ -105,6 +111,7 @@ struct PhotoPageViewController: UIViewControllerRepresentable {
         var isDismissDragging = false
         let chromeState: PagerChromeState
         var onRequestDismiss: () -> Void
+        var onVideoInfo: (VideoDef) -> Void
         var onVideoControlsVisibilityChange: (Bool) -> Void
         weak var pageScrollView: UIScrollView?
         private var viewControllerCache: [Int: UIViewController] = [:]
@@ -115,6 +122,7 @@ struct PhotoPageViewController: UIViewControllerRepresentable {
             isZoomedBinding: Binding<Bool>,
             chromeState: PagerChromeState,
             onRequestDismiss: @escaping () -> Void,
+            onVideoInfo: @escaping (VideoDef) -> Void,
             onVideoControlsVisibilityChange: @escaping (Bool) -> Void
         ) {
             self.allMedia = allMedia
@@ -122,6 +130,7 @@ struct PhotoPageViewController: UIViewControllerRepresentable {
             self.isZoomedBinding = isZoomedBinding
             self.chromeState = chromeState
             self.onRequestDismiss = onRequestDismiss
+            self.onVideoInfo = onVideoInfo
             self.onVideoControlsVisibilityChange = onVideoControlsVisibilityChange
         }
 
@@ -147,6 +156,7 @@ struct PhotoPageViewController: UIViewControllerRepresentable {
                     isZoomed: isZoomedBinding,
                     chromeState: chromeState,
                     onRequestDismiss: onRequestDismiss,
+                    onInfo: { [weak self] in self?.onVideoInfo(videoDef) },
                     onControlsVisibilityChange: { [weak self] visible in
                         self?.onVideoControlsVisibilityChange(visible)
                     }
@@ -242,6 +252,7 @@ class InlineVideoHostingController: UIHostingController<AnyView> {
         isZoomed: Binding<Bool>,
         chromeState: PagerChromeState,
         onRequestDismiss: @escaping () -> Void,
+        onInfo: @escaping () -> Void,
         onControlsVisibilityChange: @escaping (Bool) -> Void
     ) {
         let view = InlineVideoPlayerView(
@@ -249,6 +260,7 @@ class InlineVideoHostingController: UIHostingController<AnyView> {
             encryptionKey: encryptionKey,
             isZoomed: isZoomed,
             onRequestDismiss: onRequestDismiss,
+            onInfo: onInfo,
             onControlsVisibilityChange: onControlsVisibilityChange
         )
         super.init(rootView: AnyView(view.environment(chromeState)))

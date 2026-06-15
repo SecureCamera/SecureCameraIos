@@ -59,6 +59,7 @@ struct PhotoDetailToolbar: View {
 // MARK: - Video toolbar
 
 struct VideoDetailToolbar: View {
+    var onInfo: () -> Void
     var onShare: () -> Void
     var onDelete: () -> Void
     var onToggleDecoy: (() -> Void)?
@@ -69,6 +70,7 @@ struct VideoDetailToolbar: View {
 
     var body: some View {
         HStack(spacing: 0) {
+            MediaToolbarButton(icon: "info.circle", label: "Info", action: onInfo)
             MediaToolbarButton(icon: "square.and.arrow.up", label: "Share", action: onShare)
 
             if showDecoyButton {
