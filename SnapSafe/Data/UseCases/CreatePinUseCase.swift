@@ -32,9 +32,9 @@ final class CreatePinUseCase: @unchecked Sendable {
     /// Creates a PIN, immediately authorizes it, and on success:
     /// 1) creates the key, 2) derives & caches encryption key, 3) marks intro complete.
     /// - Returns: `true` on success, `false` otherwise.
-    func createPin(_ pin: String) async -> Bool {
+    func createPin(_ pin: String, pinType: PINType = .numeric) async -> Bool {
         do {
-            await pinRepository.setAppPin(pin)
+            await pinRepository.setAppPin(pin, pinType: pinType)
 
             let hashedPin = await authorizePinUseCase.authorizePin(pin)
             guard let hashedPin else { return false }
@@ -44,7 +44,6 @@ final class CreatePinUseCase: @unchecked Sendable {
             await settingsDataSource.setIntroCompleted(true)
             return true
         } catch {
-            // Log the error for debugging purposes
             Logger.security.error("Failed to create PIN", metadata: [
                 "error": .string(String(describing: error))
             ])

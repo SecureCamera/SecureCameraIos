@@ -11,7 +11,7 @@ import Mockable
 protocol PinRepository: Sendable {
     // MARK: - Core PIN APIs
 
-    func setAppPin(_ pin: String) async
+    func setAppPin(_ pin: String, pinType: PINType) async
     func getHashedPin() async -> HashedPin?
 
     func hashPin(_ pin: String) async throws -> HashedPin
@@ -23,7 +23,7 @@ protocol PinRepository: Sendable {
     
     // MARK: - Poison Pill APIs
 
-    func setPoisonPillPin(_ pin: String) async
+    func setPoisonPillPin(_ pin: String, pinType: PINType) async
     func getPlainPoisonPillPin() async -> String?
     func getHashedPoisonPillPin() async -> HashedPin?
     func activatePoisonPill() async
