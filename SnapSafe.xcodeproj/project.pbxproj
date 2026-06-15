@@ -89,6 +89,7 @@
 		66A404D32E67FD720054FFE7 /* PinRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66A404D22E67FD720054FFE7 /* PinRepository.swift */; };
 		66A404D52E6800840054FFE7 /* PinRepositoryImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66A404D42E6800840054FFE7 /* PinRepositoryImpl.swift */; };
 		66A404D72E694A450054FFE7 /* PinRepositoryTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66A404D62E694A450054FFE7 /* PinRepositoryTest.swift */; };
+		C0FFEE000000000000000201 /* PinStrengthCheckUseCaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0FFEE000000000000000200 /* PinStrengthCheckUseCaseTests.swift */; };
 		66A404DA2E694E2C0054FFE7 /* Mockable in Frameworks */ = {isa = PBXBuildFile; productRef = 66A404D92E694E2C0054FFE7 /* Mockable */; };
 		66A404DC2E69537E0054FFE7 /* Mockable in Frameworks */ = {isa = PBXBuildFile; productRef = 66A404DB2E69537E0054FFE7 /* Mockable */; };
 		66DE21CF2E69750C00AC94DA /* Json.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66DE21CE2E69750600AC94DA /* Json.swift */; };
@@ -279,6 +280,7 @@
 		66A404D22E67FD720054FFE7 /* PinRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinRepository.swift; sourceTree = "<group>"; };
 		66A404D42E6800840054FFE7 /* PinRepositoryImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinRepositoryImpl.swift; sourceTree = "<group>"; };
 		66A404D62E694A450054FFE7 /* PinRepositoryTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinRepositoryTest.swift; sourceTree = "<group>"; };
+		C0FFEE000000000000000200 /* PinStrengthCheckUseCaseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinStrengthCheckUseCaseTests.swift; sourceTree = "<group>"; };
 		66DE21CE2E69750600AC94DA /* Json.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Json.swift; sourceTree = "<group>"; };
 		66FFC0DE2F3A000000C0B617 /* VideoCaptureService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoCaptureService.swift; sourceTree = "<group>"; };
 		73AE08F5261FA581EF832FE5 /* VerifyPinUseCaseTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VerifyPinUseCaseTests.swift; sourceTree = "<group>"; };
@@ -805,6 +807,7 @@
 				C0FFEE000000000000000121 /* MinimumVisibilityGateTests.swift */,
 				66A404D02E67F39F0054FFE7 /* PinCryptoTests.swift */,
 				66A404D62E694A450054FFE7 /* PinRepositoryTest.swift */,
+				C0FFEE000000000000000200 /* PinStrengthCheckUseCaseTests.swift */,
 				ADA2FF82666960557F17548E /* SecureImageRepositoryTests.swift */,
 				A8CD70FA01E794FBB7CAB2C9 /* Util */,
 				61044BA7A88D7C3A437AA377 /* Util */,
@@ -1148,6 +1151,7 @@
 				669751302E69789F0059C5F3 /* TestUtils.swift in Sources */,
 				A95B2E252F31D19700EE7291 /* SECVFileFormat.swift in Sources */,
 				66A404D72E694A450054FFE7 /* PinRepositoryTest.swift in Sources */,
+				C0FFEE000000000000000201 /* PinStrengthCheckUseCaseTests.swift in Sources */,
 				D54FBF5A0C3BABB963AB33CF /* FakeEncryptionScheme.swift in Sources */,
 				C0FFEE0000000000000000B2 /* CameraZoomMappingTests.swift in Sources */,
 				A98EBC132FDE07AB00FA9CCB /* ImageProcessingTests.swift in Sources */,
