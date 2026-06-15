@@ -88,7 +88,7 @@ struct ContentView: View {
 
     private func shouldHideNavigationBar(for destination: AppDestination) -> Bool {
         switch destination {
-        case .gallery, .photoObfuscation, .settings, .videoExportTest, .photoInfo:
+        case .gallery, .photoObfuscation, .settings, .videoExportTest, .photoInfo, .videoInfo:
             return false
         case .videoPlayer:
             return true
@@ -123,6 +123,8 @@ struct ContentView: View {
             )
         case .photoInfo(let photoDef):
             ImageInfoView(photoDef: photoDef)
+        case .videoInfo(let videoDef):
+            VideoInfoView(videoDef: videoDef)
         case .photoObfuscation(let photoDef):
             PhotoObfuscationView(photoDef: photoDef, navigator: nav)
         case .poisonPillSetupWizard:
