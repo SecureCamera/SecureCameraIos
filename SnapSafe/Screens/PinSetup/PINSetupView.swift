@@ -80,7 +80,16 @@ struct PINSetupView: View {
                             .padding()
                             .background(RoundedRectangle(cornerRadius: 8).stroke(Color.gray, lineWidth: 1))
                             .padding(.horizontal, min(50, UIScreen.main.bounds.width * 0.1))
-                        
+
+                        if !viewModel.pin.isEmpty && viewModel.pin.count < 6 {
+                            Text(PINStrings.shortPinWarning)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, min(50, UIScreen.main.bounds.width * 0.1))
+                                .transition(.opacity)
+                        }
+
                         SecureField("Confirm PIN", text: $viewModel.confirmPin)
                             .keyboardType(.numberPad)
                             .textContentType(.oneTimeCode)
@@ -89,7 +98,8 @@ struct PINSetupView: View {
                             .background(RoundedRectangle(cornerRadius: 8).stroke(Color.gray, lineWidth: 1))
                             .padding(.horizontal, min(50, UIScreen.main.bounds.width * 0.1))
                     }
-                    
+                    .animation(.snappy, value: !viewModel.pin.isEmpty && viewModel.pin.count < 6)
+
                     if viewModel.showError {
                         Text(viewModel.errorMessage)
                             .foregroundStyle(.red)
