@@ -16,8 +16,8 @@ final class CreatePoisonPillUseCase: @unchecked Sendable {
         self.encryptionScheme = encryptionScheme
     }
     
-    func createPin(pppin: String) async -> Bool {
-        await pinRepository.setPoisonPillPin(pppin)
+    func createPin(pppin: String, pinType: PINType = .numeric) async -> Bool {
+        await pinRepository.setPoisonPillPin(pppin, pinType: pinType)
         guard let hashedPPPin = await pinRepository.getHashedPoisonPillPin() else {
             Logger.security.error("Failed to retrieve hashed poison pill pin")
             return false

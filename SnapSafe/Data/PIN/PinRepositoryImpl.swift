@@ -23,14 +23,14 @@ class PinRepositoryImpl: PinRepository, @unchecked Sendable {
         self.pinCrypto = pinCrypto
     }
 
-    func setAppPin(_ pin: String) async {
+    func setAppPin(_ pin: String, pinType: PINType) async {
         do {
-            let hashedPin = try await hashPin(pin)
+            var hashedPin = try await hashPin(pin)
+            hashedPin.pinType = pinType
             let hashedPinData = try jsonEncoder().encode(hashedPin)
             let cipheredHash = try await encryptionScheme.encryptWithKeyAlias(
                 plain: hashedPinData, keyAlias: Self.PIN_KEY_ALIAS)
             let cipheredHashBase64 = cipheredHash.base64EncodedString()
-
             await dataSource.setAppPin(cipheredPin: cipheredHashBase64)
         } catch {
             Logger.storage.error("Failed to store app pin: \(error)")
@@ -91,15 +91,16 @@ class PinRepositoryImpl: PinRepository, @unchecked Sendable {
         return await verifyPin(inputPin: pin, storedHash: stored)
     }
 
-    func setPoisonPillPin(_ pin: String) async {
+    func setPoisonPillPin(_ pin: String, pinType: PINType) async {
         do {
-            let hashedPin = try await hashPin(pin)
+            var hashedPin = try await hashPin(pin)
+            hashedPin.pinType = pinType
             let hashedPinData = try jsonEncoder().encode(hashedPin)
 
             Logger.security.debug("Setting poison pill PIN", metadata: [
                 "hashedPinDataSize": .stringConvertible(hashedPinData.count)
             ])
-            
+
             let cipheredHashedPpp = try await encryptionScheme.encryptWithKeyAlias(
                 plain: hashedPinData, keyAlias: Self.PIN_KEY_ALIAS)
             let cipheredHashedPppBase64 = cipheredHashedPpp.base64EncodedString()
