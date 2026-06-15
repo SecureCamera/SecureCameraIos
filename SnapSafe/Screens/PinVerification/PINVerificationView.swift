@@ -66,7 +66,8 @@ struct PINVerificationView: View {
                     text: $viewModel.pin,
                     maxLength: MAX_PIN_LENGTH,
                     isEnabled: !viewModel.isLoading,
-                    shouldFocus: shouldFocusField
+                    shouldFocus: shouldFocusField,
+                    pinType: viewModel.pinType
                 )
                 .frame(height: 52)
                 .padding(.horizontal, 50)
