@@ -1,0 +1,660 @@
+//
+//  MixedMediaGalleryViewModel.swift
+//  SnapSafe
+//
+//  Created by Claude on 1/26/26.
+//
+
+import Foundation
+import PhotosUI
+import SwiftUI
+import Combine
+import FactoryKit
+import Logging
+import CryptoKit
+import CoreTransferable
+import UniformTypeIdentifiers
+
+/// A movie loaded from the photo library, copied to a temporary location we own.
+struct ImportedMovie: Transferable {
+    let url: URL
+
+    static var transferRepresentation: some TransferRepresentation {
+        FileRepresentation(contentType: .movie) { movie in
+            SentTransferredFile(movie.url)
+        } importing: { received in
+            let ext = received.file.pathExtension.isEmpty ? "mov" : received.file.pathExtension
+            let temp = FileManager.default.temporaryDirectory
+                .appendingPathComponent(UUID().uuidString)
+                .appendingPathExtension(ext)
+            try? FileManager.default.removeItem(at: temp)
+            try FileManager.default.copyItem(at: received.file, to: temp)
+            return ImportedMovie(url: temp)
+        }
+    }
+}
+
+/// Gallery selection modes.
+enum SelectionMode {
+    case none
+    case share
+    case delete
+    case decoy
+}
+
+/// Enhanced gallery view model that supports both photos and videos.
+@MainActor
+final class MixedMediaGalleryViewModel: ObservableObject {
+
+    // MARK: - Published Properties
+
+    @Published var mediaItems: [GalleryMediaItem] = []
+    @Published var selectedMediaItem: GalleryMediaItem?
+    @Published var selectionMode: SelectionMode = .none
+    @Published var selectedMediaIds = Set<UUID>()
+    @Published var showDeleteConfirmation = false
+    @Published var pickerItems: [PhotosPickerItem] = []
+    @Published var isImporting: Bool = false
+    @Published var importProgress: Float = 0
+    @Published var photoThumbnails: [String: UIImage] = [:]   // keyed by photoName
+    @Published var videoThumbnails: [String: UIImage] = [:]   // keyed by videoName
+
+    // Decoy support
+    var isSelecting: Bool { selectionMode != .none }
+    var isSelectingDecoys: Bool { selectionMode == .decoy }
+    // Selection cap for batch decoy mode. Tied to the single source of truth so
+    // the UI cap can never drift from what the use cases actually enforce.
+    let maxDecoys = SecureImageRepository.maxDecoyItems
+    @Published var showDecoyLimitWarning: Bool = false
+    @Published var showDecoyConfirmation: Bool = false
+    @Published var isPoisonPillConfigured: Bool = false
+
+    /// Set while `saveDecoySelections()` is running. Decoy videos are re-encrypted
+    /// with the poison-pill key, which can take a while for large videos.
+    @Published var isSavingDecoys: Bool = false
+    @Published var decoySaveTotal: Int = 0
+    @Published var decoySaveCompleted: Int = 0
+
+    // MARK: - Dependencies
+
+    @Injected(\.secureImageRepository)
+    private var secureImageRepository: SecureImageRepository
+
+    @Injected(\.thumbnailCache)
+    private var thumbnailCache: ThumbnailCache
+
+    @Injected(\.videoEncryptionService)
+    private var videoEncryptionService: VideoEncryptionService
+
+    @Injected(\.clock)
+    private var clock: Clock
+
+    @Injected(\.addDecoyPhotoUseCase)
+    private var addDecoyPhotoUseCase: AddDecoyPhotoUseCase
+
+    @Injected(\.removeDecoyPhotoUseCase)
+    private var removeDecoyPhotoUseCase: RemoveDecoyPhotoUseCase
+
+    @Injected(\.addDecoyVideoUseCase)
+    private var addDecoyVideoUseCase: AddDecoyVideoUseCase
+
+    @Injected(\.prepareForSharingUseCase)
+    private var prepareForSharingUseCase: PrepareForSharingUseCase
+
+    @Injected(\.authorizationRepository)
+    private var authorizationRepository: AuthorizationRepository
+
+    @Injected(\.pinRepository)
+    private var pinRepository: PinRepository
+
+    @Injected(\.encryptionScheme)
+    private var encryptionScheme: EncryptionScheme
+
+    private var cancellables = Set<AnyCancellable>()
+    private weak var currentActivityController: UIActivityViewController?
+    private var encryptionKey: SymmetricKey?
+
+    // MARK: - Initialization
+
+    init(selectingDecoys: Bool = false) {
+        self.selectionMode = selectingDecoys ? .decoy : .none
+
+        setupObservers()
+    }
+
+    // MARK: - View Lifecycle
+
+    func onAppear() {
+        Task {
+            // Load encryption key first so videos get the key attached
+            do {
+                let keyData = try await encryptionScheme.getDerivedKey()
+                encryptionKey = SymmetricKey(data: keyData)
+            } catch {
+                Logger.storage.error("Failed to get encryption key for gallery", metadata: [
+                    "error": .string(error.localizedDescription)
+                ])
+            }
+            // Now load media items (uses encryptionKey for video items)
+            loadMediaItems()
+        }
+        loadPoisonPillConfiguration()
+    }
+
+    private func loadPoisonPillConfiguration() {
+        Task {
+            let hasPoisonPill = await pinRepository.hasPoisonPillPin()
+            await MainActor.run {
+                isPoisonPillConfigured = hasPoisonPill
+            }
+        }
+    }
+
+    // MARK: - Computed Properties
+
+    var hasSelection: Bool {
+        !selectedMediaIds.isEmpty
+    }
+
+    /// Whether the given media item is currently marked as a decoy.
+    private func isItemDecoy(_ item: GalleryMediaItem) async -> Bool {
+        if let photoDef = item.photoDef {
+            return await secureImageRepository.isDecoyPhoto(photoDef)
+        } else if let videoDef = item.videoDef {
+            return await secureImageRepository.isDecoyVideo(videoDef)
+        }
+        return false
+    }
+
+    // MARK: - Thumbnails
+
+    /// Loads the thumbnail for a photo, preferring the in-memory cache and falling
+    /// back to a disk decrypt. Publishes the result so observing cells update.
+    func loadThumbnail(for photo: PhotoDef) async {
+        let key = photo.photoName
+        if photoThumbnails[key] != nil { return }
+        if let cached = thumbnailCache.getThumbnail(photo) {
+            photoThumbnails[key] = cached
+            return
+        }
+        guard let data = await secureImageRepository.readThumbnail(photo),
+              let image = UIImage(data: data) else { return }
+        thumbnailCache.putThumbnail(photo, image)
+        photoThumbnails[key] = image
+    }
+
+    /// Loads the thumbnail for a video, preferring the in-memory cache and falling
+    /// back to a disk decrypt. Publishes the result so observing cells update.
+    func loadVideoThumbnail(for video: VideoDef) async {
+        let key = video.videoName
+        if videoThumbnails[key] != nil { return }
+        if let cached = thumbnailCache.getVideoThumbnail(key) {
+            videoThumbnails[key] = cached
+            return
+        }
+        guard let data = await secureImageRepository.readVideoThumbnail(video),
+              let image = UIImage(data: data) else { return }
+        thumbnailCache.putVideoThumbnail(key, image)
+        videoThumbnails[key] = image
+    }
+
+    /// Drops a photo's thumbnail from both the in-memory cache and the published
+    /// dict. Called on delete so a stale decrypted bitmap isn't retained or served
+    /// for a later item that reuses the same name.
+    private func invalidatePhotoThumbnail(_ photo: PhotoDef) {
+        thumbnailCache.evictThumbnail(photo)
+        photoThumbnails.removeValue(forKey: photo.photoName)
+    }
+
+    /// Drops a video's thumbnail from both the in-memory cache and the published dict.
+    private func invalidateVideoThumbnail(named name: String) {
+        thumbnailCache.evictVideoThumbnail(name)
+        videoThumbnails.removeValue(forKey: name)
+    }
+
+    /// Whether the given photo is currently marked as a decoy.
+    func isDecoyPhoto(_ photo: PhotoDef) async -> Bool {
+        await secureImageRepository.isDecoyPhoto(photo)
+    }
+
+    /// Whether the given video is currently marked as a decoy.
+    func isDecoyVideo(_ video: VideoDef) async -> Bool {
+        await secureImageRepository.isDecoyVideo(video)
+    }
+
+    var navigationTitle: String {
+        if isSelectingDecoys {
+            return "Select Decoy Media"
+        } else {
+            return "Secure Gallery"
+        }
+    }
+
+    var decoyCountText: String {
+        "\(selectedMediaIds.count) of \(maxDecoys) selected"
+    }
+
+    var decoyCountTextColor: Color {
+        selectedMediaIds.count > maxDecoys ? .red : .secondary
+    }
+
+    var isSaveDecoyButtonDisabled: Bool {
+        selectedMediaIds.isEmpty || isSavingDecoys
+    }
+
+    var deleteAlertTitle: String {
+        "Delete \(selectedMediaIds.count > 1 ? "Items" : "Item")"
+    }
+
+    var deleteAlertMessage: String {
+        "Are you sure you want to delete \(selectedMediaIds.count) item\(selectedMediaIds.count > 1 ? "s" : "")? This action cannot be undone."
+    }
+
+    var decoyConfirmationMessage: String {
+        "Are you sure you want to save these \(selectedMediaIds.count) items as decoys? These will be shown when the emergency PIN is entered."
+    }
+
+    var decoyLimitWarningMessage: String {
+        "You can select a maximum of \(maxDecoys) decoy items. Please deselect some before saving."
+    }
+
+    // MARK: - Media Loading
+
+    func loadMediaItems() {
+        Task {
+            // Load photos
+            let photoMetadata = await secureImageRepository.getPhotos()
+            let encKey = encryptionKey
+            let photos = photoMetadata.map { GalleryMediaItem(mediaItem: $0, encryptionKey: nil) }
+
+            // Load videos
+            let videos = loadVideos(encryptionKey: encKey)
+
+            // Combine and sort by date, oldest first. The grid fills
+            // upper-left to lower-right, so this puts the oldest item in the
+            // upper left and the newest in the lower right.
+            let allMedia = (photos + videos).sorted { item1, item2 in
+                let date1 = item1.dateTaken() ?? Date.distantPast
+                let date2 = item2.dateTaken() ?? Date.distantPast
+                return date1 < date2
+            }
+
+            mediaItems = allMedia
+
+            if isSelectingDecoys {
+                var decoyIds = Set<UUID>()
+                for item in allMedia where await isItemDecoy(item) {
+                    decoyIds.insert(item.id)
+                }
+                // Re-check after the awaited enumeration: selection may have been
+                // cancelled while this loop was suspended.
+                if isSelectingDecoys {
+                    selectedMediaIds.formUnion(decoyIds)
+                }
+            }
+        }
+    }
+
+    private func loadVideos(encryptionKey: SymmetricKey?) -> [GalleryMediaItem] {
+        let videosDirectory = getVideosDirectory()
+
+        guard FileManager.default.fileExists(atPath: videosDirectory.path) else {
+            return []
+        }
+
+        do {
+            let fileURLs = try FileManager.default.contentsOfDirectory(
+                at: videosDirectory,
+                includingPropertiesForKeys: [.contentModificationDateKey],
+                options: [.skipsHiddenFiles]
+            )
+
+            let videoFiles = fileURLs.filter { url in
+                let ext = url.pathExtension.lowercased()
+                return ext == "secv"
+            }
+
+            return videoFiles.compactMap { videoURL in
+                let fileName = videoURL.deletingPathExtension().lastPathComponent
+
+                return GalleryMediaItem(
+                    mediaItem: VideoDef(
+                        videoName: fileName,
+                        videoFormat: videoURL.pathExtension,
+                        videoFile: videoURL
+                    ),
+                    encryptionKey: encryptionKey
+                )
+            }
+
+        } catch {
+            Logger.storage.error("Failed to load videos", metadata: [
+                "error": .string(error.localizedDescription)
+            ])
+            return []
+        }
+    }
+
+    private func getVideosDirectory() -> URL {
+        let appSupportPath = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        return appSupportPath.appendingPathComponent("videos")
+    }
+
+    // MARK: - Selection
+
+    func toggleSelection(for mediaItem: GalleryMediaItem) {
+        if selectedMediaIds.contains(mediaItem.id) {
+            selectedMediaIds.remove(mediaItem.id)
+        } else {
+            if isSelectingDecoys && selectedMediaIds.count >= maxDecoys {
+                showDecoyLimitWarning = true
+                return
+            }
+            selectedMediaIds.insert(mediaItem.id)
+        }
+    }
+
+    func isSelected(_ mediaItem: GalleryMediaItem) -> Bool {
+        selectedMediaIds.contains(mediaItem.id)
+    }
+
+    func clearSelection() {
+        selectedMediaIds.removeAll()
+    }
+
+    func startSelecting(mode: SelectionMode) {
+        selectionMode = mode
+
+        if mode == .decoy {
+            selectedMediaIds.removeAll()
+            let items = mediaItems
+            Task {
+                var decoyIds = Set<UUID>()
+                for item in items where await isItemDecoy(item) {
+                    decoyIds.insert(item.id)
+                }
+                // Re-check after the awaited enumeration: the user may have
+                // cancelled decoy selection while this loop was suspended.
+                if isSelectingDecoys {
+                    selectedMediaIds = decoyIds
+                }
+            }
+        }
+    }
+
+    func cancelSelecting() {
+        selectionMode = .none
+        selectedMediaIds.removeAll()
+    }
+
+    func exitDecoyMode() {
+        selectionMode = .none
+        selectedMediaIds.removeAll()
+    }
+
+    // MARK: - Media Item Tap Handling
+
+    func handleMediaTap(_ item: GalleryMediaItem) {
+        if isSelecting {
+            toggleSelection(for: item)
+        } else if item.mediaType == .video {
+            // Navigate to video player via selectedMediaItem
+            selectedMediaItem = item
+        } else {
+            // Navigate to photo detail via selectedMediaItem
+            selectedMediaItem = item
+        }
+    }
+
+    // MARK: - Alert Triggers
+
+    func showDeleteAlert() {
+        showDeleteConfirmation = true
+    }
+
+    func showDecoyConfirmationAlert() {
+        if selectedMediaIds.count > maxDecoys {
+            showDecoyLimitWarning = true
+        } else {
+            showDecoyConfirmation = true
+        }
+    }
+
+    // MARK: - Media Operations
+
+    func deleteSelectedMedia() {
+        guard !selectedMediaIds.isEmpty else { return }
+
+        let selectedItems = mediaItems.filter { selectedMediaIds.contains($0.id) }
+
+        selectedMediaIds.removeAll()
+        selectionMode = .none
+
+        Task {
+            for mediaItem in selectedItems {
+                if let photoDef = mediaItem.photoDef {
+                    _ = await secureImageRepository.deleteImage(photoDef)
+                    invalidatePhotoThumbnail(photoDef)
+                } else if let videoDef = mediaItem.videoDef {
+                    try? FileManager.default.removeItem(at: videoDef.videoFile)
+                    await secureImageRepository.deleteVideoThumbnail(forVideoNamed: videoDef.videoName)
+                    _ = await secureImageRepository.removeDecoyVideo(videoDef)
+                    invalidateVideoThumbnail(named: videoDef.videoName)
+                }
+            }
+
+            withAnimation {
+                mediaItems.removeAll { item in
+                    selectedItems.contains(where: { $0.id == item.id })
+                }
+            }
+        }
+    }
+
+    // MARK: - Import Operations
+
+    func processPickerItems(_ newItems: [PhotosPickerItem]) {
+        guard !newItems.isEmpty else { return }
+
+        isImporting = true
+        importProgress = 0
+
+        Task {
+            var hadSuccessfulImport = false
+
+            for (index, item) in newItems.enumerated() {
+                importProgress = Float(index) / Float(newItems.count)
+
+                if item.supportedContentTypes.contains(where: { $0.conforms(to: .movie) }) {
+                    if let movie = try? await item.loadTransferable(type: ImportedMovie.self) {
+                        let imported = await secureImageRepository.importVideo(from: movie.url)
+                        try? FileManager.default.removeItem(at: movie.url)
+                        if imported { hadSuccessfulImport = true }
+                    }
+                } else if let data = try? await item.loadTransferable(type: Data.self) {
+                    await processImportedImageData(data)
+                    hadSuccessfulImport = true
+                }
+            }
+
+            importProgress = 1.0
+            try? await Task.sleep(nanoseconds: 300_000_000)
+
+            pickerItems = []
+            isImporting = false
+
+            if hadSuccessfulImport {
+                loadMediaItems()
+            }
+        }
+    }
+
+    private func processImportedImageData(_ imageData: Data) async {
+        guard let image = UIImage(data: imageData) else { return }
+        let capturedImage = CapturedImage(
+            sensorBitmap: image, timestamp: clock.now, rotationDegrees: 0
+        )
+        do {
+            _ = try await secureImageRepository.saveImage(
+                capturedImage,
+                location: nil,
+                applyRotation: true
+            )
+        } catch {
+            Logger.storage.error("Error saving imported photo", metadata: [
+                "error": .string(error.localizedDescription)
+            ])
+        }
+    }
+
+    // MARK: - Decoy Operations
+
+    func saveDecoySelections() async {
+        // Only items whose decoy state actually changes need work.
+        var pending: [GalleryMediaItem] = []
+        for item in mediaItems where selectedMediaIds.contains(item.id) != (await isItemDecoy(item)) {
+            pending.append(item)
+        }
+
+        guard !pending.isEmpty else {
+            selectionMode = .none
+            selectedMediaIds.removeAll()
+            return
+        }
+
+        decoySaveTotal = pending.count
+        decoySaveCompleted = 0
+        isSavingDecoys = true
+        // Give SwiftUI a beat to paint the overlay (and start the spinner
+        // animation) before the synchronous re-encryption work begins.
+        try? await Task.sleep(nanoseconds: 50_000_000)
+
+        for item in pending {
+            let isSelected = selectedMediaIds.contains(item.id)
+
+            if let photoDef = item.photoDef {
+                if isSelected {
+                    if await addDecoyPhotoUseCase.addDecoyPhoto(photoDef: photoDef) == false {
+                        Logger.ui.error("Failed to add decoy photo")
+                    }
+                } else {
+                    _ = await removeDecoyPhotoUseCase.removeDecoyPhoto(photoDef)
+                }
+            } else if let videoDef = item.videoDef {
+                if isSelected {
+                    if await addDecoyVideoUseCase.addDecoyVideo(videoDef: videoDef) == false {
+                        Logger.ui.error("Failed to add decoy video")
+                    }
+                } else {
+                    _ = await secureImageRepository.removeDecoyVideo(videoDef)
+                }
+            }
+
+            decoySaveCompleted += 1
+            await Task.yield()
+        }
+
+        isSavingDecoys = false
+        selectionMode = .none
+        selectedMediaIds.removeAll()
+    }
+
+    // MARK: - Sharing Operations
+
+    func shareSelectedMedia() {
+        guard !selectedMediaIds.isEmpty else { return }
+
+        Task {
+            await prepareAndShareMedia()
+        }
+    }
+
+    private func prepareAndShareMedia() async {
+        let selectedItems = mediaItems.filter { selectedMediaIds.contains($0.id) }
+        var itemsToShare: [Any] = []
+
+        for mediaItem in selectedItems {
+            if let photoDef = mediaItem.photoDef {
+                if let data = try? await secureImageRepository.readImage(photoDef) {
+                    if let fileURL = try? prepareForSharingUseCase.preparePhotoForSharing(imageData: data) {
+                        itemsToShare.append(fileURL)
+                    }
+                }
+            } else if let videoDef = mediaItem.videoDef, videoDef.isEncrypted, let encryptionKey = encryptionKey {
+                let tempURL = FileManager.default.temporaryDirectory
+                    .appendingPathComponent("temp_\(videoDef.videoName).mov")
+
+                FileManager.default.createFile(atPath: tempURL.path, contents: nil)
+
+                do {
+                    try await videoEncryptionService.decryptVideoForSharing(
+                        inputURL: videoDef.videoFile,
+                        outputURL: tempURL,
+                        encryptionKey: encryptionKey
+                    )
+                    itemsToShare.append(tempURL)
+                } catch {
+                    Logger.media.error("Failed to decrypt video for sharing", metadata: [
+                        "error": .string(error.localizedDescription)
+                    ])
+                }
+            } else if let videoDef = mediaItem.videoDef {
+                itemsToShare.append(videoDef.videoFile)
+            }
+        }
+
+        await MainActor.run {
+            presentShareSheet(with: itemsToShare)
+        }
+    }
+
+    private func presentShareSheet(with items: [Any]) {
+        guard !items.isEmpty else { return }
+
+        let activityViewController = UIActivityViewController(activityItems: items, applicationActivities: nil)
+        currentActivityController = activityViewController
+
+        activityViewController.completionWithItemsHandler = { [weak self] _, completed, _, error in
+            if completed {
+                Logger.media.info("Media shared successfully")
+            } else if let error = error {
+                Logger.media.error("Media sharing failed", metadata: [
+                    "error": .string(error.localizedDescription)
+                ])
+            }
+            self?.currentActivityController = nil
+            self?.clearSelection()
+        }
+
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let rootViewController = windowScene.windows.first?.rootViewController {
+            var currentController = rootViewController
+            while let presented = currentController.presentedViewController {
+                currentController = presented
+            }
+            currentController.present(activityViewController, animated: true)
+        }
+    }
+
+    // MARK: - Observers
+
+    private func setupObservers() {
+        authorizationRepository.isAuthorized
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] isAuthorized in
+                if !isAuthorized {
+                    self?.showDeleteConfirmation = false
+                    self?.showDecoyLimitWarning = false
+                    self?.showDecoyConfirmation = false
+                    self?.currentActivityController?.dismiss(animated: false)
+                    self?.currentActivityController = nil
+                    self?.mediaItems.removeAll()
+                    // Drop decrypted thumbnail bitmaps so they don't linger in
+                    // memory after the session is locked or revoked.
+                    self?.photoThumbnails.removeAll()
+                    self?.videoThumbnails.removeAll()
+                }
+            }
+            .store(in: &cancellables)
+    }
+}

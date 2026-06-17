@@ -11,19 +11,24 @@ import Mockable
 
 
 @Mockable
-public protocol SettingsDataSource: Sendable {
+protocol SettingsDataSource: Sendable {
     // MARK: - Intro state
     /// Check if the user has completed the introduction
     var hasCompletedIntro: AnyPublisher<Bool, Never> { get }
+    /// Synchronous read of the current intro-completion state (no scheduler hop).
+    /// Use this to seed view-model state before the Combine pipeline has a chance to deliver.
+    var hasCompletedIntroValue: Bool { get }
 
     // MARK: - Sanitize file name
     /// Get the sanitized file name preference
     var sanitizeFileName: AnyPublisher<Bool, Never> { get }
+    // periphery:ignore
     var sanitizeFileNameDefault: Bool { get }
 
     // MARK: - Sanitize metadata
     /// Get the sanitized metadata preference
     var sanitizeMetadata: AnyPublisher<Bool, Never> { get }
+    // periphery:ignore
     var sanitizeMetadataDefault: Bool { get }
 
     // MARK: - Session timeout
@@ -31,7 +36,6 @@ public protocol SettingsDataSource: Sendable {
     var sessionTimeout: AnyPublisher<Int64, Never> { get }
     
     // MARK: - Keys & PIN
-    func getCipherKey() async -> String
     func getCipheredPin() async -> String?
 
     /// Set the introduction completion status
@@ -39,6 +43,15 @@ public protocol SettingsDataSource: Sendable {
 
     /// Set the app PIN
     func setAppPin(cipheredPin: String) async
+
+    // MARK: - Alphanumeric PIN preference
+    /// Whether PINs (app PIN and poison pill) accept letters as well as digits.
+    /// This is a single global preference — both PINs share one type, matching the
+    /// Android implementation. Defaults to `false` (numeric) when never set.
+    func getAlphanumericPinEnabled() async -> Bool
+
+    /// Set the global alphanumeric-PIN preference.
+    func setAlphanumericPinEnabled(_ enabled: Bool) async
 
     /// Set the sanitize file name preference
     func setSanitizeFileName(_ sanitize: Bool) async
@@ -52,6 +65,12 @@ public protocol SettingsDataSource: Sendable {
 
     /// Set the failed PIN attempts count
     func setFailedPinAttempts(_ count: Int) async
+
+    /// Atomically increment the failed PIN attempts count and return the new value.
+    /// The read-modify-write happens inside the data source's own critical section so
+    /// concurrent callers can't lose an increment — the auth lockout counter must
+    /// never be undercounted.
+    func incrementFailedPinAttempts() async -> Int
 
     /// Get the current timestamp of the last failed PIN attempt
     func getLastFailedAttemptTimestamp() async -> Int64
@@ -86,5 +105,6 @@ public protocol SettingsDataSource: Sendable {
     /// Remove the Poison Pill PIN
     func removePoisonPillPin() async
 
+    // periphery:ignore
     func isPinCiphered() async -> Bool
 }

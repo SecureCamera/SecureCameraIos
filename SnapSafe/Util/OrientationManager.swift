@@ -7,9 +7,17 @@
 
 import SwiftUI
 
-// NOTE: The single image view is the only place we're doing this now.
-// subviews of that view (settings, share...) will be in landscape as well.
-// Rotating back out of landscape should return us to the portrait orientation.
+// NOTE: The camera asserts `.portrait`, the gallery asserts `.allButUpsideDown`,
+// and the single image / video detail view asserts `.allButUpsideDown`. Each
+// modifier-bearing view declares its supported orientations on appear; on
+// disappear we do NOT reset, so the next appearing view's onAppear owns the
+// orientation without an intermediate portrait flash. Screens without a
+// modifier inherit whatever the previous screen set; AppDelegate's default
+// of `.portrait` covers the very first appearance at app launch.
+//
+// Rotation is driven through the supported `UIWindowScene.requestGeometryUpdate(_:)`
+// API — do NOT set `UIDevice.orientation` directly (a private, unsupported hack
+// that iOS rejects on-device with a "BUG IN CLIENT OF UIKIT" log).
 
 /// View modifier to control device orientation for specific views
 struct DeviceRotationViewModifier: ViewModifier {
@@ -20,34 +28,13 @@ struct DeviceRotationViewModifier: ViewModifier {
             .onAppear {
                 AppDelegate.orientationLock = orientations
 
-                // Force rotation if needed
-                if orientations == .portrait {
-                    UIDevice.current.setValue(UIInterfaceOrientation.portrait.rawValue, forKey: "orientation")
-                }
-
-                // Request geometry update for iOS 16+
+                // Force the interface to the requested orientations via the
+                // supported API. The root VC re-reports its supported set first,
+                // then the scene geometry request performs the actual rotation.
                 if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+                    windowScene.windows.first?.rootViewController?
+                        .setNeedsUpdateOfSupportedInterfaceOrientations()
                     windowScene.requestGeometryUpdate(.iOS(interfaceOrientations: orientations))
-
-                    // Update supported orientations for the view controller
-                    if let viewController = windowScene.windows.first?.rootViewController {
-                        viewController.setNeedsUpdateOfSupportedInterfaceOrientations()
-                    }
-                }
-            }
-            .onDisappear {
-                // Reset to portrait when leaving
-                AppDelegate.orientationLock = .portrait
-                UIDevice.current.setValue(UIInterfaceOrientation.portrait.rawValue, forKey: "orientation")
-
-                // Request geometry update for iOS 16+
-                if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
-                    windowScene.requestGeometryUpdate(.iOS(interfaceOrientations: .portrait))
-
-                    // Update supported orientations for the view controller
-                    if let viewController = windowScene.windows.first?.rootViewController {
-                        viewController.setNeedsUpdateOfSupportedInterfaceOrientations()
-                    }
                 }
             }
     }

@@ -18,8 +18,7 @@ struct PoisonPillSetupWizardView: View {
     }
     
     var body: some View {
-        NavigationView {
-            VStack(spacing: 0) {
+        VStack(spacing: 0) {
                 // Progress Indicator
                 progressHeader
                 
@@ -40,13 +39,13 @@ struct PoisonPillSetupWizardView: View {
                                 Text(viewModel.currentStep == .explanation3 ? "Set Up PIN" : "Continue")
                                     .fontWeight(.medium)
                                 Image(systemName: "arrow.right")
-                                    .font(.system(size: 14, weight: .medium))
+                                    .font(.subheadline)
                             }
-                            .foregroundColor(.white)
+                            .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
                             .frame(height: 50)
                             .background(Color.orange)
-                            .cornerRadius(12)
+                            .clipShape(.rect(cornerRadius: 12))
                         }
                         .padding(.horizontal, 20)
                         .padding(.top, 20)
@@ -55,11 +54,12 @@ struct PoisonPillSetupWizardView: View {
                     .background(Color(UIColor.systemBackground))
                 }
             }
-            .navigationBarTitleDisplayMode(.inline)
             .navigationBarHidden(true)
             .obscuredWhenInactive()
             .screenCaptureProtected()
-        }
+            .task {
+                await viewModel.loadAlphanumericSetting()
+            }
     }
     
     // MARK: - Progress Header
@@ -71,7 +71,7 @@ struct PoisonPillSetupWizardView: View {
                 Button("Cancel") {
                     handleCancel()
                 }
-                .foregroundColor(viewModel.isLoading ? .gray : .secondary)
+                .foregroundStyle(viewModel.isLoading ? .gray : .secondary)
                 .disabled(viewModel.isLoading)
                 
                 Spacer()
@@ -86,7 +86,7 @@ struct PoisonPillSetupWizardView: View {
                     Button("Back") {
                         viewModel.goToPreviousStep()
                     }
-                    .foregroundColor(viewModel.isLoading ? .gray : .orange)
+                    .foregroundStyle(viewModel.isLoading ? .gray : .orange)
                     .disabled(viewModel.isLoading)
                 } else {
                     // Invisible button for balance
@@ -143,6 +143,7 @@ struct PoisonPillSetupWizardView: View {
                 showError: $viewModel.showError,
                 errorMessage: $viewModel.errorMessage,
                 isLoading: $viewModel.isLoading,
+                isAlphanumeric: viewModel.isAlphanumeric,
                 canProceed: viewModel.canProceedFromPinCreation,
                 onPinChange: viewModel.updatePIN,
                 onConfirmPinChange: viewModel.updateConfirmPIN,
@@ -155,10 +156,7 @@ struct PoisonPillSetupWizardView: View {
                         }
                     }
                 },
-                isPinLengthValid: viewModel.isPinLengthValid,
-                onCancel: {
-                    handleCancel()
-                }
+                isPinLengthValid: viewModel.isPinLengthValid
             )
             .transition(.asymmetric(
                 insertion: .move(edge: .trailing),
@@ -186,7 +184,5 @@ struct PoisonPillSetupWizardView: View {
 }
 
 #Preview("Step 2 - PIN Creation") {
-    let view = PoisonPillSetupWizardView()
-    
-    //view.viewModel.currentStep = .pinCreation
+    PoisonPillSetupWizardView()
 }

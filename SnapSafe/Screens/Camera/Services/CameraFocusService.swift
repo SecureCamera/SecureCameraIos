@@ -6,25 +6,32 @@
 //
 
 import Foundation
-import AVFoundation
+@preconcurrency import AVFoundation
 import SwiftUI
 import Combine
 import Logging
 
+// periphery:ignore all
 @MainActor
 protocol FocusControlling: ObservableObject {
+    // periphery:ignore
     var focusIndicatorPoint: CGPoint? { get }
+    // periphery:ignore
     var showingFocusIndicator: Bool { get }
-    
+    // periphery:ignore
     func setupSubjectAreaChangeMonitoring(for device: AVCaptureDevice)
+    // periphery:ignore
     func adjustCameraSettings(at point: CGPoint, lockWhiteBalance: Bool, device: AVCaptureDevice?)
+    // periphery:ignore
     func showFocusIndicator(on viewPoint: CGPoint)
+    // periphery:ignore
     func startPeriodicFocusCheck(device: AVCaptureDevice?)
+    // periphery:ignore
     func stopPeriodicFocusCheck()
-    func normalizeGains(_ gains: AVCaptureDevice.WhiteBalanceGains, for device: AVCaptureDevice) -> AVCaptureDevice.WhiteBalanceGains
 }
 
 @MainActor
+// periphery:ignore all
 final class CameraFocusService: ObservableObject, FocusControlling {
     
     // MARK: - Published Properties
@@ -44,7 +51,7 @@ final class CameraFocusService: ObservableObject, FocusControlling {
     func setupSubjectAreaChangeMonitoring(for device: AVCaptureDevice) {
         // Remove existing observer if any
         if let currentDevice = currentDevice {
-            NotificationCenter.default.removeObserver(self, name: .AVCaptureDeviceSubjectAreaDidChange, object: currentDevice)
+            NotificationCenter.default.removeObserver(self, name: AVCaptureDevice.subjectAreaDidChangeNotification, object: currentDevice)
         }
         
         currentDevice = device
@@ -52,7 +59,7 @@ final class CameraFocusService: ObservableObject, FocusControlling {
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(subjectAreaDidChange),
-            name: .AVCaptureDeviceSubjectAreaDidChange,
+            name: AVCaptureDevice.subjectAreaDidChangeNotification,
             object: device
         )
     }
@@ -81,14 +88,14 @@ final class CameraFocusService: ObservableObject, FocusControlling {
             }
             
             // Handle white balance based on lock preference
-            if device.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance) {
-                if lockWhiteBalance {
-                    device.whiteBalanceMode = .continuousAutoWhiteBalance
-                    let currentWhiteBalanceGains = device.deviceWhiteBalanceGains
-                    device.setWhiteBalanceModeLocked(with: currentWhiteBalanceGains, completionHandler: nil)
-                } else {
-                    device.whiteBalanceMode = .continuousAutoWhiteBalance
-                }
+            if lockWhiteBalance && device.isWhiteBalanceModeSupported(.locked) {
+                // Lock at the current white balance. Do NOT use
+                // setWhiteBalanceModeLocked(with:) here: custom-gains locking is
+                // unsupported on virtual devices (dual-wide/triple camera) and
+                // throws NSInvalidArgumentException.
+                device.whiteBalanceMode = .locked
+            } else if device.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance) {
+                device.whiteBalanceMode = .continuousAutoWhiteBalance
             }
             
             device.unlockForConfiguration()
@@ -96,7 +103,9 @@ final class CameraFocusService: ObservableObject, FocusControlling {
             // Schedule auto-focus reset with appropriate delay
             let resetDelay = lockWhiteBalance ? 8.0 : 3.0
             focusResetTimer = Timer.scheduledTimer(withTimeInterval: resetDelay, repeats: false) { [weak self] _ in
-                self?.resetToAutoFocus(device: device)
+                Task { @MainActor [weak self] in
+                    self?.resetToAutoFocus(device: device)
+                }
             }
         } catch {
             Logger.camera.error("Error adjusting camera settings", metadata: [
@@ -122,7 +131,9 @@ final class CameraFocusService: ObservableObject, FocusControlling {
         currentDevice = device
         
         focusCheckTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { [weak self] _ in
-            self?.checkAndOptimizeFocus()
+            Task { @MainActor [weak self] in
+                self?.checkAndOptimizeFocus()
+            }
         }
     }
     
@@ -131,17 +142,9 @@ final class CameraFocusService: ObservableObject, FocusControlling {
         focusCheckTimer = nil
     }
     
-    func normalizeGains(_ gains: AVCaptureDevice.WhiteBalanceGains, for device: AVCaptureDevice) -> AVCaptureDevice.WhiteBalanceGains {
-        var normalizedGains = gains
-        normalizedGains.redGain = max(1.0, min(gains.redGain, device.maxWhiteBalanceGain))
-        normalizedGains.greenGain = max(1.0, min(gains.greenGain, device.maxWhiteBalanceGain))
-        normalizedGains.blueGain = max(1.0, min(gains.blueGain, device.maxWhiteBalanceGain))
-        return normalizedGains
-    }
-    
     // MARK: - Private Methods
     
-    @objc private func subjectAreaDidChange(notification: Notification) {
+    @objc private func subjectAreaDidChange(_: Notification) {
         refocusCamera()
     }
     
@@ -166,7 +169,9 @@ final class CameraFocusService: ObservableObject, FocusControlling {
                 device.unlockForConfiguration()
                 focusResetTimer?.invalidate()
                 focusResetTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [weak self] _ in
-                    self?.resetToAutoFocus(device: device)
+                    Task { @MainActor [weak self] in
+                        self?.resetToAutoFocus(device: device)
+                    }
                 }
                 
             } catch {

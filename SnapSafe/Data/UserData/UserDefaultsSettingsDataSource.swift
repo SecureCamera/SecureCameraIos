@@ -15,26 +15,25 @@ private enum PrefKeys: String {
     case sanitizeFileName   = "prefs.sanitizeFileName"           // Bool
     case sanitizeMetadata   = "prefs.sanitizeMetadata"           // Bool
     case sessionTimeoutMs   = "prefs.sessionTimeoutMs"           // Int64 (stored as Int)
-    case cipherKey          = "prefs.cipherKey"                  // String
     case cipheredPin        = "prefs.cipheredPin"                // String?
     case failedPinAttempts  = "prefs.failedPinAttempts"          // Int
     case lastFailedAttempt  = "prefs.lastFailedAttempt"          // Int64 (stored as Int)
     case poisonPillPlain    = "prefs.poisonPillPlain"            // String?
     case poisonPillHashed   = "prefs.poisonPillHashed"           // String?
+    case alphanumericPin    = "prefs.alphanumericPinEnabled"     // Bool? (nil when never set)
 }
 
 // MARK: - Defaults (adjust to taste)
 
-public enum Defaults {
-    public static let sanitizeFileName: Bool = true
-    public static let sanitizeMetadata: Bool = true
-    public static let sessionTimeoutMs: Int64 = 60_000
-    public static let cipherKey: String = "stub-cipher-key" // In production, move to Keychain
+enum Defaults {
+    static let sanitizeFileName: Bool = true
+    static let sanitizeMetadata: Bool = true
+    static let sessionTimeoutMs: Int64 = 300_000
 }
 
 // MARK: - UserDefaults Impl
 
-public final class UserDefaultsSettingsDataSource: SettingsDataSource, @unchecked Sendable {
+final class UserDefaultsSettingsDataSource: SettingsDataSource, @unchecked Sendable {
     // MARK: - Combine subjects (reflect stored values)
     private nonisolated(unsafe) let hasCompletedIntroSubject: CurrentValueSubject<Bool, Never>
     private nonisolated(unsafe) let sanitizeFileNameSubject: CurrentValueSubject<Bool, Never>
@@ -43,25 +42,28 @@ public final class UserDefaultsSettingsDataSource: SettingsDataSource, @unchecke
 
 
     // MARK: - Public publishers
-    public var hasCompletedIntro: AnyPublisher<Bool, Never> { hasCompletedIntroSubject.eraseToAnyPublisher() }
-    public var sanitizeFileName: AnyPublisher<Bool, Never> { sanitizeFileNameSubject.eraseToAnyPublisher() }
-    public var sanitizeMetadata: AnyPublisher<Bool, Never> { sanitizeMetadataSubject.eraseToAnyPublisher() }
-    public var sessionTimeout: AnyPublisher<Int64, Never> { sessionTimeoutSubject.eraseToAnyPublisher() }
+    var hasCompletedIntro: AnyPublisher<Bool, Never> { hasCompletedIntroSubject.eraseToAnyPublisher() }
+    var hasCompletedIntroValue: Bool { hasCompletedIntroSubject.value }
+    var sanitizeFileName: AnyPublisher<Bool, Never> { sanitizeFileNameSubject.eraseToAnyPublisher() }
+    var sanitizeMetadata: AnyPublisher<Bool, Never> { sanitizeMetadataSubject.eraseToAnyPublisher() }
+    var sessionTimeout: AnyPublisher<Int64, Never> { sessionTimeoutSubject.eraseToAnyPublisher() }
 
     // MARK: - Declared defaults (exposed by protocol)
-    public let sanitizeFileNameDefault: Bool
-    public let sanitizeMetadataDefault: Bool
+    let sanitizeFileNameDefault: Bool
+    let sanitizeMetadataDefault: Bool
 
     // MARK: - Storage + JSON
     private nonisolated(unsafe) let defaults: UserDefaults
-    private let jsonDecoder = JSONDecoder()
-    private let jsonEncoder = jsonEncoderFactory()
+
+    /// Serializes the failed-attempts read-modify-write. UserDefaults has no atomic
+    /// increment, so without this lock concurrent callers could lose an increment.
+    private let failedAttemptsLock = NSLock()
 
     // MARK: - Init
     /// - Parameter userDefaults: UserDefaults instance to use. Defaults to `.standard`.
     /// - Parameter sanitizeFileNameDefault: Default value for sanitize file name setting
     /// - Parameter sanitizeMetadataDefault: Default value for sanitize metadata setting
-    public init(
+    init(
         userDefaults: UserDefaults = .standard,
         sanitizeFileNameDefault: Bool = Defaults.sanitizeFileName,
         sanitizeMetadataDefault: Bool = Defaults.sanitizeMetadata
@@ -78,9 +80,6 @@ public final class UserDefaultsSettingsDataSource: SettingsDataSource, @unchecke
         }
         if store.object(forKey: PrefKeys.sanitizeMetadata.rawValue) == nil {
             store.set(sanitizeMetadataDefault, forKey: PrefKeys.sanitizeMetadata.rawValue)
-        }
-        if store.string(forKey: PrefKeys.cipherKey.rawValue) == nil {
-            store.set(Defaults.cipherKey, forKey: PrefKeys.cipherKey.rawValue)
         }
         if store.object(forKey: PrefKeys.sessionTimeoutMs.rawValue) == nil {
             store.set(Int(Defaults.sessionTimeoutMs), forKey: PrefKeys.sessionTimeoutMs.rawValue)
@@ -102,56 +101,74 @@ public final class UserDefaultsSettingsDataSource: SettingsDataSource, @unchecke
     }
 
     // MARK: - Keys & PIN
-    public func getCipherKey() async -> String {
-        defaults.string(forKey: PrefKeys.cipherKey.rawValue) ?? Defaults.cipherKey
-    }
-
-    public func getCipheredPin() async -> String? {
+    func getCipheredPin() async -> String? {
         defaults.string(forKey: PrefKeys.cipheredPin.rawValue)
     }
 
-    public func setIntroCompleted(_ completed: Bool) async {
+    func setIntroCompleted(_ completed: Bool) async {
         defaults.set(completed, forKey: PrefKeys.hasCompletedIntro.rawValue)
         hasCompletedIntroSubject.send(completed)
     }
 
     /// Accepts the ciphered PIN and a JSON string for `SchemeConfig`.
     /// If JSON parsing fails, we still set the PIN but leave the previous scheme config untouched.
-    public func setAppPin(cipheredPin: String) async {
+    func setAppPin(cipheredPin: String) async {
         defaults.set(cipheredPin, forKey: PrefKeys.cipheredPin.rawValue)
     }
 
+    // MARK: - Alphanumeric PIN preference
+    func getAlphanumericPinEnabled() async -> Bool {
+        if defaults.object(forKey: PrefKeys.alphanumericPin.rawValue) == nil { return false }
+        return defaults.bool(forKey: PrefKeys.alphanumericPin.rawValue)
+    }
+
+    func setAlphanumericPinEnabled(_ enabled: Bool) async {
+        defaults.set(enabled, forKey: PrefKeys.alphanumericPin.rawValue)
+    }
+
     // MARK: - Sanitize prefs
-    public func setSanitizeFileName(_ sanitize: Bool) async {
+    func setSanitizeFileName(_ sanitize: Bool) async {
         defaults.set(sanitize, forKey: PrefKeys.sanitizeFileName.rawValue)
         sanitizeFileNameSubject.send(sanitize)
     }
 
-    public func setSanitizeMetadata(_ sanitize: Bool) async {
+    func setSanitizeMetadata(_ sanitize: Bool) async {
         defaults.set(sanitize, forKey: PrefKeys.sanitizeMetadata.rawValue)
         sanitizeMetadataSubject.send(sanitize)
     }
 
     // MARK: - Failed PIN attempts
-    public func getFailedPinAttempts() async -> Int {
+    func getFailedPinAttempts() async -> Int {
         let v = defaults.object(forKey: PrefKeys.failedPinAttempts.rawValue)
         return (v as? Int) ?? 0
     }
 
-    public func setFailedPinAttempts(_ count: Int) async {
+    func setFailedPinAttempts(_ count: Int) async {
         defaults.set(count, forKey: PrefKeys.failedPinAttempts.rawValue)
     }
 
-    public func getLastFailedAttemptTimestamp() async -> Int64 {
+    func incrementFailedPinAttempts() async -> Int {
+        // Guard the read-modify-write so concurrent callers can't read the same
+        // starting value and lose an increment. `withLock` keeps the critical section
+        // synchronous (no suspension while holding the lock).
+        failedAttemptsLock.withLock {
+            let current = (defaults.object(forKey: PrefKeys.failedPinAttempts.rawValue) as? Int) ?? 0
+            let newCount = current + 1
+            defaults.set(newCount, forKey: PrefKeys.failedPinAttempts.rawValue)
+            return newCount
+        }
+    }
+
+    func getLastFailedAttemptTimestamp() async -> Int64 {
         Int64(defaults.integer(forKey: PrefKeys.lastFailedAttempt.rawValue))
     }
 
-    public func setLastFailedAttemptTimestamp(_ timestamp: Int64) async {
+    func setLastFailedAttemptTimestamp(_ timestamp: Int64) async {
         defaults.set(Int(timestamp), forKey: PrefKeys.lastFailedAttempt.rawValue)
     }
 
     // MARK: - Security reset
-    public func securityFailureReset() async {
+    func securityFailureReset() async {
         // Remove sensitive and preference keys
         [
             PrefKeys.cipheredPin,
@@ -161,7 +178,8 @@ public final class UserDefaultsSettingsDataSource: SettingsDataSource, @unchecke
             PrefKeys.lastFailedAttempt,
             PrefKeys.hasCompletedIntro,
             PrefKeys.sanitizeFileName,
-            PrefKeys.sanitizeMetadata
+            PrefKeys.sanitizeMetadata,
+            PrefKeys.alphanumericPin
         ].forEach { defaults.removeObject(forKey: $0.rawValue) }
 
         // Restore defaults for observed prefs
@@ -176,40 +194,40 @@ public final class UserDefaultsSettingsDataSource: SettingsDataSource, @unchecke
     }
 
     // MARK: - Session timeout (direct access)
-    public func getSessionTimeout() async -> Int64 {
+    func getSessionTimeout() async -> Int64 {
         Int64(defaults.integer(forKey: PrefKeys.sessionTimeoutMs.rawValue))
     }
 
-    public func setSessionTimeout(_ timeoutMs: Int64) async {
+    func setSessionTimeout(_ timeoutMs: Int64) async {
         defaults.set(Int(timeoutMs), forKey: PrefKeys.sessionTimeoutMs.rawValue)
         sessionTimeoutSubject.send(timeoutMs)
     }
     
     // MARK: - Poison Pill
-    public func setPoisonPillPin(cipheredHashedPin: String, cipheredPlainPin: String) async {
+    func setPoisonPillPin(cipheredHashedPin: String, cipheredPlainPin: String) async {
         defaults.set(cipheredHashedPin, forKey: PrefKeys.poisonPillHashed.rawValue)
         defaults.set(cipheredPlainPin, forKey: PrefKeys.poisonPillPlain.rawValue)
     }
 
-    public func getPlainPoisonPillPin() async -> String? {
+    func getPlainPoisonPillPin() async -> String? {
         defaults.string(forKey: PrefKeys.poisonPillPlain.rawValue)
     }
 
-    public func getHashedPoisonPillPin() async -> String? {
+    func getHashedPoisonPillPin() async -> String? {
         defaults.string(forKey: PrefKeys.poisonPillHashed.rawValue)
     }
 
-    public func activatePoisonPill(ciphered: String) async {
+    func activatePoisonPill(ciphered: String) async {
         // Replace the main PIN with the poison-pill ciphered value
         defaults.set(ciphered, forKey: PrefKeys.cipheredPin.rawValue)
     }
 
-    public func removePoisonPillPin() async {
+    func removePoisonPillPin() async {
         defaults.removeObject(forKey: PrefKeys.poisonPillPlain.rawValue)
         defaults.removeObject(forKey: PrefKeys.poisonPillHashed.rawValue)
     }
 
-    public func isPinCiphered() async -> Bool {
+    func isPinCiphered() async -> Bool {
         defaults.string(forKey: PrefKeys.cipheredPin.rawValue) != nil
     }
 }

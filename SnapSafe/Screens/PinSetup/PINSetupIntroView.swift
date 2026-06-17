@@ -67,11 +67,11 @@ struct PINSetupIntroView: View {
                                 }) {
                                     Text("Skip")
                                         .fontWeight(.medium)
-                                        .foregroundColor(.blue)
+                                        .foregroundStyle(.blue)
                                         .frame(maxWidth: .infinity)
                                         .frame(height: 50)
                                         .background(Color.blue.opacity(0.1))
-                                        .cornerRadius(12)
+                                        .clipShape(.rect(cornerRadius: 12))
                                         .overlay(
                                             RoundedRectangle(cornerRadius: 12)
                                                 .stroke(Color.blue, lineWidth: 1)
@@ -88,13 +88,13 @@ struct PINSetupIntroView: View {
                                         Text("Continue")
                                             .fontWeight(.medium)
                                         Image(systemName: "arrow.right")
-                                            .font(.system(size: 14, weight: .medium))
+                                            .font(.subheadline)
                                     }
-                                    .foregroundColor(.white)
+                                    .foregroundStyle(.white)
                                     .frame(maxWidth: .infinity)
                                     .frame(height: 50)
                                     .background(Color.blue)
-                                    .cornerRadius(12)
+                                    .clipShape(.rect(cornerRadius: 12))
                                 }
                             }
                         } else {
@@ -108,13 +108,13 @@ struct PINSetupIntroView: View {
                                     Text(isLastIntroSlide ? "Set Up PIN" : "Continue")
                                         .fontWeight(.medium)
                                     Image(systemName: "arrow.right")
-                                        .font(.system(size: 14, weight: .medium))
+                                        .font(.subheadline)
                                 }
-                                .foregroundColor(.white)
+                                .foregroundStyle(.white)
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 50)
                                 .background(Color.blue)
-                                .cornerRadius(12)
+                                .clipShape(.rect(cornerRadius: 12))
                             }
                         }
                     }

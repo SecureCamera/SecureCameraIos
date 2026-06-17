@@ -51,44 +51,4 @@ struct LoggingConfiguration {
         #endif
     }
     
-    /// Update log level dynamically (useful for settings)
-    static func setLogLevel(_ level: Logger.Level) {
-        LoggingSystem.bootstrap { label in
-            var handler = StreamLogHandler.standardOutput(label: label)
-            handler.logLevel = level
-            return handler
-        }
-        
-        Logger.app.info("Log level updated", metadata: [
-            "new_level": .string(String(describing: level))
-        ])
-    }
-}
-
-// MARK: - Log Level Utilities
-extension Logger.Level {
-    /// Human-readable description for settings UI
-    var displayName: String {
-        switch self {
-        case .trace:
-            return "Trace"
-        case .debug:
-            return "Debug"
-        case .info:
-            return "Info"
-        case .notice:
-            return "Notice"
-        case .warning:
-            return "Warning"
-        case .error:
-            return "Error"
-        case .critical:
-            return "Critical"
-        }
-    }
-    
-    /// All available log levels for settings picker
-    static var allCases: [Logger.Level] {
-        return [.trace, .debug, .info, .notice, .warning, .error, .critical]
-    }
 }

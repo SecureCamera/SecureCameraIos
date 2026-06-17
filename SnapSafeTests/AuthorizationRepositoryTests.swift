@@ -294,6 +294,44 @@ final class AuthorizationRepositoryTests: XCTestCase {
 
     // MARK: Keep-alive
 
+    // MARK: Wall-clock manipulation resistance (H4)
+
+    func test_checkSessionValidity_wallClockMovedBackward_doesNotExtendSession() async {
+        let pin = "1234"
+        let timeout: Int64 = 1_000 // 1s
+
+        await settings.setAppPin(cipheredPin: pin)
+        await settings.setSessionTimeout(timeout)
+
+        _ = await authorizePin.authorizePin(pin)
+        XCTAssertTrue(auth.isAuthorized.firstValue())
+
+        // Attacker moves the wall clock 1 hour into the past while
+        // real (monotonic) elapsed time exceeds the 1s session timeout.
+        clock.advanceWallOnly(by: -3600)
+        clock.advanceMonotonicOnly(by: 2.0)
+
+        let result = await auth.checkSessionValidity()
+
+        XCTAssertFalse(result, "Session must expire based on monotonic elapsed time, not wall clock")
+        XCTAssertFalse(auth.isAuthorized.firstValue())
+    }
+
+    func test_calculateRemainingBackoffSeconds_wallClockMovedForward_doesNotZeroBackoff() async {
+        // 3 failed attempts → backoff = 2^(3-1) = 4 seconds
+        await settings.setFailedPinAttempts(2)
+        _ = await auth.incrementFailedAttempts() // records monotonic baseline; failed=3
+
+        // Attacker moves the wall clock 1 hour into the future while
+        // real (monotonic) time has barely advanced.
+        clock.advanceWallOnly(by: 3600)
+        clock.advanceMonotonicOnly(by: 0.5)
+
+        let remaining = await auth.calculateRemainingBackoffSeconds()
+
+        XCTAssertGreaterThan(remaining, 0, "Backoff must remain based on monotonic elapsed time, not wall clock")
+    }
+
     func test_keepAliveSession_extendsValidity() async {
         let pin = "1234"
         let timeout: Int64 = 1_000 // 1s
@@ -319,5 +357,60 @@ final class AuthorizationRepositoryTests: XCTestCase {
 
         XCTAssertTrue(result)
         XCTAssertTrue(auth.isAuthorized.firstValue())
+    }
+
+    // MARK: Concurrency isolation
+
+    func test_concurrentSessionMutations_remainConsistentWithoutCrashing() async {
+        let pin = "1234"
+        await settings.setAppPin(cipheredPin: pin)
+
+        // Capture the (now-Sendable) collaborators so the task closures don't
+        // have to retain the test case itself.
+        let auth = self.auth!
+        let authorizePin = self.authorizePin!
+
+        // Hammer the repository from many concurrent tasks. Before the @MainActor
+        // isolation fix, the auth flag and the monotonic timestamp baselines were
+        // mutated without synchronization (the type was @unchecked Sendable); this
+        // was a data race. Now every access is serialized on the main actor, so the
+        // workload must complete cleanly and settle into a deterministic state.
+        await withTaskGroup(of: Void.self) { group in
+            for _ in 0..<200 {
+                group.addTask { _ = await authorizePin.authorizePin(pin) }
+                group.addTask { await auth.keepAliveSession() }
+                group.addTask { _ = await auth.checkSessionValidity() }
+                group.addTask { await auth.revokeAuthorization() }
+            }
+        }
+
+        // Revoke last so the final state is deterministic regardless of interleaving.
+        await auth.revokeAuthorization()
+
+        let isValid = await auth.checkSessionValidity()
+        XCTAssertFalse(isValid)
+        XCTAssertFalse(auth.isAuthorized.firstValue())
+    }
+
+    func test_concurrentIncrementFailedAttempts_doesNotLoseUpdates() async {
+        await settings.setFailedPinAttempts(0)
+
+        let auth = self.auth!
+        let iterations = 50
+
+        // Fire many increments concurrently. The previous implementation read the
+        // count and wrote count+1 across two separate awaits, so interleaved callers
+        // could read the same value and lose increments — undercounting the lockout.
+        // With the atomic data-source increment, the final count must equal exactly
+        // the number of attempts.
+        await withTaskGroup(of: Void.self) { group in
+            for _ in 0..<iterations {
+                group.addTask { _ = await auth.incrementFailedAttempts() }
+            }
+        }
+
+        let finalCount = await settings.getFailedPinAttempts()
+        XCTAssertEqual(finalCount, iterations,
+                       "Concurrent increments must not lose updates; the lockout counter must equal the attempt count")
     }
 }

@@ -4,10 +4,9 @@ devices([
 	"iPad Pro 11-inch (M4)"
 	])
 
- languages([
-   "en-US",
-   "es-ES"
- ])
+languages([
+  "en-US"
+])
 
 # The name of the scheme which contains the UI Tests
 scheme("SnapSafe")

@@ -30,23 +30,38 @@ struct PhotoObfuscationView: View {
             Color.black
                 .ignoresSafeArea()
 
-            if viewModel.isImageLoading {
-                ProgressView("Loading image...")
-                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                    .foregroundColor(.white)
-            } else {
-                imageContent
+            VStack(spacing: 0) {
+                // The title gets its own full-width row so it isn't truncated
+                // between the Cancel and Save buttons in the nav bar.
+                Text("Photo Obfuscation")
+                    .font(.headline)
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                    .background(Color.black)
+
+                if viewModel.isImageLoading {
+                    ProgressView("Loading image...")
+                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    imageContent
+                }
             }
         }
-        .navigationTitle("Photo Obfuscation")
+        .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
+        // We supply our own leading Cancel button, so hide the system back
+        // button to avoid showing two back buttons.
+        .navigationBarBackButtonHidden(true)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button("Cancel") {
                     viewModel.cancel()
                     onDismiss()
                 }
-                .foregroundColor(.white)
+                .foregroundStyle(.white)
             }
 
             ToolbarItem(placement: .navigationBarTrailing) {
@@ -54,7 +69,7 @@ struct PhotoObfuscationView: View {
                     viewModel.saveChanges()
                     onDismiss()
                 }
-                .foregroundColor(.blue)
+                .foregroundStyle(.blue)
                 .fontWeight(.semibold)
             }
         }
@@ -113,12 +128,8 @@ struct PhotoObfuscationView: View {
                             faces: viewModel.detectedFaces,
                             originalSize: viewModel.currentImage?.size ?? .zero,
                             displaySize: viewModel.imageFrameSize,
-                            isAddingBox: viewModel.isAddingBox,
                             onTap: { id in viewModel.toggleFaceSelection(id: id) },
-                            onCreateBox: { pt in viewModel.createBox(at: pt) },
-                            onMove: { id, delta in viewModel.moveFace(id: id, by: delta) },
                             onSetPosition: { id, bounds in viewModel.setFacePosition(id: id, to: bounds) },
-                            onResize: { id, scale in viewModel.resizeFace(id: id, scale: scale) },
                             onSetSize: { id, bounds in viewModel.setFaceSize(id: id, to: bounds) }
                         )
                         .frame(width: viewModel.imageFrameSize.width, height: viewModel.imageFrameSize.height)
@@ -138,7 +149,7 @@ struct PhotoObfuscationView: View {
                                 .scaleEffect(1.5)
 
                             Text("Processing faces...")
-                                .foregroundColor(.white)
+                                .foregroundStyle(.white)
                                 .padding(.top)
                         }
                         .position(x: availableSize.width / 2, y: availableSize.height / 2)
@@ -207,274 +218,84 @@ private struct ObfuscationControlsView: View {
     var isProcessing: Bool
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Separator line
-            Divider()
-                .background(Color.gray.opacity(0.3))
+        HStack(spacing: 0) {
+            if hasManualBoxesSelected && !isAddingBox && !isFaceDetectionActive {
+                MediaToolbarButton(icon: "xmark.circle", label: "Cancel", tint: .gray,
+                                   action: { onCancelAddBox?() })
+                    .disabled(isProcessing).opacity(isProcessing ? 0.6 : 1.0)
 
-            HStack {
-                if hasManualBoxesSelected && !isAddingBox && !isFaceDetectionActive {
-                    // Cancel manual boxes button
-                    Button(action: {
-                        onCancelAddBox?()
-                    }) {
-                        VStack(spacing: 4) {
-                            Image(systemName: "xmark.circle")
-                                .font(.system(size: 22))
-                                .frame(height: 22)
-                            Text("Cancel")
-                                .font(.caption2)
-                                .multilineTextAlignment(.center)
-                        }
-                        .foregroundColor(.gray)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 60)
-                    }
-                    .disabled(isProcessing)
-                    .opacity(isProcessing ? 0.6 : 1.0)
+                obfuscateButton(icon: "square.dashed", label: manualBoxButtonLabel,
+                                action: { onObscureAreas?() })
 
-                    // Obscure areas button
-                    Button(action: {
-                        onObscureAreas?()
-                    }) {
-                        VStack(spacing: 4) {
-                            if isProcessing {
-                                ProgressView()
-                                    .scaleEffect(0.7)
-                                    .frame(height: 22)
-                            } else {
-                                Image(systemName: "square.dashed")
-                                    .font(.system(size: 22))
-                                    .frame(height: 22)
-                            }
-                            Text(manualBoxButtonLabel)
-                                .font(.caption2)
-                                .multilineTextAlignment(.center)
-                        }
-                        .foregroundColor(.red)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 60)
-                    }
-                    .disabled(isProcessing)
-                    .opacity(isProcessing ? 0.6 : 1.0)
+                MediaToolbarButton(icon: "square.and.arrow.up", label: "Share", tint: .blue,
+                                   action: onShare)
+                    .disabled(isProcessing).opacity(isProcessing ? 0.6 : 1.0)
 
-                    // Share button
-                    Button(action: onShare) {
-                        VStack(spacing: 4) {
-                            Image(systemName: "square.and.arrow.up")
-                                .font(.system(size: 22))
-                                .frame(height: 22)
-                            Text("Share")
-                                .font(.caption2)
-                                .multilineTextAlignment(.center)
-                        }
-                        .foregroundColor(.blue)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 60)
-                    }
-                    .disabled(isProcessing)
-                    .opacity(isProcessing ? 0.6 : 1.0)
-                } else if isFaceDetectionActive {
-                    // Cancel detection button
-                    Button(action: {
-                        onCancelDetection?()
-                    }) {
-                        VStack(spacing: 4) {
-                            Image(systemName: "xmark.circle")
-                                .font(.system(size: 22))
-                                .frame(height: 22)
-                            Text("Cancel")
-                                .font(.caption2)
-                                .multilineTextAlignment(.center)
-                        }
-                        .foregroundColor(.gray)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 60)
-                    }
-                    .disabled(isProcessing)
-                    .opacity(isProcessing ? 0.6 : 1.0)
+            } else if isFaceDetectionActive {
+                MediaToolbarButton(icon: "xmark.circle", label: "Cancel", tint: .gray,
+                                   action: { onCancelDetection?() })
+                    .disabled(isProcessing).opacity(isProcessing ? 0.6 : 1.0)
 
-                    // Mask faces button (conditional)
-                    if hasFacesSelected {
-                        Button(action: {
-                            onMaskFaces?()
-                        }) {
-                            VStack(spacing: 4) {
-                                if isProcessing {
-                                    ProgressView()
-                                        .scaleEffect(0.7)
-                                        .frame(height: 22)
-                                } else {
-                                    Image(systemName: "face.dashed.fill")
-                                        .font(.system(size: 22))
-                                        .frame(height: 22)
-                                }
-                                Text(maskButtonLabel)
-                                    .font(.caption2)
-                                    .multilineTextAlignment(.center)
-                            }
-                            .foregroundColor(.red)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 60)
-                        }
-                        .disabled(isProcessing)
-                        .opacity(isProcessing ? 0.6 : 1.0)
-                    }
-
-                    // Share button
-                    Button(action: onShare) {
-                        VStack(spacing: 4) {
-                            Image(systemName: "square.and.arrow.up")
-                                .font(.system(size: 22))
-                                .frame(height: 22)
-                            Text("Share")
-                                .font(.caption2)
-                                .multilineTextAlignment(.center)
-                        }
-                        .foregroundColor(.blue)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 60)
-                    }
-                    .disabled(isProcessing)
-                    .opacity(isProcessing ? 0.6 : 1.0)
-                } else if isAddingBox {
-                    // Cancel add box button
-                    Button(action: {
-                        onCancelAddBox?()
-                    }) {
-                        VStack(spacing: 4) {
-                            Image(systemName: "xmark.circle")
-                                .font(.system(size: 22))
-                                .frame(height: 22)
-                            Text("Cancel")
-                                .font(.caption2)
-                                .multilineTextAlignment(.center)
-                        }
-                        .foregroundColor(.gray)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 60)
-                    }
-
-                    // Add Box button - always show when in adding box mode
-                    Button(action: onAddBox) {
-                        VStack(spacing: 4) {
-                            Image(systemName: "plus.app")
-                                .font(.system(size: 22))
-                                .frame(height: 22)
-                            Text("Add Box")
-                                .font(.caption2)
-                                .multilineTextAlignment(.center)
-                        }
-                        .foregroundColor(.green)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 60)
-                    }
-                    .disabled(isProcessing)
-                    .opacity(isProcessing ? 0.6 : 1.0)
-
-                    // Obscure areas button (conditional - only when manual boxes are selected)
-                    if hasManualBoxesSelected {
-                        Button(action: {
-                            onObscureAreas?()
-                        }) {
-                            VStack(spacing: 4) {
-                                if isProcessing {
-                                    ProgressView()
-                                        .scaleEffect(0.7)
-                                        .frame(height: 22)
-                                } else {
-                                    Image(systemName: "square.dashed")
-                                        .font(.system(size: 22))
-                                        .frame(height: 22)
-                                }
-                                Text(manualBoxButtonLabel)
-                                    .font(.caption2)
-                                    .multilineTextAlignment(.center)
-                            }
-                            .foregroundColor(.red)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 60)
-                        }
-                        .disabled(isProcessing)
-                        .opacity(isProcessing ? 0.6 : 1.0)
-                    }
-
-                    // Share button
-                    Button(action: onShare) {
-                        VStack(spacing: 4) {
-                            Image(systemName: "square.and.arrow.up")
-                                .font(.system(size: 22))
-                                .frame(height: 22)
-                            Text("Share")
-                                .font(.caption2)
-                                .multilineTextAlignment(.center)
-                        }
-                        .foregroundColor(.blue)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 60)
-                    }
-                    .disabled(isProcessing)
-                    .opacity(isProcessing ? 0.6 : 1.0)
-                } else {
-                    // Detect faces button
-                    Button(action: onDetectFaces) {
-                        VStack(spacing: 4) {
-                            Image(systemName: "face.dashed")
-                                .font(.system(size: 22))
-                                .frame(height: 22)
-                            Text("Detect Faces")
-                                .font(.caption2)
-                                .multilineTextAlignment(.center)
-                        }
-                        .foregroundColor(.orange)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 60)
-                    }
-                    .disabled(isProcessing)
-                    .opacity(isProcessing ? 0.6 : 1.0)
-
-                    // Add Box button
-                    Button(action: onAddBox) {
-                        VStack(spacing: 4) {
-                            Image(systemName: "plus.app")
-                                .font(.system(size: 22))
-                                .frame(height: 22)
-                            Text("Add Box")
-                                .font(.caption2)
-                                .multilineTextAlignment(.center)
-                        }
-                        .foregroundColor(.green)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 60)
-                    }
-                    .disabled(isProcessing)
-                    .opacity(isProcessing ? 0.6 : 1.0)
-
-                    // Share button
-                    Button(action: onShare) {
-                        VStack(spacing: 4) {
-                            Image(systemName: "square.and.arrow.up")
-                                .font(.system(size: 22))
-                                .frame(height: 22)
-                            Text("Share")
-                                .font(.caption2)
-                                .multilineTextAlignment(.center)
-                        }
-                        .foregroundColor(.blue)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 60)
-                    }
-                    .disabled(isProcessing)
-                    .opacity(isProcessing ? 0.6 : 1.0)
+                if hasFacesSelected {
+                    obfuscateButton(icon: "face.dashed.fill", label: maskButtonLabel,
+                                    action: { onMaskFaces?() })
                 }
+
+                MediaToolbarButton(icon: "square.and.arrow.up", label: "Share", tint: .blue,
+                                   action: onShare)
+                    .disabled(isProcessing).opacity(isProcessing ? 0.6 : 1.0)
+
+            } else if isAddingBox {
+                MediaToolbarButton(icon: "xmark.circle", label: "Cancel", tint: .gray,
+                                   action: { onCancelAddBox?() })
+
+                MediaToolbarButton(icon: "plus.app", label: "Add Box", tint: .green,
+                                   action: onAddBox)
+                    .disabled(isProcessing).opacity(isProcessing ? 0.6 : 1.0)
+
+                if hasManualBoxesSelected {
+                    obfuscateButton(icon: "square.dashed", label: manualBoxButtonLabel,
+                                    action: { onObscureAreas?() })
+                }
+
+                MediaToolbarButton(icon: "square.and.arrow.up", label: "Share", tint: .blue,
+                                   action: onShare)
+                    .disabled(isProcessing).opacity(isProcessing ? 0.6 : 1.0)
+
+            } else {
+                MediaToolbarButton(icon: "face.dashed", label: "Detect Faces", tint: .orange,
+                                   action: onDetectFaces)
+                    .disabled(isProcessing).opacity(isProcessing ? 0.6 : 1.0)
+
+                MediaToolbarButton(icon: "plus.app", label: "Add Box", tint: .green,
+                                   action: onAddBox)
+                    .disabled(isProcessing).opacity(isProcessing ? 0.6 : 1.0)
+
+                MediaToolbarButton(icon: "square.and.arrow.up", label: "Share", tint: .blue,
+                                   action: onShare)
+                    .disabled(isProcessing).opacity(isProcessing ? 0.6 : 1.0)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(Color(UIColor.systemBackground))
         }
+        .glassToolbarBackground()
+        .padding(.horizontal, 24)
+        .padding(.bottom, 20)
         .animation(.easeInOut(duration: 0.2), value: isFaceDetectionActive)
         .animation(.easeInOut(duration: 0.2), value: hasFacesSelected)
         .animation(.easeInOut(duration: 0.2), value: isProcessing)
+    }
+
+    /// Destructive obfuscate button — shows a spinner while processing.
+    @ViewBuilder
+    private func obfuscateButton(icon: String, label: String, action: @escaping () -> Void) -> some View {
+        if isProcessing {
+            MediaToolbarButton(icon: nil, label: label, tint: .red, action: action) {
+                ProgressView().controlSize(.small)
+            }
+            .disabled(true)
+        } else {
+            MediaToolbarButton(icon: icon, label: label, tint: .red, action: action)
+                .opacity(isProcessing ? 0.6 : 1.0)
+        }
     }
 }
 

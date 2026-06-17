@@ -75,23 +75,24 @@ private struct ScreenRecordingBlockerContent: View {
             // Warning icon
             Image(systemName: "record.circle")
                 .font(.system(size: 80))
-                .foregroundColor(.red)
+                .foregroundStyle(.red)
                 .padding(.top, 60)
+                .accessibilityHidden(true)
             
             // Warning message
             Text("Screen Recording Detected")
-                .font(.system(size: 24, weight: .bold))
-                .foregroundColor(.white)
+                .font(.title2.bold())
+                .foregroundStyle(.white)
             
             Text("For privacy and security reasons, screen recording is not allowed in SnapSafe.")
-                .font(.system(size: 16))
-                .foregroundColor(.gray)
+                .font(.callout)
+                .foregroundStyle(.gray)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
             
             Text("Please stop recording to continue using the app.")
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(.white)
+                .font(.callout.bold())
+                .foregroundStyle(.white)
                 .padding(.top, 20)
             
             Spacer()
@@ -116,19 +117,20 @@ private struct PrivacyShieldContent: View {
             // App logo/icon
             Image(systemName: "lock.shield.fill")
                 .font(.system(size: 100))
-                .foregroundColor(.white)
+                .foregroundStyle(.white)
                 .padding(.top, 60)
-            
+                .accessibilityHidden(true)
+
             // App name
             Text("SnapSafe")
-                .font(.system(size: 32, weight: .bold))
-                .foregroundColor(.white)
-            
+                .font(.largeTitle.bold())
+                .foregroundStyle(.white)
+
             // Privacy message
             Text("The camera app that minds its own business.")
-                .font(.system(size: 20, weight: .medium))
-                .foregroundColor(.gray)
-            
+                .font(.title3)
+                .foregroundStyle(.gray)
+
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -190,18 +192,19 @@ struct ScreenshotTakenView: View {
         VStack {
             HStack(spacing: 15) {
                 Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundColor(.yellow)
-                    .font(.system(size: 24))
+                    .foregroundStyle(.yellow)
+                    .font(.title2)
+                    .accessibilityHidden(true)
                 
                 Text("Screenshot Captured")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.white)
+                    .font(.callout.bold())
+                    .foregroundStyle(.white)
                 
                 Spacer()
             }
             .padding()
             .background(Color.black.opacity(0.8))
-            .cornerRadius(10)
+            .clipShape(.rect(cornerRadius: 10))
             .padding(.horizontal)
             .padding(.top, 10)
             

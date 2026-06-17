@@ -27,6 +27,7 @@ final class FakeEncryptionScheme: EncryptionScheme {
         try plain.write(to: targetFile)
     }
     
+    // periphery:ignore
     func encrypt(plain: Data, keyBytes: Data) async throws -> Data {
         return plain // Return plain data for testing
     }
@@ -56,7 +57,7 @@ final class FakeEncryptionScheme: EncryptionScheme {
         return Data(count: 32) // Return dummy key
     }
     
-    func evictKey() {
+    func evictKey() async {
         evictKeyCalled = true
     }
     
@@ -64,7 +65,7 @@ final class FakeEncryptionScheme: EncryptionScheme {
         // No-op for testing
     }
     
-    func securityFailureReset() async throws {
+    func securityFailureReset() async {
         // No-op for testing
     }
     

@@ -17,12 +17,10 @@ import Logging
 // SwiftUI wrapper for the camera preview
 struct CameraView: View {
     @ObservedObject var cameraModel: CameraViewModel
+    var focusExclusionRects: [CGRect] = []
     var onPinchStarted: (() -> Void)?
     var onPinchChanged: (() -> Void)?
     var onPinchEnded: (() -> Void)?
-
-    // Add a slightly darker background to emphasize the capture area
-    let backgroundOpacity: Double = 0.2
 
     @State private var showBlackOverlay = false
 
@@ -35,7 +33,7 @@ struct CameraView: View {
 
                 if cameraModel.isPermissionGranted {
                     // Camera preview represented by UIViewRepresentable
-                    CameraPreviewView(cameraModel: cameraModel, viewSize: geometry.size, onPinchStarted: onPinchStarted, onPinchChanged: onPinchChanged, onPinchEnded: onPinchEnded)
+                    CameraPreviewView(cameraModel: cameraModel, viewSize: geometry.size, focusExclusionRects: focusExclusionRects, onPinchStarted: onPinchStarted, onPinchChanged: onPinchChanged, onPinchEnded: onPinchEnded)
                         .edgesIgnoringSafeArea(.all)
 
                     // Black overlay when returning from background
@@ -57,16 +55,16 @@ struct CameraView: View {
                     VStack(spacing: 20) {
                         Image(systemName: "camera.fill")
                             .font(.system(size: 60))
-                            .foregroundColor(.white.opacity(0.6))
+                            .foregroundStyle(.white.opacity(0.6))
                         
                         Text("Camera Access Disabled")
                             .font(.title2)
                             .fontWeight(.semibold)
-                            .foregroundColor(.white)
+                            .foregroundStyle(.white)
                         
                         Text("Camera access is required to take photos. Please enable camera access in Settings.")
                             .font(.body)
-                            .foregroundColor(.white.opacity(0.8))
+                            .foregroundStyle(.white.opacity(0.8))
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 40)
                         
@@ -79,12 +77,12 @@ struct CameraView: View {
                                 Image(systemName: "gear")
                                 Text("Open Settings")
                             }
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.white)
+                            .font(.callout)
+                            .foregroundStyle(.white)
                             .padding(.horizontal, 24)
                             .padding(.vertical, 12)
                             .background(Color.blue)
-                            .cornerRadius(8)
+                            .clipShape(.rect(cornerRadius: 8))
                         }
                     }
                 }
@@ -151,31 +149,27 @@ struct FocusIndicatorView: View {
     }
 }
 
+// Persistent camera preview state; lives on the Coordinator so it survives struct re-renders
+class CameraPreviewHolder {
+    var previewLayer: AVCaptureVideoPreviewLayer?
+    var previewContainer: UIView?
+}
+
 // UIViewRepresentable for camera preview
 struct CameraPreviewView: UIViewRepresentable {
-    private let sessionQueue = DispatchQueue(label: "camera.session.queue")
-
     @ObservedObject var cameraModel: CameraViewModel
     var viewSize: CGSize // Store the parent view's size for coordinate conversion
+    // Regions (in the full-screen root view's coordinate space) where the
+    // overlaid SwiftUI controls live; the focus tap gestures decline touches
+    // here so those controls handle the tap instead.
+    var focusExclusionRects: [CGRect] = []
     var onPinchStarted: (() -> Void)?
     var onPinchChanged: (() -> Void)?
     var onPinchEnded: (() -> Void)?
 
-    // Standard photo aspect ratio is 4:3
-    // This is the ratio of most iPhone photos in portrait mode (3:4 actually, as width:height)
-    private let photoAspectRatio: CGFloat = 3.0 / 4.0 // width/height in portrait mode
-    
-    // Store the view reference to help with coordinate mapping
-    class CameraPreviewHolder {
-        weak var view: UIView?
-        var previewLayer: AVCaptureVideoPreviewLayer?
-        var previewContainer: UIView? // Container with correct aspect ratio
-    }
-
-    // Shared holder to maintain a reference to the view and preview layer
-    private let viewHolder = CameraPreviewHolder()
-
     func makeUIView(context: Context) -> UIView {
+        let holder = context.coordinator.viewHolder
+
         // Create a view with the exact size passed from parent
         let view = UIView(frame: CGRect(origin: .zero, size: viewSize))
         Logger.camera.debug("Creating camera preview", metadata: [
@@ -183,95 +177,23 @@ struct CameraPreviewView: UIViewRepresentable {
             "height": .stringConvertible(viewSize.height)
         ])
 
-        // Store the view reference
-        viewHolder.view = view
-        
         // Calculate the container size to match photo aspect ratio
         let containerSize = calculatePreviewContainerSize(for: viewSize)
         let containerOrigin = CGPoint(
             x: (viewSize.width - containerSize.width) / 2,
             y: (viewSize.height - containerSize.height) / 2
         )
-        
-        // Create the container view with proper aspect ratio
+
+        // Create the container view with proper aspect ratio. The capture
+        // area needs no border or corner brackets: the preview is clipped to
+        // exactly the capture aspect, so the letterbox bands already mark it,
+        // and frame lines just collide with the overlaid controls.
         let containerView = UIView(frame: CGRect(origin: containerOrigin, size: containerSize))
         containerView.backgroundColor = .clear
         containerView.clipsToBounds = true
         view.addSubview(containerView)
-        viewHolder.previewContainer = containerView
-        
-        // Add visual guides for the capture area
-        
-        // 1. Add a border to visualize the capture area
-        let borderLayer = CALayer()
-        borderLayer.frame = containerView.bounds
-        borderLayer.borderColor = UIColor.white.withAlphaComponent(0.7).cgColor
-        borderLayer.borderWidth = 2.0
-        containerView.layer.addSublayer(borderLayer)
-        
-        // 2. Add corner brackets for a more camera-like appearance
-        let cornerSize: CGFloat = 20.0
-        let cornerThickness: CGFloat = 3.0
-        let cornerColor = UIColor.white.withAlphaComponent(0.8).cgColor
-        
-        // Top-left corner
-        let topLeftCornerH = CALayer()
-        topLeftCornerH.frame = CGRect(x: 0, y: 0, width: cornerSize, height: cornerThickness)
-        topLeftCornerH.backgroundColor = cornerColor
-        containerView.layer.addSublayer(topLeftCornerH)
-        
-        let topLeftCornerV = CALayer()
-        topLeftCornerV.frame = CGRect(x: 0, y: 0, width: cornerThickness, height: cornerSize)
-        topLeftCornerV.backgroundColor = cornerColor
-        containerView.layer.addSublayer(topLeftCornerV)
-        
-        // Top-right corner
-        let topRightCornerH = CALayer()
-        topRightCornerH.frame = CGRect(x: containerSize.width - cornerSize, y: 0, width: cornerSize, height: cornerThickness)
-        topRightCornerH.backgroundColor = cornerColor
-        containerView.layer.addSublayer(topRightCornerH)
-        
-        let topRightCornerV = CALayer()
-        topRightCornerV.frame = CGRect(x: containerSize.width - cornerThickness, y: 0, width: cornerThickness, height: cornerSize)
-        topRightCornerV.backgroundColor = cornerColor
-        containerView.layer.addSublayer(topRightCornerV)
-        
-        // Bottom-left corner
-        let bottomLeftCornerH = CALayer()
-        bottomLeftCornerH.frame = CGRect(x: 0, y: containerSize.height - cornerThickness, width: cornerSize, height: cornerThickness)
-        bottomLeftCornerH.backgroundColor = cornerColor
-        containerView.layer.addSublayer(bottomLeftCornerH)
-        
-        let bottomLeftCornerV = CALayer()
-        bottomLeftCornerV.frame = CGRect(x: 0, y: containerSize.height - cornerSize, width: cornerThickness, height: cornerSize)
-        bottomLeftCornerV.backgroundColor = cornerColor
-        containerView.layer.addSublayer(bottomLeftCornerV)
-        
-        // Bottom-right corner
-        let bottomRightCornerH = CALayer()
-        bottomRightCornerH.frame = CGRect(x: containerSize.width - cornerSize, y: containerSize.height - cornerThickness, width: cornerSize, height: cornerThickness)
-        bottomRightCornerH.backgroundColor = cornerColor
-        containerView.layer.addSublayer(bottomRightCornerH)
-        
-        let bottomRightCornerV = CALayer()
-        bottomRightCornerV.frame = CGRect(x: containerSize.width - cornerThickness, y: containerSize.height - cornerSize, width: cornerThickness, height: cornerSize)
-        bottomRightCornerV.backgroundColor = cornerColor
-        containerView.layer.addSublayer(bottomRightCornerV)
-        
-        // Add a label to indicate that this is the capture area
-        let captureLabel = UILabel()
-        captureLabel.text = "CAPTURE AREA"
-        captureLabel.textColor = UIColor.white.withAlphaComponent(0.7)
-        captureLabel.font = UIFont.systemFont(ofSize: 10, weight: .bold)
-        captureLabel.sizeToFit()
-        captureLabel.frame = CGRect(
-            x: (containerSize.width - captureLabel.frame.width) / 2,
-            y: 10,
-            width: captureLabel.frame.width,
-            height: captureLabel.frame.height
-        )
-        containerView.addSubview(captureLabel)
-        
+        holder.previewContainer = containerView
+
         // Create and configure the preview layer
         let previewLayer = AVCaptureVideoPreviewLayer()
         previewLayer.session = cameraModel.session
@@ -280,7 +202,7 @@ struct CameraPreviewView: UIViewRepresentable {
         previewLayer.connection?.videoRotationAngle = 90 // Force portrait orientation
 
         // Store the preview layer in our holder instead of directly in the cameraModel
-        viewHolder.previewLayer = previewLayer
+        holder.previewLayer = previewLayer
 
         // Ensure the layer is added to the container view
         containerView.layer.addSublayer(previewLayer)
@@ -291,11 +213,15 @@ struct CameraPreviewView: UIViewRepresentable {
 
         let doubleTapGesture = UITapGestureRecognizer(target: context.coordinator, action: #selector(context.coordinator.handleDoubleTapGesture(_:)))
         doubleTapGesture.numberOfTapsRequired = 2
+        // Only claim taps inside the capture area; let taps on the surrounding
+        // SwiftUI controls (flash, switch, gallery, etc.) fall through.
+        doubleTapGesture.delegate = context.coordinator
         view.addGestureRecognizer(doubleTapGesture)
 
         // Add single tap gesture for quick focus
         let singleTapGesture = UITapGestureRecognizer(target: context.coordinator, action: #selector(context.coordinator.handleSingleTapGesture(_:)))
         singleTapGesture.requiresExclusiveTouchType = true
+        singleTapGesture.delegate = context.coordinator
 
         // Ensure single tap doesn't conflict with double tap
         singleTapGesture.require(toFail: doubleTapGesture)
@@ -315,168 +241,106 @@ struct CameraPreviewView: UIViewRepresentable {
         return view
     }
 
-    // Calculate the container size based on the photo aspect ratio
     private func calculatePreviewContainerSize(for size: CGSize) -> CGSize {
-        // Calculate the container size to match photo aspect ratio
-        // In portrait mode, we're comparing width:height
-        // We prioritize fitting the width to match the device's screen width
-        let width = size.width
-        let height = width / photoAspectRatio
-        
-        // If height exceeds the available space, adjust both dimensions
-        if height > size.height {
-            // Use the available height
-            let adjustedHeight = size.height
-            let adjustedWidth = adjustedHeight * photoAspectRatio
-            return CGSize(width: adjustedWidth, height: adjustedHeight)
-        } else {
-            return CGSize(width: width, height: height)
-        }
+        CameraPreviewLayout.containerSize(for: size, aspectRatio: cameraModel.captureAspectRatio)
     }
     
-    func updateUIView(_ uiView: UIView, context _: Context) {
-        // Update the preview layer frame when the view updates
-        Task { @MainActor in
-            // Update frame with the latest size
-            uiView.frame = CGRect(origin: .zero, size: viewSize)
-            
-            // Calculate the container size to match photo aspect ratio
-            let containerSize = calculatePreviewContainerSize(for: viewSize)
-            let containerOrigin = CGPoint(
-                x: (viewSize.width - containerSize.width) / 2,
-                y: (viewSize.height - containerSize.height) / 2
-            )
-            
-            // Update the container view frame
-            if let containerView = viewHolder.previewContainer {
-                containerView.frame = CGRect(origin: containerOrigin, size: containerSize)
-                
-                // Update the preview layer frame to match container
-                if let layer = viewHolder.previewLayer {
-                    layer.frame = containerView.bounds
-                    
-                    // Ensure we're using the correct layer in the camera model
-                    // Only update if necessary to avoid excessive property changes
-                    if cameraModel.preview !== layer {
-                        cameraModel.preview = layer
-                    }
-                }
-                
-                // Update all visual indicators
-                if containerView.layer.sublayers?.count ?? 0 > 0 {
-                    // Update border
-                    if let borderLayer = containerView.layer.sublayers?.first(where: { $0.borderWidth > 0 }) {
-                        borderLayer.frame = containerView.bounds
-                    }
-                    
-                    // Update corner guides
-                    let cornerSize: CGFloat = 20.0
-                    let cornerThickness: CGFloat = 3.0
-                    
-                    // Find corner guides by their size and position
-                    for layer in containerView.layer.sublayers ?? [] {
-                        // Skip the border layer
-                        if layer.borderWidth > 0 { continue }
-                        
-                        // Update corner layers based on their position
-                        if layer.frame.origin.x == 0 && layer.frame.origin.y == 0 {
-                            // Top-left horizontal
-                            if layer.frame.height == cornerThickness {
-                                layer.frame = CGRect(x: 0, y: 0, width: cornerSize, height: cornerThickness)
-                            }
-                            // Top-left vertical
-                            else if layer.frame.width == cornerThickness {
-                                layer.frame = CGRect(x: 0, y: 0, width: cornerThickness, height: cornerSize)
-                            }
-                        }
-                        else if layer.frame.origin.y == 0 && layer.frame.origin.x > 0 {
-                            // Top-right horizontal
-                            if layer.frame.height == cornerThickness {
-                                layer.frame = CGRect(x: containerSize.width - cornerSize, y: 0, width: cornerSize, height: cornerThickness)
-                            }
-                            // Top-right vertical
-                            else if layer.frame.width == cornerThickness {
-                                layer.frame = CGRect(x: containerSize.width - cornerThickness, y: 0, width: cornerThickness, height: cornerSize)
-                            }
-                        }
-                        else if layer.frame.origin.x == 0 && layer.frame.origin.y > 0 {
-                            // Bottom-left horizontal
-                            if layer.frame.height == cornerThickness {
-                                layer.frame = CGRect(x: 0, y: containerSize.height - cornerThickness, width: cornerSize, height: cornerThickness)
-                            }
-                            // Bottom-left vertical
-                            else if layer.frame.width == cornerThickness {
-                                layer.frame = CGRect(x: 0, y: containerSize.height - cornerSize, width: cornerThickness, height: cornerSize)
-                            }
-                        }
-                        else if layer.frame.origin.x > 0 && layer.frame.origin.y > 0 {
-                            // Bottom-right horizontal
-                            if layer.frame.height == cornerThickness {
-                                layer.frame = CGRect(x: containerSize.width - cornerSize, y: containerSize.height - cornerThickness, width: cornerSize, height: cornerThickness)
-                            }
-                            // Bottom-right vertical
-                            else if layer.frame.width == cornerThickness {
-                                layer.frame = CGRect(x: containerSize.width - cornerThickness, y: containerSize.height - cornerSize, width: cornerThickness, height: cornerSize)
-                            }
-                        }
-                    }
-                    
-                    // Update the capture area label position
-                    for subview in containerView.subviews {
-                        if let label = subview as? UILabel, label.text == "CAPTURE AREA" {
-                            label.frame = CGRect(
-                                x: (containerSize.width - label.frame.width) / 2,
-                                y: 10,
-                                width: label.frame.width,
-                                height: label.frame.height
-                            )
+    func updateUIView(_ uiView: UIView, context: Context) {
+        // Keep the persistent coordinator pointed at the latest struct so its
+        // gesture delegate reads the current focus-exclusion rects.
+        context.coordinator.parent = self
+
+        let holder = context.coordinator.viewHolder
+        uiView.frame = CGRect(origin: .zero, size: viewSize)
+
+        let containerSize = calculatePreviewContainerSize(for: viewSize)
+        let containerOrigin = CGPoint(
+            x: (viewSize.width - containerSize.width) / 2,
+            y: (viewSize.height - containerSize.height) / 2
+        )
+
+        if let containerView = holder.previewContainer {
+            containerView.frame = CGRect(origin: containerOrigin, size: containerSize)
+
+            if let layer = holder.previewLayer {
+                layer.frame = containerView.bounds
+                if cameraModel.preview !== layer {
+                    // Defer the @Published mutation off the view-update cycle to
+                    // avoid "Publishing changes from within view updates" (matches
+                    // the pattern used in makeUIView).
+                    Task { @MainActor in
+                        if cameraModel.preview !== layer {
+                            cameraModel.preview = layer
                         }
                     }
                 }
             }
 
-            // Update the size in the model
-            cameraModel.viewSize = containerSize // Store the actual photo preview size
-            //print("📐 Updated camera preview to size: \(containerSize.width)x\(containerSize.height)")
+        }
+
+        if cameraModel.viewSize != containerSize {
+            cameraModel.viewSize = containerSize
         }
     }
     
     // This method is called once after makeUIView
     func makeCoordinator() -> Coordinator {
-        // Create coordinator first - this shouldn't trigger camera operations
         let coordinator = Coordinator(self)
-        
-        // Capture cameraModel to avoid potential reference issues
+
         let capturedCameraModel = cameraModel
-        
-        // Give a slight delay before starting the camera session
-        // This ensures all UI setup is complete and configuration has been committed
         Task(priority: .userInitiated) {
             try await Task.sleep(for: .milliseconds(500))
-            // Start camera on background thread after delay
             let session = capturedCameraModel.session
             await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
-                sessionQueue.async {
+                coordinator.sessionQueue.async {
                     if !session.isRunning {
                         Logger.camera.debug("Starting camera session off-main after delay")
-                        session.startRunning()   // blocking; safe on this queue
+                        session.startRunning()
                     }
                     cont.resume()
                 }
             }
         }
-        
+
         return coordinator
     }
 
     // Coordinator for handling UIKit gestures
     @MainActor
-    class Coordinator: NSObject {
+    class Coordinator: NSObject, UIGestureRecognizerDelegate {
         var parent: CameraPreviewView
         private var initialScale: CGFloat = 1.0
 
+        // Persistent state across re-renders (struct properties are recreated each render)
+        let sessionQueue = DispatchQueue(label: "camera.session.queue")
+        let viewHolder = CameraPreviewHolder()
+
         init(_ parent: CameraPreviewView) {
             self.parent = parent
+        }
+
+        // Only let the focus tap recognizers claim touches that land inside the
+        // capture area. Touches outside it are on the overlaid SwiftUI controls
+        // (or the letterbox), so declining them here lets those controls receive
+        // the tap instead of the preview's focus gesture swallowing it.
+        nonisolated func gestureRecognizer(
+            _ gestureRecognizer: UIGestureRecognizer,
+            shouldReceive touch: UITouch
+        ) -> Bool {
+            MainActor.assumeIsolated {
+                guard let container = viewHolder.previewContainer else { return true }
+
+                // Decline taps that land on the overlaid SwiftUI controls (mode
+                // toggle, zoom capsule) so those controls handle the tap rather
+                // than tap-to-focus firing underneath. Exclusion rects are in
+                // the root view's coordinate space.
+                let pointInRoot = touch.location(in: gestureRecognizer.view)
+                if parent.focusExclusionRects.contains(where: { $0.contains(pointInRoot) }) {
+                    return false
+                }
+
+                return container.bounds.contains(touch.location(in: container))
+            }
         }
 
         // Handle pinch gesture for zoom with continuous updates
@@ -514,7 +378,7 @@ struct CameraPreviewView: UIViewRepresentable {
             ])
             
             // Get the container view for proper coordinate conversion
-            guard let containerView = parent.viewHolder.previewContainer else { return }
+            guard let containerView = viewHolder.previewContainer else { return }
             
             // Check if the tap is within the container bounds
             let locationInContainer = view.convert(location, to: containerView)
@@ -525,7 +389,7 @@ struct CameraPreviewView: UIViewRepresentable {
             
 
             // Convert touch point to camera coordinate
-            if let layer = parent.viewHolder.previewLayer {
+            if let layer = viewHolder.previewLayer {
                 // Convert the point from the container's coordinate space to the preview layer's coordinate space
                 let pointInPreviewLayer = layer.captureDevicePointConverted(fromLayerPoint: locationInContainer)
                 let devicePoint = layer.devicePoint(from: location)
@@ -554,7 +418,7 @@ struct CameraPreviewView: UIViewRepresentable {
             ])
             
             // Get the container view for proper coordinate conversion
-            guard let containerView = parent.viewHolder.previewContainer else { return }
+            guard let containerView = viewHolder.previewContainer else { return }
             
             // Check if the tap is within the container bounds
             let locationInContainer = view.convert(location, to: containerView)
@@ -564,7 +428,7 @@ struct CameraPreviewView: UIViewRepresentable {
             }
 
             // Convert touch point to camera coordinate
-            if let layer = parent.viewHolder.previewLayer {
+            if let layer = viewHolder.previewLayer {
                 // Convert the point from the container's coordinate space to the preview layer's coordinate space
                 let pointInPreviewLayer = layer.captureDevicePointConverted(fromLayerPoint: locationInContainer)
                 Logger.camera.debug("Converted to camera coordinates (1x tap)", metadata: [
@@ -586,7 +450,5 @@ extension AVCaptureVideoPreviewLayer {
         return self.captureDevicePointConverted(fromLayerPoint: viewPoint)
     }
 
-    func viewPoint(from devicePoint: CGPoint) -> CGPoint {
-        return self.layerPointConverted(fromCaptureDevicePoint: devicePoint)
-    }
+
 }

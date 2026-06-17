@@ -19,8 +19,7 @@ struct ImageInfoView: View {
     }
     
     var body: some View {
-        NavigationView {
-            if viewModel.isLoading {
+        if viewModel.isLoading {
                 ProgressView("Loading image information...")
                     .navigationTitle("Image Information")
                     .navigationBarTitleDisplayMode(.inline)
@@ -38,21 +37,21 @@ struct ImageInfoView: View {
                             Text("Filename")
                             Spacer()
                             Text(viewModel.filename)
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(.secondary)
                         }
                         
                         HStack {
                             Text("Resolution")
                             Spacer()
                             Text(viewModel.resolution)
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(.secondary)
                         }
                         
                         HStack {
                             Text("File Size")
                             Spacer()
                             Text(viewModel.fileSize)
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(.secondary)
                         }
                     }
                 
@@ -61,7 +60,7 @@ struct ImageInfoView: View {
                             Text("Date Taken")
                             Spacer()
                             Text(viewModel.dateTaken)
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(.secondary)
                         }
                         
                         if viewModel.originalDateString != "Not available" {
@@ -69,7 +68,7 @@ struct ImageInfoView: View {
                                 Text("Original Date")
                                 Spacer()
                                 Text(viewModel.originalDateString)
-                                    .foregroundColor(.secondary)
+                                    .foregroundStyle(.secondary)
                             }
                         }
                     }
@@ -79,13 +78,13 @@ struct ImageInfoView: View {
                             Text("Orientation")
                             Spacer()
                             Text(viewModel.orientationString)
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(.secondary)
                         }
                     }
                 
                     Section(header: Text("Location")) {
                         Text(viewModel.locationString)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
                 
                     Section(header: Text("Camera Information")) {
@@ -97,7 +96,7 @@ struct ImageInfoView: View {
                                     Text("Camera")
                                     Spacer()
                                     Text(cameraInfo.cameraName)
-                                        .foregroundColor(.secondary)
+                                        .foregroundStyle(.secondary)
                                 }
                             }
                             
@@ -106,7 +105,7 @@ struct ImageInfoView: View {
                                     Text("Aperture")
                                     Spacer()
                                     Text(cameraInfo.apertureString)
-                                        .foregroundColor(.secondary)
+                                        .foregroundStyle(.secondary)
                                 }
                             }
                             
@@ -115,7 +114,7 @@ struct ImageInfoView: View {
                                     Text("Shutter Speed")
                                     Spacer()
                                     Text(cameraInfo.shutterSpeedString)
-                                        .foregroundColor(.secondary)
+                                        .foregroundStyle(.secondary)
                                 }
                             }
                             
@@ -124,7 +123,7 @@ struct ImageInfoView: View {
                                     Text("ISO")
                                     Spacer()
                                     Text(cameraInfo.isoString)
-                                        .foregroundColor(.secondary)
+                                        .foregroundStyle(.secondary)
                                 }
                             }
                             
@@ -133,12 +132,12 @@ struct ImageInfoView: View {
                                     Text("Focal Length")
                                     Spacer()
                                     Text(cameraInfo.focalLengthString)
-                                        .foregroundColor(.secondary)
+                                        .foregroundStyle(.secondary)
                                 }
                             }
                         } else {
                             Text("No camera information available")
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(.secondary)
                         }
                     }
                 
@@ -150,7 +149,7 @@ struct ImageInfoView: View {
                                     VStack(alignment: .leading) {
                                         Text(key)
                                             .font(.headline)
-                                            .foregroundColor(.blue)
+                                            .foregroundStyle(.blue)
                                         Text("\(String(describing: viewModel.rawMetadata[key]!))")
                                             .font(.caption)
                                     }
@@ -169,7 +168,6 @@ struct ImageInfoView: View {
                         }
                     }
                 }
-            }
         }
     }
 }

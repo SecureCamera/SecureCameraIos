@@ -16,10 +16,12 @@ final class PINVerificationViewModel: ObservableObject {
     
     @Published var pin = ""
     @Published var showError = false
+    @Published var showRetryableError = false
     @Published var isLoading = false
     @Published var backoffSeconds = 0
     @Published var failedAttempts = 0
-    
+    @Published var isAlphanumeric: Bool = false
+
     // MARK: - Timer
     private var backoffTimer: Timer?
     
@@ -33,8 +35,11 @@ final class PINVerificationViewModel: ObservableObject {
     
     @Injected(\.securityResetUseCase)
     private var securityResetUseCase: SecurityResetUseCase
-    
-    
+
+    @Injected(\.settingsDataSource)
+    private var settings: SettingsDataSource
+
+
     // MARK: - Computed Properties
     
     var isUnlockButtonDisabled: Bool {
@@ -67,6 +72,10 @@ final class PINVerificationViewModel: ObservableObject {
     var errorMessage: String {
         "Invalid PIN. Please try again."
     }
+
+    var retryableErrorMessage: String {
+        "Something went wrong unlocking. Please try again."
+    }
     
     var shouldShowAttemptsWarning: Bool {
         failedAttempts > 2
@@ -86,6 +95,7 @@ final class PINVerificationViewModel: ObservableObject {
         Task {
             await updateBackoffTime()
             await updateCurrentFailedAttempts()
+            await loadAlphanumericSetting()
         }
     }
     
@@ -94,57 +104,77 @@ final class PINVerificationViewModel: ObservableObject {
     }
     
     func updatePIN(_ newValue: String) {
-        // Limit to 10 digits
+        // Limit to max length
         var filteredValue = newValue
         if filteredValue.count > MAX_PIN_LENGTH {
             filteredValue = String(filteredValue.prefix(MAX_PIN_LENGTH))
         }
-        
-        // Only allow numbers
-        if !filteredValue.allSatisfy({ $0.isNumber }) {
-            filteredValue = filteredValue.filter { $0.isNumber }
-        }
-        
+
+        // Filter characters based on the global PIN type.
+        filteredValue = isAlphanumeric
+            ? filteredValue.filter { $0.isLetter || $0.isNumber }
+            : filteredValue.filter { $0.isNumber }
+
         pin = filteredValue
     }
     
     func verifyPIN() async {
         isLoading = true
         showError = false
-        
-        let success = await verifyPinUseCase.verifyPin(pin)
-        
+        showRetryableError = false
+
+        let result = await verifyPinUseCase.verifyPin(pin)
+
         isLoading = false
-        
-        if success {
-            // PIN verification successful (includes poison pill handling)
+
+        switch result {
+        case .success:
+            // PIN verification successful (includes poison pill handling).
+            // The repository already reset the counter to 0 on success
+            // (AuthorizePinUseCase.resetFailedAttempts); just reflect that
+            // locally rather than writing it a second time (M1).
             Logger.security.info("PIN verification successful")
-            
-            // Reset failed attempts counter on successful verification
-            await setCurrentFailedAttempts(0)
-            
+
+            failedAttempts = 0
+
             // Update UI state
             showError = false
-            
+            showRetryableError = false
+
             // Clear the PIN field for next time
             pin = ""
-        } else {
-            // PIN verification failed
-            showError = true
-            await setCurrentFailedAttempts(failedAttempts+1)
+
+        case .failure(let error):
+            // Transient / retryable error during key derivation. Do NOT count
+            // this against failed-attempts — otherwise an attacker who can race
+            // the device-lock state can force a security reset (DoS).
+            showRetryableError = true
             pin = ""
-            
+
+            Logger.security.error("PIN verification failed transiently", metadata: [
+                "error": .string(String(describing: error))
+            ])
+
+        case .invalidPin(let failedAttempts):
+            // PIN verification failed. The repository is the single writer of
+            // the counter (and the backoff timestamp/baseline); the use case
+            // already incremented and returns the authoritative count here.
+            // We only reflect it — we never write it back (M1).
+            showError = true
+            self.failedAttempts = failedAttempts
+            pin = ""
+
             Logger.security.warning("PIN verification failed", metadata: [
                 "attemptCount": .stringConvertible(failedAttempts),
                 "maxAttempts": .stringConvertible(AuthorizationRepository.MAX_FAILED_ATTEMPTS)
             ])
-            
+
             // Check if we've reached the maximum failed attempts
             if failedAttempts >= AuthorizationRepository.MAX_FAILED_ATTEMPTS {
                 Logger.security.critical("Maximum failed PIN attempts reached, triggering security reset", metadata: [
                     "attemptCount": .stringConvertible(failedAttempts)
                 ])
-                
+
                 // Trigger security reset
                 Task {
                     await securityResetUseCase.reset()
@@ -153,11 +183,10 @@ final class PINVerificationViewModel: ObservableObject {
                 Logger.security.info("Failed PIN verification", metadata: [
                     "attemptCount": .stringConvertible(failedAttempts)
                 ])
-                
-                // Check for backoff time after failed attempt
+
+                // Refresh backoff state after the failed attempt.
                 Task {
                     await updateBackoffTime()
-                    await updateCurrentFailedAttempts()
                 }
             }
         }
@@ -197,15 +226,17 @@ final class PINVerificationViewModel: ObservableObject {
     
     private func updateCurrentFailedAttempts() async {
         let attempts = await authorizationRepository.getFailedAttempts()
-        
+
         await MainActor.run {
             self.failedAttempts = attempts
         }
     }
-    
-    private func setCurrentFailedAttempts(_ attempts: Int) async {
-        await authorizationRepository.setFailedAttempts(attempts)
-        self.failedAttempts = attempts
+
+    private func loadAlphanumericSetting() async {
+        // PIN type is a single global preference shared by the app PIN and the
+        // poison pill, so the unlock screen just reads that flag.
+        let enabled = await settings.getAlphanumericPinEnabled()
+        await MainActor.run { self.isAlphanumeric = enabled }
     }
     
     private func startBackoffTimer() {

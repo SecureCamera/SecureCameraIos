@@ -20,6 +20,7 @@ func setupSnapshot(_ app: XCUIApplication, waitForAnimations: Bool = true) {
     Snapshot.setupSnapshot(app, waitForAnimations: waitForAnimations)
 }
 
+// periphery:ignore
 @MainActor
 func snapshot(_ name: String, waitForLoadingIndicator: Bool) {
     if waitForLoadingIndicator {

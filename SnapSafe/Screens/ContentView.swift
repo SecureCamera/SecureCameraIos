@@ -7,6 +7,7 @@
 
 import AVFoundation
 import CoreGraphics
+import CryptoKit
 import ImageIO
 import PhotosUI
 import SwiftUI
@@ -20,8 +21,6 @@ extension Notification.Name {
 
 struct ContentView: View { 
     @StateObject private var viewModel = ContentViewModel()
-    @InjectedObject(\.locationRepository) private var locationManager: LocationRepository
-
     @EnvironmentObject private var nav: AppNavigationState
 
     var body: some View {
@@ -65,16 +64,27 @@ struct ContentView: View {
     // MARK: - Navigation Methods
     
     private func navigateToRootDestination() {
-        // Clear current navigation path and navigate to root destination
+        // Clear current navigation path and navigate to root destination.
         nav.clearNavigationStack()
-        nav.navigate(to: currentRootDestination)
+        if let destination = currentRootDestination {
+            nav.navigate(to: destination)
+        }
     }
-    
-    private var currentRootDestination: AppDestination {
+
+    private var currentRootDestination: AppDestination? {
+        #if DEBUG
+        if CommandLine.arguments.contains("-SkipAuthentication") {
+            return .camera
+        }
+        #endif
         if viewModel.hasCompletedIntro == false {
             return .pinSetup
         } else if !viewModel.isAuthenticated {
-            return .pinVerification
+            // Authentication is owned entirely by the security overlay
+            // (.securityManaged()). Leave the nav stack at its empty Color.clear
+            // root so we do NOT mount a second, competing PIN screen underneath
+            // the overlay — two PIN text fields deadlock first responder.
+            return nil
         } else {
             return .camera
         }
@@ -84,8 +94,10 @@ struct ContentView: View {
 
     private func shouldHideNavigationBar(for destination: AppDestination) -> Bool {
         switch destination {
-        case .gallery, .photoObfuscation, .settings:
+        case .gallery, .photoObfuscation, .settings, .videoExportTest, .photoInfo, .videoInfo:
             return false
+        case .videoPlayer:
+            return true
         default:
             return true
         }
@@ -108,19 +120,39 @@ struct ContentView: View {
             PINVerificationView()
         case .camera:
             CameraContainerView()
-        case .photoDetail(let allPhotos, let initialIndex):
+        case .photoDetail(let allMedia, let initialIndex):
             EnhancedPhotoDetailView(
-                allPhotos: allPhotos,
+                allMedia: allMedia,
                 initialIndex: initialIndex,
                 onDelete: nil,
                 onDismiss: nil
             )
         case .photoInfo(let photoDef):
             ImageInfoView(photoDef: photoDef)
+        case .videoInfo(let videoDef):
+            VideoInfoView(videoDef: videoDef)
         case .photoObfuscation(let photoDef):
             PhotoObfuscationView(photoDef: photoDef, navigator: nav)
         case .poisonPillSetupWizard:
             PoisonPillSetupWizardView()
+        case .videoPlayer(let videoDef, let keyData):
+            VideoPlayerView(
+                videoDef: videoDef,
+                encryptionKey: keyData.map { SymmetricKey(data: $0) }
+            )
+        case .videoExportTest:
+            // Dev-only screen; the view type is compiled in Debug builds only.
+            #if DEBUG
+            if #available(iOS 18.0, *) {
+                VideoExportTestView()
+            } else {
+                Text("Video Export Testing requires iOS 18+")
+                    .font(.title2)
+                    .foregroundStyle(.secondary)
+            }
+            #else
+            EmptyView()
+            #endif
         }
     }
 }

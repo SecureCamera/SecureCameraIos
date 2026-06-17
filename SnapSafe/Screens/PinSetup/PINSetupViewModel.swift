@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import Combine
 import FactoryKit
 
 @MainActor
@@ -39,7 +38,12 @@ final class PINSetupViewModel: ObservableObject {
     @Published var showError: Bool = false
     @Published var errorMessage: String = ""
     @Published var isLoading: Bool = false
-    
+
+    /// Global alphanumeric-PIN preference, mirrored from settings. The setup
+    /// screen is where this choice is made; it applies to the poison pill and
+    /// the unlock screen too.
+    @Published var isAlphanumeric: Bool = false
+
     // MARK: - Computed Properties
     var isPINValid: Bool {
         pin.count >= MIN_PIN_LENGTH && pin.count <= MAX_PIN_LENGTH
@@ -54,14 +58,26 @@ final class PINSetupViewModel: ObservableObject {
     @Injected(\.createPinUseCase) private var createPinUseCase: CreatePinUseCase
     @Injected(\.pinStrengthCheckUseCase) private var pinStrengthCheckUseCase: PinStrengthCheckUseCase
     
-    // MARK: - Private Properties
-    private var cancellables = Set<AnyCancellable>()
-    
     // MARK: - Initialization
     init() {
         setupBindings()
     }
     
+    // MARK: - Alphanumeric preference
+    /// Seed the toggle from the persisted global setting.
+    func loadAlphanumericSetting() async {
+        isAlphanumeric = await settings.getAlphanumericPinEnabled()
+    }
+
+    /// Update and persist the global preference, re-filtering any entered text.
+    func setAlphanumeric(_ enabled: Bool) {
+        guard enabled != isAlphanumeric else { return }
+        isAlphanumeric = enabled
+        pin = validateAndFilterPIN(pin)
+        confirmPin = validateAndFilterPIN(confirmPin)
+        Task { await settings.setAlphanumericPinEnabled(enabled) }
+    }
+
     // MARK: - Private Methods
     private func setupBindings() {
     }
@@ -72,17 +88,18 @@ final class PINSetupViewModel: ObservableObject {
     }
     
     // MARK: - PIN Validation Methods
-    func validateAndFilterPIN(_ newValue: String, isConfirm: Bool = false) -> String {
-        var filtered = newValue
-        
-        // Only allow numbers
-        filtered = filtered.filter { $0.isNumber }
-        
-        // Limit to max digits
+    func validateAndFilterPIN(_ newValue: String) -> String {
+        // Filter to the active PIN type: letters + digits when alphanumeric,
+        // digits only otherwise.
+        var filtered = isAlphanumeric
+            ? newValue.filter { $0.isLetter || $0.isNumber }
+            : newValue.filter { $0.isNumber }
+
+        // Limit to max length
         if filtered.count > MAX_PIN_LENGTH {
             filtered = String(filtered.prefix(MAX_PIN_LENGTH))
         }
-        
+
         return filtered
     }
     
@@ -102,18 +119,14 @@ final class PINSetupViewModel: ObservableObject {
             return false
         }
         
-        // Validate PIN format (already done above, but keeping for clarity)
-        guard pin.allSatisfy({ $0.isNumber }) else {
-            showError(message: "PIN must contain only numbers")
+        // Check PIN strength against the active (global) PIN type.
+        if !pinStrengthCheckUseCase.isPinStrongEnough(pin, isAlphanumeric: isAlphanumeric) {
+            showError(message: isAlphanumeric
+                ? "PIN is too weak. Avoid common words and repeated characters."
+                : "PIN is too weak. Avoid common patterns like 1234 or repeated digits.")
             return false
         }
-        
-        // Check PIN strength
-        if !pinStrengthCheckUseCase.isPinStrongEnough(pin) {
-            showError(message: "PIN is too weak. Avoid common patterns like 1234 or repeated digits.")
-            return false
-        }
-        
+
         // Create the PIN using the use case
         let success = await createPinUseCase.createPin(pin)
         
@@ -136,14 +149,6 @@ final class PINSetupViewModel: ObservableObject {
         showError = true
     }
     
-    // MARK: - Reset Methods
-    func reset() {
-        pin = ""
-        confirmPin = ""
-        clearError()
-        isLoading = false
-    }
-
     func clearPinContent() {
         pin = ""
         confirmPin = ""

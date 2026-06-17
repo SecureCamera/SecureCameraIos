@@ -24,16 +24,14 @@ final class ContentViewModel: ObservableObject {
     @Injected(\.authorizationRepository) 
     private var authorizationRepository: AuthorizationRepository
     
-    @Injected(\.locationRepository)
-    private var locationManager: LocationRepository
-    
-    private let screenCaptureManager = ScreenCaptureManager.shared
-    
     private var cancellables = Set<AnyCancellable>()
     
     // MARK: - Initialization
     
     init() {
+        // Seed synchronously so navigateToRootDestination() in onAppear sees the
+        // correct value before the Combine pipeline's async main-thread hop fires.
+        self.hasCompletedIntro = settings.hasCompletedIntroValue
         setupObservers()
     }
     
