@@ -270,11 +270,13 @@ final class MixedMediaGalleryViewModel: ObservableObject {
             // Load videos
             let videos = loadVideos(encryptionKey: encKey)
 
-            // Combine and sort by date (newest first)
+            // Combine and sort by date, oldest first. The grid fills
+            // upper-left to lower-right, so this puts the oldest item in the
+            // upper left and the newest in the lower right.
             let allMedia = (photos + videos).sorted { item1, item2 in
                 let date1 = item1.dateTaken() ?? Date.distantPast
                 let date2 = item2.dateTaken() ?? Date.distantPast
-                return date1 > date2
+                return date1 < date2
             }
 
             mediaItems = allMedia

@@ -41,15 +41,21 @@ final class PoisonPillSetupWizardViewModel: ObservableObject {
     @Published var showError: Bool = false
     @Published var errorMessage: String = ""
     @Published var isLoading: Bool = false
+
+    /// Global alphanumeric-PIN preference, inherited from settings. The poison
+    /// pill has no toggle of its own — it follows whatever the app PIN uses.
     @Published var isAlphanumeric: Bool = false
 
     // MARK: - Dependencies
 
     @Injected(\.createPoisonPillUseCase)
     private var createPoisonPillUseCase: CreatePoisonPillUseCase
-    
+
     @Injected(\.pinStrengthCheckUseCase)
     private var pinStrengthCheckUseCase: PinStrengthCheckUseCase
+
+    @Injected(\.settingsDataSource)
+    private var settings: SettingsDataSource
     
     // MARK: - Computed Properties
     
@@ -60,16 +66,19 @@ final class PoisonPillSetupWizardViewModel: ObservableObject {
                !isLoading
     }
     
+    // MARK: - Alphanumeric preference
+    /// Seed the PIN type from the persisted global setting.
+    func loadAlphanumericSetting() async {
+        isAlphanumeric = await settings.getAlphanumericPinEnabled()
+    }
+
     // MARK: - PIN Validation Methods
     func validateAndFilterPIN(_ newValue: String) -> String {
-        var filtered = newValue
-
-        // Allow letters and numbers for alphanumeric PINs, numbers only otherwise
-        if isAlphanumeric {
-            filtered = filtered.filter { $0.isLetter || $0.isNumber }
-        } else {
-            filtered = filtered.filter { $0.isNumber }
-        }
+        // Filter to the active PIN type: letters + digits when alphanumeric,
+        // digits only otherwise.
+        var filtered = isAlphanumeric
+            ? newValue.filter { $0.isLetter || $0.isNumber }
+            : newValue.filter { $0.isNumber }
 
         // Limit to max length
         if filtered.count > MAX_PIN_LENGTH {
@@ -141,10 +150,8 @@ final class PoisonPillSetupWizardViewModel: ObservableObject {
         isLoading = true
         showError = false
 
-        let pinType: PINType = isAlphanumeric ? .alphanumeric : .numeric
-
-        // Check PIN strength
-        if !pinStrengthCheckUseCase.isPinStrongEnough(pin, pinType: pinType) {
+        // Check PIN strength against the active (global) PIN type.
+        if !pinStrengthCheckUseCase.isPinStrongEnough(pin, isAlphanumeric: isAlphanumeric) {
             showError = true
             errorMessage = isAlphanumeric
                 ? "PIN is too weak. Avoid common words and repeated characters."
@@ -157,7 +164,7 @@ final class PoisonPillSetupWizardViewModel: ObservableObject {
         }
 
         Logger.security.info("Setting up poison pill PIN")
-        let success: Bool = await self.createPoisonPillUseCase.createPin(pppin: pin, pinType: pinType)
+        let success: Bool = await self.createPoisonPillUseCase.createPin(pppin: pin)
         
         isLoading = false
         

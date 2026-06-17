@@ -20,6 +20,7 @@ private enum PrefKeys: String {
     case lastFailedAttempt  = "prefs.lastFailedAttempt"          // Int64 (stored as Int)
     case poisonPillPlain    = "prefs.poisonPillPlain"            // String?
     case poisonPillHashed   = "prefs.poisonPillHashed"           // String?
+    case alphanumericPin    = "prefs.alphanumericPinEnabled"     // Bool? (nil when never set)
 }
 
 // MARK: - Defaults (adjust to taste)
@@ -115,6 +116,16 @@ final class UserDefaultsSettingsDataSource: SettingsDataSource, @unchecked Senda
         defaults.set(cipheredPin, forKey: PrefKeys.cipheredPin.rawValue)
     }
 
+    // MARK: - Alphanumeric PIN preference
+    func getAlphanumericPinEnabled() async -> Bool {
+        if defaults.object(forKey: PrefKeys.alphanumericPin.rawValue) == nil { return false }
+        return defaults.bool(forKey: PrefKeys.alphanumericPin.rawValue)
+    }
+
+    func setAlphanumericPinEnabled(_ enabled: Bool) async {
+        defaults.set(enabled, forKey: PrefKeys.alphanumericPin.rawValue)
+    }
+
     // MARK: - Sanitize prefs
     func setSanitizeFileName(_ sanitize: Bool) async {
         defaults.set(sanitize, forKey: PrefKeys.sanitizeFileName.rawValue)
@@ -167,7 +178,8 @@ final class UserDefaultsSettingsDataSource: SettingsDataSource, @unchecked Senda
             PrefKeys.lastFailedAttempt,
             PrefKeys.hasCompletedIntro,
             PrefKeys.sanitizeFileName,
-            PrefKeys.sanitizeMetadata
+            PrefKeys.sanitizeMetadata,
+            PrefKeys.alphanumericPin
         ].forEach { defaults.removeObject(forKey: $0.rawValue) }
 
         // Restore defaults for observed prefs

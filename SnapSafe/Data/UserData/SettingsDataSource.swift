@@ -44,6 +44,15 @@ protocol SettingsDataSource: Sendable {
     /// Set the app PIN
     func setAppPin(cipheredPin: String) async
 
+    // MARK: - Alphanumeric PIN preference
+    /// Whether PINs (app PIN and poison pill) accept letters as well as digits.
+    /// This is a single global preference — both PINs share one type, matching the
+    /// Android implementation. Defaults to `false` (numeric) when never set.
+    func getAlphanumericPinEnabled() async -> Bool
+
+    /// Set the global alphanumeric-PIN preference.
+    func setAlphanumericPinEnabled(_ enabled: Bool) async
+
     /// Set the sanitize file name preference
     func setSanitizeFileName(_ sanitize: Bool) async
 

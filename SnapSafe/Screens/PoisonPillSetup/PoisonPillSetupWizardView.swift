@@ -57,6 +57,9 @@ struct PoisonPillSetupWizardView: View {
             .navigationBarHidden(true)
             .obscuredWhenInactive()
             .screenCaptureProtected()
+            .task {
+                await viewModel.loadAlphanumericSetting()
+            }
     }
     
     // MARK: - Progress Header
@@ -140,7 +143,7 @@ struct PoisonPillSetupWizardView: View {
                 showError: $viewModel.showError,
                 errorMessage: $viewModel.errorMessage,
                 isLoading: $viewModel.isLoading,
-                isAlphanumeric: $viewModel.isAlphanumeric,
+                isAlphanumeric: viewModel.isAlphanumeric,
                 canProceed: viewModel.canProceedFromPinCreation,
                 onPinChange: viewModel.updatePIN,
                 onConfirmPinChange: viewModel.updateConfirmPIN,

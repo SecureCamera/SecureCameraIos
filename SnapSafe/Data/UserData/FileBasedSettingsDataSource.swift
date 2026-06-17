@@ -21,6 +21,8 @@ private struct SettingsData: Codable {
     var lastFailedAttempt: Int64
     var poisonPillPlain: String?
     var poisonPillHashed: String?
+    // Optional so existing settings files (without the key) decode cleanly; nil means false.
+    var alphanumericPinEnabled: Bool?
 }
 
 // MARK: - File-based Implementation
@@ -77,7 +79,8 @@ final class FileBasedSettingsDataSource: SettingsDataSource, @unchecked Sendable
             failedPinAttempts: 0,
             lastFailedAttempt: 0,
             poisonPillPlain: nil,
-            poisonPillHashed: nil
+            poisonPillHashed: nil,
+            alphanumericPinEnabled: nil
         )
 
         // Load existing settings or use defaults
@@ -206,6 +209,15 @@ final class FileBasedSettingsDataSource: SettingsDataSource, @unchecked Sendable
         writeProperty(\.cipheredPin, value: cipheredPin)
     }
 
+    // MARK: - Alphanumeric PIN preference
+    func getAlphanumericPinEnabled() async -> Bool {
+        return readProperty(\.alphanumericPinEnabled) ?? false
+    }
+
+    func setAlphanumericPinEnabled(_ enabled: Bool) async {
+        writeProperty(\.alphanumericPinEnabled, value: enabled)
+    }
+
     // MARK: - Sanitize prefs
     func setSanitizeFileName(_ sanitize: Bool) async {
         writeProperty(\.sanitizeFileName, value: sanitize)
@@ -279,9 +291,10 @@ final class FileBasedSettingsDataSource: SettingsDataSource, @unchecked Sendable
                     failedPinAttempts: 0,
                     lastFailedAttempt: 0,
                     poisonPillPlain: nil,
-                    poisonPillHashed: nil
+                    poisonPillHashed: nil,
+                    alphanumericPinEnabled: nil
                 )
-                
+
                 self.saveSettingsToFile()
                 
                 // Emit changes on main actor

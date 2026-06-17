@@ -64,7 +64,16 @@ struct SettingsView: View {
                         Text(locationRepository.getAuthorizationStatusString())
                             .foregroundStyle(viewModel.locationStatusColor)
                     }
-                    
+
+                    if locationRepository.isAuthorized {
+                        HStack {
+                            Text("Precision")
+                            Spacer()
+                            Text(locationRepository.getAccuracyAuthorizationString())
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
                     Button {
                         viewModel.requestLocationPermission()
                         } label: {

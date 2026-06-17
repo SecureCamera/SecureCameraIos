@@ -8,13 +8,8 @@
 import Foundation
 
 final class PinStrengthCheckUseCase {
-    func isPinStrongEnough(_ pin: String, pinType: PINType = .numeric) -> Bool {
-        switch pinType {
-        case .numeric:
-            return isNumericPinStrongEnough(pin)
-        case .alphanumeric:
-            return isAlphanumericPinStrongEnough(pin)
-        }
+    func isPinStrongEnough(_ pin: String, isAlphanumeric: Bool = false) -> Bool {
+        isAlphanumeric ? isAlphanumericPinStrongEnough(pin) : isNumericPinStrongEnough(pin)
     }
 
     private func isNumericPinStrongEnough(_ pin: String) -> Bool {
