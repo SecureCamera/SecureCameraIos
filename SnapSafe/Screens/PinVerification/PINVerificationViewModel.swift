@@ -20,7 +20,7 @@ final class PINVerificationViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var backoffSeconds = 0
     @Published var failedAttempts = 0
-    @Published var pinType: PINType = .numeric
+    @Published var isAlphanumeric: Bool = false
 
     // MARK: - Timer
     private var backoffTimer: Timer?
@@ -36,8 +36,8 @@ final class PINVerificationViewModel: ObservableObject {
     @Injected(\.securityResetUseCase)
     private var securityResetUseCase: SecurityResetUseCase
 
-    @Injected(\.pinRepository)
-    private var pinRepository: PinRepository
+    @Injected(\.settingsDataSource)
+    private var settings: SettingsDataSource
 
 
     // MARK: - Computed Properties
@@ -95,7 +95,7 @@ final class PINVerificationViewModel: ObservableObject {
         Task {
             await updateBackoffTime()
             await updateCurrentFailedAttempts()
-            await updatePinType()
+            await loadAlphanumericSetting()
         }
     }
     
@@ -110,13 +110,10 @@ final class PINVerificationViewModel: ObservableObject {
             filteredValue = String(filteredValue.prefix(MAX_PIN_LENGTH))
         }
 
-        // Filter characters based on the stored PIN type
-        switch pinType {
-        case .numeric:
-            filteredValue = filteredValue.filter { $0.isNumber }
-        case .alphanumeric:
-            filteredValue = filteredValue.filter { $0.isLetter || $0.isNumber }
-        }
+        // Filter characters based on the global PIN type.
+        filteredValue = isAlphanumeric
+            ? filteredValue.filter { $0.isLetter || $0.isNumber }
+            : filteredValue.filter { $0.isNumber }
 
         pin = filteredValue
     }
@@ -235,9 +232,11 @@ final class PINVerificationViewModel: ObservableObject {
         }
     }
 
-    private func updatePinType() async {
-        guard let hashedPin = await pinRepository.getHashedPin() else { return }
-        await MainActor.run { self.pinType = hashedPin.pinType }
+    private func loadAlphanumericSetting() async {
+        // PIN type is a single global preference shared by the app PIN and the
+        // poison pill, so the unlock screen just reads that flag.
+        let enabled = await settings.getAlphanumericPinEnabled()
+        await MainActor.run { self.isAlphanumeric = enabled }
     }
     
     private func startBackoffTimer() {

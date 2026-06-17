@@ -26,9 +26,9 @@ struct VideoDef: Hashable, Identifiable {
     }
 
     func dateTaken() -> Date? {
-        // Extract date from filename format: "video_yyyyMMdd_HHmmss.mov" or "video_yyyyMMdd_HHmmss.secv"
+        // videoName carries no extension (e.g. "video_yyyyMMdd_HHmmss"), so
+        // stripping the "video_" prefix leaves the parseable timestamp.
         let dateString = videoName.replacingOccurrences(of: "video_", with: "")
-            .replacingOccurrences(of: ".\\($videoFormat)", with: "")
 
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyyMMdd_HHmmss"

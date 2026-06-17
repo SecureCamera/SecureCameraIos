@@ -12,12 +12,12 @@ struct PINEntryField: UIViewRepresentable {
     let maxLength: Int
     let isEnabled: Bool
     let shouldFocus: Bool
-    let pinType: PINType
+    let isAlphanumeric: Bool
 
     func makeUIView(context: Context) -> PaddedSecureTextField {
         let field = PaddedSecureTextField()
         field.isSecureTextEntry = true
-        field.keyboardType = pinType == .alphanumeric ? .default : .numberPad
+        field.keyboardType = isAlphanumeric ? .default : .numberPad
         field.textContentType = .oneTimeCode
         field.textAlignment = .center
         field.borderStyle = .none
@@ -41,9 +41,9 @@ struct PINEntryField: UIViewRepresentable {
     func updateUIView(_ uiView: PaddedSecureTextField, context: Context) {
         if uiView.text != text { uiView.text = text }
         uiView.isEnabled = isEnabled
-        uiView.keyboardType = pinType == .alphanumeric ? .default : .numberPad
+        uiView.keyboardType = isAlphanumeric ? .default : .numberPad
         context.coordinator.maxLength = maxLength
-        context.coordinator.pinType = pinType
+        context.coordinator.isAlphanumeric = isAlphanumeric
 
         // Hand the desired focus state to the field. The field itself owns the
         // *when* — it (re)attempts first responder on window attachment and
@@ -53,30 +53,26 @@ struct PINEntryField: UIViewRepresentable {
     }
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(text: $text, maxLength: maxLength, pinType: pinType)
+        Coordinator(text: $text, maxLength: maxLength, isAlphanumeric: isAlphanumeric)
     }
 
     @MainActor
     final class Coordinator: NSObject, UITextFieldDelegate {
         @Binding var text: String
         var maxLength: Int
-        var pinType: PINType
+        var isAlphanumeric: Bool
 
-        init(text: Binding<String>, maxLength: Int, pinType: PINType) {
+        init(text: Binding<String>, maxLength: Int, isAlphanumeric: Bool) {
             self._text = text
             self.maxLength = maxLength
-            self.pinType = pinType
+            self.isAlphanumeric = isAlphanumeric
         }
 
         @objc func editingChanged(_ sender: UITextField) {
             let raw = sender.text ?? ""
-            let filtered: String
-            switch pinType {
-            case .numeric:
-                filtered = String(raw.filter(\.isNumber).prefix(maxLength))
-            case .alphanumeric:
-                filtered = String(raw.filter { $0.isLetter || $0.isNumber }.prefix(maxLength))
-            }
+            let filtered = isAlphanumeric
+                ? String(raw.filter { $0.isLetter || $0.isNumber }.prefix(maxLength))
+                : String(raw.filter(\.isNumber).prefix(maxLength))
             if filtered != raw { sender.text = filtered }
             if text != filtered { text = filtered }
         }

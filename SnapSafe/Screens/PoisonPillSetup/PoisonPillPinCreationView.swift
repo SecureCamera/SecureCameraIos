@@ -13,15 +13,16 @@ struct PoisonPillPinCreationView: View {
     @Binding var showError: Bool
     @Binding var errorMessage: String
     @Binding var isLoading: Bool
-    @Binding var isAlphanumeric: Bool
     @Environment(\.scenePhase) private var scenePhase
-    @FocusState private var focusedField: Field?
-
-    private enum Field { case pin, confirm }
+    @State private var pinFocused = false
+    @State private var confirmFocused = false
+    @State private var revealPin = false
+    @State private var revealConfirmPin = false
 
     // True while the user is actively entering a PIN (a field is focused).
-    private var isEntering: Bool { focusedField != nil }
+    private var isEntering: Bool { pinFocused || confirmFocused }
 
+    let isAlphanumeric: Bool
     let canProceed: Bool
     let onPinChange: (String) -> Void
     let onConfirmPinChange: (String) -> Void
@@ -84,34 +85,14 @@ struct PoisonPillPinCreationView: View {
             
             // PIN Input Fields
             VStack(spacing: 20) {
-                Toggle(isOn: $isAlphanumeric) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Use Alphanumeric PIN")
-                            .font(.subheadline)
-                        Text("Letters and numbers allowed")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                .padding(.horizontal, 50)
-                .disabled(!pin.isEmpty || !confirmPin.isEmpty)
-
-                SecureField("Enter new PIN", text: $pin)
-                    .keyboardType(isAlphanumeric ? .default : .numberPad)
-                    .textContentType(.oneTimeCode)
-                    .multilineTextAlignment(.center)
-                    .focused($focusedField, equals: .pin)
-                    .padding()
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(isPinLengthValid(pin.count) ? Color.orange : Color.gray, lineWidth: 1)
-                    )
-                    .padding(.horizontal, 50)
-                    .disabled(isLoading)
-                    .opacity(isLoading ? 0.6 : 1.0)
-                    .onChange(of: pin) { _, newValue in
-                        onPinChange(newValue)
-                    }
+                pinField(
+                    placeholder: "Enter new PIN",
+                    text: $pin,
+                    reveal: $revealPin,
+                    focused: $pinFocused,
+                    isValid: isPinLengthValid(pin.count),
+                    onChange: onPinChange
+                )
 
                 if !pin.isEmpty && pin.count < 6 {
                     Text(PINStrings.shortPinWarning)
@@ -122,22 +103,14 @@ struct PoisonPillPinCreationView: View {
                         .transition(.opacity)
                 }
 
-                SecureField("Confirm PIN", text: $confirmPin)
-                    .keyboardType(isAlphanumeric ? .default : .numberPad)
-                    .textContentType(.oneTimeCode)
-                    .multilineTextAlignment(.center)
-                    .focused($focusedField, equals: .confirm)
-                    .padding()
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(isPinLengthValid(confirmPin.count) ? Color.orange : Color.gray, lineWidth: 1)
-                    )
-                    .padding(.horizontal, 50)
-                    .disabled(isLoading)
-                    .opacity(isLoading ? 0.6 : 1.0)
-                    .onChange(of: confirmPin) { _, newValue in
-                        onConfirmPinChange(newValue)
-                    }
+                pinField(
+                    placeholder: "Confirm PIN",
+                    text: $confirmPin,
+                    reveal: $revealConfirmPin,
+                    focused: $confirmFocused,
+                    isValid: isPinLengthValid(confirmPin.count),
+                    onChange: onConfirmPinChange
+                )
             }
             .animation(.snappy, value: !pin.isEmpty && pin.count < 6)
 
@@ -191,7 +164,55 @@ struct PoisonPillPinCreationView: View {
             }
         }
     }
-    
+
+    private func pinField(
+        placeholder: String,
+        text: Binding<String>,
+        reveal: Binding<Bool>,
+        focused: Binding<Bool>,
+        isValid: Bool,
+        onChange: @escaping (String) -> Void
+    ) -> some View {
+        HStack(spacing: 0) {
+            // Keeps the secure dots visually centered by balancing the trailing eye button.
+            Image(systemName: "eye")
+                .opacity(0)
+                .padding(.leading, 12)
+                .accessibilityHidden(true)
+
+            RevealableSecureField(
+                text: text,
+                isFocused: focused,
+                placeholder: placeholder,
+                isAlphanumeric: isAlphanumeric,
+                maxLength: MAX_PIN_LENGTH,
+                isSecure: !reveal.wrappedValue,
+                isEnabled: !isLoading
+            )
+
+            Button {
+                reveal.wrappedValue.toggle()
+            } label: {
+                Image(systemName: reveal.wrappedValue ? "eye.slash" : "eye")
+                    .foregroundStyle(.secondary)
+                    .padding(.trailing, 12)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(reveal.wrappedValue ? "Hide PIN" : "Show PIN")
+        }
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(isValid ? Color.orange : Color.gray, lineWidth: 1)
+        )
+        .padding(.horizontal, 50)
+        .disabled(isLoading)
+        .opacity(isLoading ? 0.6 : 1.0)
+        .onChange(of: text.wrappedValue) { _, newValue in
+            onChange(newValue)
+        }
+    }
+
     private func hideKeyboard() {
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
@@ -203,7 +224,6 @@ struct PoisonPillPinCreationView: View {
     @Previewable @State var showError = false
     @Previewable @State var errorMessage = ""
     @Previewable @State var isLoading = false
-    @Previewable @State var isAlphanumeric = false
 
     return NavigationStack {
         PoisonPillPinCreationView(
@@ -212,7 +232,7 @@ struct PoisonPillPinCreationView: View {
             showError: $showError,
             errorMessage: $errorMessage,
             isLoading: $isLoading,
-            isAlphanumeric: $isAlphanumeric,
+            isAlphanumeric: false,
             canProceed: false,
             onPinChange: { _ in },
             onConfirmPinChange: { _ in },

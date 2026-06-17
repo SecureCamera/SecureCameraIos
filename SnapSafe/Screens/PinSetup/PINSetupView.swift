@@ -12,7 +12,9 @@ import Logging
 struct PINSetupView: View {
     @StateObject private var viewModel = PINSetupViewModel()
     @Environment(\.scenePhase) private var scenePhase
-    
+    @State private var revealPin = false
+    @State private var revealConfirmPin = false
+
     // Cache computed values to reduce view updates
     private var buttonDisabled: Bool {
         !viewModel.canSubmit
@@ -73,7 +75,10 @@ struct PINSetupView: View {
                         .padding(.horizontal)
                     
                     VStack(spacing: 20) {
-                        Toggle(isOn: $viewModel.isAlphanumeric) {
+                        Toggle(isOn: Binding(
+                            get: { viewModel.isAlphanumeric },
+                            set: { viewModel.setAlphanumeric($0) }
+                        )) {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("Use Alphanumeric PIN")
                                     .font(.subheadline)
@@ -85,13 +90,11 @@ struct PINSetupView: View {
                         .padding(.horizontal, min(50, UIScreen.main.bounds.width * 0.1))
                         .disabled(!viewModel.pin.isEmpty || !viewModel.confirmPin.isEmpty)
 
-                        SecureField("Enter PIN", text: $viewModel.pin)
-                            .keyboardType(viewModel.isAlphanumeric ? .default : .numberPad)
-                            .textContentType(.oneTimeCode)
-                            .multilineTextAlignment(.center)
-                            .padding()
-                            .background(RoundedRectangle(cornerRadius: 8).stroke(Color.gray, lineWidth: 1))
-                            .padding(.horizontal, min(50, UIScreen.main.bounds.width * 0.1))
+                        pinField(
+                            placeholder: "Enter PIN",
+                            text: $viewModel.pin,
+                            reveal: $revealPin
+                        )
 
                         if !viewModel.pin.isEmpty && viewModel.pin.count < 6 {
                             Text(PINStrings.shortPinWarning)
@@ -102,13 +105,11 @@ struct PINSetupView: View {
                                 .transition(.opacity)
                         }
 
-                        SecureField("Confirm PIN", text: $viewModel.confirmPin)
-                            .keyboardType(viewModel.isAlphanumeric ? .default : .numberPad)
-                            .textContentType(.oneTimeCode)
-                            .multilineTextAlignment(.center)
-                            .padding()
-                            .background(RoundedRectangle(cornerRadius: 8).stroke(Color.gray, lineWidth: 1))
-                            .padding(.horizontal, min(50, UIScreen.main.bounds.width * 0.1))
+                        pinField(
+                            placeholder: "Confirm PIN",
+                            text: $viewModel.confirmPin,
+                            reveal: $revealConfirmPin
+                        )
                     }
                     .animation(.snappy, value: !viewModel.pin.isEmpty && viewModel.pin.count < 6)
 
@@ -145,12 +146,51 @@ struct PINSetupView: View {
             .navigationBarHidden(true)
             .obscuredWhenInactive()
             .screenCaptureProtected()
+            .task {
+                await viewModel.loadAlphanumericSetting()
+            }
             .onChange(of: scenePhase) { _, newPhase in
                 // Clear PIN content and dismiss keyboard when app goes to background or inactive
                 if newPhase == .background || newPhase == .inactive {
                     viewModel.clearPinContent()
                 }
             }
+    }
+
+    private func pinField(
+        placeholder: String,
+        text: Binding<String>,
+        reveal: Binding<Bool>
+    ) -> some View {
+        HStack(spacing: 0) {
+            // Keeps the secure dots visually centered by balancing the trailing eye button.
+            Image(systemName: "eye")
+                .opacity(0)
+                .padding(.leading, 12)
+                .accessibilityHidden(true)
+
+            RevealableSecureField(
+                text: text,
+                placeholder: placeholder,
+                isAlphanumeric: viewModel.isAlphanumeric,
+                maxLength: MAX_PIN_LENGTH,
+                isSecure: !reveal.wrappedValue,
+                isEnabled: true
+            )
+
+            Button {
+                reveal.wrappedValue.toggle()
+            } label: {
+                Image(systemName: reveal.wrappedValue ? "eye.slash" : "eye")
+                    .foregroundStyle(.secondary)
+                    .padding(.trailing, 12)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(reveal.wrappedValue ? "Hide PIN" : "Show PIN")
+        }
+        .background(RoundedRectangle(cornerRadius: 8).stroke(Color.gray, lineWidth: 1))
+        .padding(.horizontal, min(50, UIScreen.main.bounds.width * 0.1))
     }
 }
 

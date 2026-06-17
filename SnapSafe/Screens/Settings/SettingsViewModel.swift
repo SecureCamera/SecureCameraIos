@@ -168,10 +168,7 @@ final class SettingsViewModel: ObservableObject {
     }
     
     var locationPermissionButtonText: String {
-        let permissionNotDetermined = locationManager.authorizationStatus == .notDetermined
-        return permissionNotDetermined 
-            ? "Request Location Permission"
-            : "Manage Permission in Settings"
+        "Manage Permission in Settings"
     }
     
     // MARK: - Private Methods

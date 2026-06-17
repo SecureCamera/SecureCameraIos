@@ -35,11 +35,14 @@ final class PINSetupViewModel: ObservableObject {
         }
     }
     
-    @Published var isAlphanumeric: Bool = false
-
     @Published var showError: Bool = false
     @Published var errorMessage: String = ""
     @Published var isLoading: Bool = false
+
+    /// Global alphanumeric-PIN preference, mirrored from settings. The setup
+    /// screen is where this choice is made; it applies to the poison pill and
+    /// the unlock screen too.
+    @Published var isAlphanumeric: Bool = false
 
     // MARK: - Computed Properties
     var isPINValid: Bool {
@@ -60,6 +63,21 @@ final class PINSetupViewModel: ObservableObject {
         setupBindings()
     }
     
+    // MARK: - Alphanumeric preference
+    /// Seed the toggle from the persisted global setting.
+    func loadAlphanumericSetting() async {
+        isAlphanumeric = await settings.getAlphanumericPinEnabled()
+    }
+
+    /// Update and persist the global preference, re-filtering any entered text.
+    func setAlphanumeric(_ enabled: Bool) {
+        guard enabled != isAlphanumeric else { return }
+        isAlphanumeric = enabled
+        pin = validateAndFilterPIN(pin)
+        confirmPin = validateAndFilterPIN(confirmPin)
+        Task { await settings.setAlphanumericPinEnabled(enabled) }
+    }
+
     // MARK: - Private Methods
     private func setupBindings() {
     }
@@ -71,14 +89,11 @@ final class PINSetupViewModel: ObservableObject {
     
     // MARK: - PIN Validation Methods
     func validateAndFilterPIN(_ newValue: String) -> String {
-        var filtered = newValue
-
-        // Allow letters and numbers for alphanumeric PINs, numbers only otherwise
-        if isAlphanumeric {
-            filtered = filtered.filter { $0.isLetter || $0.isNumber }
-        } else {
-            filtered = filtered.filter { $0.isNumber }
-        }
+        // Filter to the active PIN type: letters + digits when alphanumeric,
+        // digits only otherwise.
+        var filtered = isAlphanumeric
+            ? newValue.filter { $0.isLetter || $0.isNumber }
+            : newValue.filter { $0.isNumber }
 
         // Limit to max length
         if filtered.count > MAX_PIN_LENGTH {
@@ -104,18 +119,8 @@ final class PINSetupViewModel: ObservableObject {
             return false
         }
         
-        let pinType: PINType = isAlphanumeric ? .alphanumeric : .numeric
-
-        // Validate numeric-only format when not alphanumeric
-        if !isAlphanumeric {
-            guard pin.allSatisfy({ $0.isNumber }) else {
-                showError(message: "PIN must contain only numbers")
-                return false
-            }
-        }
-
-        // Check PIN strength
-        if !pinStrengthCheckUseCase.isPinStrongEnough(pin, pinType: pinType) {
+        // Check PIN strength against the active (global) PIN type.
+        if !pinStrengthCheckUseCase.isPinStrongEnough(pin, isAlphanumeric: isAlphanumeric) {
             showError(message: isAlphanumeric
                 ? "PIN is too weak. Avoid common words and repeated characters."
                 : "PIN is too weak. Avoid common patterns like 1234 or repeated digits.")
@@ -123,7 +128,7 @@ final class PINSetupViewModel: ObservableObject {
         }
 
         // Create the PIN using the use case
-        let success = await createPinUseCase.createPin(pin, pinType: pinType)
+        let success = await createPinUseCase.createPin(pin)
         
         if !success {
             showError(message: "Failed to create PIN. Please try again.")

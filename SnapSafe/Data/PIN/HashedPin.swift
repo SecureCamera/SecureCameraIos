@@ -8,5 +8,4 @@
 struct HashedPin: Codable, Equatable, Sendable {
     let hash: String
     let salt: String
-    var pinType: PINType = .numeric
 }

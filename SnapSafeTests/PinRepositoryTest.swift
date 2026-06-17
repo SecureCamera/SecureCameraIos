@@ -42,10 +42,7 @@ final class PinRepositoryTests: XCTestCase {
         let baseHashed = HashedPin(hash: "hash123", salt: "salt123")
         given(pinCrypto).hashPin(pin: .value(pin), deviceId: .value(deviceId)).willReturn(baseHashed)
 
-        // The stored HashedPin includes pinType: .numeric (set by the impl before encoding)
-        var expectedStored = baseHashed
-        expectedStored.pinType = .numeric
-        let hashedData = try jsonEncoder().encode(expectedStored)
+        let hashedData = try jsonEncoder().encode(baseHashed)
         let encryptedData = Data("encrypted".utf8)
         let expectedBase64 = encryptedData.base64EncodedString()
 
@@ -56,7 +53,7 @@ final class PinRepositoryTests: XCTestCase {
         given(settings).setAppPin(cipheredPin: .value(expectedBase64))
             .willReturn()
 
-        await repo.setAppPin(pin, pinType: .numeric)
+        await repo.setAppPin(pin)
 
         verify(settings)
             .setAppPin(cipheredPin: .value(expectedBase64))
@@ -135,9 +132,7 @@ final class PinRepositoryTests: XCTestCase {
         let hashed = HashedPin(hash: "ph", salt: "ps")
         given(pinCrypto).hashPin(pin: .value(ppp), deviceId: .value(deviceId)).willReturn(hashed)
 
-        var storedHashed = hashed
-        storedHashed.pinType = .numeric
-        let hashedData = try jsonEncoder().encode(storedHashed)
+        let hashedData = try jsonEncoder().encode(hashed)
         let plainData = ppp.data(using: .utf8)!
         let encryptedHashedData = Data("encrypted-hashed".utf8)
         let encryptedPlainData = Data("encrypted-plain".utf8)
@@ -158,7 +153,7 @@ final class PinRepositoryTests: XCTestCase {
             cipheredPlainPin: .value(expectedPlainBase64),
         ).willReturn()
 
-        await repo.setPoisonPillPin(ppp, pinType: .numeric)
+        await repo.setPoisonPillPin(ppp)
 
         verify(settings)
             .setPoisonPillPin(
