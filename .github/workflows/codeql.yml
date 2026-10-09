@@ -57,9 +57,14 @@ jobs:
     # - name: Setup runtime (example)
     #   uses: actions/setup-example@v1
 
-    - name: Set Xcode version 16.2
+    - name: Set Xcode version
       if: ${{ matrix.language == 'swift' }}
-      run: sudo xcode-select -s /Applications/Xcode_16.2.app
+      run: sudo xcode-select -s /Applications/Xcode_26.5.app
+
+    - name: Disable macro validation
+      if: ${{ matrix.language == 'swift' }}
+      run: |
+        defaults write com.apple.dt.Xcode IDESkipMacroFingerprintValidation -bool YES
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
@@ -83,7 +88,9 @@ jobs:
     - if: matrix.build-mode == 'manual'
       shell: bash
       run: |
-        xcodebuild -project SnapSafe.xcodeproj/ -scheme SnapSafe -configuration Debug -sdk iphonesimulator18.4 -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.4' -derivedDataPath ./build CODE_SIGNING_ALLOWED=NO clean build
+        xcodebuild -project SnapSafe.xcodeproj -scheme SnapSafe -configuration Debug \
+          -destination 'generic/platform=iOS Simulator' -derivedDataPath ./build \
+          -skipMacroValidation CODE_SIGNING_ALLOWED=NO clean build
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@02c5e83432fe5497fd85b873b6c9f16a8578e1d9 # v3
