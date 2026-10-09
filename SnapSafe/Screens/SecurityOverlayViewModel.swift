@@ -12,7 +12,7 @@ import Logging
 
 // MARK: - Security Overlay State
 
-public enum SecurityOverlayState {
+enum SecurityOverlayState {
     case normal
     case screenRecording
     case requiresAuthentication
@@ -180,7 +180,7 @@ final class SecurityOverlayViewModel: ObservableObject {
         if !hasValidSession, wasInBackground, hasCompletedIntro {
             Logger.security.info("SecurityOverlay: Requiring authentication after background")
             
-            invalidateSessionUseCase.invalidateSession()
+            await invalidateSessionUseCase.invalidateSession()
             
             // Set authentication required flag
             needsAuthenticationAfterBackground = true
@@ -219,6 +219,12 @@ final class SecurityOverlayViewModel: ObservableObject {
     }
 
     private func determineActiveStates() async -> [SecurityOverlayState] {
+        #if DEBUG
+        if CommandLine.arguments.contains("-SkipAuthentication") {
+            return [.normal]
+        }
+        #endif
+
         var states: [SecurityOverlayState] = [.normal]
 
         // Screen recording takes highest priority

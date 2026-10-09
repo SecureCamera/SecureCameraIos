@@ -49,7 +49,7 @@ jobs:
           build-mode: manual
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
     # Add any setup steps before running the `github/codeql-action/init` action.
     # This includes steps like installing compilers or runtimes (`actions/setup-node`
@@ -57,13 +57,18 @@ jobs:
     # - name: Setup runtime (example)
     #   uses: actions/setup-example@v1
 
-    - name: Set Xcode version 16.2
+    - name: Set Xcode version
       if: ${{ matrix.language == 'swift' }}
-      run: sudo xcode-select -s /Applications/Xcode_16.2.app
+      run: sudo xcode-select -s /Applications/Xcode_26.5.app
+
+    - name: Disable macro validation
+      if: ${{ matrix.language == 'swift' }}
+      run: |
+        defaults write com.apple.dt.Xcode IDESkipMacroFingerprintValidation -bool YES
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@v3
+      uses: github/codeql-action/init@02c5e83432fe5497fd85b873b6c9f16a8578e1d9 # v3
       with:
         languages: ${{ matrix.language }}
         build-mode: ${{ matrix.build-mode }}
@@ -83,9 +88,11 @@ jobs:
     - if: matrix.build-mode == 'manual'
       shell: bash
       run: |
-        xcodebuild -project SnapSafe.xcodeproj/ -scheme SnapSafe -configuration Debug -sdk iphonesimulator18.4 -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.4' -derivedDataPath ./build CODE_SIGNING_ALLOWED=NO clean build
+        xcodebuild -project SnapSafe.xcodeproj -scheme SnapSafe -configuration Debug \
+          -destination 'generic/platform=iOS Simulator' -derivedDataPath ./build \
+          -skipMacroValidation CODE_SIGNING_ALLOWED=NO clean build
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v3
+      uses: github/codeql-action/analyze@02c5e83432fe5497fd85b873b6c9f16a8578e1d9 # v3
       with:
         category: "/language:${{matrix.language}}"

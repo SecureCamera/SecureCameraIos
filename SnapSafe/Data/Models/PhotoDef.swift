@@ -9,14 +9,12 @@ import Foundation
 import UIKit
 
 struct PhotoDef: Hashable, Identifiable {
-    public let id = UUID()
+    let id = UUID()
     let photoName: String
-    let photoFormat: String
     let photoFile: URL
-    
-    init(photoName: String, photoFormat: String, photoFile: URL) {
+
+    init(photoName: String, photoFormat _: String, photoFile: URL) {
         self.photoName = photoName
-        self.photoFormat = photoFormat
         self.photoFile = photoFile
     }
     

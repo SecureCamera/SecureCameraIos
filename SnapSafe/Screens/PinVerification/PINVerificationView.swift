@@ -9,119 +9,118 @@ import SwiftUI
 
 struct PINVerificationView: View {
     @StateObject private var viewModel = PINVerificationViewModel()
-    @FocusState private var isPINFieldFocused: Bool
     @Environment(\.scenePhase) private var scenePhase
-    
-    
-    var body: some View {
-        VStack(spacing: 30) {
-            Image(systemName: "lock.shield")
-                .font(.system(size: 70))
-                .foregroundColor(.blue)
-                .padding(.top, 50)
-            
-            Text("SnapSafe")
-                .foregroundColor(.primary)
-                .font(.largeTitle)
-                .bold()
 
-            Text("Enter your PIN to continue")
-                .foregroundColor(.secondary)
-            
-            if viewModel.shouldShowAttemptsWarning {
-                Text(viewModel.attemptsWarningMessage)
-                    .foregroundColor(.red)
-                    .font(.callout)
-                    .padding(.top, 5)
+    private var showUnlockButton: Bool {
+        !viewModel.pin.isEmpty || viewModel.isLoading
+    }
+
+    private var shouldFocusField: Bool {
+        scenePhase == .active && !viewModel.isLoading
+    }
+
+    private var unlockButton: some View {
+        Button(action: viewModel.unlockButtonTapped) {
+            HStack {
+                if viewModel.isLastAttempt {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.white)
+                }
+                if viewModel.isLoading {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                        .foregroundStyle(.white)
+                }
+                Text(viewModel.unlockButtonText)
+                    .foregroundStyle(.white)
             }
-            
-            SecureField("PIN", text: $viewModel.pin, prompt: Text("PIN").foregroundColor(.secondary))
-                .keyboardType(.numberPad)
-                .textContentType(.oneTimeCode)
-                .multilineTextAlignment(.center)
-                .padding()
-                .foregroundColor(.primary)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color(UIColor.systemGray3), lineWidth: 1)
+            .padding()
+            .frame(width: 200)
+            .background(viewModel.unlockButtonBackgroundColor)
+            .clipShape(.rect(cornerRadius: 10))
+        }
+        .disabled(viewModel.isUnlockButtonDisabled)
+        .accessibilityLabel(viewModel.unlockButtonText)
+        .accessibilityHint(viewModel.isLastAttempt ? "Warning: one attempt remaining before data wipe" : "")
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 24) {
+                Text("SnapSafe")
+                    .foregroundStyle(.primary)
+                    .font(.largeTitle)
+                    .bold()
+                    .padding(.top, 32)
+
+                Text("Enter your PIN to continue")
+                    .foregroundStyle(.secondary)
+
+                if viewModel.shouldShowAttemptsWarning {
+                    Text(viewModel.attemptsWarningMessage)
+                        .foregroundStyle(.red)
+                        .font(.callout)
+                }
+
+                PINEntryField(
+                    text: $viewModel.pin,
+                    maxLength: MAX_PIN_LENGTH,
+                    isEnabled: !viewModel.isLoading,
+                    shouldFocus: shouldFocusField,
+                    isAlphanumeric: viewModel.isAlphanumeric
                 )
+                .frame(height: 52)
                 .padding(.horizontal, 50)
-                .focused($isPINFieldFocused)
-                .disabled(viewModel.isLoading)
                 .onChange(of: viewModel.pin) { _, newValue in
                     viewModel.updatePIN(newValue)
                 }
-                .onChange(of: viewModel.isLoading) { _, isLoading in
-                    if isLoading {
-                        isPINFieldFocused = false
-                    }
+
+                if viewModel.showError {
+                    Text(viewModel.errorMessage)
+                        .foregroundStyle(.red)
+                        .font(.callout)
                 }
-            
-            if viewModel.showError {
-                Text(viewModel.errorMessage)
-                    .foregroundColor(.red)
-                    .font(.callout)
-                    .padding(.top, 5)
-            }
-            
-            Button(action: {
-                isPINFieldFocused = false
-                viewModel.unlockButtonTapped()
-            }) {
-                HStack {
-                    if viewModel.isLastAttempt {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundColor(.white)
-                    }
-                    if viewModel.isLoading {
-                        ProgressView()
-                            .scaleEffect(0.8)
-                            .foregroundColor(.white)
-                    }
-                    Text(viewModel.unlockButtonText)
-                        .foregroundColor(.white)
+
+                if viewModel.showRetryableError {
+                    Text(viewModel.retryableErrorMessage)
+                        .foregroundStyle(.orange)
+                        .font(.callout)
                 }
-                .padding()
-                .frame(width: 200)
-                .background(viewModel.unlockButtonBackgroundColor)
-                .cornerRadius(10)
+
+                if viewModel.shouldShowAttemptsWarning {
+                    Text("10 failed attempts will result in a full data wipe.\nALL PHOTOS WILL BE LOST!")
+                        .foregroundStyle(.red)
+                        .font(.callout)
+                        .accessibilityLabel("Warning: 10 failed attempts will result in a full data wipe. All photos will be lost.")
+                }
             }
-            .disabled(viewModel.isUnlockButtonDisabled)
-            .padding(.top, 20)
-            
-            if viewModel.shouldShowAttemptsWarning {
-                Text("10 failed attempts will result in a full data wipe.\nALL PHOTOS WILL BE LOST!")
-                    .foregroundColor(.red)
-                    .font(.callout)
-                    .padding(.top, 5)
-            }
-            
-            Spacer()
+            .frame(maxWidth: .infinity)
         }
-        .onAppear {
+        .safeAreaInset(edge: .bottom) {
+            if showUnlockButton {
+                unlockButton
+                    .padding(.vertical, 12)
+                    .frame(maxWidth: .infinity)
+                    .background(.bar)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .animation(.snappy, value: showUnlockButton)
+        .task {
             viewModel.onAppear()
-            isPINFieldFocused = true
         }
         .onDisappear {
             viewModel.onDisappear()
         }
         .onChange(of: scenePhase) { _, newPhase in
-            // Clear PIN content and dismiss keyboard when app goes to background or inactive
-            if newPhase == .background || newPhase == .inactive {
-                isPINFieldFocused = false
+            if newPhase != .active {
                 viewModel.clearPinContent()
             }
         }
         .obscuredWhenInactive()
         .screenCaptureProtected()
-        .toolbar {
-            ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
-                Button("Done") {
-                    isPINFieldFocused = false
-                }
-            }
-        }
+        .sensoryFeedback(.impact(weight: .light), trigger: viewModel.pin)
+        .sensoryFeedback(.error, trigger: viewModel.showError) { _, new in new }
     }
 }
 

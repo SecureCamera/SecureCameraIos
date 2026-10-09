@@ -15,6 +15,9 @@ import FactoryKit
 struct SettingsView: View {
     // Appearance setting
     @AppStorage("appearanceMode") private var appearanceMode: AppearanceMode = .system
+
+    // Whether videos begin playing automatically when swiped to in the detail view.
+    @AppStorage("autoPlayVideos") private var autoPlayVideos = true
     
     // ViewModel
     @StateObject private var viewModel = SettingsViewModel()
@@ -49,7 +52,7 @@ struct SettingsView: View {
 
                     Text("When enabled, personal information will be removed from photos before sharing")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                         .padding(.top, 4)
                 }
 
@@ -59,9 +62,18 @@ struct SettingsView: View {
                         Text("Permission Status")
                         Spacer()
                         Text(locationRepository.getAuthorizationStatusString())
-                            .foregroundColor(viewModel.locationStatusColor)
+                            .foregroundStyle(viewModel.locationStatusColor)
                     }
-                    
+
+                    if locationRepository.isAuthorized {
+                        HStack {
+                            Text("Precision")
+                            Spacer()
+                            Text(locationRepository.getAccuracyAuthorizationString())
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
                     Button {
                         viewModel.requestLocationPermission()
                         } label: {
@@ -70,7 +82,7 @@ struct SettingsView: View {
 
                     Text("When enabled, location data will be embedded in newly captured photos. Location requires permission and GPS availability.")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                         .padding(.top, 4)
                 }
                 
@@ -85,7 +97,17 @@ struct SettingsView: View {
                     
                     Text("Choose how the app appears. System follows your device's appearance setting.")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
+                        .padding(.top, 4)
+                }
+
+                // VIDEO SECTION
+                Section(header: Text("Video")) {
+                    Toggle("Auto-Play Videos", isOn: $autoPlayVideos)
+
+                    Text("When on, videos start playing automatically as you swipe to them. When off, they wait paused on the first frame until you tap play.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                         .padding(.top, 4)
                 }
 
@@ -112,27 +134,28 @@ struct SettingsView: View {
                             
                             Text(viewModel.hasPoisonPill ? "Poison pill is configured and ready" : "Set up a special PIN that will immediately delete all photos and encryption keys")
                                 .font(.caption)
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(.secondary)
                         }
                         
                         Spacer()
                         
                         Image(systemName: viewModel.hasPoisonPill ? "checkmark.shield.fill" : "exclamationmark.triangle.fill")
-                            .foregroundColor(viewModel.hasPoisonPill ? .green : .orange)
-                            .font(.system(size: 20))
+                            .foregroundStyle(viewModel.hasPoisonPill ? .green : .orange)
+                            .font(.title3)
+                            .accessibilityHidden(true)
                     }
                     
                     if viewModel.hasPoisonPill {
                         Button("Remove Poison Pill") {
                             viewModel.doShowRemovePoisonPillConfirmation()
                         }
-                        .foregroundColor(.red)
+                        .foregroundStyle(.red)
                     } else {
                         Button("Setup Poison Pill") {
                             nav.dismissAll()
                             nav.navigate(to: .poisonPillSetupWizard)
                         }
-                        .foregroundColor(.orange)
+                        .foregroundStyle(.orange)
                     }
                 }
                 
@@ -145,7 +168,7 @@ struct SettingsView: View {
 
                         Text("Decoy photos will be shown when emergency PIN is entered")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                             .padding(.top, 4)
                     }
                 }
@@ -155,12 +178,12 @@ struct SettingsView: View {
                     Button("Perform Security Reset") {
                         viewModel.showSecurityResetConfirmation()
                     }
-                    .foregroundColor(.red)
+                    .foregroundStyle(.red)
 
                 } footer: {
                     Text("Resets everything, deletes all photos and encryption keys.")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
                 
             }
@@ -201,7 +224,7 @@ struct SettingsView: View {
                 // Reset the selection flag when the sheet is dismissed
                 viewModel.stopSelectingDecoys()
             } content: {
-                NavigationView {
+                NavigationStack {
                     // Initialize SecureGalleryView in decoy selection mode
                     SecureGalleryView(selectingDecoys: true, onDismiss: {
                         viewModel.stopSelectingDecoys()

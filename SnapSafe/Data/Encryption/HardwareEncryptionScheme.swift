@@ -20,7 +20,12 @@ private actor KeyCache {
     }
     
     func getKey() -> Data? {
-        return try! shardedKey?.reconstructKey()
+        do {
+            return try shardedKey?.reconstructKey()
+        } catch {
+            Logger.security.error("Failed to reconstruct sharded key: \(error)")
+            return nil
+        }
     }
     
     func setKey(_ key: Data) {
@@ -42,24 +47,26 @@ private actor KeyCache {
 final class HardwareEncryptionScheme: EncryptionScheme {
     
     // MARK: - Constants
-    private static let keyAlias = "snapsafe_kek"
-    private static let aesGCMMode = "AES/GCM/NoPadding"
+    private static let defaultKeyAlias = "snapsafe_kek"
     private static let ivLengthBytes = 12  // 96-bit IV recommended for GCM
     private static let tagLengthBits = 128 // 128-bit tag appended automatically
-    private static let dSaltSize = 64
     private static let dekFilenamePrefix = "dek"
     private static let dekDirectory = "keys"
-    private static let defaultIterations: UInt32 = 600_000 // PBKDF2 iterations
     private static let defaultKeySize = 32 // 256-bit keys
-    
+
     // MARK: - Dependencies
     private let deviceInfo: DeviceInfoDataSource
     private let keyCache = KeyCache()
     private let logger = Logger.encryption
-    
+
+    /// The hardware KEK alias. Injectable so tests can use an isolated alias and
+    /// never touch the production `snapsafe_kek` in a shared (on-device) keychain.
+    private let keyAlias: String
+
     // MARK: - Initialization
-    init(deviceInfo: DeviceInfoDataSource) {
+    init(deviceInfo: DeviceInfoDataSource, keyAlias: String = HardwareEncryptionScheme.defaultKeyAlias) {
         self.deviceInfo = deviceInfo
+        self.keyAlias = keyAlias
     }
     
     // MARK: - EncryptionScheme Protocol Implementation
@@ -93,7 +100,12 @@ final class HardwareEncryptionScheme: EncryptionScheme {
     }
     
     func decryptWithKeyAlias(encrypted: Data, keyAlias: String) async throws -> Data {
-        try createHardwareKeyIfNeeded(keyAlias: keyAlias)
+        // Do NOT create a key on the decrypt path. If the key is missing or
+        // inaccessible (e.g. a device migration drops the Secure-Enclave key, or the
+        // keychain access group changed), surface the failure so callers can treat it
+        // as a recoverable "secure key unavailable" state. Silently minting a new key
+        // here permanently shadows the original and makes all existing ciphertext
+        // undecryptable — the exact cause of the PIN-upgrade lockout.
         return try decryptWithHardwareKey(encrypted: encrypted, keyAlias: keyAlias)
     }
     
@@ -151,23 +163,21 @@ final class HardwareEncryptionScheme: EncryptionScheme {
         return try await deriveWrappedKey(plainPin: plainPin, hashedPin: hashedPin)
     }
     
-    func evictKey() {
-        Task {
-            await keyCache.evictKey()
-        }
+    func evictKey() async {
+        await keyCache.evictKey()
     }
     
     func createKey(plainPin: String, hashedPin: HashedPin) async throws {
         try await logger.logAsyncOperation("create_key") {
             // Create hardware-backed KEK if it doesn't exist (outside of lock)
-            if !hardwareKeyExists(keyAlias: Self.keyAlias) {
+            if !hardwareKeyExists(keyAlias: self.keyAlias) {
                 logger.info("Hardware key doesn't exist, creating new one", metadata: [
-                    "key_alias": .string(Self.keyAlias)
+                    "key_alias": .string(self.keyAlias)
                 ])
-                try createHardwareKey(keyAlias: Self.keyAlias)
+                try createHardwareKey(keyAlias: self.keyAlias)
             } else {
                 logger.debug("Hardware key already exists", metadata: [
-                    "key_alias": .string(Self.keyAlias)
+                    "key_alias": .string(self.keyAlias)
                 ])
             }
             
@@ -177,27 +187,41 @@ final class HardwareEncryptionScheme: EncryptionScheme {
     
     func securityFailureReset() async {
         logger.warning("Performing security failure reset")
-        
-        // Delete all DEKs
+
+        // 1. Evict any in-memory derived key. Must be awaited so the cache is
+        //    guaranteed empty before reset returns — otherwise an attacker who
+        //    triggered the reset by racing the device-lock state could observe
+        //    the key still cached momentarily after reset.
+        await evictKey()
+
+        // 2. Delete hardware-backed key material (Secure Enclave / keychain).
+        //    Without this, the EC keys (snapsafe_kek, pin_key, ...) survive
+        //    reset and can decrypt any DEK that ever leaks via backup/extraction.
+        let deletedKeyCount = deleteAllHardwareKeys()
+        logger.info("Deleted hardware keys", metadata: [
+            "count": .stringConvertible(deletedKeyCount)
+        ])
+
+        // 3. Delete all DEKs on disk
         let keyDir = getKeyDirectory()
         do {
             let contents = try FileManager.default.contentsOfDirectory(at: keyDir, includingPropertiesForKeys: nil)
             let dekFiles = contents.filter { file in
                 file.lastPathComponent.hasPrefix(Self.dekFilenamePrefix)
             }
-            
+
             logger.info("Found DEK files to delete", metadata: [
                 "file_count": .stringConvertible(dekFiles.count),
                 "directory": .string(keyDir.lastPathComponent)
             ])
-            
+
             for file in dekFiles {
                 try FileManager.default.removeItem(at: file)
                 logger.debug("Deleted DEK file", metadata: [
                     "file": .string(file.lastPathComponent)
                 ])
             }
-            
+
             logger.info("Security failure reset completed successfully", metadata: [
                 "deleted_files": .stringConvertible(dekFiles.count)
             ])
@@ -205,6 +229,29 @@ final class HardwareEncryptionScheme: EncryptionScheme {
             logger.error("Failed to reset security keys", metadata: [
                 "error": .string(String(describing: error))
             ])
+        }
+    }
+
+    /// Deletes every EC hardware key this app owns from the keychain.
+    /// Returns the number of items deleted (or 0 on errSecItemNotFound).
+    @discardableResult
+    private func deleteAllHardwareKeys() -> Int {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassKey,
+            kSecAttrKeyType as String: kSecAttrKeyTypeECSECPrimeRandom
+        ]
+
+        let status = SecItemDelete(query as CFDictionary)
+        switch status {
+        case errSecSuccess:
+            return 1  // SecItemDelete does not report a count; report at least one
+        case errSecItemNotFound:
+            return 0
+        default:
+            logger.error("SecItemDelete failed during security reset", metadata: [
+                "status": .stringConvertible(status)
+            ])
+            return 0
         }
     }
     
@@ -233,94 +280,75 @@ private extension HardwareEncryptionScheme {
                 "file": .string(dekFile.lastPathComponent)
             ])
         }
-        
+
+        // 1. Remove the Secure Enclave wrap to recover the on-disk payload.
         let encryptedDek = try Data(contentsOf: dekFile)
         logger.logDataOperation("decrypt_dek", dataSize: encryptedDek.count)
-        
-        return try decryptWithHardwareKey(encrypted: encryptedDek, keyAlias: Self.keyAlias)
+        let payload = try decryptWithHardwareKey(encrypted: encryptedDek, keyAlias: self.keyAlias)
+
+        // 2. Derive the PIN-wrap key. This is the cryptographic dependency that
+        //    makes the PIN actually required to recover the DEK (C1).
+        let pinKey = try await pinWrapKey(plainPin: plainPin, hashedPin: hashedPin)
+
+        // 3a. Legacy migration: a payload that is exactly a raw DEK predates the
+        //     PIN-wrap layer (the DEK was PBKDF2(PIN‖…) and only SE-wrapped).
+        //     Preserve that exact DEK value — existing content depends on it —
+        //     and re-wrap it under the PIN key, one shot.
+        if PinDEKWrapper.isLegacyRawDEK(payload) {
+            logger.info("Migrating legacy SE-only-wrapped DEK to PIN-wrapped form")
+            try storeWrappedDEK(dek: payload, pinKey: pinKey, hashedPin: hashedPin)
+            return payload
+        }
+
+        // 3b. Normal path: unwrap the PIN-wrapped payload. A wrong PIN fails the
+        //     AES-GCM auth tag and surfaces as CryptoError.wrongPin.
+        return try PinDEKWrapper.unwrap(payload: payload, pinKey: pinKey)
     }
-    
+
     func createWrappedKey(plainPin: String, hashedPin: HashedPin) async throws {
         try await logger.logAsyncOperation("create_wrapped_key") {
-            // Create the dSalt (device salt)
-            var dSalt = Data(count: Self.dSaltSize)
-            let result = dSalt.withUnsafeMutableBytes { bytes in
-                SecRandomCopyBytes(kSecRandomDefault, Self.dSaltSize, bytes.bindMemory(to: UInt8.self).baseAddress!)
+            // The DEK is now a fresh random key, independent of the PIN. The PIN's
+            // role moves entirely into the wrap layer (see pinWrapKey), so an
+            // attacker who SE-unwraps the file still cannot recover the DEK
+            // without the user typing the PIN.
+            var dekBytes = Data(count: Self.defaultKeySize)
+            let result = dekBytes.withUnsafeMutableBytes { bytes in
+                SecRandomCopyBytes(kSecRandomDefault, Self.defaultKeySize, bytes.bindMemory(to: UInt8.self).baseAddress!)
             }
-            
             guard result == errSecSuccess else {
-                logger.error("Failed to generate random dSalt", metadata: [
+                logger.error("Failed to generate random DEK", metadata: [
                     "sec_result": .stringConvertible(result)
                 ])
                 throw CryptoError.randomGenerationFailed
             }
-            
-            logger.debug("Generated dSalt", metadata: [
-                "size_bytes": .stringConvertible(Self.dSaltSize)
-            ])
-            
-            // Derive the key using PBKDF2
-            let encodedDSalt = dSalt.base64EncodedString()
-            let deviceId = await deviceInfo.getDeviceIdentifier()
-            let encodedDeviceId = deviceId.base64EncodedString()
-            
-            let dekInput = plainPin.data(using: .utf8)! + 
-                          encodedDSalt.data(using: .utf8)! + 
-                          encodedDeviceId.data(using: .utf8)!
-            
-            logger.debug("Deriving DEK using PBKDF2", metadata: [
-                "iterations": .stringConvertible(Self.defaultIterations),
-                "key_size": .stringConvertible(Self.defaultKeySize)
-            ])
-            
-            guard let salt = Data(base64URLString: hashedPin.salt) else {
-                fatalError("Failed to convert hashed pin to Data")
-            }
-            let dekBytes = try derivePBKDF2Key(input: dekInput, salt: salt)
-            
-            logger.logDataOperation("derived_dek", dataSize: dekBytes.count)
-            
-            // Encrypt and store the DEK using hardware-backed key
-            let encryptedDek = try encryptWithHardwareKey(plain: dekBytes, keyAlias: Self.keyAlias)
-            let dekFile = getDekFile(hashedPin: hashedPin)
-            try encryptedDek.write(to: dekFile)
-            
-            logger.info("Encrypted and stored DEK", metadata: [
-                "file": .string(dekFile.lastPathComponent),
-                "encrypted_size": .stringConvertible(encryptedDek.count)
-            ])
+
+            let pinKey = try await pinWrapKey(plainPin: plainPin, hashedPin: hashedPin)
+            try storeWrappedDEK(dek: dekBytes, pinKey: pinKey, hashedPin: hashedPin)
         }
     }
-    
-    func derivePBKDF2Key(input: Data, salt: Data) throws -> Data {
-        var derivedKey = Data(count: Self.defaultKeySize)
-        let result = derivedKey.withUnsafeMutableBytes { derivedKeyBytes in
-            input.withUnsafeBytes { inputBytes in
-                salt.withUnsafeBytes { saltBytes in
-                    CCKeyDerivationPBKDF(
-                        CCPBKDFAlgorithm(kCCPBKDF2),
-                        inputBytes.bindMemory(to: Int8.self).baseAddress!,
-                        input.count,
-                        saltBytes.bindMemory(to: UInt8.self).baseAddress!,
-                        salt.count,
-                        CCPseudoRandomAlgorithm(kCCPRFHmacAlgSHA256),
-                        Self.defaultIterations,
-                        derivedKeyBytes.bindMemory(to: UInt8.self).baseAddress!,
-                        Self.defaultKeySize
-                    )
-                }
-            }
-        }
-        
-        guard result == kCCSuccess else {
-            logger.error("PBKDF2 key derivation failed", metadata: [
-                "cc_result": .stringConvertible(result),
-                "expected": .stringConvertible(kCCSuccess)
-            ])
+
+    /// Derives the PIN-wrap key, binding the PIN to the per-credential salt and
+    /// the device identifier.
+    func pinWrapKey(plainPin: String, hashedPin: HashedPin) async throws -> SymmetricKey {
+        guard let salt = Data(base64URLString: hashedPin.salt) else {
             throw CryptoError.keyDerivationFailed
         }
-        
-        return derivedKey
+        let deviceId = await deviceInfo.getDeviceIdentifier()
+        return try PinDEKWrapper.derivePinKey(plainPin: plainPin, salt: salt, deviceId: deviceId)
+    }
+
+    /// AES-GCM-wraps the DEK under the PIN key, then Secure-Enclave-wraps that
+    /// payload and writes it to disk with complete file protection.
+    func storeWrappedDEK(dek: Data, pinKey: SymmetricKey, hashedPin: HashedPin) throws {
+        let pinWrapped = try PinDEKWrapper.wrap(dek: dek, pinKey: pinKey)
+        let encryptedDek = try encryptWithHardwareKey(plain: pinWrapped, keyAlias: self.keyAlias)
+        let dekFile = getDekFile(hashedPin: hashedPin)
+        try encryptedDek.write(to: dekFile, options: [.completeFileProtection, .atomic])
+
+        logger.info("Encrypted and stored PIN-wrapped DEK", metadata: [
+            "file": .string(dekFile.lastPathComponent),
+            "encrypted_size": .stringConvertible(encryptedDek.count)
+        ])
     }
     
     // MARK: - Hardware Key Management
@@ -449,11 +477,16 @@ private extension HardwareEncryptionScheme {
         var item: CFTypeRef?
         let status = SecItemCopyMatching(query as CFDictionary, &item)
         
-        guard status == errSecSuccess, let key = item else {
+        // `as?` to a CoreFoundation type from CFTypeRef never performs a real
+        // runtime check, so verify the type explicitly via its CFTypeID. After
+        // that check the downcast is guaranteed, so it needs no force cast.
+        guard status == errSecSuccess,
+              let item,
+              CFGetTypeID(item) == SecKeyGetTypeID() else {
             throw CryptoError.keyNotFound
         }
-        
-        return key as! SecKey
+
+        return unsafeDowncast(item, to: SecKey.self)
     }
     
     // MARK: - Hardware Encryption/Decryption
@@ -521,26 +554,29 @@ private extension HardwareEncryptionScheme {
         
         return decryptedData as Data
     }
-    
-    // MARK: - File Management
-    
+}
+
+// MARK: - File Management
+extension HardwareEncryptionScheme {
+
     func getKeyDirectory() -> URL {
         let appSupportPath = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         var keyDir = appSupportPath.appendingPathComponent(Self.dekDirectory)
-        
-        // Create directory and exclude from backup
+
+        // Create directory, set file protection, and exclude from backup
         do {
             try FileManager.default.createDirectory(at: keyDir, withIntermediateDirectories: true, attributes: nil)
             var resourceValues = URLResourceValues()
             resourceValues.isExcludedFromBackup = true
             try keyDir.setResourceValues(resourceValues)
+            try FileManager.default.setAttributes([.protectionKey: FileProtectionType.complete], ofItemAtPath: keyDir.path)
         } catch {
             Logger.storage.error("Failed to setup key directory: \(error)")
         }
-        
+
         return keyDir
     }
-    
+
     func getDekFile(hashedPin: HashedPin) -> URL {
         // Hash the pin hash to create a safe filename (similar to Android implementation)
         guard let pinData = Data(base64URLString: hashedPin.hash) else {
@@ -551,13 +587,20 @@ private extension HardwareEncryptionScheme {
             .replacingOccurrences(of: "/", with: "_")
             .replacingOccurrences(of: "+", with: "-")
             .replacingOccurrences(of: "=", with: "")
-        
+
         return getKeyDirectory().appendingPathComponent("\(Self.dekFilenamePrefix)_\(hashString)")
+    }
+
+    /// Test-only hook: Secure-Enclave-unwrap an on-disk DEK file payload so tests
+    /// can assert it is stored PIN-wrapped (not as a raw DEK). Uses the scheme's
+    /// own KEK alias.
+    func decryptWithHardwareKeyForTesting(encrypted: Data) throws -> Data {
+        try decryptWithHardwareKey(encrypted: encrypted, keyAlias: self.keyAlias)
     }
 }
 
 // MARK: - Custom Errors
-enum CryptoError: Error, LocalizedError {
+enum CryptoError: Error, LocalizedError, Equatable {
     case keyNotDerived
     case keyNotFound
     case keyGenerationFailed(String)
@@ -566,7 +609,10 @@ enum CryptoError: Error, LocalizedError {
     case keyDerivationFailed
     case randomGenerationFailed
     case invalidCiphertext
-    
+    /// The supplied PIN could not unwrap the DEK (AES-GCM authentication failed
+    /// or the wrapped payload was malformed). Surfaced as a clean "wrong PIN".
+    case wrongPin
+
     var errorDescription: String? {
         switch self {
         case .keyNotDerived:
@@ -585,6 +631,8 @@ enum CryptoError: Error, LocalizedError {
             return "Random number generation failed"
         case .invalidCiphertext:
             return "Invalid ciphertext format"
+        case .wrongPin:
+            return "Incorrect PIN"
         }
     }
 }

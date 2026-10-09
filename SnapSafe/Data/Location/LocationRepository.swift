@@ -20,6 +20,11 @@ class LocationRepository: NSObject, ObservableObject {
     @Published var authorizationStatus: CLAuthorizationStatus = .notDetermined
     @Published var lastLocation: CLLocation?
 
+    // The user's iOS-level Precise/Approximate choice. Only meaningful while
+    // location access is authorized; the system reports `.fullAccuracy` by
+    // default otherwise.
+    @Published var accuracyAuthorization: CLAccuracyAuthorization = .fullAccuracy
+
     override init() {
         super.init()
         locationManager.delegate = self
@@ -27,6 +32,7 @@ class LocationRepository: NSObject, ObservableObject {
 
         // Get the current authorization status
         authorizationStatus = locationManager.authorizationStatus
+        accuracyAuthorization = locationManager.accuracyAuthorization
 
         // Start tracking if we already have permission
         startUpdatingLocationIfAuthorized()
@@ -65,6 +71,29 @@ class LocationRepository: NSObject, ObservableObject {
             return "Unknown"
         }
     }
+
+    // Whether location access is currently granted (when-in-use or always).
+    var isAuthorized: Bool {
+        authorizationStatus == .authorizedWhenInUse || authorizationStatus == .authorizedAlways
+    }
+
+    // User-friendly string for the user's iOS-level Precise/Approximate choice.
+    func getAccuracyAuthorizationString() -> String {
+        Self.accuracyDisplayString(for: accuracyAuthorization)
+    }
+
+    // Maps the iOS accuracy authorization to a display string. Pure and static
+    // so the mapping can be unit-tested without a live CLLocationManager.
+    static func accuracyDisplayString(for accuracy: CLAccuracyAuthorization) -> String {
+        switch accuracy {
+        case .fullAccuracy:
+            return "Precise"
+        case .reducedAccuracy:
+            return "Approximate"
+        @unknown default:
+            return "Unknown"
+        }
+    }
 }
 
 // MARK: - CLLocationManagerDelegate
@@ -73,6 +102,7 @@ extension LocationRepository: CLLocationManagerDelegate {
     // Called when the authorization status changes
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         authorizationStatus = manager.authorizationStatus
+        accuracyAuthorization = manager.accuracyAuthorization
 
         // Automatically start or stop location updates based on authorization status
         if authorizationStatus == .authorizedWhenInUse || authorizationStatus == .authorizedAlways {

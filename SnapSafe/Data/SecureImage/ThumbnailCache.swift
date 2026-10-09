@@ -7,8 +7,7 @@
 
 import UIKit
 
-@MainActor
-class ThumbnailCache {
+final class ThumbnailCache {
     private var cache = NSCache<NSString, UIImage>()
     
     init() {
@@ -26,7 +25,23 @@ class ThumbnailCache {
     func evictThumbnail(_ photoDef: PhotoDef) {
         cache.removeObject(forKey: photoDef.photoName as NSString)
     }
-    
+
+    // MARK: - Video thumbnails (keyed by video name, prefixed to avoid collisions)
+
+    private func videoKey(_ name: String) -> NSString { "video:\(name)" as NSString }
+
+    func getVideoThumbnail(_ name: String) -> UIImage? {
+        return cache.object(forKey: videoKey(name))
+    }
+
+    func putVideoThumbnail(_ name: String, _ image: UIImage) {
+        cache.setObject(image, forKey: videoKey(name))
+    }
+
+    func evictVideoThumbnail(_ name: String) {
+        cache.removeObject(forKey: videoKey(name))
+    }
+
     func clearThumbnail(_ photoName: String) {
         cache.removeObject(forKey: photoName as NSString)
     }
@@ -35,3 +50,10 @@ class ThumbnailCache {
         cache.removeAllObjects()
     }
 }
+
+// MARK: - Sendable
+
+// NSCache is documented thread-safe; direct access to the backing `cache`
+// only happens through this class's own methods, so @unchecked Sendable is
+// legitimate here.
+extension ThumbnailCache: @unchecked Sendable {}

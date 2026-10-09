@@ -2,5 +2,13 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- SnapSafe encrypts user media with AES-256-GCM (CryptoKit) as its core
+	     feature, which is NOT exempt encryption — so this must be true.
+	     Export posture: standard algorithms, self-classified mass market
+	     (5D992.c). Requires the annual self-classification report to BIS and
+	     the French ANSSI declaration. Once App Store Connect issues a code,
+	     add ITSEncryptionExportComplianceCode to skip per-build questions. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<true/>
 </dict>
 </plist>

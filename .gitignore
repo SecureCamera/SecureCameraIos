@@ -66,3 +66,11 @@ vendor/
 
 # fastlane snapshot
 screenshots/
+
+SecureCameraAndroid/
+
+# Local TODO scratch
+TODO.md
+
+.claude/worktrees
+.superpowers/

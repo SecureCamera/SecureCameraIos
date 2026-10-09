@@ -17,6 +17,7 @@ struct SnapSafeApp: App {
 
     init() {
         LoggingConfiguration.configure()
+        SecurityResetUseCase.cleanupStrandedTempVideos()
     }
     
     var body: some Scene {

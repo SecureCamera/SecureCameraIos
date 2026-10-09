@@ -16,6 +16,7 @@ struct ZoomSliderView: View {
     @State private var hideTimer: Timer?
     @State private var deviceOrientation = UIDevice.current.orientation
     @State private var lastDetentLevel: CGFloat?
+    @State private var hapticTrigger = 0
     private let snapThreshold: CGFloat = 0.25
     private let hapticThreshold: CGFloat = 0.1
 
@@ -24,7 +25,7 @@ struct ZoomSliderView: View {
             // Current zoom level display
             Text(String(format: "%.1fx", cameraModel.zoomFactor))
                 .font(.system(size: 16, weight: .bold))
-                .foregroundColor(.white)
+                .foregroundStyle(.white)
                 .rotationEffect(Utils.getRotationAngle())
                 .animation(.easeInOut, value: deviceOrientation)
 
@@ -36,8 +37,10 @@ struct ZoomSliderView: View {
                         .fill(Color.green.opacity(0.6))
                         .frame(height: 4)
 
-                    // Tick marks and labels (tappable)
-                    ForEach(zoomLevels, id: \.self) { level in
+                    // Tick marks and labels (tappable), limited to what the
+                    // current device can actually reach (front cameras have no
+                    // 0.5x ultra-wide lens)
+                    ForEach(zoomLevels.filter { $0 >= cameraModel.minZoom && $0 <= cameraModel.maxZoom }, id: \.self) { level in
                         VStack(spacing: 4) {
                             // Tick mark
                             Rectangle()
@@ -47,7 +50,7 @@ struct ZoomSliderView: View {
                             // Label
                             Text(formatZoomLabel(level))
                                 .font(.system(size: 10, weight: level == 1.0 ? .bold : .regular))
-                                .foregroundColor(.white)
+                                .foregroundStyle(.white)
                                 .rotationEffect(Utils.getRotationAngle())
                                 .animation(.easeInOut, value: deviceOrientation)
                         }
@@ -92,6 +95,7 @@ struct ZoomSliderView: View {
                 .fill(Color.black.opacity(0.3))
         )
         .frame(height: 80)
+        .sensoryFeedback(.impact(weight: .light), trigger: hapticTrigger)
         .transition(.opacity.combined(with: .scale))
         .onAppear {
             scheduleHide()
@@ -99,7 +103,9 @@ struct ZoomSliderView: View {
             NotificationCenter.default.addObserver(forName: UIDevice.orientationDidChangeNotification,
                                                   object: nil,
                                                   queue: .main) { _ in
-                self.deviceOrientation = UIDevice.current.orientation
+                Task { @MainActor in
+                    self.deviceOrientation = UIDevice.current.orientation
+                }
             }
         }
         .onDisappear {
@@ -219,23 +225,20 @@ struct ZoomSliderView: View {
     }
 
     private func triggerHapticFeedback() {
-        let generator = UIImpactFeedbackGenerator(style: .light)
-        generator.impactOccurred()
+        hapticTrigger += 1
     }
 
     func scheduleHide() {
         guard !isDragging && !isPinching else { return }
         cancelHideTimer()
         hideTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { _ in
-            guard !self.isDragging && !self.isPinching else { return }
-            withAnimation {
-                self.isVisible = false
+            Task { @MainActor in
+                guard !self.isDragging && !self.isPinching else { return }
+                withAnimation {
+                    self.isVisible = false
+                }
             }
         }
-    }
-
-    func keepVisible() {
-        cancelHideTimer()
     }
 
     private func cancelHideTimer() {

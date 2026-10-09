@@ -9,99 +9,92 @@ import Foundation
 import Logging
 import UIKit
 import CoreLocation
-import UniformTypeIdentifiers
-import ImageIO
+import CryptoKit
+import AVFoundation
 
-@MainActor
-public class SecureImageRepository {
-    
+actor SecureImageRepository {
+
     // MARK: - Constants
-    
-    static let photosDir = "photos"
-    static let decoysDir = "decoys"
-    static let thumbnailsDir = ".thumbnails"
-    static let maxDecoyPhotos = 10
-    
+
+    // Directory names live on PhotoStorageDataSource; these aliases preserve the
+    // existing `SecureImageRepository.<dir>` references (used by tests).
+    static let photosDir = PhotoStorageDataSource.photosDir
+    static let decoysDir = PhotoStorageDataSource.decoysDir
+    static let videosDir = PhotoStorageDataSource.videosDir
+    static let videoThumbnailsDir = PhotoStorageDataSource.videoThumbnailsDir
+    static let decoyVideoThumbnailsDir = PhotoStorageDataSource.decoyVideoThumbnailsDir
+    /// The single source of truth for the maximum number of decoys a user may
+    /// have. The limit is shared across photos AND videos combined; the current
+    /// total is `numDecoys()`. All add-decoy paths must enforce this constant.
+    static let maxDecoyItems = 10
+
     // MARK: - Dependencies
-    
-    let thumbnailCache: ThumbnailCache
+
+    nonisolated let thumbnailCache: ThumbnailCache
     private let encryptionScheme: EncryptionScheme
-    
+    private let videoEncryptionService: VideoEncryptionServiceProtocol
+    private let storage: PhotoStorageDataSource
+
     // MARK: - Initialization
-    
-    init(thumbnailCache: ThumbnailCache, encryptionScheme: EncryptionScheme) {
+
+    init(
+        thumbnailCache: ThumbnailCache,
+        encryptionScheme: EncryptionScheme,
+        videoEncryptionService: VideoEncryptionServiceProtocol = VideoEncryptionService(),
+        applicationSupportDirectory: URL? = nil,
+        cachesDirectory: URL? = nil
+    ) {
         self.thumbnailCache = thumbnailCache
         self.encryptionScheme = encryptionScheme
+        self.videoEncryptionService = videoEncryptionService
+        let appSupportRoot = applicationSupportDirectory
+            ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        let cachesRoot = cachesDirectory
+            ?? FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
+        self.storage = PhotoStorageDataSource(
+            encryptionScheme: encryptionScheme, appSupportRoot: appSupportRoot, cachesRoot: cachesRoot)
     }
-    
+
     // MARK: - Directory Management
-    
-    func getGalleryDirectory() -> URL {
-        let appSupportPath = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        var galleryDir = appSupportPath.appendingPathComponent(Self.photosDir)
-        
-        // Create directory and exclude from backup
-        do {
-            try FileManager.default.createDirectory(at: galleryDir, withIntermediateDirectories: true, attributes: nil)
-            var resourceValues = URLResourceValues()
-            resourceValues.isExcludedFromBackup = true
-            try galleryDir.setResourceValues(resourceValues)
-        } catch {
-            Logger.storage.error("Failed to setup gallery directory: \(error)")
-        }
-        
-        return galleryDir
-    }
-    
-    func getDecoyDirectory() -> URL {
-        let appSupportPath = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        var decoyDir = appSupportPath.appendingPathComponent(Self.decoysDir)
-        
-        // Create directory and exclude from backup
-        do {
-            try FileManager.default.createDirectory(at: decoyDir, withIntermediateDirectories: true, attributes: nil)
-            var resourceValues = URLResourceValues()
-            resourceValues.isExcludedFromBackup = true
-            try decoyDir.setResourceValues(resourceValues)
-        } catch {
-            Logger.storage.error("Failed to setup decoy directory: \(error)")
-        }
-        
-        return decoyDir
-    }
-    
-    private func getThumbnailsDirectory() -> URL {
-        let cachesPath = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
-        let thumbnailsDir = cachesPath.appendingPathComponent(Self.thumbnailsDir)
-        
-        if !FileManager.default.fileExists(atPath: thumbnailsDir.path) {
-            try? FileManager.default.createDirectory(at: thumbnailsDir, withIntermediateDirectories: true)
-        }
-        
-        return thumbnailsDir
-    }
-    
+
+    func getGalleryDirectory() -> URL { storage.getGalleryDirectory() }
+    func getDecoyDirectory() -> URL { storage.getDecoyDirectory() }
+    func getVideosDirectory() -> URL { storage.getVideosDirectory() }
+    func getVideoThumbnailsDirectory() -> URL { storage.getVideoThumbnailsDirectory() }
+    func getDecoyVideoThumbnailsDirectory() -> URL { storage.getDecoyVideoThumbnailsDirectory() }
+    private func getThumbnailsDirectory() -> URL { storage.getThumbnailsDirectory() }
+
     // MARK: - Security Operations
-    
-    func evictKey() {
-        encryptionScheme.evictKey()
+
+    func evictKey() async {
+        await encryptionScheme.evictKey()
     }
-    
+
     /// Resets all security-related data when a security failure occurs.
     /// Deletes all images and thumbnails and evicts all in-memory data.
-    func securityFailureReset() {
+    func securityFailureReset() async {
         deleteAllImages()
+        deleteAllVideoThumbnails()
+        deleteAllDecoyVideoThumbnails()
         clearAllThumbnails()
-        evictKey()
+        await evictKey()
     }
-    
+
     /// Deletes all images that haven't been flagged as benign
-    func activatePoisonPill() {
+    func activatePoisonPill() async {
+        // Delete non-decoy videos first, while the decoy directory is still
+        // intact (deleteNonDecoyImages() consumes and removes that directory).
+        deleteNonDecoyVideos()
         deleteNonDecoyImages()
+        // Video thumbnails are derived from real video frames; destroy them all,
+        // then restore the poison-pill-key thumbnails for the surviving decoy
+        // videos so they still show a thumbnail in the gallery.
+        deleteAllVideoThumbnails()
+        restoreDecoyVideoThumbnails()
         clearAllThumbnails()
-        evictKey()
+        await evictKey()
     }
-    
+
     private func clearAllThumbnails() {
         let thumbnailsDir = getThumbnailsDirectory()
         do {
@@ -111,95 +104,17 @@ public class SecureImageRepository {
         }
         thumbnailCache.clear()
     }
-    
+
     // MARK: - Image Operations
-    
-    /// Encrypts and saves image data to a file
-    private func encryptToFile(_ data: Data, targetFile: URL) async throws {
-        try await encryptionScheme.encryptToFile(plain: data, targetFile: targetFile)
-        Logger.storage.info("Saved image to file: \(targetFile.path)")
-    }
-    
-    /// Decrypts a file and returns the data
+
     private func decryptFile(_ encryptedFile: URL) async throws -> Data {
-        return try await encryptionScheme.decryptFile(encryptedFile)
+        try await storage.decryptFile(encryptedFile)
     }
-    
-    /// Compresses a UIImage to JPEG format with specified quality
-    private func compressImageToJpeg(_ image: UIImage, quality: CGFloat) -> Data? {
-        return image.jpegData(compressionQuality: quality)
-    }
-    
-    /// Encrypts and saves image data to a file, then renames it to the target file
+
     private func encryptAndSaveImage(_ imageData: Data, tempFile: URL, targetFile: URL) async throws {
-        // Remove files if they exist
-        try? FileManager.default.removeItem(at: tempFile)
-        try? FileManager.default.removeItem(at: targetFile)
-        
-        // Encrypt to temp file
-        try await encryptToFile(imageData, targetFile: tempFile)
-        
-        // Move temp file to target
-        try FileManager.default.moveItem(at: tempFile, to: targetFile)
+        try await storage.encryptAndSaveImage(imageData, tempFile: tempFile, targetFile: targetFile)
     }
-    
-    /// Applies metadata to an image
-    private func applyImageMetadata(
-        _ imageData: Data,
-        location: CLLocation?,
-        applyRotation: Bool,
-        rotationDegrees: Int
-    ) -> Data {
-        guard let source = CGImageSourceCreateWithData(imageData as CFData, nil),
-              let image = CGImageSourceCreateImageAtIndex(source, 0, nil) else {
-            return imageData
-        }
-        
-        let mutableData = NSMutableData()
-        guard let destination = CGImageDestinationCreateWithData(mutableData, UTType.jpeg.identifier as CFString, 1, nil) else {
-            return imageData
-        }
-        
-        var properties: [String: Any] = [:]
-        
-        // Add current timestamp
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy:MM:dd HH:mm:ss"
-        properties[kCGImagePropertyExifDateTimeOriginal as String] = formatter.string(from: Date())
-        
-        // Add orientation
-        if !applyRotation {
-            let orientation = cgImageOrientation(from: rotationDegrees)
-            properties[kCGImagePropertyOrientation as String] = orientation.rawValue
-        }
-        
-        // Add GPS location if available
-        if let location = location {
-            let gpsInfo: [String: Any] = [
-                kCGImagePropertyGPSLatitude as String: abs(location.coordinate.latitude),
-                kCGImagePropertyGPSLatitudeRef as String: location.coordinate.latitude >= 0 ? "N" : "S",
-                kCGImagePropertyGPSLongitude as String: abs(location.coordinate.longitude),
-                kCGImagePropertyGPSLongitudeRef as String: location.coordinate.longitude >= 0 ? "E" : "W"
-            ]
-            properties[kCGImagePropertyGPSDictionary as String] = gpsInfo
-        }
-        
-        CGImageDestinationAddImage(destination, image, properties as CFDictionary)
-        CGImageDestinationFinalize(destination)
-        
-        return mutableData as Data
-    }
-    
-    /// Converts rotation degrees to CGImagePropertyOrientation
-    private func cgImageOrientation(from degrees: Int) -> CGImagePropertyOrientation {
-        switch degrees {
-        case 90: return .right
-        case 180: return .down
-        case 270: return .left
-        default: return .up
-        }
-    }
-    
+
     /// Saves a captured image to the gallery
     func saveImage(
         _ image: CapturedImage,
@@ -208,98 +123,60 @@ public class SecureImageRepository {
         quality: CGFloat = 0.9
     ) async throws -> PhotoDef {
         let dir = getGalleryDirectory()
-        
+
         // Create directory if it doesn't exist
         if !FileManager.default.fileExists(atPath: dir.path) {
             try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         }
-        
+
         // Generate filename
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyyMMdd_HHmmss_SS"
         dateFormatter.locale = Locale(identifier: "en_US_POSIX")
         let filename = "photo_\(dateFormatter.string(from: image.timestamp)).jpg"
-        
+
         let photoFile = dir.appendingPathComponent(filename)
         let tempFile = dir.appendingPathComponent("\(filename).tmp")
-        
+
         // Process image
         var processedImage = image.sensorBitmap
         if applyRotation {
-            processedImage = rotateImage(image.sensorBitmap, degrees: image.rotationDegrees)
+            processedImage = ImageProcessing.rotateImage(image.sensorBitmap, degrees: image.rotationDegrees)
         }
-        
+
         // Compress to JPEG
-        guard let jpegData = compressImageToJpeg(processedImage, quality: quality) else {
+        guard let jpegData = ImageProcessing.compressImageToJpeg(processedImage, quality: quality) else {
             throw ImageRepositoryError.compressionFailed
         }
-        
+
         // Apply metadata
-        let updatedData = applyImageMetadata(jpegData, location: location, applyRotation: applyRotation, rotationDegrees: image.rotationDegrees)
-        
+        let updatedData = ImageProcessing.applyImageMetadata(jpegData, location: location, applyRotation: applyRotation, rotationDegrees: image.rotationDegrees)
+
         // Encrypt and save
         try await encryptAndSaveImage(updatedData, tempFile: tempFile, targetFile: photoFile)
-        
+
         return PhotoDef(photoName: filename, photoFormat: "jpg", photoFile: photoFile)
     }
-    
-    /// Rotates a UIImage by the specified degrees
-    private func rotateImage(_ image: UIImage, degrees: Int) -> UIImage {
-        let radians = CGFloat(degrees) * .pi / 180
-        
-        var newSize = CGRect(origin: CGPoint.zero, size: image.size).applying(CGAffineTransform(rotationAngle: radians)).size
-        newSize.width = floor(newSize.width)
-        newSize.height = floor(newSize.height)
-        
-        UIGraphicsBeginImageContextWithOptions(newSize, false, image.scale)
-        let context = UIGraphicsGetCurrentContext()!
-        
-        context.translateBy(x: newSize.width/2, y: newSize.height/2)
-        context.rotate(by: radians)
-        
-        image.draw(in: CGRect(x: -image.size.width/2, y: -image.size.height/2, width: image.size.width, height: image.size.height))
-        
-        let newImage = UIGraphicsGetImageFromCurrentImageContext()
-        UIGraphicsEndImageContext()
-        
-        return newImage ?? image
+
+    /// Reads and decrypts an image file, returning raw JPEG data
+    func readImage(_ photo: PhotoDef) async throws -> Data {
+        return try await storage.decryptFile(photo.photoFile)
     }
-    
-    /// Reads and decrypts an image file
-    func readImage(_ photo: PhotoDef) async throws -> UIImage {
-        let data = try await decryptFile(photo.photoFile)
-        guard let image = UIImage(data: data) else {
-            throw ImageRepositoryError.invalidImageData
-        }
-        return image
-    }
-    
+
     /// Decrypts and returns JPEG data
     func decryptJpg(_ photo: PhotoDef) async throws -> Data {
         return try await decryptFile(photo.photoFile)
     }
-    
+
     // MARK: - Thumbnail Operations
-    
-    private func getThumbnailFile(_ photoDef: PhotoDef) -> URL {
-        return getThumbnailsDirectory().appendingPathComponent(photoDef.photoName)
-    }
-    
-    /// Reads or creates a thumbnail for the given photo
-    func readThumbnail(_ photo: PhotoDef) async -> UIImage? {
-        // Check cache first
-        if let cachedThumbnail = thumbnailCache.getThumbnail(photo) {
-            return cachedThumbnail
-        }
-        
-        let thumbFile = getThumbnailFile(photo)
-        var thumbnailImage: UIImage?
-        
+
+    /// Reads or creates a thumbnail for the given photo, returning raw JPEG data
+    func readThumbnail(_ photo: PhotoDef) async -> Data? {
+        let thumbFile = storage.getThumbnailFile(photo)
+
         if FileManager.default.fileExists(atPath: thumbFile.path) {
-            // Decrypt existing thumbnail
             do {
-                let data = try await decryptFile(thumbFile)
-                thumbnailImage = UIImage(data: data)
+                return try await storage.decryptFile(thumbFile)
             } catch {
                 Logger.storage.error("Failed to decrypt thumbnail", metadata: [
                     "photoName": .string(photo.photoName),
@@ -307,57 +184,36 @@ public class SecureImageRepository {
                 ])
                 return nil
             }
-        } else if FileManager.default.fileExists(atPath: photo.photoFile.path) {
-            // Create thumbnail from full image
-            do {
-                let data = try await decryptFile(photo.photoFile)
-                guard let fullImage = UIImage(data: data) else { return nil }
-                
-                // Create smaller thumbnail
-                let thumbnailSize = CGSize(width: fullImage.size.width / 4, height: fullImage.size.height / 4)
-                thumbnailImage = resizeImage(fullImage, to: thumbnailSize)
-                
-                // Cache thumbnail to file
-                if let thumbnailImage = thumbnailImage,
-                   let thumbnailData = thumbnailImage.jpegData(compressionQuality: 0.75) {
-                    try await encryptToFile(thumbnailData, targetFile: thumbFile)
-                }
-            } catch {
-                Logger.storage.error("Failed to create thumbnail", metadata: [
-                    "photoName": .string(photo.photoName),
-                    "error": .string(String(describing: error))
-                ])
-                return nil
-            }
         }
-        
-        // Cache in memory
-        if let thumbnailImage = thumbnailImage {
-            thumbnailCache.putThumbnail(photo, thumbnailImage)
+
+        guard FileManager.default.fileExists(atPath: photo.photoFile.path) else { return nil }
+
+        do {
+            let fullData = try await storage.decryptFile(photo.photoFile)
+            guard let thumbnailData = ImageProcessing.createThumbnailData(fromJPEGData: fullData) else { return nil }
+            // Reentrancy note: two concurrent calls for the same photo may both create the
+            // thumbnail file; the last write wins and both return valid data.
+            try await storage.encryptToFile(thumbnailData, targetFile: thumbFile)
+            return thumbnailData
+        } catch {
+            Logger.storage.error("Failed to create thumbnail", metadata: [
+                "photoName": .string(photo.photoName),
+                "error": .string(String(describing: error))
+            ])
+            return nil
         }
-        
-        return thumbnailImage
     }
-    
-    /// Resizes an image to the specified size
-    private func resizeImage(_ image: UIImage, to size: CGSize) -> UIImage {
-        UIGraphicsBeginImageContextWithOptions(size, false, 0.0)
-        image.draw(in: CGRect(origin: .zero, size: size))
-        let resizedImage = UIGraphicsGetImageFromCurrentImageContext()
-        UIGraphicsEndImageContext()
-        return resizedImage ?? image
-    }
-    
+
     // MARK: - Photo Management
-    
+
     /// Gets all photos in the gallery
     func getPhotos() -> [PhotoDef] {
         let dir = getGalleryDirectory()
-        
+
         guard FileManager.default.fileExists(atPath: dir.path) else {
             return []
         }
-        
+
         do {
             let files = try FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)
             return files
@@ -376,19 +232,19 @@ public class SecureImageRepository {
             return []
         }
     }
-    
+
     /// Deletes a single image
     @discardableResult
     func deleteImage(_ photoDef: PhotoDef, deleteDecoy: Bool = true) -> Bool {
         thumbnailCache.evictThumbnail(photoDef)
-        
+
         if deleteDecoy && isDecoyPhoto(photoDef) {
-            try? FileManager.default.removeItem(at: getDecoyFile(photoDef))
+            try? FileManager.default.removeItem(at: storage.getDecoyFile(photoDef))
         }
-        
-        let thumbnailFile = getThumbnailFile(photoDef)
+
+        let thumbnailFile = storage.getThumbnailFile(photoDef)
         try? FileManager.default.removeItem(at: thumbnailFile)
-        
+
         if FileManager.default.fileExists(atPath: photoDef.photoFile.path) {
             do {
                 try FileManager.default.removeItem(at: photoDef.photoFile)
@@ -397,113 +253,162 @@ public class SecureImageRepository {
                 return false
             }
         }
-        
+
         return false
     }
-    
+
     /// Deletes multiple images
     @discardableResult
     func deleteImages(_ photos: [PhotoDef], deleteDecoy: Bool = true) -> Bool {
         return photos.allSatisfy { deleteImage($0, deleteDecoy: deleteDecoy) }
     }
-    
+
     /// Deletes all images
     func deleteAllImages(deleteDecoy: Bool = true) {
         let photos = getPhotos()
         deleteImages(photos, deleteDecoy: deleteDecoy)
     }
-    
+
     /// Deletes all non-decoy images and restores decoys
     func deleteNonDecoyImages() {
         let galleryDir = getGalleryDirectory()
         let thumbnailsDir = getThumbnailsDirectory()
-        
+
         // Remove all current images and thumbnails
         try? FileManager.default.removeItem(at: galleryDir)
         try? FileManager.default.removeItem(at: thumbnailsDir)
-        
+
         // Recreate directories
         try? FileManager.default.createDirectory(at: galleryDir, withIntermediateDirectories: true)
         try? FileManager.default.createDirectory(at: thumbnailsDir, withIntermediateDirectories: true)
-        
+
         // Move decoy files back to gallery
-        let decoyFiles = getDecoyFiles()
+        let decoyFiles = storage.getDecoyFiles()
         for file in decoyFiles {
             let targetFile = galleryDir.appendingPathComponent(file.lastPathComponent)
             try? FileManager.default.moveItem(at: file, to: targetFile)
         }
-        
+
         // Remove decoy directory
         try? FileManager.default.removeItem(at: getDecoyDirectory())
     }
-    
+
+    /// Destroys every video that hasn't been flagged as a decoy, and replaces
+    /// each decoy video with its decoy copy.
+    ///
+    /// A decoy video is stored in the decoy directory re-encrypted with the
+    /// poison-pill key (the original in the videos directory is encrypted with
+    /// the real key, which the poison pill destroys). So for decoy videos we
+    /// move the decoy copy into the videos directory, overwriting the original.
+    ///
+    /// Must run before `deleteNonDecoyImages()`, which removes the decoy
+    /// directory this relies on.
+    private func deleteNonDecoyVideos() {
+        let videosDir = getVideosDirectory()
+        let decoyVideoFiles = storage.getDecoyVideoFiles()
+        let decoyVideoNames = Set(decoyVideoFiles.map { $0.lastPathComponent })
+
+        // 1. Destroy every video that isn't a decoy.
+        if let files = try? FileManager.default.contentsOfDirectory(at: videosDir, includingPropertiesForKeys: nil) {
+            for file in files where !decoyVideoNames.contains(file.lastPathComponent) {
+                try? FileManager.default.removeItem(at: file)
+            }
+        }
+
+        // 2. Replace each decoy video's original (real-key) file with its
+        //    poison-pill-key copy from the decoy directory.
+        for decoyFile in decoyVideoFiles {
+            let target = videosDir.appendingPathComponent(decoyFile.lastPathComponent)
+            try? FileManager.default.removeItem(at: target)
+            try? FileManager.default.moveItem(at: decoyFile, to: target)
+        }
+    }
+
     // MARK: - Decoy Operations
-    
-    private func getDecoyFile(_ photoDef: PhotoDef) -> URL {
-        return getDecoyDirectory().appendingPathComponent(photoDef.photoName)
-    }
-    
-    private func getDecoyFiles() -> [URL] {
-        let dir = getDecoyDirectory()
-        
-        guard FileManager.default.fileExists(atPath: dir.path) else {
-            return []
-        }
-        
-        do {
-            let files = try FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)
-            return files.filter { $0.hasDirectoryPath == false && $0.pathExtension == "jpg" }
-        } catch {
-            return []
-        }
-    }
-    
+
     /// Checks if a photo is marked as decoy
     func isDecoyPhoto(_ photoDef: PhotoDef) -> Bool {
-        return FileManager.default.fileExists(atPath: getDecoyFile(photoDef).path)
+        return FileManager.default.fileExists(atPath: storage.getDecoyFile(photoDef).path)
     }
-    
-    /// Gets the number of decoy photos
+
+    /// Gets the total number of decoys (photos + videos); the limit is shared.
     func numDecoys() -> Int {
-        return getDecoyFiles().count
+        return storage.getDecoyFiles().count + storage.getDecoyVideoFiles().count
     }
-    
-    /// Adds a photo as decoy with specific key
-    func addDecoyPhotoWithKey(_ photoDef: PhotoDef, keyData: Data) async -> Bool {
-        guard numDecoys() < Self.maxDecoyPhotos else {
+
+    // MARK: - Decoy Video Operations
+
+    /// Checks if a video is marked as a decoy.
+    func isDecoyVideo(_ videoDef: VideoDef) -> Bool {
+        return FileManager.default.fileExists(atPath: storage.getDecoyVideoFile(videoDef).path)
+    }
+
+    /// Adds a video as a decoy: decrypts it with the current key and re-encrypts
+    /// the plaintext with the poison-pill key into the decoy directory, so it
+    /// remains playable after the poison pill destroys the real key.
+    func addDecoyVideoWithKey(_ videoDef: VideoDef, keyData: Data) async -> Bool {
+        guard numDecoys() < Self.maxDecoyItems else {
             return false
         }
-        
+
+        let tempURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension("mov")
+        defer { try? FileManager.default.removeItem(at: tempURL) }
+
         do {
-            let jpegData = try await decryptJpg(photoDef)
+            let currentKey = SymmetricKey(data: try await encryptionScheme.getDerivedKey())
+            let poisonKey = SymmetricKey(data: keyData)
+
             let decoyDir = getDecoyDirectory()
-            
-            // Create decoy directory if needed
             if !FileManager.default.fileExists(atPath: decoyDir.path) {
                 try FileManager.default.createDirectory(at: decoyDir, withIntermediateDirectories: true)
             }
-            
-            let decoyFile = getDecoyFile(photoDef)
-            try await encryptionScheme.encryptToFile(
-                plain: jpegData,
-                keyBytes: keyData,
-                targetFile: decoyFile
+
+            // Decrypt the original (real key) to a temporary plaintext file.
+            // The video encryption service opens the output via
+            // FileHandle(forWritingTo:), so the output file must exist first.
+            FileManager.default.createFile(atPath: tempURL.path, contents: nil)
+            try await videoEncryptionService.decryptVideoForSharing(
+                inputURL: videoDef.videoFile,
+                outputURL: tempURL,
+                encryptionKey: currentKey
             )
-            
+
+            // Re-encrypt with the poison-pill key into the decoy directory.
+            let decoyFile = storage.getDecoyVideoFile(videoDef)
+            if FileManager.default.fileExists(atPath: decoyFile.path) {
+                try FileManager.default.removeItem(at: decoyFile)
+            }
+            FileManager.default.createFile(atPath: decoyFile.path, contents: nil)
+            try await videoEncryptionService.encryptVideoForDecoy(
+                inputURL: tempURL,
+                outputURL: decoyFile,
+                encryptionKey: poisonKey
+            )
+
+            // Preserve a poison-pill-key copy of the thumbnail so the decoy video
+            // still shows a thumbnail after the poison pill destroys the real one.
+            await storeDecoyVideoThumbnail(forVideoNamed: videoDef.videoName, poisonKeyData: keyData)
+
             return true
         } catch {
+            Logger.security.error("Failed to add decoy video: \(error)")
             return false
         }
     }
-    
-    /// Removes a decoy photo
+
+    /// Removes a video's decoy copy.
     @discardableResult
-    func removeDecoyPhoto(_ photoDef: PhotoDef) -> Bool {
-        let decoyFile = getDecoyFile(photoDef)
+    func removeDecoyVideo(_ videoDef: VideoDef) -> Bool {
+        // Also drop the decoy thumbnail copy (if any).
+        removeDecoyVideoThumbnail(forVideoNamed: videoDef.videoName)
+
+        let decoyFile = storage.getDecoyVideoFile(videoDef)
         guard FileManager.default.fileExists(atPath: decoyFile.path) else {
             return false
         }
-        
+
         do {
             try FileManager.default.removeItem(at: decoyFile)
             return true
@@ -511,121 +416,243 @@ public class SecureImageRepository {
             return false
         }
     }
-    
+
+    // MARK: - Video Import
+
+    /// Imports a plaintext video (e.g. from the photo library): encrypts it to
+    /// SECV with the current key in the videos directory and stores a thumbnail.
+    /// The caller owns `plaintextURL` and should delete it afterwards.
+    func importVideo(from plaintextURL: URL) async -> Bool {
+        do {
+            let key = SymmetricKey(data: try await encryptionScheme.getDerivedKey())
+
+            // Match the camera's "video_yyyyMMdd_HHmmss" naming so dateTaken()
+            // parses; bump the second on collision to keep names unique/sortable.
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyyMMdd_HHmmss"
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+
+            var date = Date()
+            var name = "video_\(formatter.string(from: date))"
+            var dest = getVideosDirectory().appendingPathComponent(name).appendingPathExtension("secv")
+            while FileManager.default.fileExists(atPath: dest.path) {
+                date = date.addingTimeInterval(1)
+                name = "video_\(formatter.string(from: date))"
+                dest = getVideosDirectory().appendingPathComponent(name).appendingPathExtension("secv")
+            }
+
+            // The encryption service opens its output via FileHandle(forWritingTo:),
+            // so the file must exist first.
+            FileManager.default.createFile(atPath: dest.path, contents: nil)
+            try await videoEncryptionService.encryptVideoForDecoy(
+                inputURL: plaintextURL,
+                outputURL: dest,
+                encryptionKey: key
+            )
+
+            await generateAndStoreVideoThumbnail(forVideoNamed: name, fromPlaintextVideo: plaintextURL)
+            return true
+        } catch {
+            Logger.storage.error("Failed to import video: \(error)")
+            return false
+        }
+    }
+
+    // MARK: - Video Thumbnails
+
+    /// Generates a thumbnail from a plaintext video file (e.g. the temporary
+    /// `.mov` that exists at record time) and stores it encrypted. Call this
+    /// while the plaintext file still exists; the thumbnail cannot be recreated
+    /// once the video is encrypted and the plaintext is deleted.
+    func generateAndStoreVideoThumbnail(forVideoNamed name: String, fromPlaintextVideo url: URL) async {
+        guard let jpeg = await ImageProcessing.generateVideoThumbnailJPEG(fromVideoAt: url) else {
+            Logger.storage.error("Failed to generate video thumbnail", metadata: ["video": .string(name)])
+            return
+        }
+        await storeVideoThumbnail(jpeg, forVideoNamed: name)
+    }
+
+    /// Stores an already-generated JPEG thumbnail, encrypted with the current key.
+    func storeVideoThumbnail(_ jpeg: Data, forVideoNamed name: String) async {
+        do {
+            let dir = getVideoThumbnailsDirectory()
+            if !FileManager.default.fileExists(atPath: dir.path) {
+                try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            }
+            let file = storage.getVideoThumbnailFile(forVideoNamed: name)
+            try await encryptionScheme.encryptToFile(plain: jpeg, targetFile: file)
+        } catch {
+            Logger.storage.error("Failed to store video thumbnail: \(error)")
+        }
+    }
+
+    /// Reads (and decrypts) a video's thumbnail, returning raw JPEG data if one exists.
+    func readVideoThumbnail(_ videoDef: VideoDef) async -> Data? {
+        let file = storage.getVideoThumbnailFile(forVideoNamed: videoDef.videoName)
+        guard FileManager.default.fileExists(atPath: file.path) else { return nil }
+        do {
+            return try await encryptionScheme.decryptFile(file)
+        } catch {
+            Logger.storage.error("Failed to read video thumbnail: \(error)")
+            return nil
+        }
+    }
+
+    func deleteVideoThumbnail(forVideoNamed name: String) {
+        thumbnailCache.evictVideoThumbnail(name)
+        try? FileManager.default.removeItem(at: storage.getVideoThumbnailFile(forVideoNamed: name))
+    }
+
+    /// Removes all video thumbnails. Used on poison-pill activation and security
+    /// reset — these thumbnails are derived from real video frames and must be
+    /// destroyed along with the videos themselves.
+    func deleteAllVideoThumbnails() {
+        try? FileManager.default.removeItem(at: getVideoThumbnailsDirectory())
+    }
+
+    /// Re-encrypts a video's thumbnail with the poison-pill key and stores it in
+    /// the decoy video thumbnails directory, so it survives the poison pill (the
+    /// real-key thumbnail is destroyed then). No-op if the video has no thumbnail.
+    private func storeDecoyVideoThumbnail(forVideoNamed name: String, poisonKeyData: Data) async {
+        let thumbFile = storage.getVideoThumbnailFile(forVideoNamed: name)
+        guard FileManager.default.fileExists(atPath: thumbFile.path) else { return }
+        do {
+            let jpeg = try await encryptionScheme.decryptFile(thumbFile)
+            let dir = getDecoyVideoThumbnailsDirectory()
+            if !FileManager.default.fileExists(atPath: dir.path) {
+                try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            }
+            try await encryptionScheme.encryptToFile(
+                plain: jpeg,
+                keyBytes: poisonKeyData,
+                targetFile: storage.getDecoyVideoThumbnailFile(forVideoNamed: name)
+            )
+        } catch {
+            Logger.security.error("Failed to store decoy video thumbnail: \(error)")
+        }
+    }
+
+    private func removeDecoyVideoThumbnail(forVideoNamed name: String) {
+        try? FileManager.default.removeItem(at: storage.getDecoyVideoThumbnailFile(forVideoNamed: name))
+    }
+
+    func deleteAllDecoyVideoThumbnails() {
+        try? FileManager.default.removeItem(at: getDecoyVideoThumbnailsDirectory())
+    }
+
+    /// Moves the poison-pill-key decoy video thumbnails into the (just-wiped)
+    /// video thumbnails directory. Run after `deleteAllVideoThumbnails()` during
+    /// poison-pill activation.
+    private func restoreDecoyVideoThumbnails() {
+        let decoyDir = getDecoyVideoThumbnailsDirectory()
+        guard let files = try? FileManager.default.contentsOfDirectory(at: decoyDir, includingPropertiesForKeys: nil),
+              !files.isEmpty else {
+            return
+        }
+
+        let videoThumbsDir = getVideoThumbnailsDirectory()
+        try? FileManager.default.createDirectory(at: videoThumbsDir, withIntermediateDirectories: true)
+
+        for file in files {
+            let target = videoThumbsDir.appendingPathComponent(file.lastPathComponent)
+            try? FileManager.default.removeItem(at: target)
+            try? FileManager.default.moveItem(at: file, to: target)
+        }
+
+        try? FileManager.default.removeItem(at: decoyDir)
+    }
+
+    // MARK: - Decoy Photo Operations
+
+    /// Adds a photo as decoy with specific key
+    func addDecoyPhotoWithKey(_ photoDef: PhotoDef, keyData: Data) async -> Bool {
+        guard numDecoys() < Self.maxDecoyItems else {
+            return false
+        }
+
+        do {
+            let jpegData = try await decryptJpg(photoDef)
+            let decoyDir = getDecoyDirectory()
+
+            // Create decoy directory if needed
+            if !FileManager.default.fileExists(atPath: decoyDir.path) {
+                try FileManager.default.createDirectory(at: decoyDir, withIntermediateDirectories: true)
+            }
+
+            let decoyFile = storage.getDecoyFile(photoDef)
+            try await encryptionScheme.encryptToFile(
+                plain: jpegData,
+                keyBytes: keyData,
+                targetFile: decoyFile
+            )
+
+            return true
+        } catch {
+            return false
+        }
+    }
+
+    /// Removes a decoy photo
+    @discardableResult
+    func removeDecoyPhoto(_ photoDef: PhotoDef) -> Bool {
+        let decoyFile = storage.getDecoyFile(photoDef)
+        guard FileManager.default.fileExists(atPath: decoyFile.path) else {
+            return false
+        }
+
+        do {
+            try FileManager.default.removeItem(at: decoyFile)
+            return true
+        } catch {
+            return false
+        }
+    }
+
     /// Removes all decoy photos
     func removeAllDecoyPhotos() {
-        let decoyFiles = getDecoyFiles()
+        let decoyFiles = storage.getDecoyFiles()
         for file in decoyFiles {
             try? FileManager.default.removeItem(at: file)
         }
     }
-    
+
+    /// Removes all decoy videos and their decoy thumbnails. Called when the
+    /// poison pill is removed so the gallery stops showing the decoy badge.
+    func removeAllDecoyVideos() {
+        let decoyFiles = storage.getDecoyVideoFiles()
+        for file in decoyFiles {
+            try? FileManager.default.removeItem(at: file)
+        }
+        deleteAllDecoyVideoThumbnails()
+    }
+
     // MARK: - Update Operations
-    
+
     /// Updates an existing image with new image data while preserving EXIF metadata
     func updateImage(_ photoDef: PhotoDef, newImageData: Data) async throws {
         // Load existing image to extract EXIF metadata
         let existingImageData = try await decryptJpg(photoDef)
-        let existingMetadata = extractEXIFMetadata(from: existingImageData)
-        
+        let existingMetadata = ImageProcessing.extractEXIFMetadata(from: existingImageData)
+
         // Process the new image with preserved EXIF metadata
-        let processedData = try processImageWithEXIFMetadata(
+        let processedData = try ImageProcessing.processImageWithEXIFMetadata(
             imageData: newImageData,
             preservedEXIFMetadata: existingMetadata,
             filename: photoDef.photoName
         )
-        
+
         // Save the updated image
         try await encryptionScheme.encryptToFile(plain: processedData, targetFile: photoDef.photoFile)
-        
+
         // Clear thumbnail cache to force regeneration
         thumbnailCache.clearThumbnail(photoDef.photoName)
-        let thumbnailFile = getThumbnailFile(photoDef)
+        let thumbnailFile = storage.getThumbnailFile(photoDef)
         try? FileManager.default.removeItem(at: thumbnailFile)
     }
-    
-    // MARK: - Private Helper Methods
-    
-    /// Extracts EXIF metadata from image data
-    private func extractEXIFMetadata(from imageData: Data) -> [String: Any] {
-        var exifMetadata: [String: Any] = [:]
-        
-        guard let imageSource = CGImageSourceCreateWithData(imageData as CFData, nil),
-              let imageProperties = CGImageSourceCopyPropertiesAtIndex(imageSource, 0, nil) as? [String: Any] else {
-            return exifMetadata
-        }
-        
-        // Preserve orientation
-        if let orientation = imageProperties[kCGImagePropertyOrientation as String] as? Int {
-            exifMetadata[kCGImagePropertyOrientation as String] = orientation
-        }
-        
-        // Preserve EXIF data
-        if let exifDict = imageProperties[kCGImagePropertyExifDictionary as String] as? [String: Any] {
-            exifMetadata[kCGImagePropertyExifDictionary as String] = exifDict
-        }
-        
-        // Preserve TIFF data
-        if let tiffDict = imageProperties[kCGImagePropertyTIFFDictionary as String] as? [String: Any] {
-            exifMetadata[kCGImagePropertyTIFFDictionary as String] = tiffDict
-        }
-        
-        // Preserve GPS data
-        if let gpsDict = imageProperties[kCGImagePropertyGPSDictionary as String] as? [String: Any] {
-            exifMetadata[kCGImagePropertyGPSDictionary as String] = gpsDict
-        }
-        
-        return exifMetadata
-    }
-    
-    /// Processes image data while preserving EXIF metadata
-    private func processImageWithEXIFMetadata(
-        imageData: Data,
-        preservedEXIFMetadata: [String: Any],
-        filename: String
-    ) throws -> Data {
-        guard let image = UIImage(data: imageData) else {
-            throw ImageRepositoryError.invalidImageData
-        }
-        
-        // Convert to JPEG with quality
-        guard let jpegData = image.jpegData(compressionQuality: 0.9) else {
-            throw ImageRepositoryError.compressionFailed
-        }
-        
-        // If no EXIF metadata to preserve, return the processed image
-        if preservedEXIFMetadata.isEmpty {
-            return jpegData
-        }
-        
-        // Create image destination to write JPEG with preserved metadata
-        let mutableData = NSMutableData(data: jpegData)
-        let type = UTType.jpeg.identifier as CFString
-        guard let destination = CGImageDestinationCreateWithData(mutableData as CFMutableData, type, 1, nil) else {
-            return jpegData
-        }
-        
-        // Create image source from processed JPEG
-        guard let source = CGImageSourceCreateWithData(jpegData as CFData, nil),
-              let cgImage = CGImageSourceCreateImageAtIndex(source, 0, nil) else {
-            return jpegData
-        }
-        
-        // Add the image with preserved EXIF metadata
-        CGImageDestinationAddImage(destination, cgImage, preservedEXIFMetadata as CFDictionary)
-        
-        if CGImageDestinationFinalize(destination) {
-            return mutableData as Data
-        }
-        
-        // Fallback to original processed image if metadata preservation fails
-        return jpegData
-    }
-    
+
     // MARK: - Helper Methods
 
     struct PhotoMetaData {
-        let name: String
         let resolution: Size
         let dateTaken: Date
         let location: GpsCoordinates?
@@ -634,26 +661,22 @@ public class SecureImageRepository {
 
     // MARK: - Main API
 
-    @MainActor
     func getPhotoMetaData(_ photoDef: PhotoDef) async throws -> PhotoMetaData {
-        let name = photoDef.photoName
         let dateTaken: Date = photoDef.dateTaken() ?? Date(timeIntervalSince1970: 0)
-        
+
         var orientation: TiffOrientation? = nil
         var coords: GpsCoordinates? = nil
         var size = Size(width: 0, height: 0)
-        
-        // Your decryptor should return the JPG bytes as Data
-        let jpgBytes = try await decryptJpg(photoDef: photoDef)
-        
-        if let md = readImageMetadata(fromJPEGData: jpgBytes) {
+
+        let jpgBytes = try await decryptJpg(photoDef)
+
+        if let md = ImageProcessing.readImageMetadata(fromJPEGData: jpgBytes) {
             orientation = md.orientation
             coords = md.gps
             size = Size(width: md.width ?? 0, height: md.height ?? 0)
         }
-        
+
         return PhotoMetaData(
-            name: name,
             resolution: size,
             dateTaken: dateTaken,
             location: coords,
@@ -661,50 +684,89 @@ public class SecureImageRepository {
         )
     }
 
-    // MARK: - Decrypt (stub; replace with your implementation)
+    func getVideoMetaData(_ videoDef: VideoDef) async throws -> VideoMetaData {
+        // 1. File size from disk.
+        let attributes = try FileManager.default.attributesOfItem(atPath: videoDef.videoFile.path)
+        let fileSize = (attributes[.size] as? Int64) ?? 0
 
-    func decryptJpg(photoDef: PhotoDef) async throws -> Data {
-        return try await encryptionScheme.decryptFile(photoDef.photoFile)
-    }
-
-    // MARK: - ImageIO helpers
-
-    private func readImageMetadata(fromJPEGData data: Data) -> ParsedImageMetadata? {
-        guard let src = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
-        let props = CGImageSourceCopyPropertiesAtIndex(src, 0, nil) as? [CFString: Any]
-        
-        let pixelWidth = (props?[kCGImagePropertyPixelWidth] as? NSNumber)?.intValue
-        let pixelHeight = (props?[kCGImagePropertyPixelHeight] as? NSNumber)?.intValue
-        
-        var orientation: TiffOrientation? = nil
-        if let tiff = props?[kCGImagePropertyTIFFDictionary] as? [CFString: Any],
-           let ori = (tiff[kCGImagePropertyTIFFOrientation] as? NSNumber)?.intValue,
-           let mapped = TiffOrientation(rawValue: ori) {
-            orientation = mapped
-        } else if let ori = (props?[kCGImagePropertyOrientation] as? NSNumber)?.intValue,
-                  let mapped = TiffOrientation(rawValue: ori) {
-            // Some writers put orientation at the top level
-            orientation = mapped
+        // 2. Build an AVAsset that reads the (decrypted) bytes. For .secv we route
+        //    through EncryptedVideoDataSource so no temp plaintext is written.
+        let asset: AVURLAsset
+        if videoDef.isEncrypted {
+            let key = SymmetricKey(data: try await encryptionScheme.getDerivedKey())
+            guard let encrypted = AVAsset.makeEncryptedVideoAsset(
+                with: videoDef.videoFile, encryptionKey: key) else {
+                throw SECVError.decryptionFailed
+            }
+            asset = encrypted
+        } else {
+            asset = AVURLAsset(url: videoDef.videoFile)
         }
-        
-        var gpsCoords: GpsCoordinates? = nil
-        if let gps = props?[kCGImagePropertyGPSDictionary] as? [CFString: Any] {
-            if let lat = gps[kCGImagePropertyGPSLatitude] as? NSNumber,
-               let latRef = gps[kCGImagePropertyGPSLatitudeRef] as? String,
-               let lon = gps[kCGImagePropertyGPSLongitude] as? NSNumber,
-               let lonRef = gps[kCGImagePropertyGPSLongitudeRef] as? String {
-                let latSign = (latRef.uppercased() == "S") ? -1.0 : 1.0
-                let lonSign = (lonRef.uppercased() == "W") ? -1.0 : 1.0
-                gpsCoords = GpsCoordinates(latitude: lat.doubleValue * latSign,
-                                           longitude: lon.doubleValue * lonSign)
+
+        // 3. Load duration + common metadata.
+        let (commonMetadata, duration) = try await asset.load(.commonMetadata, .duration)
+
+        // 4. Location (ISO 6709), if embedded.
+        var location: GpsCoordinates?
+        if let item = AVMetadataItem.metadataItems(
+            from: commonMetadata, filteredByIdentifier: .commonIdentifierLocation).first,
+           let iso = try await item.load(.stringValue) {
+            location = AVMetadataItemFactory.parseISO6709(iso)
+        }
+
+        // 5. Capture date: embedded creation date, else filename, else epoch.
+        var dateTaken = Date(timeIntervalSince1970: 0)
+        var dateSource: DateSource = .filename
+        if let item = AVMetadataItem.metadataItems(
+            from: commonMetadata, filteredByIdentifier: .commonIdentifierCreationDate).first {
+            let dateValue = try await item.load(.dateValue)
+            let stringValue = try await item.load(.stringValue)
+            if let embedded = dateValue ?? stringValue.flatMap({ AVMetadataItemFactory.iso8601Date(from: $0) }) {
+                dateTaken = embedded
+                dateSource = .embedded
+            } else if let fromName = videoDef.dateTaken() {
+                dateTaken = fromName
+                dateSource = .filename
+            }
+        } else if let fromName = videoDef.dateTaken() {
+            dateTaken = fromName
+            dateSource = .filename
+        }
+
+        // 6. Technical fields from the first video track (best-effort: any
+        //    missing/zero field becomes nil and renders as "—").
+        var resolution = Size(width: 0, height: 0)
+        var orientation: TiffOrientation?
+        var codec: String?
+        var frameRate: Double?
+        var bitrate: Int?
+
+        if let track = try await asset.loadTracks(withMediaType: .video).first {
+            let (naturalSize, transform, nominalFrameRate, dataRate, formats) = try await track.load(
+                .naturalSize, .preferredTransform, .nominalFrameRate, .estimatedDataRate, .formatDescriptions)
+
+            resolution = Size(width: Int(abs(naturalSize.width)), height: Int(abs(naturalSize.height)))
+            orientation = AVMetadataItemFactory.videoOrientation(fromTransform: transform)
+            if nominalFrameRate > 0 { frameRate = Double(nominalFrameRate) }
+            if dataRate > 0 { bitrate = Int(dataRate) }
+            if let format = formats.first {
+                codec = AVMetadataItemFactory.codecString(
+                    fromMediaSubType: CMFormatDescriptionGetMediaSubType(format))
             }
         }
-        
-        return ParsedImageMetadata(
-            width: pixelWidth,
-            height: pixelHeight,
+
+        let seconds = duration.seconds
+        return VideoMetaData(
+            resolution: resolution,
+            duration: seconds.isFinite ? seconds : 0,
+            dateTaken: dateTaken,
+            dateTakenSource: dateSource,
+            location: location,
             orientation: orientation,
-            gps: gpsCoords
+            codec: codec,
+            frameRate: frameRate,
+            bitrate: bitrate,
+            fileSize: fileSize
         )
     }
 }
@@ -714,30 +776,4 @@ public class SecureImageRepository {
 enum ImageRepositoryError: Error {
     case compressionFailed
     case invalidImageData
-    case encryptionFailed
-    case decryptionFailed
-}
-
-// MARK: - Metadata
-
-private struct ParsedImageMetadata {
-    let width: Int?
-    let height: Int?
-    let orientation: TiffOrientation?
-    let gps: GpsCoordinates?
-}
-
-struct Size {
-    let width: Int
-    let height: Int
-}
-
-enum TiffOrientation: Int {
-    case up = 1, upMirrored = 2, down = 3, downMirrored = 4
-    case leftMirrored = 5, right = 6, rightMirrored = 7, left = 8
-}
-
-struct GpsCoordinates {
-    let latitude: Double
-    let longitude: Double
 }

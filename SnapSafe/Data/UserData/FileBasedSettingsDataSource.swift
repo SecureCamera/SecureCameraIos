@@ -16,17 +16,18 @@ private struct SettingsData: Codable {
     var sanitizeFileName: Bool
     var sanitizeMetadata: Bool
     var sessionTimeoutMs: Int64
-    var cipherKey: String
     var cipheredPin: String?
     var failedPinAttempts: Int
     var lastFailedAttempt: Int64
     var poisonPillPlain: String?
     var poisonPillHashed: String?
+    // Optional so existing settings files (without the key) decode cleanly; nil means false.
+    var alphanumericPinEnabled: Bool?
 }
 
 // MARK: - File-based Implementation
 
-public final class FileBasedSettingsDataSource: SettingsDataSource, @unchecked Sendable {
+final class FileBasedSettingsDataSource: SettingsDataSource, @unchecked Sendable {
     // MARK: - Combine subjects (reflect stored values)
     private nonisolated(unsafe) let hasCompletedIntroSubject: CurrentValueSubject<Bool, Never>
     private nonisolated(unsafe) let sanitizeFileNameSubject: CurrentValueSubject<Bool, Never>
@@ -34,14 +35,15 @@ public final class FileBasedSettingsDataSource: SettingsDataSource, @unchecked S
     private nonisolated(unsafe) let sessionTimeoutSubject: CurrentValueSubject<Int64, Never>
 
     // MARK: - Public publishers
-    public var hasCompletedIntro: AnyPublisher<Bool, Never> { hasCompletedIntroSubject.eraseToAnyPublisher() }
-    public var sanitizeFileName: AnyPublisher<Bool, Never> { sanitizeFileNameSubject.eraseToAnyPublisher() }
-    public var sanitizeMetadata: AnyPublisher<Bool, Never> { sanitizeMetadataSubject.eraseToAnyPublisher() }
-    public var sessionTimeout: AnyPublisher<Int64, Never> { sessionTimeoutSubject.eraseToAnyPublisher() }
+    var hasCompletedIntro: AnyPublisher<Bool, Never> { hasCompletedIntroSubject.eraseToAnyPublisher() }
+    var hasCompletedIntroValue: Bool { hasCompletedIntroSubject.value }
+    var sanitizeFileName: AnyPublisher<Bool, Never> { sanitizeFileNameSubject.eraseToAnyPublisher() }
+    var sanitizeMetadata: AnyPublisher<Bool, Never> { sanitizeMetadataSubject.eraseToAnyPublisher() }
+    var sessionTimeout: AnyPublisher<Int64, Never> { sessionTimeoutSubject.eraseToAnyPublisher() }
 
     // MARK: - Declared defaults (exposed by protocol)
-    public let sanitizeFileNameDefault: Bool
-    public let sanitizeMetadataDefault: Bool
+    let sanitizeFileNameDefault: Bool
+    let sanitizeMetadataDefault: Bool
 
     // MARK: - Thread Safety
     private let queue = DispatchQueue(label: "com.snapsafe.settings", qos: .utility, attributes: .concurrent)
@@ -58,7 +60,7 @@ public final class FileBasedSettingsDataSource: SettingsDataSource, @unchecked S
     // MARK: - Init
     /// - Parameter sanitizeFileNameDefault: Default value for sanitize file name setting
     /// - Parameter sanitizeMetadataDefault: Default value for sanitize metadata setting
-    public init(
+    init(
         sanitizeFileNameDefault: Bool = Defaults.sanitizeFileName,
         sanitizeMetadataDefault: Bool = Defaults.sanitizeMetadata,
         fileURL: URL? = nil
@@ -73,14 +75,14 @@ public final class FileBasedSettingsDataSource: SettingsDataSource, @unchecked S
             sanitizeFileName: sanitizeFileNameDefault,
             sanitizeMetadata: sanitizeMetadataDefault,
             sessionTimeoutMs: Defaults.sessionTimeoutMs,
-            cipherKey: Defaults.cipherKey,
             cipheredPin: nil,
             failedPinAttempts: 0,
             lastFailedAttempt: 0,
             poisonPillPlain: nil,
-            poisonPillHashed: nil
+            poisonPillHashed: nil,
+            alphanumericPinEnabled: nil
         )
-        
+
         // Load existing settings or use defaults
         self._settingsData = Self.loadSettingsFromFile(url: self.fileURL, defaults: defaultSettings)
         Logger.storage.debug("FileBasedSettingsDataSource initialized", metadata: [
@@ -158,7 +160,11 @@ public final class FileBasedSettingsDataSource: SettingsDataSource, @unchecked S
             
             do {
                 let data = try self.jsonEncoder.encode(self._settingsData)
-                try data.write(to: self.fileURL, options: .atomic)
+                // Complete file protection: the settings file holds the
+                // reversible poison-pill PIN ciphertext and the PIN hashes, so it
+                // must be unreadable while the device is locked, not merely
+                // excluded from backup (H2, Option D).
+                try data.write(to: self.fileURL, options: [.atomic, .completeFileProtection])
                 Logger.storage.debug("Settings saved to file", metadata: [
                     "fileURL": .string(self.fileURL.path),
                     "fileSize": .stringConvertible(data.count)
@@ -188,34 +194,39 @@ public final class FileBasedSettingsDataSource: SettingsDataSource, @unchecked S
     }
 
     // MARK: - Keys & PIN
-    public func getCipherKey() async -> String {
-        return readProperty(\.cipherKey)
-    }
-
-    public func getCipheredPin() async -> String? {
+    func getCipheredPin() async -> String? {
         return readProperty(\.cipheredPin)
     }
 
-    public func setIntroCompleted(_ completed: Bool) async {
+    func setIntroCompleted(_ completed: Bool) async {
         writeProperty(\.hasCompletedIntro, value: completed)
         await MainActor.run {
             hasCompletedIntroSubject.send(completed)
         }
     }
 
-    public func setAppPin(cipheredPin: String) async {
+    func setAppPin(cipheredPin: String) async {
         writeProperty(\.cipheredPin, value: cipheredPin)
     }
 
+    // MARK: - Alphanumeric PIN preference
+    func getAlphanumericPinEnabled() async -> Bool {
+        return readProperty(\.alphanumericPinEnabled) ?? false
+    }
+
+    func setAlphanumericPinEnabled(_ enabled: Bool) async {
+        writeProperty(\.alphanumericPinEnabled, value: enabled)
+    }
+
     // MARK: - Sanitize prefs
-    public func setSanitizeFileName(_ sanitize: Bool) async {
+    func setSanitizeFileName(_ sanitize: Bool) async {
         writeProperty(\.sanitizeFileName, value: sanitize)
         await MainActor.run {
             sanitizeFileNameSubject.send(sanitize)
         }
     }
 
-    public func setSanitizeMetadata(_ sanitize: Bool) async {
+    func setSanitizeMetadata(_ sanitize: Bool) async {
         writeProperty(\.sanitizeMetadata, value: sanitize)
         await MainActor.run {
             sanitizeMetadataSubject.send(sanitize)
@@ -223,24 +234,42 @@ public final class FileBasedSettingsDataSource: SettingsDataSource, @unchecked S
     }
 
     // MARK: - Failed PIN attempts
-    public func getFailedPinAttempts() async -> Int {
+    func getFailedPinAttempts() async -> Int {
         return readProperty(\.failedPinAttempts)
     }
 
-    public func setFailedPinAttempts(_ count: Int) async {
+    func setFailedPinAttempts(_ count: Int) async {
         writeProperty(\.failedPinAttempts, value: count)
     }
 
-    public func getLastFailedAttemptTimestamp() async -> Int64 {
+    func incrementFailedPinAttempts() async -> Int {
+        // Read-modify-write inside a single barrier block so the increment is atomic
+        // with respect to every other access on the queue; concurrent callers can't
+        // observe the same starting value and lose an increment.
+        await withCheckedContinuation { continuation in
+            queue.async(flags: .barrier) { [weak self] in
+                guard let self else {
+                    continuation.resume(returning: 0)
+                    return
+                }
+                let newCount = self._settingsData.failedPinAttempts + 1
+                self._settingsData.failedPinAttempts = newCount
+                self.saveSettingsToFile()
+                continuation.resume(returning: newCount)
+            }
+        }
+    }
+
+    func getLastFailedAttemptTimestamp() async -> Int64 {
         return readProperty(\.lastFailedAttempt)
     }
 
-    public func setLastFailedAttemptTimestamp(_ timestamp: Int64) async {
+    func setLastFailedAttemptTimestamp(_ timestamp: Int64) async {
         writeProperty(\.lastFailedAttempt, value: timestamp)
     }
 
     // MARK: - Security reset
-    public func securityFailureReset() async {
+    func securityFailureReset() async {
         return await withCheckedContinuation { continuation in
             queue.async(flags: .barrier) { [weak self] in
                 guard let self = self else {
@@ -258,14 +287,14 @@ public final class FileBasedSettingsDataSource: SettingsDataSource, @unchecked S
                     sanitizeFileName: self.sanitizeFileNameDefault,
                     sanitizeMetadata: self.sanitizeMetadataDefault,
                     sessionTimeoutMs: self._settingsData.sessionTimeoutMs, // Preserve session timeout
-                    cipherKey: Defaults.cipherKey,
                     cipheredPin: nil,
                     failedPinAttempts: 0,
                     lastFailedAttempt: 0,
                     poisonPillPlain: nil,
-                    poisonPillHashed: nil
+                    poisonPillHashed: nil,
+                    alphanumericPinEnabled: nil
                 )
-                
+
                 self.saveSettingsToFile()
                 
                 // Emit changes on main actor
@@ -281,11 +310,11 @@ public final class FileBasedSettingsDataSource: SettingsDataSource, @unchecked S
     }
 
     // MARK: - Session timeout
-    public func getSessionTimeout() async -> Int64 {
+    func getSessionTimeout() async -> Int64 {
         return readProperty(\.sessionTimeoutMs)
     }
 
-    public func setSessionTimeout(_ timeoutMs: Int64) async {
+    func setSessionTimeout(_ timeoutMs: Int64) async {
         writeProperty(\.sessionTimeoutMs, value: timeoutMs)
         await MainActor.run {
             sessionTimeoutSubject.send(timeoutMs)
@@ -293,7 +322,7 @@ public final class FileBasedSettingsDataSource: SettingsDataSource, @unchecked S
     }
     
     // MARK: - Poison Pill
-    public func setPoisonPillPin(cipheredHashedPin: String, cipheredPlainPin: String) async {
+    func setPoisonPillPin(cipheredHashedPin: String, cipheredPlainPin: String) async {
         return await withCheckedContinuation { continuation in
             queue.async(flags: .barrier) { [weak self] in
                 guard let self = self else {
@@ -309,19 +338,19 @@ public final class FileBasedSettingsDataSource: SettingsDataSource, @unchecked S
         }
     }
 
-    public func getPlainPoisonPillPin() async -> String? {
+    func getPlainPoisonPillPin() async -> String? {
         return readProperty(\.poisonPillPlain)
     }
 
-    public func getHashedPoisonPillPin() async -> String? {
+    func getHashedPoisonPillPin() async -> String? {
         return readProperty(\.poisonPillHashed)
     }
 
-    public func activatePoisonPill(ciphered: String) async {
+    func activatePoisonPill(ciphered: String) async {
         writeProperty(\.cipheredPin, value: ciphered)
     }
 
-    public func removePoisonPillPin() async {
+    func removePoisonPillPin() async {
         return await withCheckedContinuation { continuation in
             queue.async(flags: .barrier) { [weak self] in
                 guard let self = self else {
@@ -337,28 +366,8 @@ public final class FileBasedSettingsDataSource: SettingsDataSource, @unchecked S
         }
     }
 
-    public func isPinCiphered() async -> Bool {
+    // periphery:ignore
+    func isPinCiphered() async -> Bool {
         return readProperty(\.cipheredPin) != nil
-    }
-}
-
-// MARK: - Testing Support
-
-extension FileBasedSettingsDataSource {
-    /// Creates an instance that uses a temporary file for testing
-    public static func inMemoryForTesting(
-        sanitizeFileNameDefault: Bool = Defaults.sanitizeFileName,
-        sanitizeMetadataDefault: Bool = Defaults.sanitizeMetadata
-    ) -> FileBasedSettingsDataSource {
-        // This will create a temporary file that gets cleaned up automatically
-        let tempURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("test-settings-\(UUID().uuidString).json")
-        
-        let instance = FileBasedSettingsDataSource(
-            sanitizeFileNameDefault: sanitizeFileNameDefault, sanitizeMetadataDefault: sanitizeMetadataDefault,
-            fileURL: tempURL
-        )
-        
-        return instance
     }
 }

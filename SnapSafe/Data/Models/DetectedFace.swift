@@ -27,10 +27,6 @@ public struct _DetectedFace: Identifiable, Hashable {
         self.rightEye = rightEye
     }
 
-    public init(rect: CGRect, isSelected: Bool = false) {
-        self.init(bounds: rect, isSelected: isSelected, isUserCreated: false)
-    }
-
     /// Aspect-fit scale and offset for drawing an image of `original` inside a `display` rect.
     /// Returns `(scale, offset)` where `offset` is the top-left inset inside the display area.
     public static func aspectFitScaleAndOffset(original: CGSize, display: CGSize) -> (CGFloat, CGPoint) {
@@ -42,12 +38,6 @@ public struct _DetectedFace: Identifiable, Hashable {
         let offset = CGPoint(x: (display.width - used.width) / 2,
                              y: (display.height - used.height) / 2)
         return (scale, offset)
-    }
-
-    /// Convert a display-space point (inside the aspect-fit image frame) to image-space.
-    public static func imagePoint(fromDisplay p: CGPoint, originalSize: CGSize, displaySize: CGSize) -> CGPoint {
-        let (scale, offset) = aspectFitScaleAndOffset(original: originalSize, display: displaySize)
-        return CGPoint(x: (p.x - offset.x) / scale, y: (p.y - offset.y) / scale)
     }
 
     /// Convert a display-space delta (drag translation) to image-space delta.

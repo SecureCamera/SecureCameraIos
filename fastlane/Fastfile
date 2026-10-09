@@ -18,8 +18,15 @@ opt_out_usage
 default_platform(:ios)
 
 platform :ios do
+  desc "Fail if any test source file is not a member of its test target"
+  lane :verify_test_membership do
+    script = File.expand_path("../scripts/check_test_target_membership.rb", __dir__)
+    sh("bundle", "exec", "ruby", script)
+  end
+
   desc "Build the app"
   lane :build do
+    verify_test_membership
     run_tests(
       scheme: "SnapSafe",
       device: "iPhone 17",
@@ -29,6 +36,7 @@ platform :ios do
 
   desc "Run unit tests"
   lane :test do
+    verify_test_membership
     run_tests(
       scheme: "SnapSafe",
       devices: ["iPhone 17"],
@@ -120,6 +128,27 @@ platform :ios do
       submit_for_review: false,
       force: false,
       precheck_include_in_app_purchases: false
+    )
+  end
+
+  desc "Generate App Store screenshots using Fastlane Snapshot"
+  lane :screenshots do
+    capture_ios_screenshots(
+      workspace: "SnapSafe.xcworkspace",
+      scheme: "SnapSafe"
+    )
+  end
+
+  desc "Run Periphery static analysis to detect unused Swift code"
+  lane :periphery do
+    sh(
+      "periphery", "scan",
+      "--project", "SnapSafe.xcworkspace",
+      "--schemes", "SnapSafe",
+      "--clean-build",
+      "--",
+      "-skipMacroValidation",
+      chdir: File.expand_path("..", __dir__)
     )
   end
 end

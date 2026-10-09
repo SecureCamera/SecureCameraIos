@@ -140,23 +140,23 @@ struct ScreenRecordingBlockerView: View {
                 // Warning icon
                 Image(systemName: "record.circle")
                     .font(.system(size: 80))
-                    .foregroundColor(.red)
+                    .foregroundStyle(.red)
                     .padding(.top, 60)
                 
                 // Warning message
                 Text("Screen Recording Detected")
                     .font(.system(size: 24, weight: .bold))
-                    .foregroundColor(.white)
+                    .foregroundStyle(.white)
                 
                 Text("For privacy and security reasons, screen recording is not allowed in SnapSafe.")
                     .font(.system(size: 16))
-                    .foregroundColor(.gray)
+                    .foregroundStyle(.gray)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 40)
                 
                 Text("Please stop recording to continue using the app.")
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.white)
+                    .foregroundStyle(.white)
                     .padding(.top, 20)
                 
                 Spacer()

@@ -18,8 +18,8 @@ struct ZoomLevelIndicator: View {
                 .frame(width: 60, height: 25)
             
             Text(String(format: "%.1fx", scale))
-                .font(.system(size: 14, weight: .bold))
-                .foregroundColor(.white)
+                .font(.footnote.bold())
+                .foregroundStyle(.white)
         }
         .opacity(isVisible && scale != 1.0 ? 1.0 : 0.0)
         .animation(.easeInOut(duration: 0.2), value: scale)
@@ -27,11 +27,3 @@ struct ZoomLevelIndicator: View {
     }
 }
 
-struct ZoomLevelIndicator_Previews: PreviewProvider {
-    static var previews: some View {
-        ZStack {
-            Color.gray
-            ZoomLevelIndicator(scale: 10.0, isVisible: true)
-        }
-    }
-}
