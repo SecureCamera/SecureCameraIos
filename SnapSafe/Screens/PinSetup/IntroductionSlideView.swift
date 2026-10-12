@@ -21,7 +21,7 @@ struct IntroductionSlideView: View {
                 // Icon
                 Image(systemName: slide.icon)
                     .font(.system(size: 80, weight: .light))
-                    .foregroundColor(slide.iconColor)
+                    .foregroundStyle(slide.iconColor)
                     .padding(.top, 20)
                 
                 // Title
@@ -35,7 +35,7 @@ struct IntroductionSlideView: View {
                 Text(slide.description)
                     .font(.body)
                     .multilineTextAlignment(.center)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                     .lineSpacing(4)
                     .padding(.horizontal, 30)
                 

@@ -21,8 +21,8 @@ final class InvalidateSessionUseCase {
         self.authManager = authManager
     }
 
-    func invalidateSession() {
-        imageRepository.evictKey()
+    func invalidateSession() async {
+        await imageRepository.evictKey()
         imageRepository.thumbnailCache.clear()
         authManager.revokeAuthorization()
     }

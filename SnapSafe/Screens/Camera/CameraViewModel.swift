@@ -4,22 +4,20 @@
 //
 //  Created by Bill Booth on 5/24/25.
 //
-import AVFoundation
+@preconcurrency import AVFoundation
+import CoreMedia
 import SwiftUI
 import FactoryKit
 import Logging
 import Combine
-
-enum CameraLensType {
-    case ultraWide   // 0.5x zoom
-    case wideAngle   // 1x zoom (standard)
-}
+import CryptoKit
 
 // Camera model that handles the AVFoundation functionality
 @MainActor
 class CameraViewModel: NSObject, ObservableObject {
     
     // MARK: - Debug/Simulator Detection
+    // periphery:ignore
     private var isRunningInSimulator: Bool {
         #if DEBUG && targetEnvironment(simulator)
         return true
@@ -28,38 +26,62 @@ class CameraViewModel: NSObject, ObservableObject {
         #endif
     }
     // MARK: - Services
-    
+
     private let permissionService = CameraPermissionService()
     private let deviceService = CameraDeviceService()
     private let zoomService = CameraZoomService()
     private let focusService = CameraFocusService()
     private let photoService = PhotoCaptureService()
-    
+    private let videoService = VideoCaptureService()
+
     var isPermissionGranted: Bool { permissionService.isPermissionGranted }
     var session: AVCaptureSession { deviceService.session }
     var output: AVCapturePhotoOutput { deviceService.output }
     var currentDevice: AVCaptureDevice? { deviceService.currentDevice }
+
+    /// Portrait aspect (width/height) of the active capture format. The
+    /// preview container uses this so what's on screen is exactly what gets
+    /// captured. Falls back to 9:16 (.high preset) before setup completes.
+    var captureAspectRatio: CGFloat {
+        guard let format = currentDevice?.activeFormat else { return 9.0 / 16.0 }
+        let dims = CMVideoFormatDescriptionGetDimensions(format.formatDescription)
+        return CameraPreviewLayout.portraitAspectRatio(
+            formatWidth: dims.width,
+            formatHeight: dims.height
+        )
+    }
+
     var zoomFactor: CGFloat { zoomService.zoomFactor }
     var minZoom: CGFloat { zoomService.minZoom }
     var maxZoom: CGFloat { zoomService.maxZoom }
-    var currentLensType: CameraLensType { zoomService.currentLensType }
     var focusIndicatorPoint: CGPoint? { focusService.focusIndicatorPoint }
     var showingFocusIndicator: Bool { focusService.showingFocusIndicator }
-    var recentImage: UIImage? { photoService.recentImage }
     var isSavingPhoto: Bool { photoService.isSavingPhoto }
+
+    // Video capture properties
+    var isRecording: Bool { videoService.isRecording }
+    var recordingDurationMs: Int64 { videoService.recordingDurationMs }
 
     @Published var alert = false
     @Published var preview: AVCaptureVideoPreviewLayer!
-    
-    
+    @Published var captureMode: CaptureMode = .photo
+
+    // Video saving state. The gate keeps the "Saving…" HUD visible for a
+    // minimum duration so short clips don't flash it on and off faster than
+    // the user can read it; it shows from the moment recording stops (not
+    // just while encrypting) so the finalize/thumbnail gap is covered too.
+    private let videoSavingGate = MinimumVisibilityGate(minimumDuration: 1.0)
+    var isSavingVideo: Bool { videoSavingGate.isVisible }
+    @Published var encryptionProgress: Double = 0
+
     @Injected(\.secureImageRepository)
     private var secureImageRepository: SecureImageRepository
-    
-    @Injected(\.clock)
-    private var clock: Clock
-    
-    @Injected(\.locationRepository)
-    private var locationRepository: LocationRepository
+
+    @Injected(\.videoEncryptionService)
+    private var videoEncryptionService: VideoEncryptionService
+
+    @Injected(\.encryptionScheme)
+    private var encryptionScheme: EncryptionScheme
     
     
     
@@ -67,7 +89,6 @@ class CameraViewModel: NSObject, ObservableObject {
     var viewSize: CGSize = .zero
     @Published var flashMode: AVCaptureDevice.FlashMode = .auto
     var cameraPosition: AVCaptureDevice.Position { deviceService.cameraPosition }
-    @Published var isTogglingFlash = false
 
     // Combine subscriptions
     private var cancellables = Set<AnyCancellable>()
@@ -77,6 +98,29 @@ class CameraViewModel: NSObject, ObservableObject {
     // Initialize camera with delayed permission check to prevent race conditions
     override init() {
         super.init()
+
+        // Wire video recording callback to trigger encryption
+        videoService.onRecordingFinished = { [weak self] outputURL in
+            self?.encryptRecordedVideo(at: outputURL)
+        }
+
+        // Release the mic once recording fully finalizes (success or failure).
+        videoService.onRecordingStopped = { [weak self] in
+            self?.deviceService.detachAudioInput()
+        }
+
+        // A failed recording produces no file to encrypt, so nothing else
+        // will release the saving HUD — release it here.
+        videoService.onRecordingFailed = { [weak self] in
+            self?.videoSavingGate.hide()
+        }
+
+        // Observe device service changes (drives captureAspectRatio)
+        deviceService.objectWillChange
+            .sink { [weak self] _ in
+                self?.objectWillChange.send()
+            }
+            .store(in: &cancellables)
 
         // Observe permission changes from the service
         permissionService.objectWillChange
@@ -101,6 +145,20 @@ class CameraViewModel: NSObject, ObservableObject {
 
         // Observe zoom service changes
         zoomService.objectWillChange
+            .sink { [weak self] _ in
+                self?.objectWillChange.send()
+            }
+            .store(in: &cancellables)
+
+        // Observe video service changes
+        videoService.objectWillChange
+            .sink { [weak self] _ in
+                self?.objectWillChange.send()
+            }
+            .store(in: &cancellables)
+
+        // Observe saving-HUD gate changes (drives isSavingVideo)
+        videoSavingGate.objectWillChange
             .sink { [weak self] _ in
                 self?.objectWillChange.send()
             }
@@ -140,6 +198,10 @@ class CameraViewModel: NSObject, ObservableObject {
 
     @objc private func handleAppWillResignActive() {
         Logger.camera.info("App will resign active, stopping camera")
+        // Stop any active recording before stopping session
+        if isRecording {
+            stopRecording()
+        }
         stopCameraSession()
     }
 
@@ -182,7 +244,8 @@ class CameraViewModel: NSObject, ObservableObject {
         if isGranted {
             Task {
                 try await Task.sleep(for: .milliseconds(200))
-                await deviceService.setupCamera(for: cameraPosition, lensType: currentLensType)
+                await deviceService.setupCamera(for: cameraPosition)
+                zoomService.updateZoomLimits(for: currentDevice)
             }
         } else {
             await MainActor.run {
@@ -192,6 +255,7 @@ class CameraViewModel: NSObject, ObservableObject {
     }
     
     
+    // periphery:ignore
     func setupCamera() async {
         #if DEBUG && targetEnvironment(simulator)
         if isRunningInSimulator {
@@ -200,8 +264,8 @@ class CameraViewModel: NSObject, ObservableObject {
         }
         #endif
         
-        await deviceService.setupCamera(for: cameraPosition, lensType: currentLensType)
-        
+        await deviceService.setupCamera(for: cameraPosition)
+
         // Update zoom limits based on device
         zoomService.updateZoomLimits(for: currentDevice)
         
@@ -224,22 +288,12 @@ class CameraViewModel: NSObject, ObservableObject {
     #endif
     
     
+    // periphery:ignore
     private func prepareZeroShutterLagCapture() {
         // TODO/debug
         return
     }
     
-    
-    // Map device orientations to rotation angles for horizon-level capture
-    private func rotationAngle(for orientation: UIDeviceOrientation) -> Double {
-        switch orientation {
-        case .portrait:              return 90
-        case .portraitUpsideDown:    return 270
-        case .landscapeLeft:         return 0
-        case .landscapeRight:        return 180
-        default:                     return 0
-        }
-    }
     
     func capturePhoto() {
         #if DEBUG && targetEnvironment(simulator)
@@ -250,7 +304,7 @@ class CameraViewModel: NSObject, ObservableObject {
             return
         }
         #endif
-        
+
         photoService.capturePhoto(
             flashMode: flashMode,
             cameraPosition: cameraPosition,
@@ -259,56 +313,113 @@ class CameraViewModel: NSObject, ObservableObject {
             session: session
         )
     }
-    
-    
+
+    // MARK: - Capture Mode & Video Recording
+
+    /// Switch between photo and video capture modes
+    func switchCaptureMode(to mode: CaptureMode) {
+        guard mode != captureMode else { return }
+
+        // Stop any active recording before switching modes
+        if isRecording {
+            stopRecording()
+        }
+
+        captureMode = mode
+        deviceService.configureForMode(mode)
+
+        // Mode switches always start back at the default zoom
+        resetZoomLevel()
+
+        Logger.camera.info("Switched capture mode to: \(String(describing: mode))")
+    }
+
+    /// Start video recording
+    @discardableResult
+    func startRecording() -> URL? {
+        #if DEBUG && targetEnvironment(simulator)
+        if isRunningInSimulator {
+            Logger.camera.warning("Video recording not supported in simulator")
+            return nil
+        }
+        #endif
+
+        guard captureMode == .video else {
+            Logger.camera.warning("Cannot start recording - not in video mode")
+            return nil
+        }
+
+        // Attach the mic only now, immediately before recording — so toggling
+        // into video mode never reconfigures the session (no preview flicker)
+        // and the mic indicator appears only while actually recording.
+        deviceService.attachAudioInput()
+
+        let outputURL = videoService.startRecording(
+            session: session,
+            movieOutput: deviceService.movieOutput,
+            preview: preview
+        )
+
+        // If recording never actually started, no finish delegate will fire to
+        // release the mic, so release it here.
+        if outputURL == nil {
+            deviceService.detachAudioInput()
+        }
+
+        return outputURL
+    }
+
+    /// Stop video recording
+    func stopRecording() {
+        guard isRecording else { return }
+
+        // Show the saving HUD now, before finalization/encryption begins, so
+        // the whole stop→encrypt→save pipeline reads as one operation. Reset
+        // the progress first so the bar doesn't show the previous clip's 100%.
+        encryptionProgress = 0
+        videoSavingGate.show()
+
+        // The mic is released once finalization completes (onRecordingStopped),
+        // not here — removing the input mid-finalization could truncate audio.
+        videoService.stopRecording()
+    }
+
+    /// Toggle video recording state
+    func toggleRecording() {
+        if isRecording {
+            stopRecording()
+        } else {
+            startRecording()
+        }
+    }
+
     // Smooth zoom with lens-specific adjustments and auto mode restoration
     func zoom(factor: CGFloat) async {
         await zoomService.zoom(factor: factor, device: currentDevice)
     }
     
-    // Handle pinch gestures with automatic lens switching and smooth zoom
+    // Handle pinch gestures; the virtual device zooms seamlessly across lenses
     func handlePinchGesture(scale: CGFloat, initialScale: CGFloat? = nil) {
         zoomService.handlePinchGesture(
             scale: scale,
             initialScale: initialScale,
-            device: currentDevice,
-            onLensSwitch: { [weak self] lensType in
-                self?.switchLensType(to: lensType)
-            }
+            device: currentDevice
         )
     }
-    
+
     // Tap-to-focus with optional white balance locking
     func adjustCameraSettings(at point: CGPoint, lockWhiteBalance: Bool = false) {
         focusService.adjustCameraSettings(at: point, lockWhiteBalance: lockWhiteBalance, device: currentDevice)
     }
-    
-    
-    // Switch between ultra-wide and wide-angle cameras
-    func switchLensType(to lensType: CameraLensType) {
-        guard lensType != currentLensType else { return }
-        guard cameraPosition == .back || lensType == .wideAngle else { return }
-        
-        zoomService.updateLensType(lensType)
-        deviceService.switchLensType(to: lensType)
-        
-        // Set up focus monitoring for the new device
-        if let device = currentDevice {
-            focusService.setupSubjectAreaChangeMonitoring(for: device)
-        }
-    }
-    
+
     // Switch between front and back cameras with clean white balance reset
     func switchCamera(to position: AVCaptureDevice.Position) async {
-        if position == .front && currentLensType == .ultraWide {
-            zoomService.updateLensType(.wideAngle)
-        }
-        
         await deviceService.switchCamera(to: position)
-        
-        // Update zoom after camera switch
-        zoomService.resetZoomLevel(device: currentDevice)
-        
+
+        // Rebuild the zoom mapping for the new device (front cameras have no
+        // ultra-wide lens); setupCamera already positioned it at display 1.0x.
+        zoomService.updateZoomLimits(for: currentDevice)
+
         // Set up focus monitoring for the new device
         if let device = currentDevice {
             focusService.setupSubjectAreaChangeMonitoring(for: device)
@@ -336,17 +447,9 @@ class CameraViewModel: NSObject, ObservableObject {
     
     
     func toggleFlashMode() {
-        // Prevent rapid consecutive toggles
-        guard !isTogglingFlash else { 
-            Logger.camera.debug("Flash toggle ignored - already in progress")
-            return 
-        }
-        
-        isTogglingFlash = true
-        
         let currentMode = flashMode
         let newMode: AVCaptureDevice.FlashMode
-        
+
         switch currentMode {
         case .auto:
             newMode = .on
@@ -357,26 +460,15 @@ class CameraViewModel: NSObject, ObservableObject {
         @unknown default:
             newMode = .auto
         }
-        
+
+        // Cycling the flash mode is a synchronous, idempotent state change — it
+        // only takes effect at capture time — so there's nothing to debounce.
+        flashMode = newMode
+
         Logger.camera.debug("Flash mode cycling", metadata: [
             "from": .string(String(describing: currentMode)),
             "to": .string(String(describing: newMode))
         ])
-        
-        // Update the flash mode
-        flashMode = newMode
-        
-        Logger.camera.debug("Flash mode updated", metadata: [
-            "mode": .string(String(describing: flashMode))
-        ])
-        
-        // Re-enable toggling after a brief delay
-        Task {
-            try await Task.sleep(for: .milliseconds(100))
-            await MainActor.run {
-                self.isTogglingFlash = false
-            }
-        }
     }
     
     var flashIcon: String {
@@ -389,6 +481,70 @@ class CameraViewModel: NSObject, ObservableObject {
             return "bolt.slash"
         @unknown default:
             return "bolt.badge.a"
+        }
+    }
+
+    // MARK: - Video Encryption
+
+    private func encryptRecordedVideo(at movURL: URL) {
+        Task {
+            do {
+                let keyData = try await encryptionScheme.getDerivedKey()
+                let symmetricKey = SymmetricKey(data: keyData)
+
+                // Generate the gallery thumbnail from the plaintext .mov now,
+                // while it still exists (it is deleted after encryption).
+                let videoName = movURL.deletingPathExtension().lastPathComponent
+                await secureImageRepository.generateAndStoreVideoThumbnail(
+                    forVideoNamed: videoName,
+                    fromPlaintextVideo: movURL
+                )
+
+                // Build .secv output path alongside the .mov
+                let secvURL = movURL.deletingPathExtension().appendingPathExtension(SECVFileFormat.FILE_EXTENSION)
+
+                // Create empty output file (FileHandle(forWritingTo:) requires it to exist)
+                FileManager.default.createFile(atPath: secvURL.path, contents: nil)
+
+                encryptionProgress = 0
+
+                let (progress, _) = videoEncryptionService.encryptVideo(
+                    inputURL: movURL,
+                    outputURL: secvURL,
+                    encryptionKey: symmetricKey
+                )
+
+                // The stream always finishes; success is "reached 1.0 first".
+                // Doing cleanup on completion (not on the 1.0 value) means the
+                // .secv trailer is fully written before the .mov is deleted,
+                // and a failed encryption still releases the saving HUD.
+                progress
+                    .receive(on: DispatchQueue.main)
+                    .sink(receiveCompletion: { [weak self] _ in
+                        guard let self else { return }
+                        if self.encryptionProgress >= 1.0 {
+                            // Delete the temp .mov file
+                            try? FileManager.default.removeItem(at: movURL)
+                            Logger.camera.info("Video encrypted and temp file deleted", metadata: [
+                                "output": .string(secvURL.lastPathComponent)
+                            ])
+                        } else {
+                            Logger.camera.error("Video encryption did not complete", metadata: [
+                                "output": .string(secvURL.lastPathComponent)
+                            ])
+                        }
+                        self.videoSavingGate.hide()
+                    }, receiveValue: { [weak self] value in
+                        self?.encryptionProgress = value
+                    })
+                    .store(in: &cancellables)
+
+            } catch {
+                videoSavingGate.hide()
+                Logger.camera.error("Failed to encrypt video", metadata: [
+                    "error": .string(error.localizedDescription)
+                ])
+            }
         }
     }
 }

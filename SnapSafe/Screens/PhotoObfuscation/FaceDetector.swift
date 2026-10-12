@@ -268,10 +268,4 @@ class FaceDetector {
         return UIGraphicsGetImageFromCurrentImageContext()
     }
 
-
-    // Pixelate faces with default pixelate mode
-    func pixelateFaces(in image: UIImage, faces: [DetectedFace]) -> UIImage? {
-        return maskFaces(in: image, faces: faces, modes: [.pixelate])
-    }
-
 }

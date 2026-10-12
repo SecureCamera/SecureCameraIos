@@ -9,33 +9,39 @@ import Foundation
 import SwiftUI
 import UIKit
 
-public struct ZoomableScrollView<Content: View>: UIViewRepresentable {
+struct ZoomableScrollView<Content: View>: UIViewRepresentable {
     // MARK: – Inputs
     private let minZoom: CGFloat
     private let maxZoom: CGFloat
     private let showsIndicators: Bool
+    /// Optional single-tap callback. When set, a tap recognizer is installed
+    /// that waits for the double-tap (zoom) recognizer to fail, so a double
+    /// tap never also fires the single-tap action.
+    private let onSingleTap: (() -> Void)?
     private let content: Content
 
     // MARK: – Zoom surfaced to SwiftUI
     @Binding private var isZoomed: Bool
 
     // MARK: – Init
-    public init(
+    init(
         minZoom: CGFloat = 1.0,
         maxZoom: CGFloat = 4.0,
         showsIndicators: Bool = false,
         isZoomed: Binding<Bool>,
+        onSingleTap: (() -> Void)? = nil,
         @ViewBuilder content: () -> Content
     ) {
         self.minZoom = minZoom
         self.maxZoom = maxZoom
         self.showsIndicators = showsIndicators
         self._isZoomed = isZoomed
+        self.onSingleTap = onSingleTap
         self.content = content()
     }
 
     // MARK: – UIViewRepresentable
-    public func makeUIView(context: Context) -> UIScrollView {
+    func makeUIView(context: Context) -> UIScrollView {
         let scrollView = UIScrollView()
         scrollView.showsVerticalScrollIndicator = showsIndicators
         scrollView.showsHorizontalScrollIndicator = showsIndicators
@@ -50,9 +56,6 @@ public struct ZoomableScrollView<Content: View>: UIViewRepresentable {
 
         // Enable simultaneous pan and pinch gestures (allows 2-finger pan during/after pinch)
         scrollView.panGestureRecognizer.maximumNumberOfTouches = 2
-
-        // Store reference to coordinator for bounds observation
-        context.coordinator.scrollView = scrollView
 
         let hosted = context.coordinator.hostingController
         hosted.view.backgroundColor = .clear
@@ -88,10 +91,22 @@ public struct ZoomableScrollView<Content: View>: UIViewRepresentable {
         doubleTap.numberOfTapsRequired = 2
         scrollView.addGestureRecognizer(doubleTap)
 
+        context.coordinator.onSingleTap = onSingleTap
+        if onSingleTap != nil {
+            let singleTap = UITapGestureRecognizer(
+                target: context.coordinator,
+                action: #selector(Coordinator.handleSingleTap(_:))
+            )
+            singleTap.numberOfTapsRequired = 1
+            singleTap.require(toFail: doubleTap)
+            scrollView.addGestureRecognizer(singleTap)
+        }
+
         return scrollView
     }
 
-    public func updateUIView(_ uiView: UIScrollView, context: Context) {
+    func updateUIView(_ uiView: UIScrollView, context: Context) {
+        context.coordinator.onSingleTap = onSingleTap
         context.coordinator.hostingController.rootView = content
 
         let atMin = abs(uiView.zoomScale - uiView.minimumZoomScale) < 0.01
@@ -109,32 +124,32 @@ public struct ZoomableScrollView<Content: View>: UIViewRepresentable {
         }
     }
 
-    public func makeCoordinator() -> Coordinator {
+    func makeCoordinator() -> Coordinator {
         Coordinator(isZoomed: _isZoomed, content: content)
     }
 
     // MARK: – Coordinator
-    public final class Coordinator: NSObject, UIScrollViewDelegate {
+    final class Coordinator: NSObject, UIScrollViewDelegate {
         fileprivate let hostingController: UIHostingController<Content>
         private var isZoomedBinding: Binding<Bool>
         private var isZooming: Bool = false
-        weak var scrollView: UIScrollView?
         var lastBoundsSize: CGSize = .zero
+        var onSingleTap: (() -> Void)?
 
         internal init(isZoomed: Binding<Bool>, content: Content) {
             self.hostingController = UIHostingController(rootView: content)
             self.isZoomedBinding = isZoomed
         }
 
-        public func viewForZooming(in scrollView: UIScrollView) -> UIView? {
+        func viewForZooming(in scrollView: UIScrollView) -> UIView? {
             hostingController.view
         }
 
-        public func scrollViewWillBeginZooming(_ scrollView: UIScrollView, with view: UIView?) {
+        func scrollViewWillBeginZooming(_ scrollView: UIScrollView, with view: UIView?) {
             isZooming = true
         }
 
-        public func scrollViewDidZoom(_ scrollView: UIScrollView) {
+        func scrollViewDidZoom(_ scrollView: UIScrollView) {
             let atMin = abs(scrollView.zoomScale - scrollView.minimumZoomScale) < 0.01
             let newZoomState = !atMin
 
@@ -146,7 +161,7 @@ public struct ZoomableScrollView<Content: View>: UIViewRepresentable {
             // Don't adjust content insets during zoom - let UIKit handle the anchor point
         }
 
-        public func scrollViewDidEndZooming(
+        func scrollViewDidEndZooming(
             _ scrollView: UIScrollView,
             with view: UIView?,
             atScale scale: CGFloat
@@ -155,15 +170,20 @@ public struct ZoomableScrollView<Content: View>: UIViewRepresentable {
             centerContentIfNeeded(scrollView)
         }
 
-        public func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
+        func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
             centerContentIfNeeded(scrollView)
         }
 
-        public func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        func scrollViewDidScroll(_ scrollView: UIScrollView) {
             // Only adjust centering when not actively zooming
             if !isZooming {
                 centerContentIfNeeded(scrollView)
             }
+        }
+
+        // MARK: – Single Tap
+        @objc internal func handleSingleTap(_: UITapGestureRecognizer) {
+            onSingleTap?()
         }
 
         // MARK: – Double Tap Zoom
@@ -186,7 +206,7 @@ public struct ZoomableScrollView<Content: View>: UIViewRepresentable {
 
         // Handle bounds changes (e.g., rotation)
         fileprivate func handleBoundsChange(_ scrollView: UIScrollView) {
-            guard let view = hostingController.view else { return }
+            guard hostingController.view != nil else { return }
 
             // If zoomed, maintain the center point
             if scrollView.zoomScale > scrollView.minimumZoomScale {

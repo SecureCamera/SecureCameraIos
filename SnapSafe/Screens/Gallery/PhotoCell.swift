@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import FactoryKit
 
 
 // Photo cell view for gallery items
@@ -15,21 +14,19 @@ struct PhotoCell: View {
     let isSelected: Bool
     let isSelecting: Bool
     let onTap: () -> Void
-    let onDelete: () -> Void
+    @ObservedObject var galleryViewModel: MixedMediaGalleryViewModel
 
-    @Injected(\.secureImageRepository)
-    private var secureImageRepository: SecureImageRepository
-    
     // Track whether this cell is visible in the viewport
     @State private var isVisible: Bool = false
-    @State private var thumbnail: UIImage? = nil
     @State private var isDecoy: Bool = false
-    
+
     // Cell size
     private let cellSize: CGFloat = 100
-    
+
+    private var thumbnail: UIImage? { galleryViewModel.photoThumbnails[photo.photoName] }
+
     var body: some View {
-        
+
         ZStack {
             // Photo image that fills the entire cell
             Image(uiImage: thumbnail ?? UIImage())
@@ -37,8 +34,7 @@ struct PhotoCell: View {
                 .aspectRatio(contentMode: .fill) // Use .fill to cover the entire cell
                 .frame(width: cellSize, height: cellSize)
                 .clipped() // Clip any overflow
-                .cornerRadius(10)
-                .onTapGesture(perform: onTap)
+                .clipShape(.rect(cornerRadius: 10))
                 .overlay(
                     RoundedRectangle(cornerRadius: 10)
                         .stroke(isSelected ? Color.blue : Color.clear, lineWidth: 3)
@@ -53,37 +49,46 @@ struct PhotoCell: View {
                     isVisible = false
                 }
 
-            // Selection checkmark when in selection mode and selected (top-right)
-            if isSelecting && isSelected {
+            // Selection checkmark overlay (bottom-trailing) — kept identical to
+            // VideoCellView so photos and videos show the affordance in the same
+            // place, with an empty circle when unselected.
+            if isSelecting {
                 VStack {
+                    Spacer()
                     HStack {
                         Spacer()
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 24))
-                            .foregroundColor(.blue)
-                            .background(Circle().fill(Color.white))
-                            .padding(5)
+                        Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                            .foregroundStyle(isSelected ? .blue : .white)
+                            .font(.title2)
+                            .shadow(radius: 2)
+                            .padding(6)
                     }
-                    Spacer()
                 }
             }
-            
+
             // Decoy indicator (bottom-left)
             if isDecoy {
                 VStack {
                     Spacer()
                     HStack {
                         Image(systemName: "shield.fill")
-                            .font(.system(size: 16))
-                            .foregroundColor(.white.opacity(0.75))
+                            .font(.callout)
+                            .foregroundStyle(.white.opacity(0.75))
                             .padding(5)
                         Spacer()
                     }
                 }
             }
-        }.task {
-            thumbnail = await self.secureImageRepository.readThumbnail(photo)
-            isDecoy = secureImageRepository.isDecoyPhoto(photo)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Photo: \(photo.photoName)")
+        .accessibilityHint(isSelecting ? "Double-tap to \(isSelected ? "deselect" : "select")" : "Double-tap to open")
+        .accessibilityAddTraits(isSelected ? [.isSelected, .isButton] : [.isButton])
+        .accessibilityActivationPoint(.center)
+        .onTapGesture(perform: onTap)
+        .task(id: photo.photoName) {
+            await galleryViewModel.loadThumbnail(for: photo)
+            isDecoy = await galleryViewModel.isDecoyPhoto(photo)
         }
     }
 }

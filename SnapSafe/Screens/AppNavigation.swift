@@ -16,10 +16,13 @@ enum AppDestination: Hashable {
     case pinSetup
     case pinVerification
     case camera
-    case photoDetail(allPhotos: [PhotoDef], initialIndex: Int)
+    case photoDetail(allMedia: [GalleryMediaItem], initialIndex: Int)
     case photoInfo(PhotoDef)
+    case videoInfo(VideoDef)
     case photoObfuscation(PhotoDef)
     case poisonPillSetupWizard
+    case videoPlayer(VideoDef, Data?)
+    case videoExportTest // For testing video export on simulator
 }
 
 // MARK: - Navigation State
@@ -58,10 +61,6 @@ final class AppNavigationState: ObservableObject {
         presentedSheet = destination
     }
     
-    func presentFullScreenCover(_ destination: AppDestination) {
-        presentedFullScreenCover = destination
-    }
-    
     func dismissSheet() {
         presentedSheet = nil
     }
@@ -89,8 +88,11 @@ extension AppDestination: Identifiable {
         case .camera: return "camera"
         case .photoDetail(_, let initialIndex): return "photoDetail_\(initialIndex)"
         case .photoInfo(let photoDef): return "photoInfo_\(photoDef.photoName)"
+        case .videoInfo(let videoDef): return "videoInfo_\(videoDef.videoName)"
         case .photoObfuscation(let photoDef): return "photoObfuscation_\(photoDef.photoName)"
         case .poisonPillSetupWizard: return "poisonPillSetupWizard"
+        case .videoPlayer(let videoDef, _): return "videoPlayer_\(videoDef.videoName)"
+        case .videoExportTest: return "videoExportTest"
         }
     }
 }

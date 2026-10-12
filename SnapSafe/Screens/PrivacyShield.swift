@@ -22,18 +22,19 @@ struct PrivacyShield: View {
                 // App logo/icon
                 Image(systemName: "lock.shield.fill")
                     .font(.system(size: 100))
-                    .foregroundColor(.white)
+                    .foregroundStyle(.white)
                     .padding(.top, 60)
+                    .accessibilityHidden(true)
                 
                 // App name
                 Text("SnapSafe")
-                    .font(.system(size: 32, weight: .bold))
-                    .foregroundColor(.white)
-                
+                    .font(.largeTitle.bold())
+                    .foregroundStyle(.white)
+
                 // Privacy message
                 Text("The camera app that minds its own business.")
-                    .font(.system(size: 20, weight: .medium))
-                    .foregroundColor(.gray)
+                    .font(.title3)
+                    .foregroundStyle(.gray)
                 
                 Spacer()
             }

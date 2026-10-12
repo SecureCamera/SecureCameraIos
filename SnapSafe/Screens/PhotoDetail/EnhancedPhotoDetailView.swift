@@ -10,15 +10,29 @@ import SwiftUI
 import Logging
 
 
+/// Shared layout constants for the photo detail pager.
+internal enum PhotoDetailLayout {
+    /// Fixed height reserved at the bottom of every photo page so the floating
+    /// action toolbar sits BELOW the image instead of over it. It's a constant
+    /// (not the measured toolbar height) on purpose: a constant keeps each
+    /// photo's available area identical regardless of whether the neighbouring
+    /// page is a video, so the image never shifts vertically while paging.
+    /// Sized to clear the toolbar (≈80pt) on every supported OS version.
+    static let bottomReserve: CGFloat = 88
+}
+
 internal struct DismissTransformModifier: ViewModifier {
     internal let isZoomed: Bool
     internal let scale: CGFloat
-    internal let verticalOffset: CGFloat
+    internal let offset: CGSize
 
     internal func body(content: Content) -> some View {
         content
             .scaleEffect(isZoomed ? 1.0 : scale)
-            .offset(y: isZoomed ? 0 : verticalOffset)
+            .offset(
+                x: isZoomed ? 0 : offset.width,
+                y: isZoomed ? 0 : offset.height
+            )
     }
 }
 
@@ -26,13 +40,13 @@ internal extension View {
     func dismissTransform(
         isZoomed: Bool,
         scale: CGFloat,
-        verticalOffset: CGFloat
+        offset: CGSize
     ) -> some View {
         modifier(
             DismissTransformModifier(
                 isZoomed: isZoomed,
                 scale: scale,
-                verticalOffset: verticalOffset
+                offset: offset
             )
         )
     }
@@ -47,11 +61,11 @@ internal struct PhotoCounterChip: View {
             Spacer()
             Text(text)
                 .font(.subheadline)
-                .foregroundColor(.white)
+                .foregroundStyle(.white)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background(Color.black.opacity(0.6))
-                .cornerRadius(12)
+                .clipShape(.rect(cornerRadius: 12))
                 .opacity(opacity)
             Spacer()
         }
@@ -61,18 +75,19 @@ internal struct PhotoCounterChip: View {
 
 struct EnhancedPhotoDetailView: View {
     @StateObject private var viewModel: EnhancedPhotoDetailViewModel
+    @State private var chromeState = PagerChromeState()
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var nav: AppNavigationState
 
     init(
-        allPhotos: [PhotoDef],
+        allMedia: [GalleryMediaItem],
         initialIndex: Int,
         onDelete: ((PhotoDef) -> Void)? = nil,
         onDismiss: (() -> Void)? = nil
     ) {
         _viewModel = StateObject(
             wrappedValue: EnhancedPhotoDetailViewModel(
-                allPhotos: allPhotos,
+                allMedia: allMedia,
                 initialIndex: initialIndex,
                 onDelete: onDelete,
                 onDismiss: onDismiss
@@ -90,9 +105,18 @@ struct EnhancedPhotoDetailView: View {
 
                 // UIKit-based paging with proper gesture coordination
                 PhotoPageViewController(
-                    photos: viewModel.photoFiles,
+                    allMedia: viewModel.allMedia,
                     currentIndex: $viewModel.currentIndex,
-                    isZoomed: $viewModel.isZoomed
+                    isZoomed: $viewModel.isZoomed,
+                    chromeState: chromeState,
+                    isDismissDragging: viewModel.isDismissDragging,
+                    onRequestDismiss: { dismiss() },
+                    onVideoInfo: { videoDef in nav.presentSheet(.videoInfo(videoDef)) },
+                    onVideoControlsVisibilityChange: { visible in
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            viewModel.isVideoControlsVisible = visible
+                        }
+                    }
                 )
                 .onChange(of: viewModel.currentIndex) { _, newIndex in
                     viewModel.handleIndexChange(newIndex: newIndex)
@@ -101,14 +125,24 @@ struct EnhancedPhotoDetailView: View {
                 .dismissTransform(
                     isZoomed: viewModel.isZoomed,
                     scale: viewModel.photoScaleEffect,
-                    verticalOffset: viewModel.dragOffset.height
+                    offset: viewModel.dragOffset
+                )
+                // A tap on the media brings the counter chip back (and restarts
+                // its auto-hide). Simultaneous so it never blocks the scroll
+                // view's double-tap zoom, horizontal paging, or dismiss drag.
+                .simultaneousGesture(
+                    TapGesture().onEnded { viewModel.showCounterThenAutoHide() }
                 )
 
-                // Bottom toolbar
+                // Floating toolbar — photos only. Video pages render their own
+                // glass controls (transport + actions) inside InlineVideoPlayerView.
+                // Each photo page reserves PhotoDetailLayout.bottomReserve at its
+                // bottom (constant, so the image never shifts when paging to/from
+                // a video), and this toolbar sits in that reserved band.
                 VStack {
                     Spacer()
-                    if viewModel.currentIndex < viewModel.photoFiles.count {
-                        PhotoControlsView(
+                    if !viewModel.currentIsVideo, viewModel.currentIndex < viewModel.allMedia.count {
+                        PhotoDetailToolbar(
                             onInfo: {
                                 if let current = viewModel.currentPhotoDef {
                                     nav.presentSheet(.photoInfo(current))
@@ -128,9 +162,11 @@ struct EnhancedPhotoDetailView: View {
                             decoyButtonIcon: viewModel.decoyButtonIcon,
                             isDecoyOperationLoading: viewModel.isDecoyOperationLoading
                         )
-                        .padding(.bottom, 8)
                     }
                 }
+                .opacity(viewModel.isDismissDragging ? 0 : 1)
+                .allowsHitTesting(!viewModel.isDismissDragging)
+                .animation(.easeInOut(duration: 0.2), value: viewModel.isDismissDragging)
 
                 // Counter overlay
                 VStack {
@@ -147,18 +183,22 @@ struct EnhancedPhotoDetailView: View {
                     .onChanged { value in
                         guard viewModel.mayDismissByDrag() else { return }
                         viewModel.handleDragChanged(
-                            value,
+                            translation: value.translation,
                             geometryHeight: geometry.size.height
                         )
                     }
                     .onEnded { value in
                         guard viewModel.mayDismissByDrag() else { return }
                         viewModel.handleDragEnded(
-                            value,
+                            translation: value.translation,
+                            verticalVelocity: value.velocity.height,
                             geometryHeight: geometry.size.height
                         ) { dismiss() }
                     }
             )
+            .onChange(of: viewModel.isDismissDragging) { _, dragging in
+                chromeState.isDismissDragging = dragging
+            }
         }
         .navigationBarHidden(true)
         .supportedOrientations(.allButUpsideDown)
@@ -175,6 +215,16 @@ struct EnhancedPhotoDetailView: View {
             },
             message: {
                 Text("Are you sure you want to delete this photo? This action cannot be undone.")
+            }
+        )
+        .alert(
+            "Decoy Limit Reached",
+            isPresented: $viewModel.showDecoyLimitAlert,
+            actions: {
+                Button("OK", role: .cancel) {}
+            },
+            message: {
+                Text("You can have a maximum of 10 decoy items. Remove an existing decoy before adding a new one.")
             }
         )
     }

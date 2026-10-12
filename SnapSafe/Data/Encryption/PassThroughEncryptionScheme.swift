@@ -18,6 +18,7 @@ final class PassThroughEncryptionScheme: EncryptionScheme, @unchecked Sendable {
         try plain.write(to: targetFile)
     }
     
+    // periphery:ignore
     func encrypt(plain: Data, keyBytes: Data) async throws -> Data {
         return plain
     }
@@ -49,7 +50,7 @@ final class PassThroughEncryptionScheme: EncryptionScheme, @unchecked Sendable {
         return Data(plainPin.utf8)
     }
     
-    func evictKey() {
+    func evictKey() async {
         cachedKey = nil
     }
     

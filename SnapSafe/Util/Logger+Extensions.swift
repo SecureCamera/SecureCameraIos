@@ -25,11 +25,13 @@ extension Logger {
     
     /// Logger for general application events
     static let app = Logger(label: "com.snapsafe.app")
+
+    /// Logger for video operations (encryption, decryption, playback)
+    static let video = Logger(label: "com.snapsafe.video")
+
+    /// Logger for media gallery operations
+    static let media = Logger(label: "com.snapsafe.media")
     
-    /// Creates a logger with a specific subsystem for more granular logging
-    static func subsystem(_ name: String, category: String) -> Logger {
-        return Logger(label: "com.snapsafe.\(category).\(name)")
-    }
 }
 
 // MARK: - Convenience Methods for Common Patterns
@@ -109,20 +111,4 @@ extension Logger {
         ])
     }
     
-    /// Log file operations
-    func logFileOperation(_ operation: String, filePath: String? = nil, fileName: String? = nil, level: Logger.Level = .debug) {
-        var metadata: Logger.Metadata = [
-            "operation": .string(operation)
-        ]
-        
-        if let fileName = fileName {
-            metadata["file"] = .string(fileName)
-        }
-        
-        if let filePath = filePath {
-            metadata["path"] = .string(filePath)
-        }
-        
-        self.log(level: level, "File operation", metadata: metadata)
-    }
 }

@@ -11,7 +11,7 @@ import Mockable
 /// Encryption schemes used to encrypt and decrypt files.
 /// You can provide concrete implementations, e.g. Software / Hardware.
 @Mockable
-public protocol EncryptionScheme: Sendable {
+protocol EncryptionScheme: Sendable {
     // MARK: - Encrypt to file (derived key in cache)
     /// Encrypts plaintext data and writes it to a file using the pre-derived key in cache.
     func encryptToFile(plain: Data, targetFile: URL) async throws
@@ -22,6 +22,7 @@ public protocol EncryptionScheme: Sendable {
 
     // MARK: - Encrypt / Decrypt with explicit key or key alias
     /// Encrypts plaintext using the provided key bytes and returns the ciphertext.
+    // periphery:ignore
     func encrypt(plain: Data, keyBytes: Data) async throws -> Data
 
     /// Encrypts plaintext using the provided key alias and returns the ciphertext.
@@ -44,8 +45,10 @@ public protocol EncryptionScheme: Sendable {
     /// Derives (but does not necessarily cache) a key from the provided PIN.
     func deriveKey(plainPin: String, hashedPin: HashedPin) async throws -> Data
 
-    /// Evicts any cached/derived key from memory.
-    func evictKey()
+    /// Evicts any cached/derived key from memory. Callers must await so the
+    /// key is guaranteed cleared before they proceed (e.g. before signaling
+    /// a completed security reset).
+    func evictKey() async
 
     // MARK: - First-time key creation & resets
     /// First-time key creation bootstrap.

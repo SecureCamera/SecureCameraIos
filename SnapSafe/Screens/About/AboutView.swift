@@ -17,7 +17,7 @@ struct AboutView: View {
                 VStack(spacing: 16) {
                     Image(systemName: "camera.circle.fill")
                         .font(.system(size: 80))
-                        .foregroundColor(.blue)
+                        .foregroundStyle(.blue)
                     
                     Text("SnapSafe")
                         .font(.largeTitle)
@@ -25,11 +25,11 @@ struct AboutView: View {
                     
                     Text("Secure Photo Storage")
                         .font(.headline)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                     
                     Text("Version \(viewModel.appVersion)")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, alignment: .center)
                 .padding(.vertical, 20)
@@ -39,7 +39,7 @@ struct AboutView: View {
             Section("About") {
                 Text("SnapSafe is a privacy-focused camera app designed to protect your sensitive photos with strong encryption and secure storage.")
                     .font(.body)
-                    .foregroundColor(.primary)
+                    .foregroundStyle(.primary)
                     .padding(.vertical, 4)
                 
                 Button("SnapSafe.org") {
@@ -47,13 +47,13 @@ struct AboutView: View {
                         UIApplication.shared.open(url)
                     }
                 }
-                .foregroundColor(.blue)
+                .foregroundStyle(.blue)
             }
             
             Section("Community") {
                 Text("Come engage with our community, discover more Free and Open Source Software!")
                     .font(.body)
-                    .foregroundColor(.primary)
+                    .foregroundStyle(.primary)
                     .padding(.vertical, 4)
                 
                 Button("Join our Discord") {
@@ -61,13 +61,13 @@ struct AboutView: View {
                         UIApplication.shared.open(url)
                     }
                 }
-                .foregroundColor(.blue)
+                .foregroundStyle(.blue)
             }
             
             Section("Open Source") {
                 Text("SnapSafe is an open source project. View the source code on GitHub:")
                     .font(.body)
-                    .foregroundColor(.primary)
+                    .foregroundStyle(.primary)
                     .padding(.vertical, 4)
                 
                 Button("GitHub") {
@@ -75,13 +75,13 @@ struct AboutView: View {
                         UIApplication.shared.open(url)
                     }
                 }
-                .foregroundColor(.blue)
+                .foregroundStyle(.blue)
             }
             
             Section("Privacy") {
                 Text("SnapSafe stores all data locally on your device. No data is transmitted to external servers.")
                     .font(.body)
-                    .foregroundColor(.primary)
+                    .foregroundStyle(.primary)
                     .padding(.vertical, 4)
                 
                 Button("Privacy Policy") {
@@ -89,13 +89,13 @@ struct AboutView: View {
                         UIApplication.shared.open(url)
                     }
                 }
-                .foregroundColor(.blue)
+                .foregroundStyle(.blue)
             }
             
             Section("Report Bugs") {
                 Text("Found a bug? Report it on GitHub:")
                     .font(.body)
-                    .foregroundColor(.primary)
+                    .foregroundStyle(.primary)
                     .padding(.vertical, 4)
                 
                 Button("Report Bug") {
@@ -103,7 +103,7 @@ struct AboutView: View {
                         UIApplication.shared.open(url)
                     }
                 }
-                .foregroundColor(.blue)
+                .foregroundStyle(.blue)
             }
         }
         .navigationTitle("About")
@@ -112,7 +112,7 @@ struct AboutView: View {
 }
 
 #Preview {
-    NavigationView {
+    NavigationStack {
         AboutView()
     }
 }

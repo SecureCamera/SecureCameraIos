@@ -17,7 +17,6 @@ struct PhotoDetailView: View {
 
     // Environment
     @Environment(\.dismiss) private var dismiss
-    @EnvironmentObject private var nav: AppNavigationState
 
     // Zoom state binding (shared with parent)
     @Binding var isZoomed: Bool
@@ -32,17 +31,6 @@ struct PhotoDetailView: View {
         _isZoomed = isZoomed
     }
 
-    // Initialize with multiple photos
-    init(allPhotos: [PhotoDef], initialIndex: Int, onDelete: ((PhotoDef) -> Void)? = nil, onDismiss: (() -> Void)? = nil, isZoomed: Binding<Bool> = .constant(false)) {
-        _viewModel = StateObject(wrappedValue: PhotoDetailViewModel(
-            allPhotos: allPhotos,
-            initialIndex: initialIndex,
-            onDelete: onDelete,
-            onDismiss: onDismiss
-        ))
-        _isZoomed = isZoomed
-    }
-    
     var body: some View {
         GeometryReader { geometry in
             ZStack {
@@ -55,7 +43,7 @@ struct PhotoDetailView: View {
                     if !viewModel.photoFiles.isEmpty {
                         Text("\(viewModel.currentIndex + 1) of \(viewModel.photoFiles.count)")
                             .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                             .padding(.top, 8)
                             .opacity(isZoomed ? 0.5 : 1.0) // Fade when zoomed
                     }
@@ -81,6 +69,11 @@ struct PhotoDetailView: View {
                                 .rotationEffect(Angle(radians: viewModel.imageRotation))
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        // Reserve room for the floating action toolbar so the
+                        // image fits ABOVE it. Constant height → the image never
+                        // shifts when paging to/from a video. Collapses while
+                        // zoomed so the photo can use the full screen.
+                        .padding(.bottom, isZoomed ? 0 : PhotoDetailLayout.bottomReserve)
                     }
                 }
             }

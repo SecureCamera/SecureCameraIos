@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
-   LastUpgradeVersion = "1620"
+   LastUpgradeVersion = "2600"
    version = "1.7">
    <BuildAction
       parallelizeBuildables = "YES"
@@ -51,7 +51,7 @@
             parallelizable = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "A9DE37602DC5F34600679C2C"
+               BlueprintIdentifier = "A9C449122E9CC85800CFE854"
                BuildableName = "SnapSafeUITests.xctest"
                BlueprintName = "SnapSafeUITests"
                ReferencedContainer = "container:SnapSafe.xcodeproj">

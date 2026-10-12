@@ -8,56 +8,64 @@
 import PhotosUI
 import SwiftUI
 import Logging
+import CryptoKit
 
 
-// Empty state view when no photos exist
+// Empty state view when no media exist
 struct EmptyGalleryView: View {
-    let onDismiss: () -> Void
-
     var body: some View {
         VStack {
             Text("No photos yet")
                 .font(.title)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
+                .accessibilityLabel("Gallery is empty. Use the camera to take your first photo.")
         }
     }
 }
 
 
-// Gallery view to display the stored photos
+// Gallery view to display stored photos and videos
 struct SecureGalleryView: View {
-    @AppStorage("showFaceDetection") private var showFaceDetection = true // Using AppStorage to share with Settings
-    @StateObject private var viewModel: SecureGalleryViewModel
+    @StateObject private var viewModel: MixedMediaGalleryViewModel
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var nav: AppNavigationState
 
-    // Callback for dismissing the gallery
     let onDismiss: (() -> Void)?
 
-    // Initializers
+    // Standard initializer
     init(onDismiss: (() -> Void)? = nil) {
         self.onDismiss = onDismiss
-        self._viewModel = StateObject(wrappedValue: SecureGalleryViewModel())
+        self._viewModel = StateObject(wrappedValue: MixedMediaGalleryViewModel())
     }
 
     // Initializer for decoy selection mode
     init(selectingDecoys: Bool, onDismiss: (() -> Void)? = nil) {
         self.onDismiss = onDismiss
-        self._viewModel = StateObject(wrappedValue: SecureGalleryViewModel(selectingDecoys: selectingDecoys))
+        self._viewModel = StateObject(wrappedValue: MixedMediaGalleryViewModel(selectingDecoys: selectingDecoys))
     }
 
 
     var body: some View {
         ZStack {
-            Group {
-                if viewModel.photos.isEmpty {
-                    EmptyGalleryView(onDismiss: { 
-                        onDismiss?()
-                        dismiss() 
-                    })
-                } else {
-                    photosGridView
+            VStack(spacing: 0) {
+                // In decoy mode the title gets its own full-width row so it
+                // isn't truncated between the Back and Save buttons in the bar.
+                if viewModel.isSelectingDecoys {
+                    Text(viewModel.navigationTitle)
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .background(Color(.systemBackground))
                 }
+
+                Group {
+                    if viewModel.mediaItems.isEmpty {
+                        EmptyGalleryView()
+                    } else {
+                        mediaGridView
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
 
             // Import progress overlay
@@ -69,7 +77,7 @@ struct SecureGalleryView: View {
 
                     Text("\(Int(viewModel.importProgress * 100))%")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
                 .frame(width: 200)
                 .padding()
@@ -79,52 +87,77 @@ struct SecureGalleryView: View {
                         .shadow(radius: 5)
                 )
             }
+
+            // Decoy save / re-encryption overlay
+            if viewModel.isSavingDecoys {
+                Color.black.opacity(0.25)
+                    .ignoresSafeArea()
+
+                VStack(spacing: 12) {
+                    ProgressView()
+                        .controlSize(.large)
+
+                    Text("Saving decoy media…")
+                        .font(.callout)
+
+                    if viewModel.decoySaveTotal > 1 {
+                        Text("\(viewModel.decoySaveCompleted) of \(viewModel.decoySaveTotal)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .padding(24)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color(.systemBackground))
+                        .shadow(radius: 5)
+                )
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Saving decoy media")
+            }
         }
-        .navigationTitle(viewModel.navigationTitle)
+        .navigationTitle(viewModel.isSelectingDecoys ? "" : viewModel.navigationTitle)
         .navigationBarTitleDisplayMode(.inline)
+        // In decoy mode we supply our own leading Back button (which runs
+        // exitDecoyMode cleanup), so hide the system one to avoid two back buttons.
+        .navigationBarBackButtonHidden(viewModel.isSelectingDecoys)
         .toolbar {
             // Back button in the leading position (only for decoy selection mode)
             if viewModel.isSelectingDecoys {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(action: {
                         viewModel.exitDecoyMode()
-                        onDismiss?()
-                        dismiss()
+                        if let onDismiss { onDismiss() } else { dismiss() }
                     }) {
                         HStack {
                             Image(systemName: "chevron.left")
                             Text("Back")
                         }
                     }
+                    .disabled(viewModel.isSavingDecoys)
                 }
             }
 
-            // Action buttons in the trailing position (simplified for top toolbar)
+            // Action buttons in the trailing position
             ToolbarItem(placement: .navigationBarTrailing) {
                 HStack(spacing: 16) {
                     if viewModel.isSelectingDecoys {
-                        // Count label and Save button for decoy selection
-                        Text(viewModel.decoyCountText)
-                            .font(.caption)
-                            .foregroundColor(viewModel.decoyCountTextColor)
-
                         Button("Save") {
                             viewModel.showDecoyConfirmationAlert()
                         }
-                        .foregroundColor(.blue)
+                        .foregroundStyle(.blue)
                         .disabled(viewModel.isSaveDecoyButtonDisabled)
                     } else if viewModel.isSelecting {
-                        // Cancel selection button
                         Button("Cancel") {
                             viewModel.cancelSelecting()
                         }
-                        .foregroundColor(.red)
+                        .foregroundStyle(.red)
                     } else {
                         Menu {
                             Button {
                                 viewModel.startSelecting(mode: .share)
                             } label: {
-                                Label("Select Photos", systemImage: "checkmark.circle")
+                                Label("Select Items", systemImage: "checkmark.circle")
                             }
 
                             Button {
@@ -146,13 +179,15 @@ struct SecureGalleryView: View {
                     }
                 }
             }
-            
+
             // Bottom toolbar with main action buttons
             ToolbarItemGroup(placement: .bottomBar) {
                 switch viewModel.selectionMode {
                 case .none:
-                    // Normal mode: Import button only
-                    PhotosPicker(selection: $viewModel.pickerItems, matching: .images, photoLibrary: .shared()) {
+                    // Parameterless form: same out-of-process picker, but the
+                    // binary carries no PHPhotoLibrary reference for App Store
+                    // upload scanning to flag.
+                    PhotosPicker(selection: $viewModel.pickerItems, matching: .any(of: [.images, .videos])) {
                         Label("Import", systemImage: "square.and.arrow.down")
                     }
                     .onChange(of: viewModel.pickerItems) { _, newItems in
@@ -162,107 +197,218 @@ struct SecureGalleryView: View {
                     Spacer()
 
                 case .share:
-                    // Share mode: Share button (only show when photos selected)
                     if viewModel.hasSelection {
                         Spacer()
 
-                        Button(action: viewModel.shareSelectedPhotos) {
+                        Button(action: viewModel.shareSelectedMedia) {
                             Label("Share", systemImage: "square.and.arrow.up")
                         }
                     }
 
                 case .delete:
-                    // Delete mode: Delete button (only show when photos selected)
                     if viewModel.hasSelection {
                         Button(action: {
-                            Logger.ui.info("Delete button pressed in gallery view, selected photos: \(viewModel.selectedPhotoIds.count)")
+                            Logger.ui.info("Delete button pressed in gallery view, selected items: \(viewModel.selectedMediaIds.count)")
                             viewModel.showDeleteAlert()
                         }) {
                             Label("Delete", systemImage: "trash")
-                                .foregroundColor(.red)
+                                .foregroundStyle(.red)
                         }
 
                         Spacer()
                     }
 
                 case .decoy:
-                    // Decoy mode: no bottom toolbar actions
-                    EmptyView()
+                    // Decoy count lives here (centered in the bottom bar) rather
+                    // than crammed beside the Save button in the nav bar.
+                    Spacer()
+                    Text(viewModel.decoyCountText)
+                        .font(.callout.weight(.semibold))
+                        .foregroundStyle(viewModel.decoyCountTextColor)
+                        .lineLimit(1)
+                        .fixedSize()
+                    Spacer()
                 }
             }
         }
         .onAppear(perform: viewModel.onAppear)
-        .onChange(of: viewModel.selectedPhoto) { _, newValue in
-            if let photoDef = newValue {
-                // Find the index of the selected photo in the photos array
-                if let initialIndex = viewModel.photos.firstIndex(where: { $0.photoName == photoDef.photoName }) {
-                    nav.navigate(to: .photoDetail(allPhotos: viewModel.photos, initialIndex: initialIndex))
-                }
-                // Reset selectedPhoto so it can be selected again
-                viewModel.selectedPhoto = nil
+        .onChange(of: viewModel.selectedMediaItem) { _, newValue in
+            guard let item = newValue else { return }
+            viewModel.selectedMediaItem = nil
+
+            // Navigate into the mixed-media detail pager. Both photos and videos
+            // are passed so the user can swipe between all items in the gallery.
+            if let initialIndex = viewModel.mediaItems.firstIndex(where: { $0.id == item.id }) {
+                nav.navigate(to: .photoDetail(allMedia: viewModel.mediaItems, initialIndex: initialIndex))
             }
         }
-            .alert(
-                viewModel.deleteAlertTitle,
-                isPresented: $viewModel.showDeleteConfirmation,
-                actions: {
-                    Button("Cancel", role: .cancel) {}
-                    Button("Delete", role: .destructive) {
-                        Logger.ui.info("Delete confirmation button pressed, deleting \(viewModel.selectedPhotoIds.count) photos")
-                        viewModel.deleteSelectedPhotos()
+        .alert(
+            viewModel.deleteAlertTitle,
+            isPresented: $viewModel.showDeleteConfirmation,
+            actions: {
+                Button("Cancel", role: .cancel) {}
+                Button("Delete", role: .destructive) {
+                    Logger.ui.info("Delete confirmation button pressed, deleting \(viewModel.selectedMediaIds.count) items")
+                    viewModel.deleteSelectedMedia()
+                }
+            },
+            message: {
+                Text(viewModel.deleteAlertMessage)
+            }
+        )
+        .alert(
+            "Too Many Decoys",
+            isPresented: $viewModel.showDecoyLimitWarning,
+            actions: {
+                Button("OK", role: .cancel) {}
+            },
+            message: {
+                Text(viewModel.decoyLimitWarningMessage)
+            }
+        )
+        .alert(
+            "Save Decoy Selection",
+            isPresented: $viewModel.showDecoyConfirmation,
+            actions: {
+                Button("Cancel", role: .cancel) {}
+                Button("Save") {
+                    Task {
+                        await viewModel.saveDecoySelections()
+                        if let onDismiss { onDismiss() } else { dismiss() }
                     }
-                },
-                message: {
-                    Text(viewModel.deleteAlertMessage)
                 }
-            )
-            .alert(
-                "Too Many Decoys",
-                isPresented: $viewModel.showDecoyLimitWarning,
-                actions: {
-                    Button("OK", role: .cancel) {}
-                },
-                message: {
-                    Text(viewModel.decoyLimitWarningMessage)
-                }
-            )
-            .alert(
-                "Save Decoy Selection",
-                isPresented: $viewModel.showDecoyConfirmation,
-                actions: {
-                    Button("Cancel", role: .cancel) {}
-                    Button("Save") {
-                        viewModel.saveDecoySelections()
-                        onDismiss?()
-                        dismiss()
-                    }
-                },
-                message: {
-                    Text(viewModel.decoyConfirmationMessage)
-                }
-            )
-        }
+            },
+            message: {
+                Text(viewModel.decoyConfirmationMessage)
+            }
+        )
+        .supportedOrientations(.allButUpsideDown)
+    }
 
-    // Photo grid subview
-    private var photosGridView: some View {
+    // Mixed media grid subview
+    private var mediaGridView: some View {
         ScrollView {
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 10) {
-                ForEach(viewModel.photos) { photo in
-                    PhotoCell(
-                        photo: photo,
-                        isSelected: viewModel.selectedPhotoIds.contains(photo),
-                        isSelecting: viewModel.isSelecting,
-                        onTap: {
-                            viewModel.handlePhotoTap(photo)
-                        },
-                        onDelete: {
-                            viewModel.prepareToDeleteSinglePhoto(photo)
-                        }
-                    )
+                ForEach(viewModel.mediaItems) { item in
+                    if let photoDef = item.photoDef {
+                        PhotoCell(
+                            photo: photoDef,
+                            isSelected: viewModel.isSelected(item),
+                            isSelecting: viewModel.isSelecting,
+                            onTap: { viewModel.handleMediaTap(item) },
+                            galleryViewModel: viewModel
+                        )
+                    } else if item.mediaType == .video {
+                        VideoCellView(
+                            item: item,
+                            isSelected: viewModel.isSelected(item),
+                            isSelecting: viewModel.isSelecting,
+                            onTap: { viewModel.handleMediaTap(item) },
+                            galleryViewModel: viewModel
+                        )
+                    }
                 }
             }
             .padding()
         }
     }
+}
 
+// MARK: - Video Cell View
+
+struct VideoCellView: View {
+    let item: GalleryMediaItem
+    let isSelected: Bool
+    let isSelecting: Bool
+    let onTap: () -> Void
+    @ObservedObject var galleryViewModel: MixedMediaGalleryViewModel
+
+    @State private var isDecoy: Bool = false
+
+    private var thumbnail: UIImage? {
+        guard let name = item.videoDef?.videoName else { return nil }
+        return galleryViewModel.videoThumbnails[name]
+    }
+
+    private let cellSize: CGFloat = 100
+
+    var body: some View {
+        Button(action: onTap) {
+            ZStack {
+                // Thumbnail (or placeholder while loading / when unavailable)
+                ZStack {
+                    if let thumbnail {
+                        Image(uiImage: thumbnail)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                    } else {
+                        Color(.systemGray5)
+                        Image(systemName: "video.fill")
+                            .font(.title)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .frame(width: cellSize, height: cellSize)
+                .clipped()
+                .clipShape(.rect(cornerRadius: 8))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(isSelected ? Color.blue : Color.clear, lineWidth: 3)
+                )
+
+                // Play badge (top-trailing) marks the item as a video
+                VStack {
+                    HStack {
+                        Spacer()
+                        Image(systemName: "play.circle.fill")
+                            .font(.title3)
+                            .foregroundStyle(.white)
+                            .shadow(radius: 2)
+                            .padding(4)
+                    }
+                    Spacer()
+                }
+
+                // Decoy indicator (bottom-leading)
+                if isDecoy {
+                    VStack {
+                        Spacer()
+                        HStack {
+                            Image(systemName: "shield.fill")
+                                .font(.callout)
+                                .foregroundStyle(.white.opacity(0.75))
+                                .padding(5)
+                            Spacer()
+                        }
+                    }
+                }
+
+                // Selection checkmark overlay
+                if isSelecting {
+                    VStack {
+                        Spacer()
+                        HStack {
+                            Spacer()
+                            Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                                .foregroundStyle(isSelected ? .blue : .white)
+                                .font(.title2)
+                                .shadow(radius: 2)
+                                .padding(6)
+                        }
+                    }
+                }
+            }
+            .frame(width: cellSize, height: cellSize)
+        }
+        .buttonStyle(PlainButtonStyle())
+        .accessibilityLabel("Video: \(item.mediaName)")
+        .accessibilityHint(isSelecting ? "Double-tap to \(isSelected ? "deselect" : "select")" : "Double-tap to open")
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+        .task(id: item.videoDef?.videoName) {
+            if let videoDef = item.videoDef {
+                await galleryViewModel.loadVideoThumbnail(for: videoDef)
+                isDecoy = await galleryViewModel.isDecoyVideo(videoDef)
+            }
+        }
+    }
 }

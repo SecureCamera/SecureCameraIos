@@ -8,14 +8,14 @@
 import Logging
 
 
-public final class CreatePinUseCase: @unchecked Sendable {
+final class CreatePinUseCase: @unchecked Sendable {
     private let authorizationRepository: AuthorizationRepository
     private let encryptionScheme: EncryptionScheme
     private let pinRepository: PinRepository
     private let settingsDataSource: SettingsDataSource
     private let authorizePinUseCase: AuthorizePinUseCase
 
-    public init(
+    init(
         authorizationRepository: AuthorizationRepository,
         encryptionScheme: EncryptionScheme,
         pinRepository: PinRepository,
@@ -32,7 +32,7 @@ public final class CreatePinUseCase: @unchecked Sendable {
     /// Creates a PIN, immediately authorizes it, and on success:
     /// 1) creates the key, 2) derives & caches encryption key, 3) marks intro complete.
     /// - Returns: `true` on success, `false` otherwise.
-    public func createPin(_ pin: String) async -> Bool {
+    func createPin(_ pin: String) async -> Bool {
         do {
             await pinRepository.setAppPin(pin)
 
@@ -44,7 +44,6 @@ public final class CreatePinUseCase: @unchecked Sendable {
             await settingsDataSource.setIntroCompleted(true)
             return true
         } catch {
-            // Log the error for debugging purposes
             Logger.security.error("Failed to create PIN", metadata: [
                 "error": .string(String(describing: error))
             ])

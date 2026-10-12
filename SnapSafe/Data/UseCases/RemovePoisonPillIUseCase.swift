@@ -19,5 +19,6 @@ final class RemovePoisonPillUseCase: @unchecked Sendable {
     func removePoisonPill() async {
         await pinRepository.removePoisonPillPin()
         await imageRepository.removeAllDecoyPhotos()
+        await imageRepository.removeAllDecoyVideos()
     }
 }
