@@ -126,7 +126,7 @@ struct PoisonPillPinCreationView: View {
                     .foregroundStyle(.red)
                     .font(.caption)
                 Text(
-                    "When entered, this PIN it will immediately and permanently delete all photos and encryption keys."
+                    "When entered, this PIN will immediately and permanently delete all photos and encryption keys."
                 )
                     .font(.caption)
                     .fontWeight(.semibold)
