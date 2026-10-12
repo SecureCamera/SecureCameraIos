@@ -230,6 +230,7 @@ struct SettingsView: View {
                         viewModel.stopSelectingDecoys()
                     })
                 }
+                .securityManaged()
             }
     }
 }
