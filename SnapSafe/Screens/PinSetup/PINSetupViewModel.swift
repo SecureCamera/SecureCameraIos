@@ -10,10 +10,10 @@ import FactoryKit
 
 @MainActor
 final class PINSetupViewModel: ObservableObject {
-    
+
     @Injected(\.settingsDataSource)
     private var settings: SettingsDataSource
-    
+
     // MARK: - Published Properties
     @Published
     var pin: String = "" {
@@ -24,7 +24,7 @@ final class PINSetupViewModel: ObservableObject {
             }
         }
     }
-    
+
     @Published
     var confirmPin: String = "" {
         didSet {
@@ -34,7 +34,7 @@ final class PINSetupViewModel: ObservableObject {
             }
         }
     }
-    
+
     @Published var showError: Bool = false
     @Published var errorMessage: String = ""
     @Published var isLoading: Bool = false
@@ -46,23 +46,23 @@ final class PINSetupViewModel: ObservableObject {
 
     // MARK: - Computed Properties
     var isPINValid: Bool {
-        pin.count >= MIN_PIN_LENGTH && pin.count <= MAX_PIN_LENGTH
-        && confirmPin.count >= MIN_PIN_LENGTH && confirmPin.count <= MAX_PIN_LENGTH
+        pin.count >= minPinLength && pin.count <= maxPinLength
+        && confirmPin.count >= minPinLength && confirmPin.count <= maxPinLength
     }
-    
+
     var canSubmit: Bool {
         isPINValid && !isLoading
     }
-    
+
     // MARK: - Dependencies
     @Injected(\.createPinUseCase) private var createPinUseCase: CreatePinUseCase
     @Injected(\.pinStrengthCheckUseCase) private var pinStrengthCheckUseCase: PinStrengthCheckUseCase
-    
+
     // MARK: - Initialization
     init() {
         setupBindings()
     }
-    
+
     // MARK: - Alphanumeric preference
     /// Seed the toggle from the persisted global setting.
     func loadAlphanumericSetting() async {
@@ -81,12 +81,12 @@ final class PINSetupViewModel: ObservableObject {
     // MARK: - Private Methods
     private func setupBindings() {
     }
-    
+
     private func clearError() {
         showError = false
         errorMessage = ""
     }
-    
+
     // MARK: - PIN Validation Methods
     func validateAndFilterPIN(_ newValue: String) -> String {
         // Filter to the active PIN type: letters + digits when alphanumeric,
@@ -96,29 +96,28 @@ final class PINSetupViewModel: ObservableObject {
             : newValue.filter { $0.isNumber }
 
         // Limit to max length
-        if filtered.count > MAX_PIN_LENGTH {
-            filtered = String(filtered.prefix(MAX_PIN_LENGTH))
+        if filtered.count > maxPinLength {
+            filtered = String(filtered.prefix(maxPinLength))
         }
 
         return filtered
     }
-    
-    
+
     // MARK: - Business Logic
     func createPin() async -> Bool {
         guard canSubmit else { return false }
-        
+
         clearError()
-        
+
         isLoading = true
         defer { isLoading = false }
-        
+
         // Check if PINs match
         if pin != confirmPin {
             showError(message: "PINs do not match")
             return false
         }
-        
+
         // Check PIN strength against the active (global) PIN type.
         if !pinStrengthCheckUseCase.isPinStrongEnough(pin, isAlphanumeric: isAlphanumeric) {
             showError(message: isAlphanumeric
@@ -129,26 +128,26 @@ final class PINSetupViewModel: ObservableObject {
 
         // Create the PIN using the use case
         let success = await createPinUseCase.createPin(pin)
-        
+
         if !success {
             showError(message: "Failed to create PIN. Please try again.")
             return false
         }
-        
+
         await settings.setIntroCompleted(true)
-        
+
         return true
     }
-    
+
     // MARK: - Error Handling
     private func showError(message: String) {
         pin = ""
         confirmPin = ""
-        
+
         errorMessage = message
         showError = true
     }
-    
+
     func clearPinContent() {
         pin = ""
         confirmPin = ""

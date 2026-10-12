@@ -64,7 +64,7 @@ struct PINVerificationView: View {
 
                 PINEntryField(
                     text: $viewModel.pin,
-                    maxLength: MAX_PIN_LENGTH,
+                    maxLength: maxPinLength,
                     isEnabled: !viewModel.isLoading,
                     shouldFocus: shouldFocusField,
                     isAlphanumeric: viewModel.isAlphanumeric
@@ -91,7 +91,9 @@ struct PINVerificationView: View {
                     Text("10 failed attempts will result in a full data wipe.\nALL PHOTOS WILL BE LOST!")
                         .foregroundStyle(.red)
                         .font(.callout)
-                        .accessibilityLabel("Warning: 10 failed attempts will result in a full data wipe. All photos will be lost.")
+                        .accessibilityLabel(
+                            "Warning: 10 failed attempts will result in a full data wipe. All photos will be lost."
+                        )
                 }
             }
             .frame(maxWidth: .infinity)

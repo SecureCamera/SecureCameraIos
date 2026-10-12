@@ -14,12 +14,13 @@ struct PINSetupView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var revealPin = false
     @State private var revealConfirmPin = false
+    @State private var showAlphanumericHelp = false
 
     // Cache computed values to reduce view updates
     private var buttonDisabled: Bool {
         !viewModel.canSubmit
     }
-    
+
     private var buttonBackgroundColor: Color {
         viewModel.canSubmit ? Color.blue : Color.gray
     }
@@ -31,14 +32,14 @@ struct PINSetupView: View {
     }
 
     private var setPinButton: some View {
-        Button(action: {
+        Button {
             Task {
                 let success = await viewModel.createPin()
                 if success {
                     Logger.ui.info("PIN setup complete, marking intro as completed")
                 }
             }
-        }) {
+        } label: {
             HStack {
                 if viewModel.isLoading {
                     ProgressView()
@@ -64,31 +65,40 @@ struct PINSetupView: View {
                         .foregroundStyle(.blue)
                         .padding(.top, 50)
                         .accessibilityHidden(true)
-                    
+
                     Text("Set Up Security PIN")
                         .font(.largeTitle)
                         .bold()
-                    
+
                     Text("Please create a PIN to secure your photos")
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal)
-                    
+
                     VStack(spacing: 20) {
-                        Toggle(isOn: Binding(
-                            get: { viewModel.isAlphanumeric },
-                            set: { viewModel.setAlphanumeric($0) }
-                        )) {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Use Alphanumeric PIN")
-                                    .font(.subheadline)
-                                Text("Letters and numbers allowed")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
+                        HStack {
+                            Button("About Alphanumeric PINs", systemImage: "questionmark.circle") {
+                                showAlphanumericHelp = true
                             }
+                            .labelStyle(.iconOnly)
+                            .buttonStyle(.plain)
+                            .foregroundStyle(.secondary)
+
+                            Toggle(isOn: Binding(
+                                get: { viewModel.isAlphanumeric },
+                                set: { viewModel.setAlphanumeric($0) }
+                            )) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Use Alphanumeric PIN")
+                                        .font(.subheadline)
+                                    Text("Letters and numbers allowed")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                            .disabled(!viewModel.pin.isEmpty || !viewModel.confirmPin.isEmpty)
                         }
                         .padding(.horizontal, min(50, UIScreen.main.bounds.width * 0.1))
-                        .disabled(!viewModel.pin.isEmpty || !viewModel.confirmPin.isEmpty)
 
                         pinField(
                             placeholder: "Enter PIN",
@@ -119,7 +129,7 @@ struct PINSetupView: View {
                             .font(.callout)
                             .padding(.top, 5)
                     }
-                    
+
                     HStack {
                         Image(systemName: "exclamationmark.triangle.fill")
                             .foregroundStyle(.orange)
@@ -129,7 +139,7 @@ struct PINSetupView: View {
                     }
                     .padding(.horizontal, 30)
                     .padding(.bottom, 20)
-                    
+
                 }
             }
             .safeAreaInset(edge: .bottom) {
@@ -146,6 +156,11 @@ struct PINSetupView: View {
             .navigationBarHidden(true)
             .obscuredWhenInactive()
             .screenCaptureProtected()
+            .alert("Alphanumeric PINs", isPresented: $showAlphanumericHelp) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(PINStrings.alphanumericHelpMessage)
+            }
             .task {
                 await viewModel.loadAlphanumericSetting()
             }
@@ -173,7 +188,7 @@ struct PINSetupView: View {
                 text: text,
                 placeholder: placeholder,
                 isAlphanumeric: viewModel.isAlphanumeric,
-                maxLength: MAX_PIN_LENGTH,
+                maxLength: maxPinLength,
                 isSecure: !reveal.wrappedValue,
                 isEnabled: true
             )

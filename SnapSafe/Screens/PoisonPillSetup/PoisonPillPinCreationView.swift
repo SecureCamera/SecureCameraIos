@@ -37,10 +37,10 @@ struct PoisonPillPinCreationView: View {
     }
 
     private var setupButton: some View {
-        Button(action: {
+        Button {
             hideKeyboard()
             onSetup()
-        }) {
+        } label: {
             HStack {
                 if isLoading {
                     ProgressView()
@@ -76,13 +76,13 @@ struct PoisonPillPinCreationView: View {
             Text("Set Poison Pill PIN")
                 .font(.largeTitle)
                 .fontWeight(.bold)
-            
+
             // Subtitle
             Text("Create a PIN that will trigger emergency deletion")
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
-            
+
             // PIN Input Fields
             VStack(spacing: 20) {
                 pinField(
@@ -90,7 +90,6 @@ struct PoisonPillPinCreationView: View {
                     text: $pin,
                     reveal: $revealPin,
                     focused: $pinFocused,
-                    isValid: isPinLengthValid(pin.count),
                     onChange: onPinChange
                 )
 
@@ -108,7 +107,6 @@ struct PoisonPillPinCreationView: View {
                     text: $confirmPin,
                     reveal: $revealConfirmPin,
                     focused: $confirmFocused,
-                    isValid: isPinLengthValid(confirmPin.count),
                     onChange: onConfirmPinChange
                 )
             }
@@ -121,13 +119,15 @@ struct PoisonPillPinCreationView: View {
                     .font(.callout)
                     .padding(.top, 5)
             }
-            
+
             // Warning
             HStack {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .foregroundStyle(.red)
                     .font(.caption)
-                Text("When entered, this PIN it will immediately and permanently delete all photos and encryption keys.")
+                Text(
+                    "When entered, this PIN it will immediately and permanently delete all photos and encryption keys."
+                )
                     .font(.caption)
                     .fontWeight(.semibold)
                     .foregroundStyle(.red)
@@ -170,7 +170,6 @@ struct PoisonPillPinCreationView: View {
         text: Binding<String>,
         reveal: Binding<Bool>,
         focused: Binding<Bool>,
-        isValid: Bool,
         onChange: @escaping (String) -> Void
     ) -> some View {
         HStack(spacing: 0) {
@@ -185,7 +184,7 @@ struct PoisonPillPinCreationView: View {
                 isFocused: focused,
                 placeholder: placeholder,
                 isAlphanumeric: isAlphanumeric,
-                maxLength: MAX_PIN_LENGTH,
+                maxLength: maxPinLength,
                 isSecure: !reveal.wrappedValue,
                 isEnabled: !isLoading
             )
@@ -203,7 +202,7 @@ struct PoisonPillPinCreationView: View {
         }
         .background(
             RoundedRectangle(cornerRadius: 8)
-                .stroke(isValid ? Color.orange : Color.gray, lineWidth: 1)
+                .stroke(isPinLengthValid(text.wrappedValue.count) ? Color.orange : Color.gray, lineWidth: 1)
         )
         .padding(.horizontal, 50)
         .disabled(isLoading)

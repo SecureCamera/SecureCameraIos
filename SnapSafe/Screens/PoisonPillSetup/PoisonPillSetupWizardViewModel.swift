@@ -15,7 +15,7 @@ enum PoisonPillWizardStep: Int, CaseIterable {
     case explanation2 = 1
     case explanation3 = 2
     case pinCreation = 3
-    
+
     var title: String {
         switch self {
         case .explanation1:
@@ -32,9 +32,9 @@ enum PoisonPillWizardStep: Int, CaseIterable {
 
 @MainActor
 final class PoisonPillSetupWizardViewModel: ObservableObject {
-    
+
     // MARK: - Published Properties
-    
+
     @Published var currentStep: PoisonPillWizardStep = .explanation1
     @Published var pin: String = ""
     @Published var confirmPin: String = ""
@@ -56,16 +56,16 @@ final class PoisonPillSetupWizardViewModel: ObservableObject {
 
     @Injected(\.settingsDataSource)
     private var settings: SettingsDataSource
-    
+
     // MARK: - Computed Properties
-    
+
     var canProceedFromPinCreation: Bool {
-        return isPinLengthValid(pin.count) && 
-               isPinLengthValid(confirmPin.count) && 
+        return isPinLengthValid(pin.count) &&
+               isPinLengthValid(confirmPin.count) &&
                pin == confirmPin &&
                !isLoading
     }
-    
+
     // MARK: - Alphanumeric preference
     /// Seed the PIN type from the persisted global setting.
     func loadAlphanumericSetting() async {
@@ -81,23 +81,23 @@ final class PoisonPillSetupWizardViewModel: ObservableObject {
             : newValue.filter { $0.isNumber }
 
         // Limit to max length
-        if filtered.count > MAX_PIN_LENGTH {
-            filtered = String(filtered.prefix(MAX_PIN_LENGTH))
+        if filtered.count > maxPinLength {
+            filtered = String(filtered.prefix(maxPinLength))
         }
 
         return filtered
     }
-    
+
     func isPinLengthValid(_ length: Int) -> Bool {
-        return length >= MIN_PIN_LENGTH && length <= MAX_PIN_LENGTH
+        return length >= minPinLength && length <= maxPinLength
     }
-    
+
     var progressValue: Double {
         Double(currentStep.rawValue + 1) / Double(PoisonPillWizardStep.allCases.count)
     }
-    
+
     // MARK: - Navigation Methods
-    
+
     func goToNextStep() {
         withAnimation(.easeInOut(duration: 0.3)) {
             switch currentStep {
@@ -112,7 +112,7 @@ final class PoisonPillSetupWizardViewModel: ObservableObject {
             }
         }
     }
-    
+
     func goToPreviousStep() {
         withAnimation(.easeInOut(duration: 0.3)) {
             switch currentStep {
@@ -127,26 +127,26 @@ final class PoisonPillSetupWizardViewModel: ObservableObject {
             }
         }
     }
-    
+
     // MARK: - PIN Management
-    
+
     func updatePIN(_ newValue: String) {
         let filtered = validateAndFilterPIN(newValue)
         if pin != filtered {
             pin = filtered
         }
     }
-    
+
     func updateConfirmPIN(_ newValue: String) {
         let filtered = validateAndFilterPIN(newValue)
         if confirmPin != filtered {
             confirmPin = filtered
         }
     }
-    
+
     func setupPoisonPillPIN() async -> Bool {
         guard canProceedFromPinCreation else { return false }
-        
+
         isLoading = true
         showError = false
 
@@ -165,9 +165,9 @@ final class PoisonPillSetupWizardViewModel: ObservableObject {
 
         Logger.security.info("Setting up poison pill PIN")
         let success: Bool = await self.createPoisonPillUseCase.createPin(pppin: pin)
-        
+
         isLoading = false
-        
+
         if success {
             Logger.security.info("Poison pill PIN setup completed successfully")
             return true
@@ -181,9 +181,9 @@ final class PoisonPillSetupWizardViewModel: ObservableObject {
             return false
         }
     }
-    
+
     // MARK: - Reset
-    
+
     func reset() {
         currentStep = .explanation1
         pin = ""
