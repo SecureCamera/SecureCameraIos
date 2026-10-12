@@ -96,9 +96,14 @@ jobs:
     - if: matrix.build-mode == 'manual'
       shell: bash
       run: |
+        # Build the simulator slice for arm64 only. Scoped to the simulator SDK
+        # so macro host tools (Mockable/swift-syntax) keep their default archs;
+        # a global ARCHS=arm64 breaks the MockableMacro build.
+        echo 'ARCHS[sdk=iphonesimulator*] = arm64' > "$RUNNER_TEMP/codeql-arm64.xcconfig"
         xcodebuild -project SnapSafe.xcodeproj -scheme SnapSafe -configuration Debug \
           -destination 'generic/platform=iOS Simulator' -derivedDataPath ./build \
-          -skipMacroValidation CODE_SIGNING_ALLOWED=NO ARCHS=arm64 clean build
+          -xcconfig "$RUNNER_TEMP/codeql-arm64.xcconfig" \
+          -skipMacroValidation CODE_SIGNING_ALLOWED=NO clean build
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
