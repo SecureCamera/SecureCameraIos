@@ -246,6 +246,8 @@ class PhotoDetailHostingController: UIHostingController<AnyView> {
 // MARK: - Hosting Controller for an inline video page
 
 class InlineVideoHostingController: UIHostingController<AnyView> {
+    private let viewModel: VideoPlayerViewModel
+
     init(
         videoDef: VideoDef,
         encryptionKey: SymmetricKey?,
@@ -255,15 +257,31 @@ class InlineVideoHostingController: UIHostingController<AnyView> {
         onInfo: @escaping () -> Void,
         onControlsVisibilityChange: @escaping (Bool) -> Void
     ) {
+        let viewModel = VideoPlayerViewModel(videoDef: videoDef, encryptionKey: encryptionKey)
+        self.viewModel = viewModel
         let view = InlineVideoPlayerView(
-            videoDef: videoDef,
-            encryptionKey: encryptionKey,
+            viewModel: viewModel,
             isZoomed: isZoomed,
             onRequestDismiss: onRequestDismiss,
             onInfo: onInfo,
             onControlsVisibilityChange: onControlsVisibilityChange
         )
         super.init(rootView: AnyView(view.environment(chromeState)))
+    }
+
+    // Playback is driven from UIKit appearance callbacks rather than SwiftUI's
+    // onAppear/onDisappear: UIPageViewController keeps adjacent pages attached
+    // to the window, so a swiped-away page never gets onDisappear and its
+    // video would keep playing (audibly) off-screen.
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        viewModel.setupPlayback()
+        viewModel.showAndScheduleHideControls()
+    }
+
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        viewModel.cleanup()
     }
 
     @MainActor required dynamic init?(coder aDecoder: NSCoder) {

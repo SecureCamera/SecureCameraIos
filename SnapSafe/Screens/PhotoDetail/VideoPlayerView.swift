@@ -214,8 +214,16 @@ final class VideoPlayerViewModel: ObservableObject {
             ])
         }
 
+        // A page that was cleaned up (swiped away) and is coming back has
+        // player == nil; show the spinner while we reload rather than a blank page.
+        isLoading = true
+        didPlayToEnd = false
+
         loadTask = Task { [weak self] in
             await self?.loadVideoAsset()
+            // A cancelled load was already cleared by cleanup(); don't clobber
+            // a newer load that may have started since.
+            guard !Task.isCancelled else { return }
             await MainActor.run { self?.loadTask = nil }
         }
     }

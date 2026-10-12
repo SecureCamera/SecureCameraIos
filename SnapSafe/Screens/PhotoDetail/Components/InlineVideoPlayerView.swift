@@ -10,7 +10,6 @@
 
 import SwiftUI
 import AVKit
-import CryptoKit
 
 struct InlineVideoPlayerView: View {
     /// Called when the video is deleted, so the parent can pop the detail view.
@@ -29,13 +28,14 @@ struct InlineVideoPlayerView: View {
 
     private var isChromeSuppressed: Bool { chrome?.isDismissDragging ?? false }
 
-    @StateObject private var viewModel: VideoPlayerViewModel
+    /// Owned by the hosting page controller, which drives playback setup and
+    /// teardown from UIKit appearance callbacks (see InlineVideoHostingController).
+    @ObservedObject var viewModel: VideoPlayerViewModel
     @State private var scrubFraction: Double = 0
     @State private var showDeleteConfirmation = false
 
     init(
-        videoDef: VideoDef,
-        encryptionKey: SymmetricKey?,
+        viewModel: VideoPlayerViewModel,
         isZoomed: Binding<Bool> = .constant(false),
         onRequestDismiss: @escaping () -> Void,
         onInfo: @escaping () -> Void = {},
@@ -45,7 +45,7 @@ struct InlineVideoPlayerView: View {
         self.onRequestDismiss = onRequestDismiss
         self.onInfo = onInfo
         self.onControlsVisibilityChange = onControlsVisibilityChange
-        _viewModel = StateObject(wrappedValue: VideoPlayerViewModel(videoDef: videoDef, encryptionKey: encryptionKey))
+        self.viewModel = viewModel
     }
 
     var body: some View {
@@ -139,11 +139,11 @@ struct InlineVideoPlayerView: View {
             scrubFraction = viewModel.currentTime / duration
         }
         .onAppear {
-            viewModel.setupPlayback()
             viewModel.loadActionState()
-            viewModel.showAndScheduleHideControls()
         }
         .onDisappear {
+            // Safety net for when the whole pager goes away (e.g. the detail
+            // view is popped). Swipes are handled by the hosting controller.
             viewModel.cleanup()
         }
         .onChange(of: viewModel.showControls, initial: true) { _, visible in
