@@ -43,9 +43,11 @@ git push origin vX.Y.Z
 ## 5. App Store Connect (manual)
 
 - [ ] Wait for the build to finish processing.
-- [ ] Answer the export compliance question for the build. SnapSafe declares non-exempt encryption
-      (`ITSAppUsesNonExemptEncryption` in `Snap-Safe-Info.plist`) and has no `ITSEncryptionExportComplianceCode`,
-      so App Store Connect asks for every build.
+- [ ] Answer the export compliance questions for the build (it shows "Missing Compliance" until you do).
+      SnapSafe uses non-exempt encryption: answer yes, standard algorithms. `Snap-Safe-Info.plist`
+      deliberately omits `ITSAppUsesNonExemptEncryption`: setting it without an
+      `ITSEncryptionExportComplianceCode` makes the upload fail with error 90592, and the app has no
+      approved encryption documentation code yet. If App Store Connect issues one, add both keys.
 - [ ] Create the new version, enter "What's New" release notes, and select the build.
 - [ ] Update screenshots if the UI changed.
 - [ ] Submit for review; release once approved.
