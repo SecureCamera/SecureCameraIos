@@ -66,6 +66,14 @@ jobs:
       run: |
         defaults write com.apple.dt.Xcode IDESkipMacroFingerprintValidation -bool YES
 
+    # Resolve SPM packages before CodeQL starts tracing, so the git fetches and
+    # checkouts aren't instrumented. The build reuses ./build/SourcePackages.
+    - name: Resolve Swift packages
+      if: ${{ matrix.language == 'swift' }}
+      run: |
+        xcodebuild -resolvePackageDependencies -project SnapSafe.xcodeproj \
+          -scheme SnapSafe -derivedDataPath ./build
+
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
       uses: github/codeql-action/init@02c5e83432fe5497fd85b873b6c9f16a8578e1d9 # v3
@@ -90,7 +98,7 @@ jobs:
       run: |
         xcodebuild -project SnapSafe.xcodeproj -scheme SnapSafe -configuration Debug \
           -destination 'generic/platform=iOS Simulator' -derivedDataPath ./build \
-          -skipMacroValidation CODE_SIGNING_ALLOWED=NO clean build
+          -skipMacroValidation CODE_SIGNING_ALLOWED=NO ARCHS=arm64 clean build
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@02c5e83432fe5497fd85b873b6c9f16a8578e1d9 # v3
