@@ -2,13 +2,14 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!-- SnapSafe encrypts user media with AES-256-GCM (CryptoKit) as its core
-	     feature, which is NOT exempt encryption — so this must be true.
-	     Export posture: standard algorithms, self-classified mass market
-	     (5D992.c). Requires the annual self-classification report to BIS and
-	     the French ANSSI declaration. Once App Store Connect issues a code,
-	     add ITSEncryptionExportComplianceCode to skip per-build questions. -->
-	<key>ITSAppUsesNonExemptEncryption</key>
-	<true/>
+	<!-- Export compliance: SnapSafe uses non-exempt encryption (AES-256-GCM via
+	     CryptoKit is its core feature), but ITSAppUsesNonExemptEncryption is
+	     deliberately NOT set here. Declaring it without a matching
+	     ITSEncryptionExportComplianceCode makes App Store Connect reject the
+	     upload (error 90592), and the app has no approved encryption
+	     documentation/code yet. Leaving the key out makes App Store Connect ask
+	     the export compliance questions per build; answer them truthfully
+	     (uses encryption: yes, standard algorithms). If App Store Connect later
+	     issues a code, add both keys back together. -->
 </dict>
 </plist>
